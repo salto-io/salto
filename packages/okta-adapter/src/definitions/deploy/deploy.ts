@@ -50,11 +50,15 @@ import {
   ROLE_TYPE_NAME,
   APP_PROVISIONING_FIELD_NAMES,
   USER_ROLES_TYPE_NAME,
+  API_SCOPES_FIELD_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
   createDeployAppPolicyRequests,
+  getIssuerField,
+  getOAuth2ScopeConsentGrantIdFromSharedContext,
   getSubdomainFromElementsSource,
+  GRANTS_CHANGE_ID_FIELDS,
   isInactiveCustomAppChange,
 } from './types/application'
 import { isActivationChange, isDeactivationChange } from './utils/status'
@@ -436,7 +440,14 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     }),
                 },
                 transformation: {
-                  omit: [ID_FIELD, LINKS_FIELD, CUSTOM_NAME_FIELD, ...APP_POLICIES],
+                  omit: [
+                    ID_FIELD,
+                    LINKS_FIELD,
+                    CUSTOM_NAME_FIELD,
+                    ...APP_POLICIES,
+                    ...APP_PROVISIONING_FIELD_NAMES,
+                    API_SCOPES_FIELD_NAME,
+                  ],
                 },
               },
               copyFromResponse: {
@@ -463,7 +474,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 skipIfIdentical: true,
                 transformForCheck: {
-                  omit: [...APP_POLICIES, ...APP_PROVISIONING_FIELD_NAMES],
+                  omit: [...APP_POLICIES, ...APP_PROVISIONING_FIELD_NAMES, API_SCOPES_FIELD_NAME],
                 },
               },
               request: {
@@ -492,6 +503,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                           CUSTOM_NAME_FIELD,
                           ...APP_POLICIES,
                           ...APP_PROVISIONING_FIELD_NAMES,
+                          API_SCOPES_FIELD_NAME,
                         ]),
                       },
                     }
@@ -585,6 +597,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           fieldPath: ['applicationProvisioningGeneral'],
           typeName: 'ApplicationProvisioningGeneral',
           changeIdFields: [],
+        },
+        {
+          fieldPath: [API_SCOPES_FIELD_NAME],
+          typeName: 'OAuth2ScopeConsentGrant',
+          changeIdFields: GRANTS_CHANGE_ID_FIELDS,
         },
       ],
       toActionNames: ({ change }) => {
@@ -1165,6 +1182,39 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 endpoint: { path: '/api/v1/users/{userId}/roles/{id}', method: 'delete' },
                 context: getRoleIdFromSharedContext,
+              },
+            },
+          ],
+        },
+      },
+    },
+    OAuth2ScopeConsentGrant: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/apps/{parent_id}/grants', method: 'post' },
+                transformation: {
+                  adjust: async ({ value, context }) => {
+                    validatePlainObject(value, 'OAuth2ScopeConsentGrant')
+                    const domain = await getIssuerField(context.elementSource)
+                    return {
+                      value: {
+                        ...value,
+                        issuer: domain,
+                      },
+                    }
+                  },
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/apps/{parent_id}/grants/{id}', method: 'delete' },
+                context: getOAuth2ScopeConsentGrantIdFromSharedContext,
               },
             },
           ],

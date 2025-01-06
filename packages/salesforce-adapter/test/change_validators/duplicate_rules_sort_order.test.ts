@@ -122,6 +122,56 @@ describe('duplicateRulesSortOrder', () => {
           objectName: MODIFICATION_OBJECT_NAME,
           sortOrder: 2,
         }),
+        createDuplicateRuleInstance({
+          instanceName: 'existingDuplicateRule3',
+          objectName: MODIFICATION_OBJECT_NAME,
+          sortOrder: 3,
+        }),
+        createDuplicateRuleInstance({
+          instanceName: 'existingDuplicateRule4',
+          objectName: MODIFICATION_OBJECT_NAME,
+          sortOrder: 4,
+        }),
+        createDuplicateRuleInstance({
+          instanceName: 'existingDuplicateRule5',
+          objectName: MODIFICATION_OBJECT_NAME,
+          sortOrder: 5,
+        }),
+        createDuplicateRuleInstance({
+          instanceName: 'existingDuplicateRule6',
+          objectName: MODIFICATION_OBJECT_NAME,
+          sortOrder: 6,
+        }),
+        createDuplicateRuleInstance({
+          instanceName: 'existingDuplicateRule7',
+          objectName: MODIFICATION_OBJECT_NAME,
+          sortOrder: 7,
+        }),
+        createDuplicateRuleInstance({
+          instanceName: 'existingDuplicateRule8',
+          objectName: MODIFICATION_OBJECT_NAME,
+          sortOrder: 8,
+        }),
+        createDuplicateRuleInstance({
+          instanceName: 'existingDuplicateRule9',
+          objectName: MODIFICATION_OBJECT_NAME,
+          sortOrder: 9,
+        }),
+        createDuplicateRuleInstance({
+          instanceName: 'existingDuplicateRule10',
+          objectName: MODIFICATION_OBJECT_NAME,
+          sortOrder: 10,
+        }),
+        createDuplicateRuleInstance({
+          instanceName: 'existingDuplicateRule11',
+          objectName: MODIFICATION_OBJECT_NAME,
+          sortOrder: 11,
+        }),
+        createDuplicateRuleInstance({
+          instanceName: 'existingDuplicateRule12',
+          objectName: MODIFICATION_OBJECT_NAME,
+          sortOrder: 12,
+        }),
       ]
       const changes = [additionChange, modificationChange]
       changedInstances = changes.map(getChangeData)

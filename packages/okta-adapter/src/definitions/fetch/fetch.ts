@@ -442,6 +442,22 @@ const createCustomizations = ({
             },
           },
         },
+        apiScopes: {
+          typeName: 'OAuth2ScopeConsentGrant',
+          conditions: [
+            {
+              fromField: 'signOnMode',
+              match: ['^OPENID_CONNECT$'],
+            },
+          ],
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+        },
         applicationUserProvisioning: {
           typeName: 'ApplicationUserProvisioning',
           conditions: [
@@ -589,6 +605,7 @@ const createCustomizations = ({
         applicationProvisioningGeneral: { fieldType: 'unknown' },
         applicationInboundProvisioning: { fieldType: 'ApplicationFeature' },
         applicationUserProvisioning: { fieldType: 'ApplicationFeature' },
+        apiScopes: { fieldType: 'list<OAuth2ScopeConsentGrant>' },
         settings: { fieldType: 'unknown' },
         profileEnrollment: { fieldType: 'string' },
         accessPolicy: { fieldType: 'string' },
@@ -681,6 +698,26 @@ const createCustomizations = ({
         type: { omit: true },
         properties: { omit: true },
         [naclCase('$schema')]: { omit: true },
+      },
+    },
+  },
+  OAuth2ScopeConsentGrant: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/apps/{appId}/grants',
+        },
+        transformation: {
+          omit: ['_links', 'createdBy', 'status', 'created', 'lastUpdated', 'clientId', 'source', 'issuer'],
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      fieldCustomizations: {
+        id: { omit: true },
       },
     },
   },
@@ -1473,7 +1510,15 @@ const createCustomizations = ({
     },
   },
   OAuth2Claim: {
-    requests: [{ endpoint: { path: '/api/v1/authorizationServers/{id}/claims' } }],
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/authorizationServers/{id}/claims',
+          // only include claims that are shown in Okta's Admin Console
+          queryArgs: { includeClaims: 'sub,custom' },
+        },
+      },
+    ],
     resource: { directFetch: false },
     element: {
       topLevel: { isTopLevel: true, elemID: { extendsParent: true } },

@@ -5,10 +5,12 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-export { builtInInstancesValidator } from './shared/built_in_instances_validator'
-export { requiredFieldsValidator } from './shared/required_fields_validator'
-export {
-  readOnlyFieldsValidator,
-  TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION,
-  TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
-} from './shared/read_only_fields_validator'
+
+import { ChangeValidator } from '@salto-io/adapter-api'
+import sharedChangeValidators from './shared'
+import entraChangeValidators from './entra'
+
+export default (): Record<string, ChangeValidator> => ({
+  ...sharedChangeValidators(),
+  ...entraChangeValidators(),
+})

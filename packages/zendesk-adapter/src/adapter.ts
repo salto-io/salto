@@ -57,6 +57,7 @@ import {
 } from './config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
+  BOT_BUILDER_FLOW,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
@@ -158,6 +159,7 @@ import customObjectFilter from './filters/custom_objects/custom_object'
 import customObjectFieldFilter from './filters/custom_objects/custom_object_fields'
 import customObjectFieldsOrderFilter from './filters/custom_objects/custom_object_fields_order'
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
+import botBuilderArrangePaths from './filters/bot_builder_arrange_paths'
 import { createFixElementFunctions } from './fix_elements'
 import guideThemeSettingFilter from './filters/guide_theme_settings'
 import { ZendeskFetchOptions } from './definitions/types'
@@ -274,6 +276,7 @@ export const DEFAULT_FILTERS = [
   guideThemeSettingFilter, // needs to be after guideThemeFilter as it depends on successful theme fetches
   addAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter
   guideArrangePaths,
+  botBuilderArrangePaths, // should run after fieldReferencesFilter
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   addImportantValuesFilter,
@@ -557,7 +560,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
     const fetchConfig = this.userConfig[FETCH_CONFIG]
     if (fetchConfig.fetchBotBuilder === false) {
-      fetchConfig.exclude.push({ type: 'bot_builder_flow' })
+      fetchConfig.exclude.push({ type: BOT_BUILDER_FLOW })
     }
     this.fetchQuery = elementUtils.query.createElementQuery(fetchConfig, fetchCriteria)
 

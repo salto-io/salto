@@ -9,6 +9,7 @@ import _ from 'lodash'
 import { EOL } from 'os'
 import { diff, createEnvironmentSource, loadLocalWorkspace } from '@salto-io/core'
 import { Workspace, createElementSelectors, remoteMap as rm, EnvironmentSource } from '@salto-io/workspace'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   CommandDefAction,
   createCommandGroupDef,
@@ -331,6 +332,7 @@ export const createAction: CommandDefAction<EnvCreateArgs & ConfigOverrideArg> =
   const workspace = await loadLocalWorkspace({
     path: args.workspacePath,
     configOverrides,
+    adapterCreators,
   })
   args.cliTelemetry.setTags(getWorkspaceTelemetryTags(workspace))
   args.cliTelemetry.start()

@@ -31,4 +31,11 @@ describe('graphql_adjuster', () => {
     const finalValue = await transformGraphQLItem('nonexistent')({ value, context: {}, typeName: 'notTest' })
     expect(finalValue).toEqual({ value })
   })
+
+  it('should throw an error if the graphql response contains errors', async () => {
+    const value = {
+      errors: 'error',
+    }
+    await expect(transformGraphQLItem('test')({ value, context: {}, typeName: 'test' })).rejects.toThrow()
+  })
 })

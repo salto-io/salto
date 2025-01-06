@@ -25,13 +25,13 @@ import {
   COMMON_ENV_PREFIX,
   isValidEnvName,
   EnvironmentSource,
-  EnvConfig,
   buildStaticFilesCache,
   getBaseDirFromEnvName,
   getStaticFileCacheName,
   WorkspaceGetCustomReferencesFunc,
 } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
+import { getSubtypes } from '@salto-io/adapter-utils'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getLocalStoragePath } from './app_config'
 import { loadState } from './state'
@@ -229,8 +229,6 @@ type LoadLocalWorkspaceArgs = {
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   credentialSource?: cs.ConfigSource
   ignoreFileChanges?: boolean
-  getConfigTypes: (envs: EnvConfig[], adapterCreators?: Record<string, Adapter>) => Promise<ObjectType[]>
-  getCustomReferences: WorkspaceGetCustomReferencesFunc
   adapterCreators: Record<string, Adapter>
 }
 
@@ -241,8 +239,6 @@ export async function loadLocalWorkspace({
   credentialSource,
   stateStaticFilesSource,
   ignoreFileChanges = false,
-  getConfigTypes,
-  getCustomReferences,
   adapterCreators,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
@@ -255,13 +251,14 @@ export async function loadLocalWorkspace({
   const cacheDirName = path.join(workspaceConfigSrc.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
   try {
-    const adaptersConfig = await buildLocalAdaptersConfigSource(
+    const adaptersConfig = await buildLocalAdaptersConfigSource({
       baseDir,
       remoteMapCreator,
       persistent,
-      await getConfigTypes(workspaceConfig.envs, adapterCreators),
+      envs: workspaceConfig.envs,
+      adapterCreators,
       configOverrides,
-    )
+    })
     const envNames = workspaceConfig.envs.map(e => e.name)
     const credentials = credentialSource ?? credentialsSource(workspaceConfigSrc.localStorage)
 
@@ -273,17 +270,17 @@ export async function loadLocalWorkspace({
       persistent,
       workspaceConfig,
     })
-    const ws = await loadWorkspace(
-      workspaceConfigSrc,
+    const ws = await loadWorkspace({
+      config: workspaceConfigSrc,
       adaptersConfig,
       credentials,
-      elemSources,
+      environmentsSources: elemSources,
       remoteMapCreator,
       ignoreFileChanges,
       persistent,
-      undefined,
-      getCustomReferences,
-    )
+      mergedRecoveryMode: undefined,
+      adapterCreators,
+    })
 
     return {
       ...ws,
@@ -319,13 +316,82 @@ export async function loadLocalWorkspace({
   }
 }
 
-export const initLocalWorkspace = async (
-  baseDir: string,
-  envName = 'default',
-  configTypes: ObjectType[],
-  getCustomReferences: WorkspaceGetCustomReferencesFunc,
+export const getAdaptersConfigTypesMap = (adapterCreators: Record<string, Adapter>): Record<string, ObjectType[]> =>
+  Object.fromEntries(
+    Object.entries(
+      _.mapValues(adapterCreators, adapterCreator =>
+        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
+      ),
+    ).filter(entry => entry[1].length > 0),
+  )
+
+type InitLocalWorkspaceParams = {
+  baseDir: string
+  envName?: string
+  configTypes?: ObjectType[]
+  stateStaticFilesSource?: staticFiles.StateStaticFilesSource
+  adapterCreators: Record<string, Adapter>
+}
+
+const getInitLocalWorkspace: (
+  baseDirOrParams: string | InitLocalWorkspaceParams,
+  envName?: string,
+  configTypes?: ObjectType[],
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-): Promise<Workspace> => {
+) => InitLocalWorkspaceParams & { getCustomReferences?: WorkspaceGetCustomReferencesFunc } = (
+  baseDirOrParams,
+  envName,
+  configTypes,
+  getCustomReferences,
+  stateStaticFilesSource,
+) => {
+  if (!_.isString(baseDirOrParams)) {
+    return baseDirOrParams
+  }
+  if (configTypes === undefined) {
+    throw new Error('configTypes cannot be undefined')
+  }
+  return {
+    baseDir: baseDirOrParams,
+    envName,
+    configTypes,
+    getCustomReferences,
+    stateStaticFilesSource,
+    adapterCreators: {},
+  }
+}
+// As a transitionary step, we support both a string input and an argument object
+export function initLocalWorkspace(args: InitLocalWorkspaceParams): Promise<Workspace>
+// @deprecated
+export function initLocalWorkspace(
+  baseDir: string,
+  envName: string,
+  configTypes?: ObjectType[],
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
+  stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
+): Promise<Workspace>
+
+export async function initLocalWorkspace(
+  inputBaseDir: string | InitLocalWorkspaceParams,
+  inputEnvName?: string,
+  inputConfigTypes?: ObjectType[],
+  inputGetCustomReferences?: WorkspaceGetCustomReferencesFunc,
+  inputStateStaticFilesSource?: staticFiles.StateStaticFilesSource,
+): Promise<Workspace> {
+  const {
+    baseDir,
+    envName = 'default',
+    adapterCreators,
+    configTypes = Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
+    stateStaticFilesSource,
+  } = getInitLocalWorkspace(
+    inputBaseDir,
+    inputEnvName,
+    inputConfigTypes,
+    inputGetCustomReferences,
+    inputStateStaticFilesSource,
+  )
   const uid = uuidv4()
   const localStorage = getLocalStoragePath(uid)
   if (await locateWorkspaceRoot(path.resolve(baseDir))) {
@@ -343,7 +409,14 @@ export const initLocalWorkspace = async (
   try {
     const persistentMode = true
 
-    const adaptersConfig = await buildLocalAdaptersConfigSource(baseDir, remoteMapCreator, persistentMode, configTypes)
+    const adaptersConfig = await buildLocalAdaptersConfigSource({
+      baseDir,
+      remoteMapCreator,
+      persistent: persistentMode,
+      configTypes,
+      adapterCreators,
+      envs: [],
+    })
     const credentials = credentialsSource(localStorage)
 
     const elemSources = await loadLocalElementsSources({
@@ -355,16 +428,16 @@ export const initLocalWorkspace = async (
       workspaceConfig: { uid },
     })
 
-    const workspace = await initWorkspace(
+    const workspace = await initWorkspace({
       uid,
-      envName,
-      workspaceConfigSrc,
+      defaultEnvName: envName,
+      config: workspaceConfigSrc,
       adaptersConfig,
       credentials,
-      elemSources,
+      environmentSources: elemSources,
       remoteMapCreator,
-      getCustomReferences,
-    )
+      adapterCreators,
+    })
     return workspace
   } catch (e) {
     try {

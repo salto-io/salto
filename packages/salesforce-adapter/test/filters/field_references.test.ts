@@ -841,7 +841,7 @@ describe('Serialization Strategies', () => {
         config: {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
-            fetchParams: { target: [], optionalFeatures: { addParentToRecordTriggeredFlows: true } },
+            fetchParams: { target: [] },
           }),
         },
       }) as FilterWith<'onFetch'>

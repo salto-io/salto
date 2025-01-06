@@ -28,6 +28,9 @@ export const MEMBERS_FIELD_NAME = 'members'
 export const PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME = 'preAuthorizedApplications'
 export const REQUIRED_RESOURCE_ACCESS_FIELD_NAME = 'requiredResourceAccess'
 
+// Paths to fields
+export const AUTHENTICATION_STRENGTH_PATH = ['grantControls', 'authenticationStrength']
+
 /* Type names */
 // Top level
 export const ADMINISTRATIVE_UNIT_TYPE_NAME = toEntraTypeName('AdministrativeUnit')

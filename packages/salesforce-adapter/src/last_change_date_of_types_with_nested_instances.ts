@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { FileProperties } from '@salto-io/jsforce'
+import { FileProperties, MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { types } from '@salto-io/lowerdash'
 import {
@@ -35,6 +35,7 @@ import { SHARING_RULES_API_NAMES } from './filters/author_information/sharing_ru
 type GetLastChangeDateOfTypesWithNestedInstancesParams = {
   client: SalesforceClient
   metadataQuery: MetadataQuery<FileProperties>
+  metadataTypeInfos: MetadataObject[]
 }
 
 type TypeToNestedTypes = {
@@ -78,7 +79,9 @@ export const NESTED_TYPE_TO_PARENT_TYPE = Object.entries(TYPE_TO_NESTED_TYPES).r
 export const getLastChangeDateOfTypesWithNestedInstances = async ({
   client,
   metadataQuery,
+  metadataTypeInfos,
 }: GetLastChangeDateOfTypesWithNestedInstancesParams): Promise<LastChangeDateOfTypesWithNestedInstances> => {
+  const knownTypes: Set<string> = new Set(metadataTypeInfos.map(({ xmlName }) => xmlName))
   const lastChangeDateOfTypeWithNestedInstancesPerParent = async (
     type: TypeWithNestedInstancesPerParent,
     relatedTypes: types.NonEmptyArray<string>,
@@ -86,9 +89,13 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
     if (!metadataQuery.isTypeMatch(type)) {
       return {}
     }
-    const allProps = (await Promise.all(relatedTypes.map(typeName => listMetadataObjects(client, typeName)))).flatMap(
-      result => result.elements,
-    )
+    const allProps = (
+      await Promise.all(
+        relatedTypes
+          .filter(relatedType => knownTypes.has(relatedType))
+          .map(typeName => listMetadataObjects(client, typeName)),
+      )
+    ).flatMap(result => result.elements)
     const relatedPropsByParent = _.groupBy(allProps, fileProp => fileProp.fullName.split('.')[0])
     const result: Record<string, string> = {}
     Object.entries(relatedPropsByParent).forEach(([parentName, fileProps]) => {
@@ -107,9 +114,13 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
     if (!metadataQuery.isTypeMatch(type)) {
       return undefined
     }
-    const allProps = (await Promise.all(relatedTypes.map(typeName => listMetadataObjects(client, typeName)))).flatMap(
-      result => result.elements,
-    )
+    const allProps = (
+      await Promise.all(
+        relatedTypes
+          .filter(relatedType => knownTypes.has(relatedType))
+          .map(typeName => listMetadataObjects(client, typeName)),
+      )
+    ).flatMap(result => result.elements)
     return getMostRecentFileProperties(allProps)?.lastModifiedDate
   }
 

@@ -16,6 +16,9 @@ export const transform: (innerRoot: string) => definitions.AdjustFunctionMulti =
     if (!lowerdashValues.isPlainObject(value)) {
       throw new Error('unexpected value for graphql item, not transforming')
     }
+    if ('errors' in value) {
+      throw new Error(`graphql response contained errors: ${(value as { errors: unknown }).errors}`)
+    }
     const graphqlValues = get(value, `data.${innerRoot}`)
     return graphqlValues === undefined
       ? { value }

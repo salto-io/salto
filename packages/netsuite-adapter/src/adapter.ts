@@ -35,7 +35,7 @@ import { filter, logDuration } from '@salto-io/adapter-utils'
 import { combineElementFixers } from '@salto-io/adapter-components'
 import { createElements } from './transformer'
 import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
-import { BUNDLE, CUSTOM_RECORD_TYPE } from './constants'
+import { BUNDLE, CUSTOM_RECORD_TYPE, IS_LOCKED, SCRIPT_ID } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -109,7 +109,7 @@ import { getDataElements } from './data_elements/data_elements'
 import { getSuiteQLTableElements } from './data_elements/suiteql_table_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
-import { CustomizationInfo, FailedTypes, ImportFileCabinetResult } from './client/types'
+import { CustomizationInfo, CustomTypeInfo, FailedTypes, ImportFileCabinetResult } from './client/types'
 import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, ALL_TYPES_REGEX, EXTENSION_REGEX } from './config/constants'
 import {
   FetchByQueryFunc,
@@ -382,9 +382,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return result
     }
 
-    const getLockedCustomRecordTypes = (failedTypes: FailedTypes, instancesIds: ObjectID[]): ObjectType[] => {
+    const getLockedCustomRecordTypesScriptIds = (failedTypes: FailedTypes, instancesIds: ObjectID[]): string[] => {
       const scriptIdsSet = new Set(instancesIds.map(item => item.instanceId))
-      const lockedCustomRecordTypesScriptIds = _.uniq(
+      return _.uniq(
         (failedTypes.lockedError[CUSTOM_RECORD_TYPE] ?? []).concat(
           this.config.fetch.lockedElementsToExclude?.types
             .filter(isIdsQuery)
@@ -393,7 +393,26 @@ export default class NetsuiteAdapter implements AdapterOperations {
             .filter(scriptId => scriptIdsSet.has(scriptId)) ?? [],
         ),
       )
+    }
+
+    const getHiddenLockedCustomRecordTypes = (failedTypes: FailedTypes, instancesIds: ObjectID[]): ObjectType[] => {
+      if (this.config.fetch.visibleLockedCustomRecordTypes) {
+        return []
+      }
+      const lockedCustomRecordTypesScriptIds = getLockedCustomRecordTypesScriptIds(failedTypes, instancesIds)
       return createLockedCustomRecordTypes(lockedCustomRecordTypesScriptIds)
+    }
+
+    const getLockedCustomRecordTypes = (failedTypes: FailedTypes, instancesIds: ObjectID[]): CustomTypeInfo[] => {
+      if (!this.config.fetch.visibleLockedCustomRecordTypes) {
+        return []
+      }
+      const lockedCustomRecordTypesScriptIds = getLockedCustomRecordTypesScriptIds(failedTypes, instancesIds)
+      return lockedCustomRecordTypesScriptIds.map(scriptId => ({
+        typeName: CUSTOM_RECORD_TYPE,
+        values: { [SCRIPT_ID]: scriptId, [IS_LOCKED]: true },
+        scriptId,
+      }))
     }
 
     const getStandardAndCustomElements = async (): Promise<{
@@ -424,12 +443,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
         .concat(customObjects)
         .concat(fileCabinetContent)
         .concat(bundlesCustomInfo)
+        .concat(getLockedCustomRecordTypes(failedTypes, instancesIds))
 
       const elements = await createElements(elementsToCreate, this.getElemIdFunc)
       const [standardInstances, types] = _.partition(elements, isInstanceElement)
       const [objectTypes, otherTypes] = _.partition(types, isObjectType)
       const [customRecordTypes, standardTypes] = _.partition(objectTypes, isCustomRecordType)
-      const lockedCustomRecordTypes = getLockedCustomRecordTypes(failedTypes, instancesIds)
+      const lockedCustomRecordTypes = getHiddenLockedCustomRecordTypes(failedTypes, instancesIds)
       const {
         elements: customRecords,
         errors: customRecordErrors,

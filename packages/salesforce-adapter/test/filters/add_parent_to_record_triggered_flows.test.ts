@@ -57,7 +57,7 @@ describe('addParentToRecordTriggeredFlows', () => {
             config: {
               ...defaultFilterContext,
               fetchProfile: buildFetchProfile({
-                fetchParams: { target: [], optionalFeatures: { addParentToRecordTriggeredFlows: true } },
+                fetchParams: { target: [] },
               }),
               elementsSource: buildElementsSourceFromElements(elementsSource),
             },
@@ -73,24 +73,6 @@ describe('addParentToRecordTriggeredFlows', () => {
           expect(updateLeadFlow.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
             new ReferenceExpression(lead.elemID, lead),
           )
-        })
-      })
-      describe('when addParentToRecordTriggeredFlows in Disabled', () => {
-        beforeEach(async () => {
-          filter = filterCreator({
-            config: {
-              ...defaultFilterContext,
-              fetchProfile: buildFetchProfile({
-                fetchParams: { target: [], optionalFeatures: { addParentToRecordTriggeredFlows: false } },
-              }),
-              elementsSource: buildElementsSourceFromElements(elementsSource),
-            },
-          }) as FilterWith<'onFetch'>
-          await filter.onFetch(elements)
-        })
-        it('should not create parent annotation', async () => {
-          expect(updateOpportunityFlow.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
-          expect(updateLeadFlow.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
         })
       })
     })
@@ -112,7 +94,7 @@ describe('addParentToRecordTriggeredFlows', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              fetchParams: { target: [], optionalFeatures: { addParentToRecordTriggeredFlows: true } },
+              fetchParams: { target: [] },
             }),
             elementsSource: buildElementsSourceFromElements(elementsSource),
           },

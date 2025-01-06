@@ -32,6 +32,8 @@ import {
   DEFAULT_SOURCE_SCOPE,
   isAdditionOrModificationChange,
   DetailedChangeWithBaseChange,
+  Adapter,
+  GLOBAL_ADAPTER,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -504,17 +506,143 @@ const logValidationErrors = (errors: ReadonlyArray<ValidationError>, source: str
     })
 }
 
-export const loadWorkspace = async (
+export const getCustomReferencesImplementation = (
+  adapterCreators: Record<string, Adapter>,
+): WorkspaceGetCustomReferencesFunc | undefined => {
+  if (_.isEmpty(Object.keys(adapterCreators))) {
+    return undefined
+  }
+  return async function getCustomReferences(
+    elements: Element[],
+    accountToServiceName: Record<string, string>,
+    adaptersConfig: AdaptersConfigSource,
+  ): Promise<ReferenceInfo[]> {
+    const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
+      const serviceName = accountToServiceName[account] ?? account
+      try {
+        const refFunc = adapterCreators[serviceName]?.getCustomReferences
+        if (refFunc !== undefined) {
+          return await refFunc(accountElements, await adaptersConfig.getAdapter(account))
+        }
+      } catch (err) {
+        log.error('failed to get custom references for %s: %o', account, err)
+      }
+      return []
+    }
+
+    const accountToElements = _.groupBy(
+      elements.filter(e => e.elemID.adapter !== GLOBAL_ADAPTER),
+      e => e.elemID.adapter,
+    )
+    return (await Promise.all(Object.entries(accountToElements).map(accountElementsToRefs))).flat()
+  }
+}
+
+type loadWorkspaceParams = {
+  config: WorkspaceConfigSource
+  adaptersConfig: AdaptersConfigSource
+  credentials: ConfigSource
+  environmentsSources: EnvironmentsSources
+  remoteMapCreator: RemoteMapCreator
+  ignoreFileChanges?: boolean
+  persistent?: boolean
+  mergedRecoveryMode?: MergedRecoveryMode
+  adapterCreators: Record<string, Adapter>
+}
+
+const getLoadWorkspaceParams: (
+  configOrArgs: WorkspaceConfigSource | loadWorkspaceParams,
+  adaptersConfig?: AdaptersConfigSource,
+  credentials?: ConfigSource,
+  environmentsSources?: EnvironmentsSources,
+  remoteMapCreator?: RemoteMapCreator,
+  ignoreFileChanges?: boolean,
+  persistent?: boolean,
+  mergedRecoveryMode?: MergedRecoveryMode,
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
+) => loadWorkspaceParams & { getCustomReferences?: WorkspaceGetCustomReferencesFunc } = (
+  configOrArgs,
+  adaptersConfig,
+  credentials,
+  environmentsSources,
+  remoteMapCreator,
+  ignoreFileChanges,
+  persistent,
+  mergedRecoveryMode,
+  getCustomReferences,
+) => {
+  if ('adapterCreators' in configOrArgs) {
+    return configOrArgs
+  }
+  if (
+    adaptersConfig === undefined ||
+    credentials === undefined ||
+    environmentsSources === undefined ||
+    remoteMapCreator === undefined
+  ) {
+    throw new Error('invalid undefined parameters')
+  }
+  return {
+    config: configOrArgs,
+    adaptersConfig,
+    credentials,
+    environmentsSources,
+    remoteMapCreator,
+    ignoreFileChanges,
+    persistent,
+    mergedRecoveryMode,
+    getCustomReferences,
+    adapterCreators: {},
+  }
+}
+// As a transitionary step, we support both a string WorkspaceConfigSource and an argument object
+export function loadWorkspace(args: loadWorkspaceParams): Promise<Workspace>
+// @deprecated
+export function loadWorkspace(
   config: WorkspaceConfigSource,
   adaptersConfig: AdaptersConfigSource,
   credentials: ConfigSource,
   environmentsSources: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
-  ignoreFileChanges = false,
-  persistent = true,
-  mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
-  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
-): Promise<Workspace> => {
+  ignoreFileChanges?: boolean,
+  persistent?: boolean,
+  mergedRecoveryMode?: MergedRecoveryMode,
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
+): Promise<Workspace>
+
+export async function loadWorkspace(
+  inputConfig: WorkspaceConfigSource | loadWorkspaceParams,
+  inputAdaptersConfig?: AdaptersConfigSource,
+  inputCredentials?: ConfigSource,
+  inputEnvironmentsSources?: EnvironmentsSources,
+  inputRemoteMapCreator?: RemoteMapCreator,
+  inputIgnoreFileChanges?: boolean,
+  inputPersistent?: boolean,
+  inputMergedRecoveryMode?: MergedRecoveryMode,
+  inputGetCustomReferences?: WorkspaceGetCustomReferencesFunc,
+): Promise<Workspace> {
+  const {
+    config,
+    adaptersConfig,
+    credentials,
+    environmentsSources,
+    remoteMapCreator,
+    ignoreFileChanges = false,
+    persistent = true,
+    mergedRecoveryMode = 'rebuild',
+    adapterCreators,
+    getCustomReferences = getCustomReferencesImplementation(adapterCreators) ?? (async () => []),
+  } = getLoadWorkspaceParams(
+    inputConfig,
+    inputAdaptersConfig,
+    inputCredentials,
+    inputEnvironmentsSources,
+    inputRemoteMapCreator,
+    inputIgnoreFileChanges,
+    inputPersistent,
+    inputMergedRecoveryMode,
+    inputGetCustomReferences,
+  )
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
 
@@ -1383,17 +1511,17 @@ export const loadWorkspace = async (
         state: source.state,
       }))
       const envSources = { commonSourceName: environmentsSources.commonSourceName, sources }
-      return loadWorkspace(
+      return loadWorkspace({
         config,
         adaptersConfig,
         credentials,
-        envSources,
+        environmentsSources: envSources,
         remoteMapCreator,
         ignoreFileChanges,
         persistent,
         mergedRecoveryMode,
-        getCustomReferences,
-      )
+        adapterCreators,
+      })
     },
     clear: async (args: ClearFlags) => {
       const currentWSState = await getWorkspaceState()
@@ -1606,7 +1734,65 @@ export const loadWorkspace = async (
   return workspace
 }
 
-export const initWorkspace = async (
+type initWorkspaceParams = {
+  uid: string
+  defaultEnvName: string
+  config: WorkspaceConfigSource
+  adaptersConfig: AdaptersConfigSource
+  credentials: ConfigSource
+  environmentSources: EnvironmentsSources
+  remoteMapCreator: RemoteMapCreator
+  adapterCreators: Record<string, Adapter>
+}
+
+const getInitWorkspaceParams: (
+  uidOrParams: string | initWorkspaceParams,
+  defaultEnvName?: string,
+  config?: WorkspaceConfigSource,
+  adaptersConfig?: AdaptersConfigSource,
+  credentials?: ConfigSource,
+  environmentSources?: EnvironmentsSources,
+  remoteMapCreator?: RemoteMapCreator,
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
+) => initWorkspaceParams = (
+  uidOrParams,
+  defaultEnvName,
+  config,
+  adaptersConfig,
+  credentials,
+  environmentSources,
+  remoteMapCreator,
+  getCustomReferences,
+) => {
+  if (!_.isString(uidOrParams)) {
+    return uidOrParams
+  }
+  if (
+    defaultEnvName === undefined ||
+    config === undefined ||
+    adaptersConfig === undefined ||
+    credentials === undefined ||
+    environmentSources === undefined ||
+    remoteMapCreator === undefined
+  ) {
+    throw new Error('invalid params are undefined')
+  }
+  return {
+    uid: uidOrParams,
+    defaultEnvName,
+    config,
+    adaptersConfig,
+    credentials,
+    environmentSources,
+    remoteMapCreator,
+    getCustomReferences,
+    adapterCreators: {},
+  }
+}
+// As a transitionary step, we support both a string input and an argument object
+export function initWorkspace(args: initWorkspaceParams): Promise<Workspace>
+// @deprecated
+export function initWorkspace(
   uid: string,
   defaultEnvName: string,
   config: WorkspaceConfigSource,
@@ -1614,23 +1800,50 @@ export const initWorkspace = async (
   credentials: ConfigSource,
   envs: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
-  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
-): Promise<Workspace> => {
+  getCustomReferences: WorkspaceGetCustomReferencesFunc,
+): Promise<Workspace>
+
+export async function initWorkspace(
+  inputUid: string | initWorkspaceParams,
+  inputDefaultEnvName?: string,
+  inputConfig?: WorkspaceConfigSource,
+  inputAdaptersConfig?: AdaptersConfigSource,
+  inputCredentials?: ConfigSource,
+  inputEnvs?: EnvironmentsSources,
+  inputRemoteMapCreator?: RemoteMapCreator,
+  inputGetCustomReferences?: WorkspaceGetCustomReferencesFunc,
+): Promise<Workspace> {
+  const {
+    uid,
+    defaultEnvName,
+    config,
+    adaptersConfig,
+    credentials,
+    environmentSources,
+    remoteMapCreator,
+    adapterCreators,
+  } = getInitWorkspaceParams(
+    inputUid,
+    inputDefaultEnvName,
+    inputConfig,
+    inputAdaptersConfig,
+    inputCredentials,
+    inputEnvs,
+    inputRemoteMapCreator,
+    inputGetCustomReferences,
+  )
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
     uid,
     envs: [{ name: defaultEnvName, accountToServiceName: {} }],
     currentEnv: defaultEnvName,
   })
-  return loadWorkspace(
+  return loadWorkspace({
     config,
     adaptersConfig,
     credentials,
-    envs,
+    environmentsSources: environmentSources,
     remoteMapCreator,
-    undefined,
-    undefined,
-    undefined,
-    getCustomReferences,
-  )
+    adapterCreators,
+  })
 }

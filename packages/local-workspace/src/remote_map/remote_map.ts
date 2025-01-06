@@ -261,7 +261,7 @@ const closeTmpConnection = async (
   log.debug('closed temporary connection to %s', tmpLocation)
 }
 
-export const closeRemoteMapsOfLocation = async (location: string): Promise<void> =>
+export const closeRemoteMapsOfLocation = async (location: string): Promise<boolean> =>
   log.timeDebug(
     async () => {
       let didClose = false
@@ -295,6 +295,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
       if (didClose) {
         remoteMapLocations.return(location)
       }
+      return didClose
     },
     'closeRemoteMapsOfLocation with location %s',
     location,
@@ -468,7 +469,9 @@ export const createRemoteMapCreator = (
   return {
     // Note: this implementation of `close` is not safe as it closes everything in the location, even if there are other
     // remote map creators using it
-    close: async () => closeRemoteMapsOfLocation(location),
+    close: async () => {
+      await closeRemoteMapsOfLocation(location)
+    },
     create: async <T, K extends string = string>({
       namespace,
       batchInterval = 1000,

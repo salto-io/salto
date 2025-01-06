@@ -64,6 +64,7 @@ import appLogoFilter from './filters/app_logo'
 import brandThemeRemovalFilter from './filters/brand_theme_removal'
 import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
+import removeApplicationGrants from './filters/remove_application_grants'
 import unorderedListsFilter from './filters/unordered_lists'
 import addAliasFilter from './filters/add_alias'
 import profileMappingRemovalFilter from './filters/profile_mapping_removal'
@@ -116,6 +117,7 @@ const DEFAULT_FILTERS = [
   defaultPolicyRuleDeployment,
   appUserSchemaAdditionAndRemovalFilter,
   schemaDeploymentFilter,
+  removeApplicationGrants,
   appLogoFilter,
   brandThemeRemovalFilter,
   brandThemeFilesFilter,

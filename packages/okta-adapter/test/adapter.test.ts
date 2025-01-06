@@ -2805,6 +2805,79 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+      it('should successfully add oAuth2ScopeConsentGrant', async () => {
+        loadMockReplies('application_modify_oAuth_grants.json')
+        const domainType = new ObjectType({
+          elemID: new ElemID(OKTA, DOMAIN_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        const defaultDomain = new InstanceElement('emailDomain', domainType, {
+          domain: 'example.com',
+          id: 'default',
+        })
+        operations = createOperations([defaultDomain])
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          signOnMode: 'OPENID_CONNECT',
+          apiScopes: [{ scopeId: 'okta.otherScope' }],
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.apiScopes.push({ scopeId: 'okta.scope' })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully Remove oAuth2ScopeConsentGrant', async () => {
+        loadMockReplies('application_remove_oAuth_grants.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          signOnMode: 'OPENID_CONNECT',
+          apiScopes: [{ scopeId: 'okta.otherScope' }, { scopeId: 'okta.scope' }],
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.apiScopes = [{ scopeId: 'okta.scope' }]
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
     })
     describe('deploy group schema', () => {
       let groupSchemaType: ObjectType
@@ -3763,6 +3836,37 @@ describe('adapter', () => {
           changeGroup: {
             groupID: claimInstance.elemID.getFullName(),
             changes: [toChange({ after: claimInstance })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('claim-fakeid')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully add a default authorization server claim with modifed values', async () => {
+        loadMockReplies('authorization_server_default_claim_add.json')
+        const defaultClaim = new InstanceElement(
+          'sub',
+          claimType,
+          {
+            name: 'sub',
+            status: 'ACTIVE',
+            claimType: 'RESOURCE',
+            valueType: 'EXPRESSION',
+            value: '(appuser != null) ? appuser.userName : app.name',
+            system: true,
+            alwaysIncludeInToken: true,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: defaultClaim.elemID.getFullName(),
+            changes: [toChange({ after: defaultClaim })],
           },
           progressReporter: nullProgressReporter,
         })

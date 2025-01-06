@@ -38,9 +38,6 @@ const isRecordTriggeredFlowInstance = (element: Element): element is RecordTrigg
 const filter: FilterCreator = ({ config }) => ({
   name: 'addParentToRecordTriggeredFlows',
   onFetch: async (elements: Element[]) => {
-    if (!config.fetchProfile.isFeatureEnabled('addParentToRecordTriggeredFlows')) {
-      return
-    }
     const customObjectByName = _.keyBy(
       (await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll())).filter(isCustomObjectSync),
       objectType => apiNameSync(objectType) ?? '',

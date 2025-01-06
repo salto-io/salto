@@ -9,7 +9,13 @@ import _ from 'lodash'
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
-import { BUSINESS_HOUR_SCHEDULE_HOLIDAY, EVERYONE_USER_TYPE } from '../../constants'
+import {
+  BOT_BUILDER_ANSWER,
+  BOT_BUILDER_FLOW,
+  BOT_BUILDER_NODE,
+  BUSINESS_HOUR_SCHEDULE_HOLIDAY,
+  EVERYONE_USER_TYPE,
+} from '../../constants'
 import {
   transformGraphQLItem,
   transformGuideItem,
@@ -2083,7 +2089,7 @@ const createCustomizations = (): Record<
     },
   },
 
-  bot_builder_flow: {
+  [BOT_BUILDER_FLOW]: {
     requests: [
       {
         endpoint: {
@@ -2110,7 +2116,7 @@ const createCustomizations = (): Record<
         id: { hide: true },
         subflows: {
           standalone: {
-            typeName: 'bot_builder_answer',
+            typeName: BOT_BUILDER_ANSWER,
             addParentAnnotation: true,
             referenceFromParent: true,
             nestPathUnderParent: true,
@@ -2119,7 +2125,7 @@ const createCustomizations = (): Record<
       },
     },
   },
-  bot_builder_answer: {
+  [BOT_BUILDER_ANSWER]: {
     element: {
       topLevel: {
         isTopLevel: true,
@@ -2132,7 +2138,7 @@ const createCustomizations = (): Record<
         id: { hide: true },
         nodes: {
           standalone: {
-            typeName: 'bot_builder_node',
+            typeName: BOT_BUILDER_NODE,
             addParentAnnotation: true,
             referenceFromParent: true,
             nestPathUnderParent: true,
@@ -2141,7 +2147,7 @@ const createCustomizations = (): Record<
       },
     },
   },
-  bot_builder_node: {
+  [BOT_BUILDER_NODE]: {
     element: {
       topLevel: {
         isTopLevel: true,

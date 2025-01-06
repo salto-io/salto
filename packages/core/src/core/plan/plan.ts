@@ -81,7 +81,12 @@ const addDifferentElements =
   ): PlanTransformer =>
   async graph => {
     const outputGraph = graph.clone()
-    const changes = await calculateDiff({ before, after, topLevelFilters, compareOptions })
+    const changes = await calculateDiff({
+      before,
+      after,
+      topLevelFilters,
+      compareOptions: { ...compareOptions, createFieldChanges: true },
+    })
     await awu(changes).forEach(change => {
       outputGraph.addNode(changeId(change), [], changeToDiffNode(change))
     })

@@ -17,11 +17,13 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
+  isAdditionOrRemovalChange,
   isEqualValues,
   isField,
   isInstanceElement,
   isModificationChange,
   isObjectType,
+  isObjectTypeChange,
   isPrimitiveType,
   isReferenceExpression,
   isRemovalOrModificationChange,
@@ -213,15 +215,6 @@ const isEqualChangeDataType = async (
     return false
   }
 
-  if (!changeData1.elemID.isEqual(changeData2.elemID)) {
-    log.warn(
-      'attempted to compare the values of two elements with different elemID (%o and %o)',
-      changeData1.elemID.getFullName(),
-      changeData2.elemID.getFullName(),
-    )
-    return false
-  }
-
   if (!changeData1.isAnnotationsTypesEqual(changeData2)) {
     return false
   }
@@ -267,18 +260,11 @@ const getFilteredElements = async (
         .filter(async id => _.every(await Promise.all(topLevelFilters.map(filter => filter(id)))))
         .map(id => source.get(id))) as AsyncIterable<ChangeDataType>
 
-const compareChangeDataType = (e1: ChangeDataType, e2: ChangeDataType): number =>
-  compareElementIDs(e1.elemID, e2.elemID)
-
-const isSpecialId = (id: ElemID): boolean =>
-  BuiltinTypesByFullName[id.getFullName()] !== undefined || id.getContainerPrefixAndInnerType() !== undefined
-
 export const calculateDiff = async ({
   before,
   after,
   topLevelFilters,
   compareOptions,
-  removeRedundantChanges = false,
 }: {
   before: ReadOnlyElementsSource
   after: ReadOnlyElementsSource
@@ -287,24 +273,21 @@ export const calculateDiff = async ({
   removeRedundantChanges?: boolean
 }): Promise<AsyncIterable<Change>> =>
   log.timeDebug(async () => {
-    const addElementsNodes = async (comparison: BeforeAfter<ChangeDataType>): Promise<Change[]> => {
-      const changes: Change[] = []
-      const beforeElement = comparison.before
-      const afterElement = comparison.after
-      if (!isVariable(beforeElement) && !isVariable(afterElement)) {
-        changes.push(toChange({ before: beforeElement, after: afterElement }))
-      }
+    const splitFieldChanges = (change: Change): Change[] => {
+      const changes: Change[] = [change]
       if (
-        removeRedundantChanges &&
-        (beforeElement === undefined || afterElement === undefined) &&
-        (isObjectType(beforeElement) || isObjectType(afterElement))
+        compareOptions?.createFieldChanges !== true &&
+        isAdditionOrRemovalChange(change) &&
+        isObjectTypeChange(change)
       ) {
         // When the entire element was either added or removed, there's no need
         // to create changes for individual fields.
         return changes
       }
-      const beforeFields = isObjectType(beforeElement) ? beforeElement.fields : {}
-      const afterFields = isObjectType(afterElement) ? afterElement.fields : {}
+      const beforeFields =
+        isRemovalOrModificationChange(change) && isObjectType(change.data.before) ? change.data.before.fields : {}
+      const afterFields =
+        isAdditionOrModificationChange(change) && isObjectType(change.data.after) ? change.data.after.fields : {}
       const allFieldNames = [...Object.keys(beforeFields), ...Object.keys(afterFields)]
       allFieldNames.forEach(fieldName =>
         changes.push(
@@ -321,7 +304,14 @@ export const calculateDiff = async ({
       return changes
     }
 
+    /**
+     * Ids that represent types or containers need to be handled separately,
+     * because they would not necessarily be included in getAll.
+     */
     const handleSpecialIds = async (elementPair: BeforeAfter<ChangeDataType>): Promise<BeforeAfter<ChangeDataType>> => {
+      const isSpecialId = (id: ElemID): boolean =>
+        BuiltinTypesByFullName[id.getFullName()] !== undefined || id.getContainerPrefixAndInnerType() !== undefined
+
       const id = elementPair.before?.elemID ?? elementPair.after?.elemID
       if (id !== undefined && isSpecialId(id)) {
         return {
@@ -335,7 +325,6 @@ export const calculateDiff = async ({
     const sieve = new Set<string>()
 
     const isDifferent = async (change: Change): Promise<boolean> => {
-      // We can cast to string, at least one of the changes should be defined.
       const fullName = getChangeData(change).elemID.getFullName()
       if (!sieve.has(fullName)) {
         sieve.add(fullName)
@@ -354,18 +343,18 @@ export const calculateDiff = async ({
       return false
     }
 
-    /**
-     * Ids that represent types or containers need to be handled separately,
-     * because they would not necessarily be included in getAll.
-     */
     return awu(
       iterateTogether(
         await getFilteredElements(before, topLevelFilters),
         await getFilteredElements(after, topLevelFilters),
-        compareChangeDataType,
+        (e1, e2) => compareElementIDs(e1.elemID, e2.elemID),
       ),
     )
       .map(handleSpecialIds)
-      .flatMap(addElementsNodes)
+      .filter(
+        ({ before: beforeElement, after: afterElement }) => !isVariable(beforeElement) && !isVariable(afterElement),
+      )
+      .map(toChange)
+      .flatMap(splitFieldChanges)
       .filter(isDifferent)
   }, 'calculate diff between element sources')

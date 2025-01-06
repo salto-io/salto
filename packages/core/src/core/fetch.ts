@@ -135,7 +135,7 @@ export const getDetailedChanges = async (
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
 ): Promise<DetailedChangeWithBaseChange[]> => {
-  const changes = await calculateDiff({ before, after, topLevelFilters, removeRedundantChanges: true })
+  const changes = await calculateDiff({ before, after, topLevelFilters })
   return awu(changes)
     .map(change => getDetailedChangesFromChange(change))
     .flat()
@@ -354,13 +354,13 @@ const getChangesNestedUnderID = (
     .filter(item => id.isEqual(item.change.id) || id.isParentOf(item.change.id))
     .toArray()
 
-const toFetchChanges = async (
+const toFetchChanges = (
   serviceAndPendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
   workspaceToServiceChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
-): Promise<Iterable<FetchChange>> => {
+): Iterable<FetchChange> => {
   const handledChangeIDs = new Set<string>()
-  return awu(serviceAndPendingChanges.keys())
-    .map(async (id): Promise<FetchChange[] | undefined> => {
+  return wu(serviceAndPendingChanges.keys())
+    .map((id): FetchChange[] | undefined => {
       if (handledChangeIDs.has(id)) {
         // If we get here it means this change was a "relatedChange" in a previous iteration
         // which means we already handled this change and we should not handle it again
@@ -370,12 +370,24 @@ const toFetchChanges = async (
       const elemId = ElemID.fromFullName(id)
 
       const relatedChanges = getChangesNestedUnderID(elemId, serviceAndPendingChanges)
+      // Mark all changes that relate to the current ID as handled
+      relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
+
       const [serviceChanges, pendingChanges] = _.partition(relatedChanges, change => change.origin === 'service').map(
         changeList => changeList.map(change => change.change),
       )
       const wsChanges = getChangesNestedUnderID(elemId, workspaceToServiceChanges).map(({ change }) => change)
+
+      // Service-to-workspace diffs for a given element are only computed when pending changes exist for that element.
+      // When there are no pending changes, the state and workspace are already aligned, so we can reuse service changes
+      // as workspace changes. We are guaranteed no conflicts, so we can return early here. This reuse relies on the
+      // assumption that reference expressions in the state element source used to compute the diff are *not* resolved.
+      //
+      // Note: There is another optimization for diff computation when the state itself is empty, in which case only the
+      // service-to-workspace diffs are computed (and pending changes are empty). We need to check that no workspace
+      // changes exist to avoid catching that edge case in the condition below.
       if (pendingChanges.length === 0 && wsChanges.length === 0) {
-        return serviceChanges.map((change): FetchChange => ({ change, serviceChanges, pendingChanges: [] }))
+        return serviceChanges.map(change => ({ change, serviceChanges, pendingChanges: [] }))
       }
 
       if (!types.isNonEmptyArray(wsChanges)) {
@@ -387,9 +399,6 @@ const toFetchChanges = async (
         log.debug('account change on %s already updated in workspace', id)
         return undefined
       }
-
-      // Mark all changes that relate to the current ID as handled
-      relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
 
       if (!types.isNonEmptyArray(serviceChanges)) {
         // If nothing changed in the account, we don't want to do anything
@@ -429,8 +438,7 @@ const toFetchChanges = async (
       return wsChanges.map(createFetchChange)
     })
     .filter(values.isDefined)
-    .flatMap(i => i)
-    .toArray()
+    .flatten()
 }
 
 export type FetchChangesResult = {
@@ -907,7 +915,7 @@ export const calcFetchChanges = async ({
 
   // Merge pending changes and service changes into one tree so we can find conflicts between them
   serviceChanges.merge(pendingChanges)
-  const fetchChanges = await toFetchChanges(serviceChanges, workspaceToServiceChanges)
+  const fetchChanges = toFetchChanges(serviceChanges, workspaceToServiceChanges)
   const serviceElementsMap = _.groupBy(accountElements, e => e.elemID.getFullName())
 
   const changes = await awu(fetchChanges)

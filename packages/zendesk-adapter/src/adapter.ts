@@ -485,6 +485,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
+  private adapterDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
   private fetchSupportDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
   private accountName?: string
   private createFiltersRunner: ({

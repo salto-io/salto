@@ -16,8 +16,8 @@ import { buildEventName } from '../../src/telemetry'
 import { getEnvName } from '../../src/callbacks'
 import { CommandArgs } from '../../src/command_builder'
 
-jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual<{}>('@salto-io/core'),
+jest.mock('@salto-io/local-workspace', () => ({
+  ...jest.requireActual<{}>('@salto-io/local-workspace'),
   initLocalWorkspace: jest
     .fn()
     .mockImplementation(
@@ -35,6 +35,10 @@ jest.mock('@salto-io/core', () => ({
         } as unknown as Workspace
       },
     ),
+}))
+
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual<{}>('@salto-io/core'),
   locateWorkspaceRoot: jest.fn(),
 }))
 

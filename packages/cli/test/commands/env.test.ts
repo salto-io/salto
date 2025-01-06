@@ -19,6 +19,11 @@ jest.mock('@salto-io/core', () => ({
   locateWorkspaceRoot: jest.fn(),
 }))
 
+jest.mock('@salto-io/local-workspace', () => ({
+  ...jest.requireActual<{}>('@salto-io/local-workspace'),
+  loadLocalWorkspace: jest.fn(),
+}))
+
 const mockLocateWorkspaceRoot = locateWorkspaceRoot as jest.MockedFunction<typeof locateWorkspaceRoot>
 const mockLoadLocalWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
 

@@ -39,6 +39,10 @@ jest.mock('@salto-io/core', () => ({
       success: true,
     }),
   ),
+}))
+
+jest.mock('@salto-io/local-workspace', () => ({
+  ...jest.requireActual<{}>('@salto-io/local-workspace'),
   loadLocalWorkspace: jest.fn().mockImplementation(() => mocks.mockWorkspace({})),
 }))
 describe('fetch command', () => {

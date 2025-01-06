@@ -25,8 +25,8 @@ import {
 } from '../src/commands/common/config_override'
 import { buildEventName } from '../src/telemetry'
 
-jest.mock('@salto-io/core', () => {
-  const actual = jest.requireActual('@salto-io/core')
+jest.mock('@salto-io/local-workspace', () => {
+  const actual = jest.requireActual('@salto-io/local-workspace')
   return {
     ...actual,
     loadLocalWorkspace: jest.fn().mockImplementation(actual.loadLocalWorkspace),

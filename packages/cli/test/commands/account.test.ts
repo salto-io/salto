@@ -82,6 +82,12 @@ jest.mock('@salto-io/core', () => {
       return loginStatuses
     }),
     installAdapter: jest.fn(),
+  }
+})
+jest.mock('@salto-io/local-workspace', () => {
+  const actual = jest.requireActual('@salto-io/local-workspace')
+  return {
+    ...actual,
     loadLocalWorkspace: jest.fn().mockImplementation(actual.loadLocalWorkspace),
   }
 })

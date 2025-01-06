@@ -51,9 +51,9 @@ describe('support address filter', () => {
   })
 
   beforeAll(() => {
-    const elementsSource = buildElementsSourceFromElements([supportAddressZendesk, supportAddressOther, brand1, brand2])
+    const elementSource = buildElementsSourceFromElements([supportAddressZendesk, supportAddressOther, brand1, brand2])
 
-    filter = filterCreator(createFilterCreatorParams({ elementsSource })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ elementSource })) as FilterType
   })
   describe('onFetch', () => {
     it('should turn zendesk emails to template expression and add username', async () => {

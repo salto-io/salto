@@ -10,9 +10,10 @@ import { Element, isInstanceElement, isReferenceExpression, ReferenceExpression 
 import { logger } from '@salto-io/logging'
 import { references as referencesUtils } from '@salto-io/adapter-components'
 import { inspectValue } from '@salto-io/adapter-utils'
-import { FETCH_CONFIG, ZendeskConfig } from '../../config'
+import { FETCH_CONFIG } from '../../config'
 import { FilterCreator } from '../../filter'
 import { VALUES_TO_SKIP_BY_TYPE } from './missing_references'
+import { ZendeskUserConfig } from '../../user_config'
 
 const { createMissingInstance } = referencesUtils
 const log = logger(module)
@@ -52,7 +53,7 @@ const potentiallyMissingListValues: FieldMissingReferenceDefinition[] = [
   },
 ]
 
-export const listValuesMissingReferencesOnFetch = (elements: Element[], config: ZendeskConfig): void => {
+export const listValuesMissingReferencesOnFetch = (elements: Element[], config: ZendeskUserConfig): void => {
   if (!config[FETCH_CONFIG].enableMissingReferences) {
     return
   }

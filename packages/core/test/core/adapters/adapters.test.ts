@@ -29,13 +29,12 @@ import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { expressions } from '@salto-io/workspace'
+import { expressions, getAdaptersConfigTypesMap } from '@salto-io/workspace'
 import {
   initAdapters,
   getAdaptersCredentialsTypes,
   getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
-  getAdaptersConfigTypesMap,
   createResolvedTypesElementsSource,
 } from '../../../src/core/adapters'
 import { createMockAdapter } from '../../common/helpers'

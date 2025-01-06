@@ -13,17 +13,11 @@ import {
   remoteMap,
   buildStaticFilesCache,
   EnvConfig,
-  elementSource,
-  adaptersConfigSource,
-  createAdapterReplacedID,
+  getAdapterConfigsPerAccount,
 } from '@salto-io/workspace'
-import { collections } from '@salto-io/lowerdash'
 import { Adapter, DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { getSubtypes } from '@salto-io/adapter-utils'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
-
-const { awu } = collections.asynciterable
 
 const createNaclSource = async (
   baseDir: string,
@@ -55,37 +49,6 @@ const createNaclSource = async (
     persistent,
   )
   return source
-}
-
-const getAdapterConfigsPerAccount = async (
-  envs: EnvConfig[],
-  adapterCreators: Record<string, Adapter>,
-): Promise<ObjectType[]> => {
-  const configTypesByAccount = Object.fromEntries(
-    Object.entries(
-      _.mapValues(adapterCreators, adapterCreator =>
-        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
-      ),
-    ).filter(entry => entry[1].length > 0),
-  )
-  const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
-  const differentlyNamedAccounts = Object.fromEntries(
-    envs
-      .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
-      .filter(([accountName, serviceName]) => accountName !== serviceName),
-  )
-  await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
-    const adapter = differentlyNamedAccounts[account]
-    const adapterConfigs = configTypesByAccount[adapter]
-    const additionalConfigs = await adaptersConfigSource.calculateAdditionalConfigTypes(
-      configElementSource,
-      adapterConfigs.map(conf => createAdapterReplacedID(conf.elemID, account)),
-      adapter,
-      account,
-    )
-    configTypesByAccount[account] = additionalConfigs
-  })
-  return Object.values(configTypesByAccount).flat()
 }
 
 type BuildLocalAdaptersConfigSourceParams = {

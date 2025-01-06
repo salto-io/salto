@@ -63,7 +63,7 @@ const convertNumStringsToNumber = (major: string, minor: string): Number | undef
 
 const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] => {
   const errors: ChangeError[] = []
-  if (instance.value.packageVersions === undefined) {
+  if (instance.value.packageVersions === undefined || !Array.isArray(instance.value.packageVersions)) {
     return []
   }
   instance.value.packageVersions.forEach(
@@ -72,7 +72,6 @@ const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] =>
       const packageVersionNumber = getVersionNumber(namespace)
       const instanceVersion = convertNumStringsToNumber(majorNumber, minorNumber)
       if (instanceVersion !== undefined && packageVersionNumber !== undefined) {
-        // continue (discuss with tamtamir)
         if (
           TYPES_TO_IS_DEMANDING_EXACT_VERSION.get(instance.elemID.typeName)?.exactVersion &&
           instanceVersion !== packageVersionNumber
@@ -81,14 +80,14 @@ const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] =>
             elemID: instance.elemID.createNestedID('packageVersions', String(index)),
             severity: 'Warning',
             message: "Cannot deploy instances with different package version than target environment's package version",
-            detailedMessage: `${namespace.resValue.value.fullName}'s version at the target environment is ${packageVersionNumber}, while ${instanceVersion} at the instance`,
+            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${packageVersionNumber}, while ${instanceVersion} at the instance`,
           })
         } else if (instanceVersion > packageVersionNumber) {
           errors.push({
             elemID: instance.elemID.createNestedID('packageVersions', String(index)),
             severity: 'Warning',
             message: "Cannot deploy instances with greater package version than target environment's package version",
-            detailedMessage: `${namespace.resValue.value.fullName}'s version at the target environment is ${packageVersionNumber}, while ${instanceVersion} at the instance`,
+            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${packageVersionNumber}, while ${instanceVersion} at the instance`,
           })
         }
       }

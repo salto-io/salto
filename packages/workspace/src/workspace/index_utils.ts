@@ -23,9 +23,10 @@ import { collections } from '@salto-io/lowerdash'
 import { getSubtypes } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { RemoteMap } from './remote_map'
-import { ElementsSource } from './elements_source'
+import { ElementsSource, createInMemoryElementSource } from './elements_source'
 import { EnvConfig } from './config/workspace_config_types'
-import { adaptersConfigSource, createAdapterReplacedID, elementSource } from '../..'
+import { createAdapterReplacedID } from '../element_adapter_rename'
+import { calculateAdditionalConfigTypes } from './adapters_config_source'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -44,7 +45,7 @@ export const getAdapterConfigsPerAccount = async (
   adapterCreators: Record<string, Adapter>,
 ): Promise<ObjectType[]> => {
   const configTypesByAccount = getAdaptersConfigTypesMap(adapterCreators)
-  const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
+  const configElementSource = createInMemoryElementSource(Object.values(configTypesByAccount).flat())
   const differentlyNamedAccounts = Object.fromEntries(
     envs
       .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
@@ -53,7 +54,7 @@ export const getAdapterConfigsPerAccount = async (
   await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
     const adapter = differentlyNamedAccounts[account]
     const adapterConfigs = configTypesByAccount[adapter]
-    const additionalConfigs = await adaptersConfigSource.calculateAdditionalConfigTypes(
+    const additionalConfigs = await calculateAdditionalConfigTypes(
       configElementSource,
       adapterConfigs.map(conf => createAdapterReplacedID(conf.elemID, account)),
       adapter,

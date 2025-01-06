@@ -44,6 +44,7 @@ import * as staticFiles from './src/workspace/static_files'
 import * as merger from './src/merger'
 import * as expressions from './src/expressions'
 import * as serialization from './src/serializer/elements'
+import { getAdaptersConfigTypesMap, getAdapterConfigsPerAccount } from './src/workspace/index_utils'
 import * as pathIndex from './src/workspace/path_index'
 import * as flags from './src/flags'
 import { Author } from './src/workspace/changed_by_index'
@@ -73,6 +74,8 @@ import { createPathIndexForElement } from './src/path_index_fallbacks'
 import { ReferenceIndexEntry } from './src/workspace/reference_indexes'
 
 export {
+  getAdaptersConfigTypesMap,
+  getAdapterConfigsPerAccount,
   errors,
   hiddenValues,
   serialization,

@@ -17,13 +17,52 @@ import {
   isAdditionChange,
   ObjectType,
   Field,
+  Adapter,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { getSubtypes } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { RemoteMap } from './remote_map'
 import { ElementsSource } from './elements_source'
+import { EnvConfig } from './config/workspace_config_types'
+import { adaptersConfigSource, createAdapterReplacedID, elementSource } from '../..'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+
+export const getAdaptersConfigTypesMap = (adapterCreators: Record<string, Adapter>): Record<string, ObjectType[]> =>
+  Object.fromEntries(
+    Object.entries(
+      _.mapValues(adapterCreators, adapterCreator =>
+        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
+      ),
+    ).filter(entry => entry[1].length > 0),
+  )
+
+export const getAdapterConfigsPerAccount = async (
+  envs: EnvConfig[],
+  adapterCreators: Record<string, Adapter>,
+): Promise<ObjectType[]> => {
+  const configTypesByAccount = getAdaptersConfigTypesMap(adapterCreators)
+  const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
+  const differentlyNamedAccounts = Object.fromEntries(
+    envs
+      .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
+      .filter(([accountName, serviceName]) => accountName !== serviceName),
+  )
+  await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
+    const adapter = differentlyNamedAccounts[account]
+    const adapterConfigs = configTypesByAccount[adapter]
+    const additionalConfigs = await adaptersConfigSource.calculateAdditionalConfigTypes(
+      configElementSource,
+      adapterConfigs.map(conf => createAdapterReplacedID(conf.elemID, account)),
+      adapter,
+      account,
+    )
+    configTypesByAccount[account] = additionalConfigs
+  })
+  return Object.values(configTypesByAccount).flat()
+}
 
 export const getAllElementsChanges = async (
   currentChanges: Change<Element>[],

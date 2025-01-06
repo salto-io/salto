@@ -9,15 +9,13 @@
 import _ from 'lodash'
 import { ObjectType, ReferenceInfo, Element, GLOBAL_ADAPTER, DetailedChange, Adapter } from '@salto-io/adapter-api'
 import {
-  elementSource,
   EnvConfig,
   adaptersConfigSource,
-  createAdapterReplacedID,
   Workspace,
   staticFiles,
   configSource as cs,
+  getAdapterConfigsPerAccount as getAdapterConfigsPerAccountImplementation,
 } from '@salto-io/workspace'
-import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   loadLocalWorkspace as localWorkspaceLoad,
@@ -25,9 +23,7 @@ import {
 } from '@salto-io/local-workspace'
 // for backward comptability
 import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
-import { getAdaptersConfigTypesMap } from '../core/adapters'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 // for backward compatibility - should be deleted!
@@ -37,25 +33,7 @@ export const getAdapterConfigsPerAccount = async (
 ): Promise<ObjectType[]> => {
   // for backward compatibility
   const actualAdapterCreator = adapterCreators ?? allAdapterCreators
-  const configTypesByAccount = getAdaptersConfigTypesMap(actualAdapterCreator)
-  const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
-  const differentlyNamedAccounts = Object.fromEntries(
-    envs
-      .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
-      .filter(([accountName, serviceName]) => accountName !== serviceName),
-  )
-  await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
-    const adapter = differentlyNamedAccounts[account]
-    const adapterConfigs = configTypesByAccount[adapter]
-    const additionalConfigs = await adaptersConfigSource.calculateAdditionalConfigTypes(
-      configElementSource,
-      adapterConfigs.map(conf => createAdapterReplacedID(conf.elemID, account)),
-      adapter,
-      account,
-    )
-    configTypesByAccount[account] = additionalConfigs
-  })
-  return Object.values(configTypesByAccount).flat()
+  return getAdapterConfigsPerAccountImplementation(envs, actualAdapterCreator)
 }
 
 // for backward compatibility - should be deleted!

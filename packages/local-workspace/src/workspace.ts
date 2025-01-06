@@ -29,9 +29,9 @@ import {
   getBaseDirFromEnvName,
   getStaticFileCacheName,
   WorkspaceGetCustomReferencesFunc,
+  getAdaptersConfigTypesMap,
 } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
-import { getSubtypes } from '@salto-io/adapter-utils'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getLocalStoragePath } from './app_config'
 import { loadState } from './state'
@@ -315,15 +315,6 @@ export async function loadLocalWorkspace({
     throw e
   }
 }
-
-export const getAdaptersConfigTypesMap = (adapterCreators: Record<string, Adapter>): Record<string, ObjectType[]> =>
-  Object.fromEntries(
-    Object.entries(
-      _.mapValues(adapterCreators, adapterCreator =>
-        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
-      ),
-    ).filter(entry => entry[1].length > 0),
-  )
 
 type InitLocalWorkspaceParams = {
   baseDir: string

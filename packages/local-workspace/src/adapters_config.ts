@@ -16,7 +16,6 @@ import {
   getAdapterConfigsPerAccount,
 } from '@salto-io/workspace'
 import { Adapter, DetailedChange, ObjectType } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 
 const createNaclSource = async (

@@ -18,10 +18,10 @@ import {
   StepEmitter,
   PlanItem,
   FetchFromWorkspaceFunc,
-  loadLocalWorkspace,
   fetchFromWorkspace,
   FetchFuncParams,
 } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { Workspace, nacl, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { promises, values } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'

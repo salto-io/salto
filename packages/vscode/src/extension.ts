@@ -6,7 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import * as vscode from 'vscode'
-import { loadLocalWorkspace, closeAllRemoteMaps } from '@salto-io/core'
+import { closeAllRemoteMaps } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { diagnostics, workspace as ws } from '@salto-io/lang-server'
 import { adapterCreators } from '@salto-io/adapter-creators'
 import { onTextChangeEvent, onFileChange, onFileOpen, createReportErrorsEventListener } from './events'

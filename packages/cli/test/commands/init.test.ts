@@ -6,7 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { staticFiles, Workspace } from '@salto-io/workspace'
-import { initLocalWorkspace, locateWorkspaceRoot } from '@salto-io/core'
+import { locateWorkspaceRoot } from '@salto-io/core'
+import { initLocalWorkspace } from '@salto-io/local-workspace'
 import { adapterCreators } from '@salto-io/adapter-creators'
 import { Adapter } from '@salto-io/adapter-api'
 import * as mocks from '../mocks'

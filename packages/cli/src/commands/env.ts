@@ -7,7 +7,8 @@
  */
 import _ from 'lodash'
 import { EOL } from 'os'
-import { diff, createEnvironmentSource, loadLocalWorkspace } from '@salto-io/core'
+import { diff, createEnvironmentSource } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { Workspace, createElementSelectors, remoteMap as rm, EnvironmentSource } from '@salto-io/workspace'
 import { adapterCreators } from '@salto-io/adapter-creators'
 import {

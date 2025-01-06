@@ -64,7 +64,6 @@ export {
   createEnvironmentSource,
   createReadOnlyRemoteMap,
 } from '@salto-io/local-workspace'
-export { loadLocalWorkspace, initLocalWorkspace } from './src/local-workspace/workspace'
 export * from './src/types'
 export {
   calculatePatch,

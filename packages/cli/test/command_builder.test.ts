@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { logger, LogLevel } from '@salto-io/logging'
-import { loadLocalWorkspace } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { adapterCreators } from '@salto-io/adapter-creators'
 import * as mocks from './mocks'

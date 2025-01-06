@@ -17,6 +17,7 @@
   "references": [
     { "path": "../core" },
     { "path": "../adapter-creators" },
+    { "path": "../local-workspace" },
     { "path": "../element-test-utils" },
     { "path": "../file" },
     { "path": "../lang-server" },

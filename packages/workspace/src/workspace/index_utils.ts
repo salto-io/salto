@@ -7,16 +7,16 @@
  */
 import { logger } from '@salto-io/logging'
 import {
-  Change,
+  ReadOnlyElementsSource,
   Element,
-  Field,
+  Change,
+  toChange,
+  isObjectTypeChange,
+  isAdditionOrRemovalChange,
   getChangeData,
   isAdditionChange,
-  isAdditionOrRemovalChange,
-  isObjectTypeChange,
   ObjectType,
-  ReadOnlyElementsSource,
-  toChange,
+  Field,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { RemoteMap } from './remote_map'

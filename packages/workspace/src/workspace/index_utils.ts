@@ -7,63 +7,23 @@
  */
 import { logger } from '@salto-io/logging'
 import {
-  ReadOnlyElementsSource,
-  Element,
   Change,
-  toChange,
-  isObjectTypeChange,
-  isAdditionOrRemovalChange,
+  Element,
+  Field,
   getChangeData,
   isAdditionChange,
+  isAdditionOrRemovalChange,
+  isObjectTypeChange,
   ObjectType,
-  Field,
-  Adapter,
+  ReadOnlyElementsSource,
+  toChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { getSubtypes } from '@salto-io/adapter-utils'
-import _ from 'lodash'
 import { RemoteMap } from './remote_map'
-import { ElementsSource, createInMemoryElementSource } from './elements_source'
-import { EnvConfig } from './config/workspace_config_types'
-import { createAdapterReplacedID } from '../element_adapter_rename'
-import { calculateAdditionalConfigTypes } from './adapters_config_source'
+import { ElementsSource } from './elements_source'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-
-export const getAdaptersConfigTypesMap = (adapterCreators: Record<string, Adapter>): Record<string, ObjectType[]> =>
-  Object.fromEntries(
-    Object.entries(
-      _.mapValues(adapterCreators, adapterCreator =>
-        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
-      ),
-    ).filter(entry => entry[1].length > 0),
-  )
-
-export const getAdapterConfigsPerAccount = async (
-  envs: EnvConfig[],
-  adapterCreators: Record<string, Adapter>,
-): Promise<ObjectType[]> => {
-  const configTypesByAccount = getAdaptersConfigTypesMap(adapterCreators)
-  const configElementSource = createInMemoryElementSource(Object.values(configTypesByAccount).flat())
-  const differentlyNamedAccounts = Object.fromEntries(
-    envs
-      .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
-      .filter(([accountName, serviceName]) => accountName !== serviceName),
-  )
-  await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
-    const adapter = differentlyNamedAccounts[account]
-    const adapterConfigs = configTypesByAccount[adapter]
-    const additionalConfigs = await calculateAdditionalConfigTypes(
-      configElementSource,
-      adapterConfigs.map(conf => createAdapterReplacedID(conf.elemID, account)),
-      adapter,
-      account,
-    )
-    configTypesByAccount[account] = additionalConfigs
-  })
-  return Object.values(configTypesByAccount).flat()
-}
 
 export const getAllElementsChanges = async (
   currentChanges: Change<Element>[],

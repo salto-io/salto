@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
+  Adapter,
   DetailedChange,
   ElemID,
   InstanceElement,
@@ -19,6 +20,7 @@ import {
   buildElementsSourceFromElements,
   detailedCompare,
   getDetailedChanges,
+  getSubtypes,
   transformElement,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -32,6 +34,8 @@ import { validateElements, ValidationError } from '../validator'
 import { Errors } from './errors'
 import { NaclFilesSource } from './nacl_files'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
+import { EnvConfig } from './config/workspace_config_types'
+import { createInMemoryElementSource } from './elements_source'
 
 export type PartialNaclFilesSource = Pick<
   NaclFilesSource,
@@ -276,4 +280,36 @@ export const buildAdaptersConfigSource = async ({
     listNaclFiles: naclSource.listNaclFiles,
     isConfigFile: filePath => filePath.startsWith(path.join(...CONFIG_PATH)),
   }
+}
+export const getAdaptersConfigTypesMap = (adapterCreators: Record<string, Adapter>): Record<string, ObjectType[]> =>
+  Object.fromEntries(
+    Object.entries(
+      _.mapValues(adapterCreators, adapterCreator =>
+        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
+      ),
+    ).filter(entry => entry[1].length > 0),
+  )
+export const getAdapterConfigsPerAccount = async (
+  envs: EnvConfig[],
+  adapterCreators: Record<string, Adapter>,
+): Promise<ObjectType[]> => {
+  const configTypesByAccount = getAdaptersConfigTypesMap(adapterCreators)
+  const configElementSource = createInMemoryElementSource(Object.values(configTypesByAccount).flat())
+  const differentlyNamedAccounts = Object.fromEntries(
+    envs
+      .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
+      .filter(([accountName, serviceName]) => accountName !== serviceName),
+  )
+  await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
+    const adapter = differentlyNamedAccounts[account]
+    const adapterConfigs = configTypesByAccount[adapter]
+    const additionalConfigs = await calculateAdditionalConfigTypes(
+      configElementSource,
+      adapterConfigs.map(conf => createAdapterReplacedID(conf.elemID, account)),
+      adapter,
+      account,
+    )
+    configTypesByAccount[account] = additionalConfigs
+  })
+  return Object.values(configTypesByAccount).flat()
 }

@@ -538,8 +538,7 @@ export const getCustomReferencesImplementation = (
   }
 }
 
-// export is kept for backward compatibility
-export type loadWorkspaceParams = {
+type LoadWorkspaceParams = {
   config: WorkspaceConfigSource
   adaptersConfig: AdaptersConfigSource
   credentials: ConfigSource
@@ -552,7 +551,7 @@ export type loadWorkspaceParams = {
 }
 
 const getLoadWorkspaceParams: (
-  configOrArgs: WorkspaceConfigSource | loadWorkspaceParams,
+  configOrArgs: WorkspaceConfigSource | LoadWorkspaceParams,
   adaptersConfig?: AdaptersConfigSource,
   credentials?: ConfigSource,
   environmentsSources?: EnvironmentsSources,
@@ -561,7 +560,7 @@ const getLoadWorkspaceParams: (
   persistent?: boolean,
   mergedRecoveryMode?: MergedRecoveryMode,
   getCustomReferences?: WorkspaceGetCustomReferencesFunc,
-) => loadWorkspaceParams & { getCustomReferences?: WorkspaceGetCustomReferencesFunc } = (
+) => LoadWorkspaceParams & { getCustomReferences?: WorkspaceGetCustomReferencesFunc } = (
   configOrArgs,
   adaptersConfig,
   credentials,
@@ -597,7 +596,7 @@ const getLoadWorkspaceParams: (
   }
 }
 // As a transitionary step, we support both a string WorkspaceConfigSource and an argument object
-export function loadWorkspace(args: loadWorkspaceParams): Promise<Workspace>
+export function loadWorkspace(args: LoadWorkspaceParams): Promise<Workspace>
 // @deprecated
 export function loadWorkspace(
   config: WorkspaceConfigSource,
@@ -612,7 +611,7 @@ export function loadWorkspace(
 ): Promise<Workspace>
 
 export async function loadWorkspace(
-  inputConfig: WorkspaceConfigSource | loadWorkspaceParams,
+  inputConfig: WorkspaceConfigSource | LoadWorkspaceParams,
   inputAdaptersConfig?: AdaptersConfigSource,
   inputCredentials?: ConfigSource,
   inputEnvironmentsSources?: EnvironmentsSources,

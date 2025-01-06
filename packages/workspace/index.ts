@@ -25,7 +25,6 @@ import {
   listElementsDependenciesInWorkspace,
   WorkspaceGetCustomReferencesFunc,
   COMMON_ENV_PREFIX,
-  loadWorkspaceParams,
 } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
@@ -45,7 +44,6 @@ import * as staticFiles from './src/workspace/static_files'
 import * as merger from './src/merger'
 import * as expressions from './src/expressions'
 import * as serialization from './src/serializer/elements'
-import { getAdaptersConfigTypesMap, getAdapterConfigsPerAccount } from './src/workspace/index_utils'
 import * as pathIndex from './src/workspace/path_index'
 import * as flags from './src/flags'
 import { Author } from './src/workspace/changed_by_index'
@@ -73,9 +71,9 @@ import { State } from './src/workspace/state'
 import { PathIndex, splitElementByPath, getElementsPathHints, filterByPathHint } from './src/workspace/path_index'
 import { createPathIndexForElement } from './src/path_index_fallbacks'
 import { ReferenceIndexEntry } from './src/workspace/reference_indexes'
+import { getAdapterConfigsPerAccount, getAdaptersConfigTypesMap } from './src/workspace/adapters_config_source'
 
 export {
-  loadWorkspaceParams,
   getAdaptersConfigTypesMap,
   getAdapterConfigsPerAccount,
   errors,

@@ -458,11 +458,11 @@ describe('adapter', () => {
           'zendesk.ticket_field.instance.credit_card_1_partialcreditcard@ssu',
           'zendesk.ticket_field.instance.zip_code_with_validation_regexp@sssu',
           'zendesk.ticket_field__custom_field_options',
-          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__enterprise@uumuu',
-          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__free@uumuu',
-          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__paying@uumuu',
-          'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect_ssssu__v1@uuuuumuu',
-          'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect_ssssu__v2_modified@uuuuumuuu',
+          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect__enterprise@suuu',
+          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect__free@suuu',
+          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect__paying@suuu',
+          'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect__v1@ssssuuu',
+          'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect__v2_modified@ssssuuuu',
           'zendesk.ticket_field__system_field_options',
           'zendesk.ticket_fields',
           'zendesk.ticket_form',
@@ -747,7 +747,7 @@ describe('adapter', () => {
           'zendesk.automation_order.instance',
           'zendesk.automations',
           'zendesk.bot_builder_answer',
-          'zendesk.bot_builder_answer.instance.myBrand_test_bot_us__Testing@uumuu',
+          'zendesk.bot_builder_answer.instance.myBrand_test_bot__Testing@usuu',
           'zendesk.bot_builder_answer__trainingPhrases',
           'zendesk.bot_builder_flow',
           'zendesk.bot_builder_flow.instance.myBrand_test_bot@us',
@@ -759,7 +759,7 @@ describe('adapter', () => {
           'zendesk.bot_builder_flow__helpCenterAutoReplyFeedback',
           'zendesk.bot_builder_flow__publishedChannelIntegrations',
           'zendesk.bot_builder_node',
-          'zendesk.bot_builder_node.instance.myBrand_test_bot_us__Testing_uumuu__01J4SRF1HAS4TQFQ99PKFRCQXB@uuuuumuu',
+          'zendesk.bot_builder_node.instance.myBrand_test_bot__Testing__01J4SRF1HAS4TQFQ99PKFRCQXB@usuuuu',
           'zendesk.bot_builder_node__data',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
@@ -3003,7 +3003,7 @@ describe('adapter', () => {
         modificationChange,
         toChange({
           after: new InstanceElement('inst', groupType, { id: 1 }, undefined, {
-            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups/1',
           }),
         }),
         toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
@@ -3039,14 +3039,14 @@ describe('adapter', () => {
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [toChange({ after: new InstanceElement('inst', groupType) })],
+          changes: [toChange({ after: new InstanceElement('inst', groupType, { id: 7 }) })],
         },
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({
-          after: new InstanceElement('inst', groupType, undefined, undefined, {
-            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+          after: new InstanceElement('inst', groupType, { id: 7 }, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups/7',
           }),
         }),
       ])
@@ -3091,14 +3091,14 @@ describe('adapter', () => {
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [toChange({ after: new InstanceElement('inst', groupType) })],
+          changes: [toChange({ after: new InstanceElement('inst', groupType, { id: '5' }) })],
         },
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({
-          after: new InstanceElement('inst', groupType, undefined, undefined, {
-            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+          after: new InstanceElement('inst', groupType, { id: '5' }, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups/5',
           }),
         }),
       ])
@@ -3108,14 +3108,14 @@ describe('adapter', () => {
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [toChange({ after: new InstanceElement('inst', groupType) })],
+          changes: [toChange({ after: new InstanceElement('inst', groupType, { id: 9 }) })],
         },
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({
-          after: new InstanceElement('inst', groupType, undefined, undefined, {
-            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+          after: new InstanceElement('inst', groupType, { id: 9 }, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups/9',
           }),
         }),
       ])
@@ -3163,7 +3163,7 @@ describe('adapter', () => {
             }),
             { ...instance.value, id: 1 },
             undefined,
-            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
+            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups/1' },
           ),
         }),
         client: expect.anything(),

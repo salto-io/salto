@@ -33,7 +33,7 @@ import {
   elements as elementUtils,
   resolveChangeElement,
   resolveValues,
-  definitions,
+  definitions as definitionsUtils,
   fetch as fetchUtils,
   restoreChangeElement,
 } from '@salto-io/adapter-components'
@@ -41,7 +41,7 @@ import { getElemIdFuncWrapper, inspectValue, logDuration } from '@salto-io/adapt
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
-import { BrandIdToClient, Filter, FilterCreator, FilterResult, filtersRunner } from './filter'
+import { BrandIdToClient, Filter, FilterCreator, FilterResult, filterRunner } from './filter'
 import {
   API_DEFINITIONS_CONFIG,
   CLIENT_CONFIG,
@@ -326,7 +326,7 @@ const zendeskGuideEntriesFunc = (brandInstance: InstanceElement): elementUtils.d
         return makeArray(response)
       }
       const responseEntries = makeArray(
-        responseEntryName !== definitions.DATA_FIELD_ENTIRE_OBJECT ? response[responseEntryName] : response,
+        responseEntryName !== definitionsUtils.DATA_FIELD_ENTIRE_OBJECT ? response[responseEntryName] : response,
       ) as clientUtils.ResponseValue[]
       // Defining Zendesk Guide element to its corresponding brand (= subdomain)
       responseEntries.forEach(entry => {
@@ -339,7 +339,7 @@ const zendeskGuideEntriesFunc = (brandInstance: InstanceElement): elementUtils.d
           addParentFields(entry)
         })
       }
-      if (responseEntryName === definitions.DATA_FIELD_ENTIRE_OBJECT) {
+      if (responseEntryName === definitionsUtils.DATA_FIELD_ENTIRE_OBJECT) {
         return responseEntries
       }
       return {
@@ -374,7 +374,7 @@ const getGuideElements = async ({
 }: {
   brandsList: InstanceElement[]
   brandToPaginator: Record<string, clientUtils.Paginator>
-  brandFetchDefinitions: definitions.RequiredDefinitions<ZendeskFetchOptions>
+  brandFetchDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
@@ -485,16 +485,19 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
-  private adapterDefinitions: definitions.RequiredDefinitions<ZendeskFetchOptions>
+  private adapterDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
+  private fetchSupportDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
   private accountName?: string
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
     brandIdToClient,
+    definitions,
   }: {
     filterRunnerClient?: ZendeskClient
     paginator?: clientUtils.Paginator
     brandIdToClient?: BrandIdToClient
+    definitions?: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
   }) => Promise<Required<Filter>>
 
   public constructor({
@@ -537,16 +540,26 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     const typesToOmit = this.getNonSupportedTypesToOmit()
 
-    this.adapterDefinitions = definitions.mergeDefinitionsWithOverrides(
+    this.adapterDefinitions = definitionsUtils.mergeDefinitionsWithOverrides(
       {
         // we can't add guide client at this point
         clients: createClientDefinitions({ main: this.client, guide: this.client }),
         pagination: PAGINATION,
-        fetch: definitions.mergeWithUserElemIDDefinitions({
+        fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
+          userElemID: this.userConfig.fetch.elemID,
+          fetchConfig: createFetchDefinitions({ baseUrl: this.client.getUrl().href }),
+        }),
+      },
+      this.accountName,
+    )
+    this.fetchSupportDefinitions = definitionsUtils.mergeDefinitionsWithOverrides(
+      {
+        // Support does not need guide client
+        clients: createClientDefinitions({ main: this.client, guide: this.client }),
+        pagination: PAGINATION,
+        fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
           userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
-          fetchConfig: createFetchDefinitions(this.userConfig, {
-            typesToOmit,
-          }),
+          fetchConfig: createFetchDefinitions({ typesToOmit, baseUrl: this.client.getUrl().href }),
         }),
       },
       this.accountName,
@@ -573,14 +586,17 @@ export default class ZendeskAdapter implements AdapterOperations {
       paginator?: clientUtils.Paginator
       brandIdToClient?: BrandIdToClient
     }) =>
-      filtersRunner(
+      filterRunner(
         {
-          client: filterRunnerClient ?? this.client,
-          paginator: paginator ?? this.paginator,
-          config,
-          getElemIdFunc: this.getElemIdFunc,
           fetchQuery: this.fetchQuery,
-          elementsSource,
+          definitions: this.adapterDefinitions,
+          paginator: paginator ?? this.paginator,
+          config: this.userConfig,
+          getElemIdFunc: this.getElemIdFunc,
+          elementSource: elementsSource,
+          sharedContext: {},
+          oldApiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
+          client: filterRunnerClient ?? this.client,
           brandIdToClient,
         },
         filterCreators,
@@ -646,7 +662,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         adapterName: ZENDESK,
         fetchQuery: this.fetchQuery,
         getElemIdFunc: this.getElemIdFunc,
-        definitions: this.adapterDefinitions,
+        definitions: this.fetchSupportDefinitions,
         customItemFilter: filterOutInactiveItemForType(this.userConfig),
       })
       if (!isGuideInFetch) {
@@ -713,11 +729,9 @@ export default class ZendeskAdapter implements AdapterOperations {
         main: this.client,
         guide: this.guideClient,
       })
-      const guideFetchDef = definitions.mergeWithUserElemIDDefinitions({
+      const guideFetchDef = definitionsUtils.mergeWithUserElemIDDefinitions({
         userElemID: _.pick(this.userConfig.fetch.elemID, typesToPick) as ZendeskFetchConfig['elemID'],
-        fetchConfig: createFetchDefinitions(this.userConfig, {
-          typesToPick,
-        }),
+        fetchConfig: createFetchDefinitions({ typesToPick, baseUrl: this.client.getUrl().href }),
       })
       const guideDefinitions = {
         clients: client,
@@ -825,7 +839,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
     const updatedConfig =
       this.configInstance && configChanges
-        ? definitions.getUpdatedConfigFromConfigChanges({
+        ? definitionsUtils.getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
             configType,

@@ -44,7 +44,7 @@ const createDiffOnlyChange = (change: ModificationChange<InstanceElement>): Modi
  * This filter makes sure that only the modified fields in custom role modification changes are sent in the request. If
  * other fields are sent it may cause an "Unprocessable Entity" error.
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
   name: 'customRoleFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [customRoleModificationChanges, leftoverChanges] = _.partition(
@@ -62,7 +62,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       .map(createDiffOnlyChange)
 
     const tempDeployResult = await deployChanges(editedCustomRoleModificationChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions)
+      await deployChange(change, client, oldApiDefinitions)
     })
     const deployedChangesElemId = new Set(
       tempDeployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),

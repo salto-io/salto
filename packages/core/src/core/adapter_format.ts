@@ -11,15 +11,19 @@ import {
   AdapterFormat,
   AdapterOperationsContext,
   Change,
+  ChangeDataType,
   Element,
   getChangeData,
+  isAdditionChange,
+  isModificationChange,
   ReadOnlyElementsSource,
   SaltoError,
+  toChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, Workspace, ElementSelector, expressions, elementSource, hiddenValues } from '@salto-io/workspace'
-// for backward comptability
+// for backward compatibility
 import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { FetchResult } from '../types'
 import { MergeErrorWithElements, getFetchAdapterAndServicesSetup, calcFetchChanges } from './fetch'
@@ -203,6 +207,47 @@ const filterHiddenChanges = async (
   awu(changes)
     .filter(async change => !(await hiddenValues.isHidden(getChangeData(change), elementsSource)))
     .toArray()
+
+const resolveChanges = async (
+  changes: ReadonlyArray<Change>,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<ReadonlyArray<Change>> => {
+  const beforeElements: ChangeDataType[] = []
+  const afterElements: ChangeDataType[] = []
+
+  changes.forEach(change => {
+    if (change.action !== 'add') {
+      beforeElements.push(change.data.before)
+    }
+    if (change.action !== 'remove') {
+      afterElements.push(change.data.after)
+    }
+  })
+
+  const resolvedBeforeElements = _.keyBy(await expressions.resolve(beforeElements, elementsSource), element =>
+    element.elemID.getFullName(),
+  ) as Record<string, ChangeDataType>
+  const resolvedAfterElements = _.keyBy(await expressions.resolve(afterElements, elementsSource), element =>
+    element.elemID.getFullName(),
+  ) as Record<string, ChangeDataType>
+
+  return changes.map(change => {
+    if (isAdditionChange(change)) {
+      return toChange({
+        after: resolvedAfterElements[change.data.after.elemID.getFullName()],
+      })
+    }
+    if (isModificationChange(change)) {
+      return toChange({
+        before: resolvedBeforeElements[change.data.before.elemID.getFullName()],
+        after: resolvedAfterElements[change.data.after.elemID.getFullName()],
+      })
+    }
+    return toChange({
+      before: resolvedBeforeElements[change.data.before.elemID.getFullName()],
+    })
+  })
+}
 
 type CalculatePatchArgs = {
   fromDir: string
@@ -427,7 +472,10 @@ export const updateElementFolder = ({
       }
       return dumpElementsToFolder({
         baseDir,
-        changes: await filterHiddenChanges(changes, adapterContext.elementsSource),
+        changes: await filterHiddenChanges(
+          await resolveChanges(changes, adapterContext.elementsSource),
+          adapterContext.elementsSource,
+        ),
         elementsSource: adapterContext.elementsSource,
       })
     },

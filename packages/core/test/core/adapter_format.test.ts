@@ -16,6 +16,7 @@ import {
   SaltoError,
   Change,
   CORE_ANNOTATIONS,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
@@ -621,6 +622,9 @@ describe('updateElementFolder', () => {
   let changes: ReadonlyArray<Change>
   let visibleChanges: ReadonlyArray<Change>
 
+  const unresolved = (instance: InstanceElement): InstanceElement =>
+    new InstanceElement(instance.elemID.name, new TypeReference(instance.getTypeSync().elemID), instance.value)
+
   beforeEach(() => {
     mockAdapter = createMockAdapter(mockAdapterName)
     mockAdapterCreator[mockAdapterName] = mockAdapter
@@ -632,15 +636,29 @@ describe('updateElementFolder', () => {
       },
     })
 
-    const instance = new InstanceElement('instance', type, { f: 'v' })
-    const hiddenInstance = new InstanceElement('hiddenInst', type, { f: 'v2' }, undefined, {
+    const instance1 = new InstanceElement('instance1', type, { f: 'v1' })
+    const instance2 = new InstanceElement('instance2', type, { f: 'v2' })
+    const instance3Before = new InstanceElement('instance3', type, { f: 'before' })
+    const instance3After = new InstanceElement('instance3', type, { f: 'after' })
+    const hiddenInstance = new InstanceElement('hiddenInst', type, { f: 'v_hidden' }, undefined, {
       [CORE_ANNOTATIONS.HIDDEN]: true,
     })
-    visibleChanges = [toChange({ after: instance }), toChange({ after: type })]
-    changes = visibleChanges.concat([toChange({ after: hiddenInstance })])
+    const unresolvedVisibleChanges = [
+      toChange({ after: unresolved(instance1) }),
+      toChange({ before: unresolved(instance2) }),
+      toChange({ before: unresolved(instance3Before), after: unresolved(instance3After) }),
+      toChange({ after: type }),
+    ]
+    visibleChanges = [
+      toChange({ after: instance1 }),
+      toChange({ before: instance2 }),
+      toChange({ before: instance3Before, after: instance3After }),
+      toChange({ after: type }),
+    ]
+    changes = unresolvedVisibleChanges.concat([toChange({ after: hiddenInstance })])
     workspace = mockWorkspace({
       name: 'workspace',
-      elements: [instance, type],
+      elements: [instance1, instance2, type],
       accountToServiceName: { [mockAdapterName]: mockAdapterName },
     })
   })

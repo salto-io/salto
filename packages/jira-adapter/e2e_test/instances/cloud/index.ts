@@ -68,7 +68,7 @@ import { createPortalGroupValues } from './jsm/portal_groups'
 import { createQueueValues } from './jsm/queue'
 import { createCalendarValues } from './jsm/calendar'
 import { createSLAValues } from './jsm/SLA'
-import { createrequestTypeValues } from './jsm/request_type'
+// import { createrequestTypeValues } from './jsm/request_type'
 import { createFormValues } from './jsm/form'
 import { createObjectSchmaValues } from './jsm/objectSchema'
 import { createObjectSchemaStatusValues } from './jsm/objectSchemaStatus'
@@ -259,13 +259,13 @@ export const createInstances = (
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
   )
 
-  const requestType = new InstanceElement(
-    `RT_${randomString}_SUP`,
-    findType('RequestType', fetchedElements),
-    createrequestTypeValues(`RT_${randomString}`, fetchedElements),
-    undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
-  )
+  // const requestType = new InstanceElement(
+  //   `RT_${randomString}_SUP`,
+  //   findType('RequestType', fetchedElements),
+  //   createrequestTypeValues(`RT_${randomString}`, fetchedElements),
+  //   undefined,
+  //   { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
+  // )
   const form = new InstanceElement(
     `SUP_${randomString}`,
     findType(FORM_TYPE, fetchedElements),
@@ -337,7 +337,7 @@ export const createInstances = (
     [queue],
     [calendar],
     [SLA],
-    [requestType],
+    // [requestType],
     [form],
     [objectSchema],
     [objectSchemaStatus],

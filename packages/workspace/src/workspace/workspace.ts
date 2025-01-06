@@ -538,7 +538,8 @@ export const getCustomReferencesImplementation = (
   }
 }
 
-type loadWorkspaceParams = {
+// export is kept for backward compatibility
+export type loadWorkspaceParams = {
   config: WorkspaceConfigSource
   adaptersConfig: AdaptersConfigSource
   credentials: ConfigSource

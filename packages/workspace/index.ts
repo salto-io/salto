@@ -25,6 +25,7 @@ import {
   listElementsDependenciesInWorkspace,
   WorkspaceGetCustomReferencesFunc,
   COMMON_ENV_PREFIX,
+  loadWorkspaceParams,
 } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
@@ -74,6 +75,7 @@ import { createPathIndexForElement } from './src/path_index_fallbacks'
 import { ReferenceIndexEntry } from './src/workspace/reference_indexes'
 
 export {
+  loadWorkspaceParams,
   getAdaptersConfigTypesMap,
   getAdapterConfigsPerAccount,
   errors,

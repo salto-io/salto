@@ -14,7 +14,6 @@ import { createAdditionalParentChanges, getCustomFieldOptionsFromChanges } from 
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../constants'
 import { prepRef } from '../handle_template_expressions'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../../deployment'
-import { API_DEFINITIONS_CONFIG } from '../../config'
 import { CustomFieldOptionsFilterCreatorParams } from './creator'
 
 const log = logger(module)

@@ -53,7 +53,7 @@ import {
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
   isGuideEnabled,
   isGuideThemesEnabled,
-  OldZendeskConfig,
+  ZendeskConfig,
 } from './config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -463,7 +463,7 @@ export interface ZendeskAdapterParams {
   filterCreators?: FilterCreator[]
   client: ZendeskClient
   credentials: Credentials
-  config: OldZendeskConfig
+  config: ZendeskConfig
   elementsSource: ReadOnlyElementsSource
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
@@ -475,7 +475,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private client: ZendeskClient
   private guideClient: ZendeskGuideClient | undefined
   private paginator: clientUtils.Paginator
-  private userConfig: OldZendeskConfig
+  private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
   private configInstance?: InstanceElement
   private elementsSource: ReadOnlyElementsSource

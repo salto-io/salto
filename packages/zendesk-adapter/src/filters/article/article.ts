@@ -56,7 +56,7 @@ import {
   maybeModifySourceLocaleInGuideObject,
   replaceAttachmentReferencesInArticleTranslationBody,
 } from './utils'
-import { API_DEFINITIONS_CONFIG, CLIENT_CONFIG, FETCH_CONFIG, isGuideEnabled } from '../../config'
+import { CLIENT_CONFIG, FETCH_CONFIG, isGuideEnabled } from '../../config'
 import { ZendeskUserConfig } from '../../user_config'
 
 const log = logger(module)

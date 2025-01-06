@@ -74,7 +74,7 @@ export const DEFAULT_TIMEOUT_OPTS = {
 
 export const OMIT_INACTIVE_DEFAULT = true
 
-export type OldZendeskConfig = {
+export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
   [FETCH_CONFIG]: ZendeskFetchConfig
   [DEPLOY_CONFIG]?: ZendeskDeployConfig
@@ -2799,7 +2799,7 @@ export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
   ARTICLE_ORDER_TYPE_NAME,
 ]
 
-export const DEFAULT_CONFIG: OldZendeskConfig = {
+export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     include: [
       {
@@ -3158,7 +3158,7 @@ const fixerConfigType = createMatchingObjectType<Partial<ZendeskFixElementsConfi
   },
 })
 
-export const configType = createMatchingObjectType<Partial<OldZendeskConfig>>({
+export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
     [CLIENT_CONFIG]: {

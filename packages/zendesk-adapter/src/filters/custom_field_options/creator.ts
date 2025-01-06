@@ -25,7 +25,6 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../../deployment'
 import { applyforInstanceChangesOfType, getCustomFieldOptionsFromChanges } from '../utils'
-import { API_DEFINITIONS_CONFIG } from '../../config'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../constants'
 
 export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_option'

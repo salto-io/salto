@@ -25,7 +25,7 @@ import ZendeskAdapter from './adapter'
 import { basicCredentialsType, Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType } from './auth'
 import {
   configType,
-  OldZendeskConfig,
+  ZendeskConfig,
   CLIENT_CONFIG,
   FETCH_CONFIG,
   validateFetchConfig,
@@ -101,7 +101,7 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
 
 const isValidUser = (user: string): boolean => EMAIL_REGEX.test(user)
 
-const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): OldZendeskConfig => {
+const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
   const isGuideDisabled = config?.value.fetch.guide === undefined
   DEFAULT_CONFIG.apiDefinitions.supportedTypes = isGuideDisabled
@@ -127,7 +127,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     }
   }
 
-  const adapterConfig: { [K in keyof Required<OldZendeskConfig>]: OldZendeskConfig[K] } = {
+  const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {
     client: configValue.client,
     fetch,
     deploy: configValue.deploy,

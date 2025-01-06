@@ -11,7 +11,6 @@ import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '@sa
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { ZENDESK } from '../constants'
-import { API_DEFINITIONS_CONFIG } from '../config'
 
 /**
  * Adds collision warnings and remove colliding elements and their children

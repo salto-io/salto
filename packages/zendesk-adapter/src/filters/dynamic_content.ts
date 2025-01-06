@@ -21,7 +21,6 @@ import { deployment } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { addId, addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
-import { API_DEFINITIONS_CONFIG } from '../config'
 import { applyforInstanceChangesOfType } from './utils'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 

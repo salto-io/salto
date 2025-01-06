@@ -485,7 +485,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
-  private adapterDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
+  private fetchSupportDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
   private accountName?: string
   private createFiltersRunner: ({
     filterRunnerClient,
@@ -545,6 +545,18 @@ export default class ZendeskAdapter implements AdapterOperations {
         clients: createClientDefinitions({ main: this.client, guide: this.client }),
         pagination: PAGINATION,
         fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
+          userElemID: this.userConfig.fetch.elemID,
+          fetchConfig: createFetchDefinitions({ baseUrl: this.client.getUrl().href }),
+        }),
+      },
+      this.accountName,
+    )
+    this.fetchSupportDefinitions = definitionsUtils.mergeDefinitionsWithOverrides(
+      {
+        // Support does not need guide client
+        clients: createClientDefinitions({ main: this.client, guide: this.client }),
+        pagination: PAGINATION,
+        fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
           userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
           fetchConfig: createFetchDefinitions({ typesToOmit, baseUrl: this.client.getUrl().href }),
         }),
@@ -568,17 +580,15 @@ export default class ZendeskAdapter implements AdapterOperations {
       filterRunnerClient,
       paginator,
       brandIdToClient = {},
-      definitions = this.adapterDefinitions,
     }: {
       filterRunnerClient?: ZendeskClient
       paginator?: clientUtils.Paginator
       brandIdToClient?: BrandIdToClient
-      definitions?: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
     }) =>
       filterRunner(
         {
           fetchQuery: this.fetchQuery,
-          definitions,
+          definitions: this.adapterDefinitions,
           paginator: paginator ?? this.paginator,
           config: this.userConfig,
           getElemIdFunc: this.getElemIdFunc,
@@ -651,7 +661,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         adapterName: ZENDESK,
         fetchQuery: this.fetchQuery,
         getElemIdFunc: this.getElemIdFunc,
-        definitions: this.adapterDefinitions,
+        definitions: this.fetchSupportDefinitions,
         customItemFilter: filterOutInactiveItemForType(this.userConfig),
       })
       if (!isGuideInFetch) {
@@ -824,23 +834,8 @@ export default class ZendeskAdapter implements AdapterOperations {
         this.createClientBySubdomain(brandInstance.value.subdomain),
       ]),
     )
-    // Creating filter definitions for onFetch filters with all definitions (including Guide)
-    const filterDefinitions = definitionsUtils.mergeDefinitionsWithOverrides(
-      {
-        // guide client is not used in fetch filters
-        clients: createClientDefinitions({ main: this.client, guide: this.client }),
-        pagination: PAGINATION,
-        fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
-          userElemID: this.userConfig.fetch as ZendeskFetchConfig['elemID'],
-          fetchConfig: createFetchDefinitions({ baseUrl: this.client.getUrl().href }),
-        }),
-      },
-      this.accountName,
-    )
     // This exposes different subdomain clients for Guide related types filters
-    const result = (await (
-      await this.createFiltersRunner({ brandIdToClient, definitions: filterDefinitions })
-    ).onFetch(elements)) as FilterResult
+    const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
     const updatedConfig =
       this.configInstance && configChanges
         ? definitionsUtils.getUpdatedConfigFromConfigChanges({

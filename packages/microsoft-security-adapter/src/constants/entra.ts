@@ -18,6 +18,7 @@ export const SERVICE_BASE_URL = 'https://entra.microsoft.com'
 export const APP_ROLE_ASSIGNMENT_FIELD_NAME = 'appRoleAssignments'
 export const APP_ROLES_FIELD_NAME = 'appRoles'
 export const AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME = 'authenticationMethodConfigurations'
+export const CONDITIONS_FIELD_NAME = 'conditions'
 export const CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_FIELD_NAME = 'allowedValues'
 export const DELEGATED_PERMISSION_CLASSIFICATIONS_FIELD_NAME = 'delegatedPermissionClassifications'
 export const DOMAIN_NAME_REFERENCES_FIELD_NAME = 'domainNameReferences'
@@ -27,6 +28,21 @@ export const IDENTIFIER_URIS_FIELD_NAME = 'identifierUris'
 export const MEMBERS_FIELD_NAME = 'members'
 export const PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME = 'preAuthorizedApplications'
 export const REQUIRED_RESOURCE_ACCESS_FIELD_NAME = 'requiredResourceAccess'
+
+export const CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS = [
+  'includeApplications',
+  'excludeApplications',
+  'includeServicePrincipals',
+  'excludeServicePrincipals',
+  'includeUsers',
+  'excludeUsers',
+  'includeGroups',
+  'excludeGroups',
+  'includeRoles',
+  'excludeRoles',
+  'includeDevices',
+  'excludeDevices',
+] as const
 
 // Paths to fields
 export const AUTHENTICATION_STRENGTH_PATH = ['grantControls', 'authenticationStrength']
@@ -69,7 +85,7 @@ export const AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME = recursiveNestedType
 )
 export const CONDITIONAL_ACCESS_POLICY_CONDITIONS_TYPE_NAME = recursiveNestedTypeName(
   CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
-  'conditions',
+  CONDITIONS_FIELD_NAME,
 )
 export const CONDITIONAL_ACCESS_POLICY_CONDITION_LOCATIONS_TYPE_NAME = recursiveNestedTypeName(
   CONDITIONAL_ACCESS_POLICY_CONDITIONS_TYPE_NAME,

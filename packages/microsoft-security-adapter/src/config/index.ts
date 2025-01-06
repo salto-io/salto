@@ -6,17 +6,35 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { elements, definitions } from '@salto-io/adapter-components'
+import { FieldDefinition } from '@salto-io/adapter-api'
+import {
+  OMIT_ASSIGNMENT_FIELDS_CONFIG_FIELD_NAME,
+  OmitAssignmentFieldsConfig,
+  omitAssignmentFieldsConfigType,
+} from './omit_assignment_fields'
 
-export type UserFetchConfig = definitions.UserFetchConfig<{
+type UserFetchConfig = definitions.UserFetchConfig<{
   customNameMappingOptions: never
   fetchCriteria: definitions.DefaultFetchCriteria
 }>
+
+type DeployConfigFieldsNames = typeof OMIT_ASSIGNMENT_FIELDS_CONFIG_FIELD_NAME
+export type AdditionalDeployConfigFields = { [OMIT_ASSIGNMENT_FIELDS_CONFIG_FIELD_NAME]?: OmitAssignmentFieldsConfig }
+export const additionalDeployConfigFieldsType: Record<DeployConfigFieldsNames, FieldDefinition> = {
+  omitAssignmentFields: {
+    refType: omitAssignmentFieldsConfigType,
+    annotations: {
+      _required: false,
+    },
+  },
+}
+type UserDeployConfig = definitions.UserDeployConfig & AdditionalDeployConfigFields
 
 export type UserConfig = definitions.UserConfig<
   never,
   definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>,
   UserFetchConfig,
-  definitions.UserDeployConfig
+  UserDeployConfig
 >
 
 export const DEFAULT_CONFIG: UserConfig = {

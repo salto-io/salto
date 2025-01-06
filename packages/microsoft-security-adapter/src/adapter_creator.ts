@@ -7,7 +7,6 @@
  */
 import { createAdapter, credentials as credentialsUtils, filters } from '@salto-io/adapter-components'
 import createChangeValidator from './change_validator'
-import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
 import { ADAPTER_NAME } from './constants'
 import { createClientDefinitions, createDeployDefinitions, createFetchDefinitions } from './definitions'
@@ -18,6 +17,8 @@ import { createFromOauthResponse, createOAuthRequest } from './client/oauth'
 import { appRolesFilter, deployAdministrativeUnitMembersFilter, deployDirectoryRoleMembersFilter } from './filters'
 import { customConvertError } from './error_utils'
 import { Credentials, credentialsType, oauthRequestParameters } from './auth'
+import { createFixElementFunctions } from './fix_elements'
+import { additionalDeployConfigFieldsType, DEFAULT_CONFIG, UserConfig } from './config'
 
 const { defaultCredentialsFromConfig } = credentialsUtils
 
@@ -52,9 +53,11 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       appRolesFilter,
       ...filters.createCommonFilters<Options, UserConfig>(args),
     }),
+    customizeFixElements: createFixElementFunctions,
   },
   customConvertError,
   initialClients: {
     main: undefined,
   },
+  additionalConfigFields: { deploy: additionalDeployConfigFieldsType },
 })

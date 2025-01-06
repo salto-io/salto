@@ -286,6 +286,8 @@ export const DEFAULT_FILTERS = [
   notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
   issueTypeHierarchyFilter,
+  fieldConfigurationFilter,
+  fieldConfigurationSchemeFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
   enhancedSearchNoiseReductionFilter, // Must run before jqlReferencesFilter
@@ -301,8 +303,6 @@ export const DEFAULT_FILTERS = [
   addAliasFilter, // must run before duplicateIdsFilter
   duplicateIdsFilter,
   unresolvedParentsFilter, // must run after duplicateIdsFilter
-  fieldConfigurationFilter, // must run after duplicateIdsFilter
-  fieldConfigurationSchemeFilter,
   contextReferencesFilter, // must run after duplicateIdsFilter
   assetsObjectFieldConfigurationFilter, // must run after contextReferencesFilter
   fieldTypeReferencesFilter,

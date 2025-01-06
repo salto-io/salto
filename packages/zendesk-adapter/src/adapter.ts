@@ -824,6 +824,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         this.createClientBySubdomain(brandInstance.value.subdomain),
       ]),
     )
+    // Creating filter definitions for onFetch filters with all definitions (including Guide)
     const filterDefinitions = definitionsUtils.mergeDefinitionsWithOverrides(
       {
         // guide client is not used in fetch filters

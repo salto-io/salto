@@ -249,13 +249,13 @@ const createTransformHasAttachmentValueFunc =
     return value
   }
 
-const isOutgoingEmailAutomationValue = ({ value }: TransformFuncArgs): boolean =>
+const isHTMLBodyContentAutomationValue = ({ value }: TransformFuncArgs): boolean =>
   _.isPlainObject(value) && value.mimeType === 'text/html'
 
 const extractHTMLContentToStaticFile =
   (): TransformFuncSync =>
   async ({ value, path }) => {
-    if (path !== undefined && isOutgoingEmailAutomationValue({ value })) {
+    if (path !== undefined && isHTMLBodyContentAutomationValue({ value })) {
       value.body = new StaticFile({
         filepath: `${JIRA}/${AUTOMATION_TYPE}/${getHTMLStaticFileName(path)}.html`,
         content: value.body,
@@ -267,7 +267,7 @@ const extractHTMLContentToStaticFile =
 const transformStaticFileBufferToHTML =
   (): TransformFuncSync =>
   async ({ value }) => {
-    if (isOutgoingEmailAutomationValue({ value })) {
+    if (isHTMLBodyContentAutomationValue({ value })) {
       value.body = value.body.toString()
     }
     return value

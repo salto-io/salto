@@ -22,22 +22,22 @@ import { AUTOMATION_TYPE } from '../../constants'
 
 const { isDefined } = values
 
-type OutgoingEmailComponentValue = {
+type HTMLBodyContentComponentValue = {
   mimeType: string
   body: string
 }
 
 type AutomationComponent = {
   type: string
-  value: OutgoingEmailComponentValue
+  value: HTMLBodyContentComponentValue
 }
 
-enum OutgoingEmailErrorType {
+enum HTMLBodyContentErrorType {
   mimeType = 'mimeType',
   notStaticFile = 'notStaticFile',
 }
 
-const OUTGOING_EMAIL_AUTOMATION_COMPONENT_SCHEME = Joi.object({
+const HTML_BODY_CONTENT_AUTOMATION_COMPONENT_SCHEME = Joi.object({
   type: Joi.string().required(),
   value: Joi.object({
     mimeType: Joi.string().required(),
@@ -49,60 +49,60 @@ const OUTGOING_EMAIL_AUTOMATION_COMPONENT_SCHEME = Joi.object({
   .unknown(true)
   .required()
 
-const isOutgoingEmailAutomationComponent = createSchemeGuard<AutomationComponent>(
-  OUTGOING_EMAIL_AUTOMATION_COMPONENT_SCHEME,
+const isHTMLBodyContentAutomationComponent = createSchemeGuard<AutomationComponent>(
+  HTML_BODY_CONTENT_AUTOMATION_COMPONENT_SCHEME,
 )
 
-const getComponentErrorTypes = (component: AutomationComponent): OutgoingEmailErrorType[] | undefined => {
-  const errorTypes: OutgoingEmailErrorType[] = []
-  if (component.value.mimeType !== 'text/html') {
-    errorTypes.push(OutgoingEmailErrorType.mimeType)
+const getComponentErrorTypes = (component: AutomationComponent): HTMLBodyContentErrorType[] | undefined => {
+  const errorTypes: HTMLBodyContentErrorType[] = []
+  if (isStaticFile(component.value.body) && component.value.mimeType !== 'text/html') {
+    errorTypes.push(HTMLBodyContentErrorType.mimeType)
   }
-  if (!isStaticFile(component.value.body)) {
-    errorTypes.push(OutgoingEmailErrorType.notStaticFile)
+  if (component.value.mimeType === 'text/html' && !isStaticFile(component.value.body)) {
+    errorTypes.push(HTMLBodyContentErrorType.notStaticFile)
   }
   if (errorTypes.length > 0) {
     return errorTypes
   }
-  return undefined
+  return []
 }
 
 const getErrorTypeFromEmailConfig = (
   instance: InstanceElement,
-): { elemID: ElemID; errorTypes: OutgoingEmailErrorType[] }[] | undefined => {
-  const result: { elemID: ElemID; errorTypes: OutgoingEmailErrorType[] }[] = []
+): { elemID: ElemID; errorTypes: HTMLBodyContentErrorType[] }[] | undefined => {
+  const elemIDWithErrorTypes: { elemID: ElemID; errorTypes: HTMLBodyContentErrorType[] }[] = []
   walkOnValue({
     elemId: instance.elemID.createNestedID('components'),
     value: instance.value.components,
     func: ({ value, path }) => {
-      if (value.type === 'jira.issue.outgoing.email' && isOutgoingEmailAutomationComponent(value)) {
+      if (isHTMLBodyContentAutomationComponent(value)) {
         const componentErrors = getComponentErrorTypes(value)
         if (componentErrors) {
-          result.push({ elemID: path, errorTypes: componentErrors })
+          elemIDWithErrorTypes.push({ elemID: path, errorTypes: componentErrors })
         }
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return result.length > 0 ? result : undefined
+  return elemIDWithErrorTypes.length > 0 ? elemIDWithErrorTypes : []
 }
 
 const errorMessageMap = {
-  [OutgoingEmailErrorType.mimeType]: (componentElemID: ElemID) => ({
+  [HTMLBodyContentErrorType.mimeType]: (componentElemID: ElemID) => ({
     elemID: componentElemID,
     severity: 'Error' as SeverityLevel,
-    message: 'A mimeType of an outgoing email automation action is incorrect.',
-    detailedMessage: `The outgoing email action of this component: ${componentElemID.getFullName()} has an invalid mimeType. To resolve it, change its mimeType to 'text/html'.`,
+    message: 'A mimeType of an automation action is incorrect.',
+    detailedMessage: `The action in component: ${componentElemID.getFullName()} has an invalid mimeType. To resolve this, change the mimeType to 'text/html'.`,
   }),
-  [OutgoingEmailErrorType.notStaticFile]: (componentElemID: ElemID) => ({
+  [HTMLBodyContentErrorType.notStaticFile]: (componentElemID: ElemID) => ({
     elemID: componentElemID,
     severity: 'Error' as SeverityLevel,
-    message: 'A content of an outgoing email automation action is not valid.',
-    detailedMessage: `The outgoing email action of this component: ${componentElemID.getFullName()} has an invalid body content. To resolve it, change it to its previous content.`,
+    message: 'A content of an automation action is not valid.',
+    detailedMessage: `The body content of this action component: ${componentElemID.getFullName()} is invalid. It appears that this component with mimeType "text/html" was modified to an unexpected body content type. To resolve this, revert the file to its original static file format.`,
   }),
 }
 
-export const outgoingEmailContentValidator: ChangeValidator = async changes =>
+export const htmlBodyContentValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
@@ -111,10 +111,9 @@ export const outgoingEmailContentValidator: ChangeValidator = async changes =>
     .map(getErrorTypeFromEmailConfig)
     .filter(isDefined)
     .flat()
-    .map(componentElemIDWithErrorTypes =>
+    .flatMap(componentElemIDWithErrorTypes =>
       componentElemIDWithErrorTypes.errorTypes.map(errorType => {
         const errorMessageCreator = errorMessageMap[errorType]
         return errorMessageCreator(componentElemIDWithErrorTypes.elemID)
       }),
     )
-    .flat()

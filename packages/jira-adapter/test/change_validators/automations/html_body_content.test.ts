@@ -7,12 +7,12 @@
  */
 import { ObjectType, InstanceElement, toChange, StaticFile, ElemID } from '@salto-io/adapter-api'
 import { AUTOMATION_TYPE } from '../../../src/constants'
-import { outgoingEmailContentValidator } from '../../../src/change_validators/automation/outgoing_email'
+import { htmlBodyContentValidator } from '../../../src/change_validators/automation/html_body_content'
 import { createEmptyType } from '../../utils'
 
 export const HTML_BODY_TEST = '<html><body><h1>Test</h1></body></html>'
 
-describe('outgoingEmailAutomationValidator', () => {
+describe('htmlBodyContentAutomationValidator', () => {
   let automationType: ObjectType
   let instance: InstanceElement
   let invalidAfterInstance: InstanceElement
@@ -89,7 +89,7 @@ describe('outgoingEmailAutomationValidator', () => {
         {
           component: 'ACTION',
           type: 'jira.issue.outgoing.email',
-          value: { body: 'test', mimeType: 'text' },
+          value: { body: 'test', mimeType: 'text/html' },
         },
         {
           component: 'ACTION',
@@ -133,81 +133,74 @@ describe('outgoingEmailAutomationValidator', () => {
   })
 
   it('should return an error when mimeType is wrong', async () => {
-    expect(await outgoingEmailContentValidator([toChange({ before: instance, after: invalidAfterInstance })])).toEqual([
+    expect(await htmlBodyContentValidator([toChange({ before: instance, after: invalidAfterInstance })])).toEqual([
       {
         elemID: new ElemID('jira', 'Automation', 'instance', 'invalidAfterInstance.components'),
         severity: 'Error',
-        message: 'A mimeType of an outgoing email automation action is incorrect.',
+        message: 'A mimeType of an automation action is incorrect.',
         detailedMessage:
-          "The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance.components has an invalid mimeType. To resolve it, change its mimeType to 'text/html'.",
+          "The action in component: jira.Automation.instance.invalidAfterInstance.components has an invalid mimeType. To resolve this, change the mimeType to 'text/html'.",
       },
     ])
   })
 
   it('should return an error when the body is not a static file', async () => {
-    expect(await outgoingEmailContentValidator([toChange({ after: invalidAfterInstance2 })])).toEqual([
+    expect(await htmlBodyContentValidator([toChange({ after: invalidAfterInstance2 })])).toEqual([
       {
         elemID: new ElemID('jira', 'Automation', 'instance', 'invalidAfterInstance2.components.1'),
         severity: 'Error',
-        message: 'A content of an outgoing email automation action is not valid.',
+        message: 'A content of an automation action is not valid.',
         detailedMessage:
-          'The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance2.components.1 has an invalid body content. To resolve it, change it to its previous content.',
+          'The body content of this action component: jira.Automation.instance.invalidAfterInstance2.components.1 is invalid. It appears that this component with mimeType "text/html" was modified to an unexpected body content type. To resolve this, revert the file to its original static file format.',
       },
     ])
   })
 
   it('should return both errors when the body&mimetype is not valid', async () => {
     const changes = [toChange({ after: invalidAfterInstance3 }), toChange({ after: instance })]
-    expect(await outgoingEmailContentValidator(changes)).toEqual([
+    expect(await htmlBodyContentValidator(changes)).toEqual([
       {
         elemID: new ElemID('jira', 'Automation', 'instance', 'invalidAfterInstance3.components.0'),
         severity: 'Error',
-        message: 'A content of an outgoing email automation action is not valid.',
+        message: 'A content of an automation action is not valid.',
         detailedMessage:
-          'The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance3.components.0 has an invalid body content. To resolve it, change it to its previous content.',
+          'The body content of this action component: jira.Automation.instance.invalidAfterInstance3.components.0 is invalid. It appears that this component with mimeType "text/html" was modified to an unexpected body content type. To resolve this, revert the file to its original static file format.',
       },
     ])
   })
 
-  it('should return errors for an instance with more than one invalid outgoingEmail components', async () => {
-    expect(await outgoingEmailContentValidator([toChange({ after: invalidAfterInstance4 })])).toEqual([
+  it('should return errors for an instance with more than one invalid body html content components', async () => {
+    expect(await htmlBodyContentValidator([toChange({ after: invalidAfterInstance4 })])).toEqual([
       {
         elemID: new ElemID('jira', 'Automation', 'instance', 'invalidAfterInstance4.components.0'),
         severity: 'Error',
-        message: 'A mimeType of an outgoing email automation action is incorrect.',
+        message: 'A content of an automation action is not valid.',
         detailedMessage:
-          "The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance4.components.0 has an invalid mimeType. To resolve it, change its mimeType to 'text/html'.",
-      },
-      {
-        elemID: new ElemID('jira', 'Automation', 'instance', 'invalidAfterInstance4.components.0'),
-        severity: 'Error',
-        message: 'A content of an outgoing email automation action is not valid.',
-        detailedMessage:
-          'The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance4.components.0 has an invalid body content. To resolve it, change it to its previous content.',
+          'The body content of this action component: jira.Automation.instance.invalidAfterInstance4.components.0 is invalid. It appears that this component with mimeType "text/html" was modified to an unexpected body content type. To resolve this, revert the file to its original static file format.',
       },
       {
         elemID: new ElemID('jira', 'Automation', 'instance', 'invalidAfterInstance4.components.1'),
         severity: 'Error',
-        message: 'A mimeType of an outgoing email automation action is incorrect.',
+        message: 'A mimeType of an automation action is incorrect.',
         detailedMessage:
-          "The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance4.components.1 has an invalid mimeType. To resolve it, change its mimeType to 'text/html'.",
+          "The action in component: jira.Automation.instance.invalidAfterInstance4.components.1 has an invalid mimeType. To resolve this, change the mimeType to 'text/html'.",
       },
     ])
   })
 
   it('should return an error when the component is a children of another component', async () => {
-    expect(await outgoingEmailContentValidator([toChange({ after: invalidAfterInstance5 })])).toEqual([
+    expect(await htmlBodyContentValidator([toChange({ after: invalidAfterInstance5 })])).toEqual([
       {
         elemID: new ElemID('jira', 'Automation', 'instance', 'invalidAfterInstance5.components.children'),
         severity: 'Error',
-        message: 'A content of an outgoing email automation action is not valid.',
+        message: 'A content of an automation action is not valid.',
         detailedMessage:
-          'The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance5.components.children has an invalid body content. To resolve it, change it to its previous content.',
+          'The body content of this action component: jira.Automation.instance.invalidAfterInstance5.components.children is invalid. It appears that this component with mimeType "text/html" was modified to an unexpected body content type. To resolve this, revert the file to its original static file format.',
       },
     ])
   })
 
   it('should not return an error when mimeType is text/html and body is static file', async () => {
-    expect(await outgoingEmailContentValidator([toChange({ after: instance })])).toEqual([])
+    expect(await htmlBodyContentValidator([toChange({ after: instance })])).toEqual([])
   })
 })

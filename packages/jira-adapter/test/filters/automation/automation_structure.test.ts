@@ -22,7 +22,7 @@ import { getFilterParams } from '../../utils'
 import automationStructureFilter from '../../../src/filters/automation/automation_structure'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
 import { JIRA } from '../../../src/constants'
-import { HTML_BODY_TEST } from '../../change_validators/automations/outgoing_email.test'
+import { HTML_BODY_TEST } from '../../change_validators/automations/html_body_content.test'
 
 describe('automationStructureFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -492,7 +492,7 @@ describe('automationStructureFilter', () => {
       expect(after.value.components[4].value.compareFieldValue).toBeObject()
       expect(after.value.components[4].value.compareFieldValue.value).toBeInstanceOf(ReferenceExpression)
     })
-    it('should ', async () => {
+    it('should change back html body content to a static file with this html content as an internal content', async () => {
       const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
       await filter.preDeploy(changes)
       await filter.onDeploy(changes)

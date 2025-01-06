@@ -708,7 +708,7 @@ const createCustomizations = ({
           path: '/api/v1/apps/{appId}/grants',
         },
         transformation: {
-          omit: ['_links', 'createdBy', 'status', 'created', 'lastUpdated', 'clientId', 'source','issuer'],
+          omit: ['_links', 'createdBy', 'status', 'created', 'lastUpdated', 'clientId', 'source', 'issuer'],
         },
       },
     ],

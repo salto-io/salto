@@ -97,11 +97,13 @@ export const getSubdomainFromElementsSource = async (
  * This is necessary because the default domain varies across environments and isn't multi-environment friendly.
  */
 export const getIssuerField = async (elementsSource: ReadOnlyElementsSource): Promise<string | undefined> => {
-  const defaultDomainInstance = (await awu(await elementsSource.getAll())
-    .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === DOMAIN_TYPE_NAME)
-    .filter(instance => isDefaultDomain(instance.value))
-    .toArray())?.[0]
+  const defaultDomainInstance = (
+    await awu(await elementsSource.getAll())
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === DOMAIN_TYPE_NAME)
+      .filter(instance => isDefaultDomain(instance.value))
+      .toArray()
+  )?.[0]
 
   if (!isInstanceElement(defaultDomainInstance)) {
     log.error(`Failed to get ${DOMAIN_TYPE_NAME} instance, can not find domain`)

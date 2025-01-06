@@ -2817,7 +2817,7 @@ describe('adapter', () => {
         })
         const defaultDomain = new InstanceElement('emailDomain', domainType, {
           domain: 'example.com',
-          id: 'default'
+          id: 'default',
         })
         operations = createOperations([defaultDomain])
         const activeCustomApp = new InstanceElement('app', appType, {

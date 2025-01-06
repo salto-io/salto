@@ -71,8 +71,11 @@ import { State } from './src/workspace/state'
 import { PathIndex, splitElementByPath, getElementsPathHints, filterByPathHint } from './src/workspace/path_index'
 import { createPathIndexForElement } from './src/path_index_fallbacks'
 import { ReferenceIndexEntry } from './src/workspace/reference_indexes'
+import { getAdapterConfigsPerAccount, getAdaptersConfigTypesMap } from './src/workspace/adapters_config_source'
 
 export {
+  getAdaptersConfigTypesMap,
+  getAdapterConfigsPerAccount,
   errors,
   hiddenValues,
   serialization,

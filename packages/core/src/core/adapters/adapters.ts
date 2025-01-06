@@ -31,11 +31,11 @@ import {
   merger,
   updateElementsWithAlternativeAccount,
   elementSource as workspaceElementSource,
+  getAdaptersConfigTypesMap as getAdaptersConfigTypesMapImplementation,
 } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 // for backward comptability
 import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
-import { getAdaptersConfigTypesMap as getAdaptersConfigTypesMapImplementation } from '@salto-io/local-workspace'
 
 const { awu } = collections.asynciterable
 const { buildContainerType } = workspaceElementSource

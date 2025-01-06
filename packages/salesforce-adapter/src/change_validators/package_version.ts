@@ -25,18 +25,19 @@ import {
   APEX_TRIGGER_METADATA_TYPE,
   EMAIL_TEMPLATE_METADATA_TYPE,
 } from '../constants'
+import { isInstanceOfTypeSync } from '../filters/utils'
 
-export type Def = {
+export type ExactVersion = {
   exactVersion: boolean
 }
 
-export const TYPES_TO_IS_DEMANDING_EXACT_VERSION = new Map<string, Def>([
-  [APEX_CLASS_METADATA_TYPE, { exactVersion: false }],
-  [APEX_PAGE_METADATA_TYPE, { exactVersion: false }],
-  [APEX_COMPONENT_METADATA_TYPE, { exactVersion: false }],
-  [EMAIL_TEMPLATE_METADATA_TYPE, { exactVersion: false }],
-  [APEX_TRIGGER_METADATA_TYPE, { exactVersion: true }],
-])
+export const TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION: Record<string, ExactVersion> = {
+  [APEX_CLASS_METADATA_TYPE]: { exactVersion: false },
+  [APEX_PAGE_METADATA_TYPE]: { exactVersion: false },
+  [APEX_COMPONENT_METADATA_TYPE]: { exactVersion: false },
+  [EMAIL_TEMPLATE_METADATA_TYPE]: { exactVersion: false },
+  [APEX_TRIGGER_METADATA_TYPE]: { exactVersion: true },
+}
 
 type PackageVersionInstanceElement = InstanceElement & {
   versionNumber: string
@@ -44,9 +45,6 @@ type PackageVersionInstanceElement = InstanceElement & {
 
 const isPackageVersionInstanceElement = (element: InstanceElement): element is PackageVersionInstanceElement =>
   isInstanceElement(element) && _.isString(_.get(element.value, ['versionNumber']))
-
-const isOfTypeToValidate = (instance: InstanceElement): boolean =>
-  Array.from(TYPES_TO_IS_DEMANDING_EXACT_VERSION.keys()).some(type => type === instance.getTypeSync().elemID.typeName)
 
 const getVersionNumber = (namespace: Value): Number | undefined => {
   if (!isReferenceExpression(namespace) || !isPackageVersionInstanceElement(namespace.value)) {
@@ -63,7 +61,7 @@ const convertNumStringsToNumber = (major: string, minor: string): Number | undef
 
 const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] => {
   const errors: ChangeError[] = []
-  if (instance.value.packageVersions === undefined || !Array.isArray(instance.value.packageVersions)) {
+  if (!Array.isArray(instance.value.packageVersions)) {
     return []
   }
   instance.value.packageVersions.forEach(
@@ -73,21 +71,22 @@ const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] =>
       const instanceVersion = convertNumStringsToNumber(majorNumber, minorNumber)
       if (instanceVersion !== undefined && packageVersionNumber !== undefined) {
         if (
-          TYPES_TO_IS_DEMANDING_EXACT_VERSION.get(instance.elemID.typeName)?.exactVersion &&
+          TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION[instance.elemID.typeName].exactVersion &&
           instanceVersion !== packageVersionNumber
         ) {
           errors.push({
             elemID: instance.elemID.createNestedID('packageVersions', String(index)),
             severity: 'Warning',
-            message: "Cannot deploy instances with different package version than target environment's package version",
-            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${packageVersionNumber}, while ${instanceVersion} at the instance`,
+            message:
+              "Cannot deploy instances with a different package version than target environment's package version",
+            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${packageVersionNumber} and ${instanceVersion} in the instance`,
           })
         } else if (instanceVersion > packageVersionNumber) {
           errors.push({
             elemID: instance.elemID.createNestedID('packageVersions', String(index)),
             severity: 'Warning',
-            message: "Cannot deploy instances with greater package version than target environment's package version",
-            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${packageVersionNumber}, while ${instanceVersion} at the instance`,
+            message: "Cannot deploy instances with a greater package version than target environment's package version",
+            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${packageVersionNumber} and ${instanceVersion} in the instance`,
           })
         }
       }
@@ -96,14 +95,12 @@ const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] =>
   return errors
 }
 
-const changeValidator: ChangeValidator = async changes => {
-  const instanceChangesErrors = changes
+const changeValidator: ChangeValidator = async changes =>
+  changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(isOfTypeToValidate)
+    .filter(isInstanceOfTypeSync(...Object.keys(TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION)))
     .flatMap(createPackageVersionErrors)
-  return instanceChangesErrors
-}
 
 export default changeValidator

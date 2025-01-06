@@ -1147,6 +1147,7 @@ export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldRefere
     .concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('networkReferences') ? NETWORK_REFERENCES_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('addParentToRecordTriggeredFlows') ? FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF : [])
+    .concat(fetchProfile.isFeatureEnabled('packageVersionReference') ? PACKAGE_VERSION_REFERENCE_DEF : [])
 
 /**
  * Translate a reference expression back to its original value before deploy.

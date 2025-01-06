@@ -62,7 +62,7 @@ describe('custom object and custom metadata types non existing fields', () => {
     flowType = mockTypes.Flow
   })
 
-  describe("when custom object with values that are not defined in the type's fields", () => {
+  describe('when data instance contains values that are not defined in the type', () => {
     it('should omit those values', async () => {
       customObjectElementExtraValues = new InstanceElement('instance', customObjectType, {
         Id: 'asd',
@@ -75,12 +75,7 @@ describe('custom object and custom metadata types non existing fields', () => {
       const { fixedElements, errors } = await fixElementsFunc([customObjectElementExtraValues])
       expect(fixedElements).toHaveLength(1)
       const ele = fixedElements[0] as InstanceElement
-      expect(Object.keys(ele.value)).toContain('Name')
-      expect(Object.keys(ele.value)).toContain('Id')
-      expect(Object.keys(ele.value)).toContain('customObjectElementExtraValues__c')
-      expect(Object.keys(ele.value)).not.toContain('qwerty')
-      expect(Object.keys(ele.value)).not.toContain('dfg__c')
-      expect(Object.keys(ele.value)).not.toContain('id')
+      expect(ele.value).toEqual({ Id: 'asd', Name: 'sdf', customObjectElementExtraValues__c: 'fake' })
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(customObjectElementExtraValues.elemID)
     })
@@ -109,17 +104,12 @@ describe('custom object and custom metadata types non existing fields', () => {
       const { fixedElements, errors } = await fixElementsFunc([customMetaDataTypeElementExtraValues])
       expect(fixedElements).toHaveLength(1)
       const ele = fixedElements[0] as InstanceElement
-      expect(Object.keys(ele.value)).toContain('fullName')
-      expect(Object.keys(ele.value)).toContain('sdf__c')
-      expect(Object.keys(ele.value)).toContain('dataTypeElementExtraValues__c')
-      expect(Object.keys(ele.value)).not.toContain('id')
-      expect(Object.keys(ele.value)).not.toContain('qwerty')
-      expect(Object.keys(ele.value)).not.toContain('dfg__c')
+      expect(ele.value).toEqual({ fullName: 'real', dataTypeElementExtraValues__c: 'real', sdf__c: 'real' })
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(customMetaDataTypeElementExtraValues.elemID)
     })
   })
-  describe("when custom metadata type with only values that are defined in the type's fields", () => {
+  describe('when CustomMetadata instance does not contain values that are not defined in the type', () => {
     it('should not change the instance', async () => {
       customMetaDataTypeElement = new InstanceElement('instance', metadataType, {
         fullName: 'asd',

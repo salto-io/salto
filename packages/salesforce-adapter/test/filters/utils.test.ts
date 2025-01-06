@@ -61,6 +61,7 @@ import {
   getOrgFetchTargets,
   getMetadataIncludeFromFetchTargets,
   isOrderedMapTypeOrRefType,
+  isCustomMetadataRecordInstanceSync,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -1598,6 +1599,19 @@ describe('filter utils', () => {
     })
     it('should return false for non ordered map type', () => {
       expect(new ObjectType({ elemID: new ElemID(SALESFORCE, 'TestType') })).not.toSatisfy(isOrderedMapTypeOrRefType)
+    })
+  })
+  describe('isCustomMetadataRecordInstanceSync', () => {
+    const customMetadataRecordInstance = createInstanceElement(
+      { [INSTANCE_FULL_NAME_FIELD]: 'MDType.MDTypeInstance' },
+      mockTypes.CustomMetadataRecordType,
+    )
+    const profileInstance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'profileInstance' }, mockTypes.Profile)
+    it('should return true for customMetadataRecordType instance', async () => {
+      expect(isCustomMetadataRecordInstanceSync(customMetadataRecordInstance)).toBeTrue()
+    })
+    it('should return false for non customMetadataRecordType', async () => {
+      expect(isCustomMetadataRecordInstanceSync(profileInstance)).toBeFalse()
     })
   })
 })

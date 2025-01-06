@@ -11,16 +11,6 @@ import _ from 'lodash'
 import { isCustomMetadataRecordInstanceSync, isInstanceOfCustomObjectSync } from '../filters/utils'
 import { WeakReferencesHandler } from '../types'
 
-const omitNonExistingFieldsValues = (instance: InstanceElement, unknownFields: string[]): ChangeError => {
-  instance.value = _.omit(instance.value, unknownFields)
-  return {
-    elemID: instance.elemID,
-    severity: 'Info' as const,
-    message: 'Omitted values of fields that are not defined in the type',
-    detailedMessage: `Omitted the following values: ${unknownFields.join(', ')}`,
-  }
-}
-
 const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] = () => async elements => {
   const instanceElements = elements
     .filter(isInstanceElement)
@@ -42,8 +32,14 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] = () =
       .filter(value => value !== '')
     if (unknownFields.length > 0) {
       const clonedInstance = instance.clone()
+      clonedInstance.value = _.omit(clonedInstance.value, unknownFields)
       fixedElements.push(clonedInstance)
-      errors.push(omitNonExistingFieldsValues(clonedInstance, unknownFields))
+      errors.push({
+        elemID: clonedInstance.elemID,
+        severity: 'Info' as const,
+        message: 'Omitted values of fields that are not defined in the type',
+        detailedMessage: `Omitted the following values: ${unknownFields.join(', ')}`,
+      })
     }
   })
   return { fixedElements, errors }

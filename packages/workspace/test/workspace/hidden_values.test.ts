@@ -318,8 +318,8 @@ describe('handleHiddenChanges', () => {
     })
   })
 
-  describe('When a field is added with hidden value annotation', () => {
-    it('should hide existing field values when their added field definition marks them as hidden', async () => {
+  describe('when a field with hidden value annotation is added', () => {
+    it('should hide existing field values', async () => {
       const objectTypeBefore = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {},
@@ -356,7 +356,7 @@ describe('handleHiddenChanges', () => {
   })
 
   describe('when a field with hidden value annotation is removed', () => {
-    it('should unhide existing field values when their field definition is removed and marked them as hidden', async () => {
+    it('should unhide existing field values', async () => {
       const objectTypeBefore = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {

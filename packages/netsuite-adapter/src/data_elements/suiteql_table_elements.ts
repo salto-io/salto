@@ -20,7 +20,14 @@ import {
 } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
 import { NetsuiteConfig, SuiteQLTableQueryParams } from '../config/types'
-import { ALLOCATION_TYPE, NETSUITE, PROJECT_EXPENSE_TYPE, SUPPORT_CASE_PROFILE, TAX_SCHEDULE } from '../constants'
+import {
+  ALLOCATION_TYPE,
+  FIELD_TYPE,
+  NETSUITE,
+  PROJECT_EXPENSE_TYPE,
+  SUPPORT_CASE_PROFILE,
+  TAX_SCHEDULE,
+} from '../constants'
 import { SuiteQLTableName } from './types'
 
 const log = logger(module)
@@ -41,6 +48,7 @@ export type AdditionalQueryName =
   | typeof PROJECT_EXPENSE_TYPE
   | typeof ALLOCATION_TYPE
   | typeof SUPPORT_CASE_PROFILE
+  | typeof FIELD_TYPE
 
 type InternalIdsMap = Record<string, { name: string }>
 
@@ -539,11 +547,37 @@ const getSavedSearchInternalIdsMapFromColumn =
     return internalIdsMap
   }
 
+const getFieldTypeStaticInternalIdsMap = async (): Promise<InternalIdsMap> => ({
+  '1': { name: 'Free-Form Text' },
+  '2': { name: 'Email Address' },
+  '3': { name: 'Phone Number' },
+  '4': { name: 'Date' },
+  '6': { name: 'Currency' },
+  '8': { name: 'Decimal Number' },
+  '10': { name: 'Integer Number' },
+  '11': { name: 'Check Box' },
+  '12': { name: 'List/Record' },
+  '13': { name: 'Hyperlink' },
+  '14': { name: 'Time Of Day' },
+  '15': { name: 'Text Area' },
+  '16': { name: 'Multiple Select' },
+  '17': { name: 'Image' },
+  '18': { name: 'Document' },
+  '20': { name: 'Password' },
+  '23': { name: 'Help' },
+  '24': { name: 'Rich Text' },
+  '28': { name: 'Percent' },
+  '35': { name: 'Long Text' },
+  '40': { name: 'Inline HTML' },
+  '46': { name: 'Date/Time' },
+})
+
 export const ADDITIONAL_QUERIES: Record<AdditionalQueryName, ReturnType<typeof getSavedSearchInternalIdsMap>> = {
   [TAX_SCHEDULE]: getSavedSearchInternalIdsMap(TAX_SCHEDULE),
   [PROJECT_EXPENSE_TYPE]: getSavedSearchInternalIdsMap(PROJECT_EXPENSE_TYPE),
   [ALLOCATION_TYPE]: getSavedSearchInternalIdsMapFromColumn('resourceAllocation', ALLOCATION_TYPE),
   [SUPPORT_CASE_PROFILE]: getSavedSearchInternalIdsMapFromColumn('supportCase', 'profile'),
+  [FIELD_TYPE]: getFieldTypeStaticInternalIdsMap,
 }
 
 export const getQueriesByTableName = (config: NetsuiteConfig): Record<string, SuiteQLTableQueryParams | undefined> => {

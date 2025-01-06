@@ -8,6 +8,7 @@
 import * as vscode from 'vscode'
 import { loadLocalWorkspace, closeAllRemoteMaps } from '@salto-io/core'
 import { diagnostics, workspace as ws } from '@salto-io/lang-server'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { onTextChangeEvent, onFileChange, onFileOpen, createReportErrorsEventListener } from './events'
 import {
   createCompletionsProvider,
@@ -29,7 +30,10 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
   const { name, rootPath } = vscode.workspace
   if (name && rootPath) {
     const diagCollection = vscode.languages.createDiagnosticCollection('@salto-io/core')
-    const workspace = new ws.EditorWorkspace(rootPath, await loadLocalWorkspace({ path: rootPath, persistent: false }))
+    const workspace = new ws.EditorWorkspace(
+      rootPath,
+      await loadLocalWorkspace({ path: rootPath, persistent: false, adapterCreators }),
+    )
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },

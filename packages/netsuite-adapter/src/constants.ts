@@ -60,10 +60,12 @@ export const TAX_SCHEDULE = 'taxSchedule'
 export const PROJECT_EXPENSE_TYPE = 'projectExpenseType'
 export const ALLOCATION_TYPE = 'allocationType'
 export const SUPPORT_CASE_PROFILE = 'supportCaseProfile'
+export const FIELD_TYPE = 'fieldType'
 
 // Type Annotations
 export const SOURCE = 'source'
 export const METADATA_TYPE = 'metadataType'
+export const IS_LOCKED = 'isLocked'
 
 // Fields
 export const SCRIPT_ID = 'scriptid'

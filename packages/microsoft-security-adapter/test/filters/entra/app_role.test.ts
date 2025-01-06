@@ -15,6 +15,7 @@ import {
   getChangeData,
   ModificationChange,
   Change,
+  DeployResult,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, definitions, fetch } from '@salto-io/adapter-components'
@@ -227,8 +228,11 @@ describe('app roles filter', () => {
       let applicationInstance: InstanceElement
       let appRoleInstanceA: InstanceElement
       let appRoleInstanceB: InstanceElement
+      let appRoleInstanceC: InstanceElement
       let nonAppRoleInstance: InstanceElement
       let nonAppRoleChange: Change<InstanceElement>
+      let elementsInElementSource: InstanceElement[]
+      let elementsInElementSourceBeforeDeploy: InstanceElement[]
 
       beforeEach(() => {
         applicationInstance = new InstanceElement('app', applicationType, { id: 'app' })
@@ -238,24 +242,29 @@ describe('app roles filter', () => {
         appRoleInstanceB = new InstanceElement('appRoleB', appRoleType, { not_id: 'appRoleB' }, undefined, {
           [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
         })
+        appRoleInstanceC = new InstanceElement('appRoleC', appRoleType, { id: 'appRoleC' }, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
+        })
         const randomType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'randomType') })
         nonAppRoleInstance = new InstanceElement('nonAppRole', randomType, { id: 'nonAppRole' })
         nonAppRoleChange = toChange({ after: nonAppRoleInstance })
-      })
 
-      beforeEach(() => {
-        mockDeployChanges.mockResolvedValueOnce({
+        elementsInElementSource = [
+          applicationInstance,
+          appRoleInstanceA,
+          appRoleInstanceB,
+          appRoleInstanceC,
+          nonAppRoleInstance,
+        ].map(elem => elem.clone())
+        elementsInElementSourceBeforeDeploy = elementsInElementSource.map(elem => elem.clone())
+
+        mockDeployChanges.mockImplementation(async ({ changes }) => ({
           errors: [],
-          appliedChanges: [toChange({ after: applicationInstance })],
-        })
+          appliedChanges: changes,
+        }))
         filter = appRolesFilter({
           definitions: mockDefinitions,
-          elementSource: buildElementsSourceFromElements([
-            applicationInstance,
-            appRoleInstanceA,
-            appRoleInstanceB,
-            nonAppRoleInstance,
-          ]),
+          elementSource: buildElementsSourceFromElements(elementsInElementSource),
           config: mockConfig,
           fetchQuery: fetch.query.createElementQuery({
             include: [{ type: 'something' }],
@@ -283,17 +292,28 @@ describe('app roles filter', () => {
       })
 
       describe('when there are no changes in the parent', () => {
+        let appRoleChangeA: Change<InstanceElement>
+        let appRoleChangeB: Change<InstanceElement>
+        let result: {
+          deployResult: DeployResult
+          leftoverChanges: Change[]
+        }
+
+        beforeEach(async () => {
+          appRoleChangeA = toChange({ after: appRoleInstanceA })
+          appRoleChangeB = toChange({ after: appRoleInstanceB })
+
+          const changes = [nonAppRoleChange, appRoleChangeA, appRoleChangeB]
+
+          result = await filter.deploy(changes, { changes, groupID: 'a' })
+        })
+
         it('should create and deploy a parent modification change with all its app roles', async () => {
-          const appRoleChange = toChange({ after: appRoleInstanceA })
-          const changes = [nonAppRoleChange, appRoleChange]
-
-          const result = await filter.deploy(changes, { changes, groupID: 'a' })
-
           const changesParam = mockDeployChanges.mock.calls[0][0].changes
           expect(changesParam).toHaveLength(1)
           expect(changesParam[0].action).toEqual('modify')
           expect(_.get(getChangeData(changesParam[0]), `value.${APP_ROLES_FIELD_NAME}`)).toEqual(
-            expect.arrayContaining([appRoleInstanceA.value, appRoleInstanceB.value]),
+            expect.arrayContaining([appRoleInstanceA.value, appRoleInstanceB.value, appRoleInstanceC.value]),
           )
           expect(
             _.get(
@@ -302,37 +322,32 @@ describe('app roles filter', () => {
             ),
           ).toBeUndefined()
 
-          expect(result.deployResult.appliedChanges).toEqual([appRoleChange])
+          expect(result.deployResult.appliedChanges).toEqual([appRoleChangeA, appRoleChangeB])
           expect(result.deployResult.errors).toHaveLength(0)
           expect(result.leftoverChanges).toHaveLength(1)
           expect(result.leftoverChanges[0]).toEqual(nonAppRoleChange)
         })
 
         it('should assign an id to the app role if it does not have one', async () => {
-          const appRoleChange = toChange({ after: appRoleInstanceB })
-          const changes = [nonAppRoleChange, appRoleChange]
-
-          const result = await filter.deploy(changes, { changes, groupID: 'a' })
-
-          const changesParam = mockDeployChanges.mock.calls[0][0].changes
-          expect(changesParam).toHaveLength(1)
-          expect(changesParam[0].action).toEqual('modify')
-          expect(_.get(getChangeData(changesParam[0]), `value.${APP_ROLES_FIELD_NAME}`)).toEqual(
-            expect.arrayContaining([appRoleInstanceA.value, appRoleInstanceB.value]),
+          const appliedChangeAppRoleB = result.deployResult.appliedChanges.find(change =>
+            getChangeData(change).elemID.isEqual(appRoleInstanceB.elemID),
           )
-          expect(
-            _.get(
-              (changesParam[0] as ModificationChange<InstanceElement>).data.before,
-              `value.${APP_ROLES_FIELD_NAME}`,
-            ),
-          ).toBeUndefined()
+          expect(appliedChangeAppRoleB).toBeDefined()
+          // Expect the id to be a newly generated uuid
+          expect(getChangeData(appliedChangeAppRoleB as Change<InstanceElement>).value.id).toMatch(/^[\w-]{36}$/)
+        })
 
-          expect(result.deployResult.appliedChanges).toEqual([appRoleChange])
-          // Expect the id to be a UUID
-          expect(getChangeData(appRoleChange).value.id).toMatch(/^[\w-]{36}$/)
-          expect(result.deployResult.errors).toHaveLength(0)
-          expect(result.leftoverChanges).toHaveLength(1)
-          expect(result.leftoverChanges[0]).toEqual(nonAppRoleChange)
+        it('should not change the id of the app role if it already has one', async () => {
+          const appliedChangeAppRoleA = result.deployResult.appliedChanges.find(change =>
+            getChangeData(change).elemID.isEqual(appRoleInstanceA.elemID),
+          )
+          expect(appliedChangeAppRoleA).toBeDefined()
+          // Expect the id to be the same as the original id
+          expect(getChangeData(appliedChangeAppRoleA as Change<InstanceElement>).value.id).toEqual('appRoleA')
+        })
+
+        it('should not change the instances in the element source', async () => {
+          expect(elementsInElementSource).toEqual(expect.arrayContaining(elementsInElementSourceBeforeDeploy))
         })
       })
 

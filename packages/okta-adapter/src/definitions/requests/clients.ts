@@ -108,6 +108,16 @@ export const createClientDefinitions = (
               additionalValidStatuses: [404],
             },
           },
+          '/api/v1/apps/{parent_id}/connections/default/lifecycle/deactivate': {
+            post: {
+              omitBody: true,
+            },
+          },
+          '/api/v1/apps/{parent_id}/connections/default/lifecycle/activate': {
+            post: {
+              omitBody: true,
+            },
+          },
         },
       },
     },

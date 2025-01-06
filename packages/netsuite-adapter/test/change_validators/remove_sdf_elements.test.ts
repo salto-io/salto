@@ -9,13 +9,17 @@ import { ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import removeSdfElementsValidator from '../../src/change_validators/remove_sdf_elements'
-import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_LOCKED, METADATA_TYPE, NETSUITE } from '../../src/constants'
 import { mockChangeValidatorParams } from '../utils'
 
 describe('remove sdf object change validator', () => {
   const customRecordType = new ObjectType({
     elemID: new ElemID(NETSUITE, 'customrecord1'),
     annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE, [INTERNAL_ID]: '1' },
+  })
+  const lockedCustomRecordType = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'customrecord1_locked'),
+    annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE, [INTERNAL_ID]: '1', [IS_LOCKED]: true },
   })
   const customRecordTypeInstance = new InstanceElement('test', customRecordType)
 
@@ -99,6 +103,14 @@ describe('remove sdf object change validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(customRecordType.elemID)
+    })
+
+    it('should not have change warning when removing a locked custom record type', async () => {
+      const changeErrors = await removeSdfElementsValidator(
+        [toChange({ before: lockedCustomRecordType })],
+        mockChangeValidatorParams(),
+      )
+      expect(changeErrors).toHaveLength(0)
     })
 
     it('should have change error when removing a custom record type with internal id when instances exists in the index', async () => {

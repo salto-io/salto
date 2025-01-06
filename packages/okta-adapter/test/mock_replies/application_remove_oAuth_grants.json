@@ -1,0 +1,92 @@
+[
+  {
+    "path": "/api/v1/apps/app-fakeid1/grants",
+    "scope": "",
+    "method": "GET",
+    "status": 200,
+    "response": [
+      {
+        "id": "fakeid2",
+        "status": "ACTIVE",
+        "created": "2025-01-01T13:00:40.000Z",
+        "createdBy": {
+          "id": "fakeid22",
+          "type": "User"
+        },
+        "lastUpdated": "2025-01-01T13:00:40.000Z",
+        "clientId": "clientclientclientid",
+        "scopeId": "okta.otherScope",
+        "source": "ADMIN"
+      },
+      {
+        "id": "fakeid103",
+        "status": "ACTIVE",
+        "created": "2025-01-01T13:00:40.000Z",
+        "createdBy": {
+          "id": "fakeid133",
+          "type": "User"
+        },
+        "lastUpdated": "2025-01-01T13:00:40.000Z",
+        "clientId": "clientclientclientid",
+        "scopeId": "okta.accessRequests.catalog.read",
+        "source": "ADMIN"
+      },
+      {
+        "id": "fakeid3",
+        "status": "ACTIVE",
+        "created": "2025-01-01T13:00:40.000Z",
+        "createdBy": {
+          "id": "fakeid433",
+          "type": "User"
+        },
+        "lastUpdated": "2025-01-01T13:00:40.000Z",
+        "clientId": "clientclientclientid",
+        "scopeId": "okta.deviceAssurance.read",
+        "source": "ADMIN"
+      },
+      {
+        "id": "fakeid4",
+        "status": "ACTIVE",
+        "created": "2025-01-01T13:00:40.000Z",
+        "createdBy": {
+          "id": "fakeid10ee",
+          "type": "User"
+        },
+        "lastUpdated": "2025-01-01T13:00:40.000Z",
+        "clientId": "clientclientclientid",
+        "scopeId": "okta.deviceAssurance.manage",
+        "source": "ADMIN"
+      },
+      {
+        "id": "fakeid5",
+        "status": "ACTIVE",
+        "created": "2025-01-01T13:00:40.000Z",
+        "createdBy": {
+          "id": "fakeid10eed",
+          "type": "User"
+        },
+        "lastUpdated": "2025-01-01T13:00:40.000Z",
+        "clientId": "clientclientclientid",
+        "scopeId": "okta.accessRequests.request.read",
+        "source": "ADMIN"
+      }
+    ],
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "49",
+      "x-rate-limit-reset": "1735736718"
+    }
+  },
+  {
+    "path": "/api/v1/apps/app-fakeid1/grants/fakeid2",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "48",
+      "x-rate-limit-reset": "1735736718"
+    }
+  }
+]

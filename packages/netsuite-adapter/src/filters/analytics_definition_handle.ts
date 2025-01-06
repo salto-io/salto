@@ -29,7 +29,7 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import he from 'he'
 import { collections, strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { DATASET, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
+import { DATASET, FIELD_TYPE, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import { CDATA_TAG_NAME } from '../client/constants'
 import { parsedWorkbookType, workbookDefinitionFields } from '../type_parsers/analytics_parsers/parsed_workbook'
@@ -46,7 +46,6 @@ import {
   EXPRESSION_VALUE_VALUE_REGEX,
   FALSE,
   FIELD_DEFINITION,
-  FIELD_TYPE,
   fieldsToOmitFromDefinition,
   fieldsToOmitFromOriginal,
   FieldWithType,

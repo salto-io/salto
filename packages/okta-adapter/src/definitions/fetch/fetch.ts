@@ -36,12 +36,14 @@ import {
   AUTOMATION_RULE_TYPE_NAME,
   SIGN_IN_PAGE_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
+  INBOUND_PROVISIONING_SUPPORTED_APP_NAMES,
+  USER_PROVISIONING_SUPPORTED_APP_NAMES,
   USER_ROLES_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
-import { assignPolicyIdsToApplication, isOktaDashboard } from './types/application'
+import { assignPolicyIdsToApplication, generateExcludeRegex, isOktaDashboard } from './types/application'
 import { shouldConvertUserIds } from '../../user_utils'
 import { isNotDeletedEmailDomain } from './types/email_domain'
 import { isDefaultDomain } from './types/domain'
@@ -440,6 +442,60 @@ const createCustomizations = ({
             },
           },
         },
+        apiScopes: {
+          typeName: 'OAuth2ScopeConsentGrant',
+          conditions: [
+            {
+              fromField: 'signOnMode',
+              match: ['^OPENID_CONNECT$'],
+            },
+          ],
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+        },
+        applicationUserProvisioning: {
+          typeName: 'ApplicationUserProvisioning',
+          conditions: [
+            {
+              fromField: 'name',
+              match: USER_PROVISIONING_SUPPORTED_APP_NAMES.map(name => `^${name}$`),
+            },
+            // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+            { fromField: 'features', match: ['.+'] },
+          ],
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+          single: true,
+        },
+        applicationInboundProvisioning: {
+          typeName: 'ApplicationInboundProvisioning',
+          conditions: [
+            {
+              fromField: 'name',
+              match: INBOUND_PROVISIONING_SUPPORTED_APP_NAMES.map(name => `^${name}$`),
+            },
+            // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+            { fromField: 'features', match: ['.+'] },
+          ],
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+          single: true,
+        },
         ...(usePrivateAPI
           ? {
               GroupPush: {
@@ -481,6 +537,43 @@ const createCustomizations = ({
                   },
                 ],
               },
+              applicationProvisioningGeneral: {
+                typeName: 'ApplicationProvisioningGeneral',
+                conditions: [
+                  {
+                    fromField: 'name',
+                    match: generateExcludeRegex(INBOUND_PROVISIONING_SUPPORTED_APP_NAMES),
+                  },
+                  // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+                  { fromField: 'features', match: ['.+'] },
+                ],
+                context: {
+                  args: {
+                    appId: {
+                      root: 'id',
+                    },
+                  },
+                },
+                single: true,
+              },
+              applicationProvisioningUsers: {
+                typeName: 'ApplicationProvisioningUsers',
+                conditions: [
+                  {
+                    fromField: 'name',
+                    match: generateExcludeRegex(INBOUND_PROVISIONING_SUPPORTED_APP_NAMES),
+                  },
+                  // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+                  { fromField: 'features', match: ['.+'] },
+                ],
+                context: {
+                  args: {
+                    appId: {
+                      root: 'id',
+                    },
+                  },
+                },
+              },
             }
           : {}),
       },
@@ -508,6 +601,11 @@ const createCustomizations = ({
         _links: { hide: true },
         _embedded: { omit: true },
         credentials: { fieldType: 'ApplicationCredentials' },
+        applicationProvisioningUsers: { fieldType: 'unknown' },
+        applicationProvisioningGeneral: { fieldType: 'unknown' },
+        applicationInboundProvisioning: { fieldType: 'ApplicationFeature' },
+        applicationUserProvisioning: { fieldType: 'ApplicationFeature' },
+        apiScopes: { fieldType: 'list<OAuth2ScopeConsentGrant>' },
         settings: { fieldType: 'unknown' },
         profileEnrollment: { fieldType: 'string' },
         accessPolicy: { fieldType: 'string' },
@@ -603,6 +701,26 @@ const createCustomizations = ({
       },
     },
   },
+  OAuth2ScopeConsentGrant: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/apps/{appId}/grants',
+        },
+        transformation: {
+          omit: ['_links', 'createdBy', 'status', 'created', 'lastUpdated', 'clientId', 'source', 'issuer'],
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      fieldCustomizations: {
+        id: { omit: true },
+      },
+    },
+  },
   ...(usePrivateAPI
     ? {
         GroupPush: {
@@ -664,6 +782,69 @@ const createCustomizations = ({
               serviceUrl: { path: '/admin/app/{_parent.0.name}/instance/{_parent.0.id}/#tab-group-push' },
             },
             fieldCustomizations: { mappingRuleId: { hide: true } },
+          },
+        },
+        ApplicationUserProvisioning: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/apps/{appId}/features/USER_PROVISIONING',
+              },
+              transformation: {
+                omit: ['_links', 'name', 'description', 'status'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+          },
+        },
+        ApplicationInboundProvisioning: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/apps/{appId}/features/INBOUND_PROVISIONING',
+              },
+              transformation: {
+                omit: ['_links', 'name', 'description', 'status'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+          },
+        },
+        ApplicationProvisioningGeneral: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/internal/apps/instance/{appId}/settings/user-mgmt-general',
+                client: 'private',
+              },
+              transformation: {
+                pick: ['enabled', 'importSettings.userNameTemplate', 'importSettings.importInterval'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+          },
+        },
+        ApplicationProvisioningUsers: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/internal/apps/{appId}/settings/importMatchRules',
+                client: 'private',
+              },
+              transformation: {
+                omit: ['id'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+            serviceIDFields: [], // The default serviceId is 'id' which causes to returned values to be merged since we remove it.
           },
         },
       }
@@ -1329,7 +1510,15 @@ const createCustomizations = ({
     },
   },
   OAuth2Claim: {
-    requests: [{ endpoint: { path: '/api/v1/authorizationServers/{id}/claims' } }],
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/authorizationServers/{id}/claims',
+          // only include claims that are shown in Okta's Admin Console
+          queryArgs: { includeClaims: 'sub,custom' },
+        },
+      },
+    ],
     resource: { directFetch: false },
     element: {
       topLevel: { isTopLevel: true, elemID: { extendsParent: true } },

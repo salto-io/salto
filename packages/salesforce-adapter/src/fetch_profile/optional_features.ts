@@ -22,7 +22,8 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   extendFetchTargets: false,
   shouldPopulateInternalIdAfterDeploy: true,
   addParentToInstancesWithinFolder: false,
-  addParentToRecordTriggeredFlows: false,
+  packageVersionReference: false,
+  omitTotalTrustedRequestsUsageField: false,
   packageVersionReference: false,
 }
 

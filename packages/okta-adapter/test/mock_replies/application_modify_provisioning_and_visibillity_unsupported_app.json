@@ -1,0 +1,132 @@
+[
+  {
+    "path": "/api/v1/internal/apps/instance/app-fakeid1/settings/user-mgmt-general",
+    "scope": "admin",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "enabled": true,
+      "manualIncrementalImportsSupported": false,
+      "importSettings": {
+        "userNameTemplate": {
+          "type": "CUSTOM",
+          "displayName": "Custom",
+          "ruleName": "global.import.login.customExpression",
+          "expression": "appuser.userName"
+        },
+        "userNameTemplateOptions": null,
+        "importInterval": -1,
+        "importCronSettings": null,
+        "offPeakHoursStart": null,
+        "offPeakHoursEnd": null,
+        "offPeakHoursTimeZone": null,
+        "activeUserStatusesEnabled": false
+      }
+    },
+    "body": {
+      "enabled": true,
+      "importSettings": {
+        "userNameTemplate": {
+          "type": "CUSTOM",
+          "displayName": "Custom",
+          "ruleName": "global.import.login.customExpression",
+          "expression": "appuser.userName"
+        },
+        "importInterval": -1
+      }
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1735566797"
+    }
+  },
+  {
+    "path": "/api/v1/apps/app-fakeid1",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "app-fakeid1",
+      "orn": "orn:okta:idp:00o1lvvlyBZMbsvu6696:apps:zendesk:app-fakeid1",
+      "name": "zendesk",
+      "label": "Zendesk-d3v-salto",
+      "status": "ACTIVE",
+      "lastUpdated": "2024-12-30T13:52:53.000Z",
+      "created": "2024-11-22T08:51:57.000Z",
+      "accessibility": {
+        "selfService": false,
+        "errorRedirectUrl": null,
+        "loginRedirectUrl": null
+      },
+      "licensing": {
+        "seatCount": 0
+      },
+      "visibility": {
+        "autoLaunch": false,
+        "autoSubmitToolbar": true,
+        "hide": {
+          "iOS": true,
+          "web": false
+        },
+        "appLinks": {
+          "login": true
+        }
+      },
+      "features": ["IMPORT_PROFILE_UPDATES", "PUSH_NEW_USERS", "GROUP_PUSH", "IMPORT_USER_SCHEMA", "IMPORT_NEW_USERS"],
+      "signOnMode": "BROWSER_PLUGIN",
+      "credentials": {
+        "scheme": "EDIT_USERNAME_AND_PASSWORD",
+        "userNameTemplate": {
+          "template": "user.login",
+          "type": "CUSTOM",
+          "pushStatus": "DONT_PUSH"
+        },
+        "revealPassword": true,
+        "signing": {}
+      },
+      "settings": {
+        "app": {
+          "authToken": null,
+          "companySubDomain": "d3v-salto2",
+          "encryptedAuthToken": null
+        },
+        "notifications": {
+          "vpn": {
+            "network": {
+              "connection": "DISABLED"
+            },
+            "message": null,
+            "helpUrl": null
+          }
+        },
+        "manualProvisioning": false,
+        "implicitAssignment": false,
+        "emOptInStatus": "NONE",
+        "notes": {
+          "admin": null,
+          "enduser": null
+        }
+      }
+    },
+    "body": {
+      "name": "supportedApp",
+      "label": "app1",
+      "status": "ACTIVE",
+      "visibility": {
+        "autoLaunch": false,
+        "autoSubmitToolbar": true,
+        "hide": {
+          "iOS": true,
+          "web": false
+        }
+      },
+      "settings": null
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "250",
+      "x-rate-limit-remaining": "248",
+      "x-rate-limit-reset": "1735566797"
+    }
+  }
+]

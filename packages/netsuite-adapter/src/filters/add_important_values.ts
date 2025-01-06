@@ -10,35 +10,52 @@ import { CORE_ANNOTATIONS, ObjectType, isObjectType } from '@salto-io/adapter-ap
 import { ImportantValues, toImportantValues } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType, netsuiteSupportedTypes } from '../types'
-import { BUNDLE, CUSTOM_RECORD_TYPE, INACTIVE_FIELDS, NAME_FIELD, SCRIPT_ID } from '../constants'
+import { BUNDLE, CUSTOM_RECORD_TYPE, INACTIVE_FIELDS, IS_LOCKED, NAME_FIELD, SCRIPT_ID } from '../constants'
 
 const { IMPORTANT_VALUES, SELF_IMPORTANT_VALUES } = CORE_ANNOTATIONS
 
 const HIGHLIGHTED_FIELD_NAMES = [NAME_FIELD, 'label', 'description', SCRIPT_ID]
 const HIGHLIGHTED_AND_INDEXED_FIELD_NAMES = [...Object.values(INACTIVE_FIELDS), BUNDLE]
 
-const customRecordInstancesImportantValues = (): ImportantValues => [
-  {
-    value: NAME_FIELD,
-    highlighted: true,
-    indexed: false,
-  },
-  {
-    value: SCRIPT_ID,
-    highlighted: true,
-    indexed: false,
-  },
-  {
-    value: INACTIVE_FIELDS.isInactive,
-    highlighted: true,
-    indexed: true,
-  },
-  {
-    value: BUNDLE,
-    highlighted: true,
-    indexed: true,
-  },
-]
+const addCustomRecordTypeImportantValues = (type: ObjectType, customRecordType: ObjectType | undefined): void => {
+  const customRecordInstancesImportantValues: ImportantValues = [
+    {
+      value: NAME_FIELD,
+      highlighted: true,
+      indexed: false,
+    },
+    {
+      value: SCRIPT_ID,
+      highlighted: true,
+      indexed: false,
+    },
+    {
+      value: INACTIVE_FIELDS.isInactive,
+      highlighted: true,
+      indexed: true,
+    },
+    {
+      value: BUNDLE,
+      highlighted: true,
+      indexed: true,
+    },
+  ]
+
+  const customRecordTypeImportantValues: ImportantValues = Array.from(
+    customRecordType?.annotations[IMPORTANT_VALUES] ?? [],
+  )
+
+  if (type.annotations[IS_LOCKED]) {
+    customRecordTypeImportantValues.push({
+      value: IS_LOCKED,
+      highlighted: true,
+      indexed: true,
+    })
+  }
+
+  type.annotations[SELF_IMPORTANT_VALUES] = customRecordTypeImportantValues
+  type.annotations[IMPORTANT_VALUES] = customRecordInstancesImportantValues
+}
 
 const getImportantValues = (type: ObjectType): ImportantValues => [
   ...toImportantValues(type, HIGHLIGHTED_FIELD_NAMES, { highlighted: true }),
@@ -62,8 +79,7 @@ const filterCreator: LocalFilterCreator = () => ({
 
     const customRecordType = types.find(type => type.elemID.name === CUSTOM_RECORD_TYPE)
     customRecordTypes.forEach(type => {
-      type.annotations[SELF_IMPORTANT_VALUES] = customRecordType?.annotations[IMPORTANT_VALUES]
-      type.annotations[IMPORTANT_VALUES] = customRecordInstancesImportantValues()
+      addCustomRecordTypeImportantValues(type, customRecordType)
     })
   },
 })

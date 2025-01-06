@@ -1,0 +1,58 @@
+[
+  {
+    "path": "/api/v1/apps/app-fakeid1/features/USER_PROVISIONING",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "name": "USER_PROVISIONING",
+      "status": "ENABLED",
+      "description": "User provisioning settings from Okta to a downstream application",
+      "capabilities": {
+        "create": {
+          "lifecycleCreate": {
+            "status": "DISABLED"
+          }
+        },
+        "update": {
+          "profile": {
+            "status": "ENABLED"
+          },
+          "lifecycleDeactivate": {
+            "status": "DISABLED"
+          },
+          "password": {
+            "status": "DISABLED",
+            "seed": "RANDOM",
+            "change": "KEEP_EXISTING"
+          }
+        }
+      }
+    },
+    "body": {
+      "create": {
+        "lifecycleCreate": {
+          "status": "DISABLED"
+        }
+      },
+      "update": {
+        "profile": {
+          "status": "ENABLED"
+        },
+        "lifecycleDeactivate": {
+          "status": "DISABLED"
+        },
+        "password": {
+          "status": "DISABLED",
+          "seed": "RANDOM",
+          "change": "KEEP_EXISTING"
+        }
+      }
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "49",
+      "x-rate-limit-reset": "1735214168"
+    }
+  }
+]

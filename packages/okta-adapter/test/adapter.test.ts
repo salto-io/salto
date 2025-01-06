@@ -85,6 +85,8 @@ const loadMockReplies = (filename: string): void => {
   defs.forEach(def => {
     if (def.scope === '') {
       def.scope = 'https://test.okta.com:443'
+    } else if (def.scope === 'admin') {
+      def.scope = 'https://test-admin.okta.com:443'
     }
   })
   nock.define(defs)
@@ -595,7 +597,8 @@ describe('adapter', () => {
     })
 
     beforeEach(() => {
-      nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
+      nock('https://test.okta.com:443').persist().get('/api/v1/org').optionally().reply(200, { id: 'accountId' })
+      nock('https://test-admin.okta.com:443').persist().get('/api/v1/org').optionally().reply(200, { id: 'accountId' })
 
       orgSettingType = new ObjectType({
         elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME),
@@ -683,6 +686,10 @@ describe('adapter', () => {
           },
         },
       })
+    })
+
+    afterEach(() => {
+      nock.cleanAll()
     })
 
     describe('deploy authorization server policy', () => {
@@ -1406,10 +1413,6 @@ describe('adapter', () => {
         expect(result.appliedChanges).toHaveLength(1)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
-    })
-
-    afterEach(() => {
-      nock.cleanAll()
     })
 
     describe('deploy group', () => {
@@ -2315,6 +2318,564 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify applicationUserProvisioning for supported application', async () => {
+        loadMockReplies('application__modify_user_provisioning_supported_app.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          applicationUserProvisioning: {
+            capabilities: {
+              create: {
+                lifecycleCreate: {
+                  status: 'DISABLED',
+                },
+              },
+              update: {
+                profile: {
+                  status: 'DISABLED',
+                },
+                lifecycleDeactivate: {
+                  status: 'DISABLED',
+                },
+                password: {
+                  status: 'DISABLED',
+                  seed: 'RANDOM',
+                  change: 'KEEP_EXISTING',
+                },
+              },
+            },
+          },
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.applicationUserProvisioning.capabilities.update.profile.status = 'ENABLED'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify applicationInboundProvisioning for supported application', async () => {
+        loadMockReplies('application_modify_inbound_provisioning_supported_app.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          applicationInboundProvisioning: {
+            status: 'ENABLED',
+            capabilities: {
+              importSettings: {
+                username: {
+                  userNameFormat: 'EMAIL',
+                },
+                schedule: {
+                  status: 'DISABLED',
+                },
+              },
+              importRules: {
+                userCreateAndMatch: {
+                  exactMatchCriteria: 'EMAIL',
+                  allowPartialMatch: false,
+                  autoConfirmPartialMatch: false,
+                  autoConfirmExactMatch: false,
+                  autoConfirmNewUsers: false,
+                  autoActivateNewUsers: false,
+                },
+              },
+            },
+          },
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.applicationInboundProvisioning.capabilities.importRules.userCreateAndMatch.allowPartialMatch =
+          true
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify applicationProvisioningGeneral for unsupported application using private API', async () => {
+        loadMockReplies('application_modify_general_provisioning_unsupported_app.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          applicationProvisioningGeneral: {
+            enabled: true,
+            importSettings: {
+              userNameTemplate: {
+                type: 'CUSTOM',
+                displayName: 'Custom',
+                ruleName: 'global.import.login.customExpression',
+                expression: 'appuser.userName',
+              },
+              importInterval: 86400,
+            },
+          },
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.applicationProvisioningGeneral.importSettings.importInterval = -1
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify applicationProvisioningUsers for unsupported application using private API', async () => {
+        loadMockReplies('application_modify_provisioning_users_unsupported_app.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          applicationProvisioningUsers: [
+            {
+              priorityOrder: 1,
+              conditions: {
+                expression: {
+                  value: '(source.login eq target.login) OR (source.email eq target.email)',
+                  type: 'OTHER',
+                },
+              },
+              postMatchActions: {
+                autoConfirm: true,
+                autoActivate: false,
+              },
+            },
+            {
+              priorityOrder: 2,
+              conditions: {
+                expression: {
+                  value: '(source.firstName eq target.firstName) AND (source.lastName eq target.lastName)',
+                  type: 'OTHER',
+                },
+              },
+              postMatchActions: {
+                autoConfirm: true,
+                autoActivate: false,
+              },
+            },
+            {
+              priorityOrder: 9999,
+              conditions: {
+                expression: {
+                  type: 'CUSTOM',
+                },
+              },
+              postMatchActions: {
+                autoConfirm: true,
+                autoActivate: true,
+              },
+            },
+          ],
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.applicationProvisioningUsers[1].postMatchActions.autoConfirm = false
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully deactivate provisiong by removing applicationUserProvisioning and applicationInboundProvisioning for supported application', async () => {
+        loadMockReplies('application_remove_provisioning_supported_app.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          applicationUserProvisioning: {
+            capabilities: {
+              create: {
+                lifecycleCreate: {
+                  status: 'DISABLED',
+                },
+              },
+              update: {
+                profile: {
+                  status: 'DISABLED',
+                },
+                lifecycleDeactivate: {
+                  status: 'DISABLED',
+                },
+                password: {
+                  status: 'DISABLED',
+                  seed: 'RANDOM',
+                  change: 'KEEP_EXISTING',
+                },
+              },
+            },
+          },
+          applicationInboundProvisioning: {
+            status: 'ENABLED',
+            capabilities: {
+              importSettings: {
+                username: {
+                  userNameFormat: 'EMAIL',
+                },
+                schedule: {
+                  status: 'DISABLED',
+                },
+              },
+              importRules: {
+                userCreateAndMatch: {
+                  exactMatchCriteria: 'EMAIL',
+                  allowPartialMatch: false,
+                  autoConfirmPartialMatch: false,
+                  autoConfirmExactMatch: false,
+                  autoConfirmNewUsers: false,
+                  autoActivateNewUsers: false,
+                },
+              },
+            },
+          },
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.applicationUserProvisioning = undefined
+        updatedApp.value.applicationInboundProvisioning = undefined
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully activate provisiong and modify applicationUserProvisioning and applicationInboundProvisioning for supported application', async () => {
+        loadMockReplies('application_activate_provisioning_supported_app.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.applicationUserProvisioning = {
+          capabilities: {
+            create: {
+              lifecycleCreate: {
+                status: 'DISABLED',
+              },
+            },
+            update: {
+              profile: {
+                status: 'DISABLED',
+              },
+              lifecycleDeactivate: {
+                status: 'DISABLED',
+              },
+              password: {
+                status: 'DISABLED',
+                seed: 'RANDOM',
+                change: 'KEEP_EXISTING',
+              },
+            },
+          },
+        }
+        updatedApp.value.applicationInboundProvisioning = {
+          capabilities: {
+            importSettings: {
+              username: {
+                userNameFormat: 'EMAIL',
+              },
+              schedule: {
+                status: 'DISABLED',
+              },
+            },
+            importRules: {
+              userCreateAndMatch: {
+                exactMatchCriteria: 'EMAIL',
+                allowPartialMatch: false,
+                autoConfirmPartialMatch: false,
+                autoConfirmExactMatch: false,
+                autoConfirmNewUsers: false,
+                autoActivateNewUsers: false,
+              },
+            },
+          },
+        }
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully deactivate provisiong by removing applicationProvisioningGeneral and applicationProvisioningUsers for unsupported application using private API', async () => {
+        loadMockReplies('application_deactivate_provisioning_unsupported_app.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          applicationProvisioningGeneral: {
+            enabled: true,
+            importSettings: {
+              userNameTemplate: {
+                type: 'CUSTOM',
+                displayName: 'Custom',
+                ruleName: 'global.import.login.customExpression',
+                expression: 'appuser.userName',
+              },
+              importInterval: 86400,
+            },
+          },
+          applicationProvisioningUsers: [
+            {
+              priorityOrder: 1,
+              conditions: {
+                expression: {
+                  value: '(source.login eq target.login) OR (source.email eq target.email)',
+                  type: 'OTHER',
+                },
+              },
+              postMatchActions: {
+                autoConfirm: true,
+                autoActivate: false,
+              },
+            },
+            {
+              priorityOrder: 2,
+              conditions: {
+                expression: {
+                  value: '(source.firstName eq target.firstName) AND (source.lastName eq target.lastName)',
+                  type: 'OTHER',
+                },
+              },
+              postMatchActions: {
+                autoConfirm: true,
+                autoActivate: false,
+              },
+            },
+            {
+              priorityOrder: 9999,
+              conditions: {
+                expression: {
+                  type: 'CUSTOM',
+                },
+              },
+              postMatchActions: {
+                autoConfirm: true,
+                autoActivate: true,
+              },
+            },
+          ],
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.applicationProvisioningGeneral = undefined
+        updatedApp.value.applicationProvisioningUsers = undefined
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify applicationProvisioningGeneral and visibillity for unsupported application using public and private API', async () => {
+        loadMockReplies('application_modify_provisioning_and_visibillity_unsupported_app.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          visibility: {
+            autoLaunch: false,
+            autoSubmitToolbar: true,
+            hide: {
+              iOS: false,
+              web: false,
+            },
+          },
+          applicationProvisioningGeneral: {
+            enabled: true,
+            importSettings: {
+              userNameTemplate: {
+                type: 'CUSTOM',
+                displayName: 'Custom',
+                ruleName: 'global.import.login.customExpression',
+                expression: 'appuser.userName',
+              },
+              importInterval: 86400,
+            },
+          },
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.applicationProvisioningGeneral.importSettings.importInterval = -1
+        updatedApp.value.visibility.hide.iOS = true
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully add oAuth2ScopeConsentGrant', async () => {
+        loadMockReplies('application_modify_oAuth_grants.json')
+        const domainType = new ObjectType({
+          elemID: new ElemID(OKTA, DOMAIN_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        const defaultDomain = new InstanceElement('emailDomain', domainType, {
+          domain: 'example.com',
+          id: 'default',
+        })
+        operations = createOperations([defaultDomain])
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          signOnMode: 'OPENID_CONNECT',
+          apiScopes: [{ scopeId: 'okta.otherScope' }],
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.apiScopes.push({ scopeId: 'okta.scope' })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully Remove oAuth2ScopeConsentGrant', async () => {
+        loadMockReplies('application_remove_oAuth_grants.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          signOnMode: 'OPENID_CONNECT',
+          apiScopes: [{ scopeId: 'okta.otherScope' }, { scopeId: 'okta.scope' }],
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.apiScopes = [{ scopeId: 'okta.scope' }]
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
@@ -3275,6 +3836,37 @@ describe('adapter', () => {
           changeGroup: {
             groupID: claimInstance.elemID.getFullName(),
             changes: [toChange({ after: claimInstance })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('claim-fakeid')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully add a default authorization server claim with modifed values', async () => {
+        loadMockReplies('authorization_server_default_claim_add.json')
+        const defaultClaim = new InstanceElement(
+          'sub',
+          claimType,
+          {
+            name: 'sub',
+            status: 'ACTIVE',
+            claimType: 'RESOURCE',
+            valueType: 'EXPRESSION',
+            value: '(appuser != null) ? appuser.userName : app.name',
+            system: true,
+            alwaysIncludeInToken: true,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: defaultClaim.elemID.getFullName(),
+            changes: [toChange({ after: defaultClaim })],
           },
           progressReporter: nullProgressReporter,
         })

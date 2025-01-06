@@ -23,7 +23,7 @@ import {
   TypeElement,
   isObjectType,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, getSubtypes, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
   createAdapterReplacedID,
@@ -35,6 +35,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 // for backward comptability
 import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
+import { getAdaptersConfigTypesMap as getAdaptersConfigTypesMapImplementation } from '@salto-io/local-workspace'
 
 const { awu } = collections.asynciterable
 const { buildContainerType } = workspaceElementSource
@@ -115,13 +116,7 @@ const getAdapterConfigFromType = async (
 export const getAdaptersConfigTypesMap = (adapterCreators?: Record<string, Adapter>): Record<string, ObjectType[]> => {
   // for backward compatibility
   const actualAdapterCreator = adapterCreators ?? allAdapterCreators
-  return Object.fromEntries(
-    Object.entries(
-      _.mapValues(actualAdapterCreator, adapterCreator =>
-        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
-      ),
-    ).filter(entry => entry[1].length > 0),
-  )
+  return getAdaptersConfigTypesMapImplementation(actualAdapterCreator)
 }
 export const getAdaptersConfigTypes = async (adapterCreators?: Record<string, Adapter>): Promise<ObjectType[]> =>
   Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat()

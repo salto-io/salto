@@ -769,6 +769,13 @@ export const isSalesforceError = (error: Error): error is SalesforceError => {
   return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
 }
 
+// Salesforce Deploy Problems
+export const SALESFORCE_DEPLOY_PROBLEMS = {
+  SCHEDULABLE_CLASS: 'This schedulable class has jobs pending or in progress',
+  MAX_METADATA_DEPLOY_LIMIT: 'Maximum size of request reached. Maximum size of request is 52428800 bytes.',
+  INVALID_DASHBOARD_UNIQUE_NAME: 'Invalid dashboard Unique Name',
+} as const
+
 // Artifacts
 export const SalesforceArtifacts = {
   DeployPackageXml: 'package.xml',

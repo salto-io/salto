@@ -184,7 +184,7 @@ describe('flows filter', () => {
       })
     })
     describe('find the active versions of the flows', () => {
-      const FLOW2_ACTIVE_VERSION_INTERANL_ID = 'flow2-internal-id'
+      const FLOW2_ACTIVE_VERSION_INTERNAL_ID = 'flow2-internal-id'
       const FLOW1_INTERNAL_ID = 'flow1-internal-id'
       const FLOW1_API_NAME = 'flow1'
       const FLOW2_API_NAME = 'flow2'
@@ -231,19 +231,23 @@ describe('flows filter', () => {
               Id: FLOW_DEFINITION1_INTERNAL_ID,
               ActiveVersionId: null,
               ApiName: FLOW1_API_NAME,
+              LastModifiedBy: null,
+              LastModifiedDate: null,
             })
           }
           if (query.includes(FLOW_DEFINITION2_INTERNAL_ID)) {
             records.push({
               Id: FLOW_DEFINITION2_INTERNAL_ID,
-              ActiveVersionId: FLOW2_ACTIVE_VERSION_INTERANL_ID,
+              ActiveVersionId: FLOW2_ACTIVE_VERSION_INTERNAL_ID,
               ApiName: FLOW2_API_NAME,
+              LastModifiedBy: 'Servant',
+              LastModifiedDate: '2025-01-06T12:32:44.000Z',
             })
           }
           return { records, done: true, totalSize: records.length }
         })
       })
-      it('Should fetch the active flows with correct internal IDs', async () => {
+      it('Should fetch the active flows with correct internal IDs and properties', async () => {
         const result = await createActiveVersionFileProperties({
           flowsFileProps,
           flowDefinitions,
@@ -256,8 +260,12 @@ describe('flows filter', () => {
         )
         expect(result[0].fullName).toEqual('flow1')
         expect(result[0].id).toEqual(FLOW1_INTERNAL_ID)
+        expect(result[0].lastModifiedByName).toEqual('Ruler')
+        expect(result[0].lastModifiedDate).toEqual('2021-10-19T06:30:10.000Z')
         expect(result[1].fullName).toEqual('flow2-2')
-        expect(result[1].id).toEqual(FLOW2_ACTIVE_VERSION_INTERANL_ID)
+        expect(result[1].id).toEqual(FLOW2_ACTIVE_VERSION_INTERNAL_ID)
+        expect(result[1].lastModifiedByName).toEqual('Servant')
+        expect(result[1].lastModifiedDate).toEqual('2025-01-06T12:32:44.000Z')
       })
       it('should send multiple queries when the number of flow definitions exceeds the chunk size and return correct file properties', async () => {
         const result = await createActiveVersionFileProperties({
@@ -276,7 +284,7 @@ describe('flows filter', () => {
         expect(result[0].fullName).toEqual('flow1')
         expect(result[0].id).toEqual(FLOW1_INTERNAL_ID)
         expect(result[1].fullName).toEqual('flow2-2')
-        expect(result[1].id).toEqual(FLOW2_ACTIVE_VERSION_INTERANL_ID)
+        expect(result[1].id).toEqual(FLOW2_ACTIVE_VERSION_INTERNAL_ID)
       })
     })
     describe('when Flows are excluded', () => {

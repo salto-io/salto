@@ -18,6 +18,7 @@ import {
   isObjectType,
   ObjectType,
   toChange,
+  Value,
 } from '@salto-io/adapter-api'
 import { inspectValue, resolveTypeShallow } from '@salto-io/adapter-utils'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -59,10 +60,21 @@ const fixFilePropertiesName = (props: FileProperties, activeVersions: Map<string
 type FlowDefinitionViewRecord = SalesforceRecord & {
   ActiveVersionId: string | null
   ApiName: string
+  LastModifiedBy: string | null
+  LastModifiedDate: string | null
 }
+const isStringOrNull = (val: Value): val is string | null => val === null || _.isString(val)
 const isFlowDefinitionViewRecord = (record: SalesforceRecord): record is FlowDefinitionViewRecord =>
-  (record.ActiveVersionId === null || _.isString(record.ActiveVersionId)) && _.isString(record.ApiName)
+  isStringOrNull(record.ActiveVersionId) &&
+  _.isString(record.ApiName) &&
+  isStringOrNull(record.LastModifiedBy) &&
+  isStringOrNull(record.LastModifiedDate)
 
+type FlowVersionDetails = {
+  id: string
+  lastModifiedByName: string | null
+  lastModifiedDate: string | null
+}
 const getActiveFlowVersionIdByApiName = async ({
   client,
   flowDefinitions,
@@ -71,12 +83,12 @@ const getActiveFlowVersionIdByApiName = async ({
   client: SalesforceClient
   flowDefinitions: InstanceElement[]
   chunkSize: number
-}): Promise<Record<string, string>> => {
+}): Promise<Record<string, FlowVersionDetails>> => {
   const flowDefinitionsIds = flowDefinitions.map(flow => flow.value[INTERNAL_ID_FIELD])
   const records = _.flatten(
     await Promise.all(
       _.chunk(flowDefinitionsIds, chunkSize).map(async chunk => {
-        const query = `SELECT Id, ApiName, ActiveVersionId FROM FlowDefinitionView WHERE Id IN ('${chunk.join("','")}')`
+        const query = `SELECT Id, ApiName, ActiveVersionId, LastModifiedBy, LastModifiedDate FROM FlowDefinitionView WHERE Id IN ('${chunk.join("','")}')`
         return (await toArrayAsync(await client.queryAll(query))).flat()
       }),
     ),
@@ -94,9 +106,13 @@ const getActiveFlowVersionIdByApiName = async ({
       )
     }
   }
-  return validRecords.reduce<Record<string, string>>((acc, record) => {
+  return validRecords.reduce<Record<string, FlowVersionDetails>>((acc, record) => {
     if (record.ActiveVersionId !== null) {
-      acc[record.ApiName] = record.ActiveVersionId
+      acc[record.ApiName] = {
+        id: record.ActiveVersionId,
+        lastModifiedByName: record.LastModifiedBy,
+        lastModifiedDate: record.LastModifiedDate,
+      }
     }
     return acc
   }, {})
@@ -114,7 +130,7 @@ export const createActiveVersionFileProperties = async ({
   fetchProfile: FetchProfile
 }): Promise<FileProperties[]> => {
   const activeVersions = new Map<string, string>()
-  const activeFlowVersionIdByApiName = await getActiveFlowVersionIdByApiName({
+  const activeFlowDetailsByApiName = await getActiveFlowVersionIdByApiName({
     client,
     flowDefinitions,
     chunkSize: fetchProfile.limits?.flowDefinitionsQueryChunkSize ?? DEFAULT_CHUNK_SIZE,
@@ -125,10 +141,9 @@ export const createActiveVersionFileProperties = async ({
       `${flow.value.fullName}${isDefined(flow.value[ACTIVE_VERSION_NUMBER]) ? `-${flow.value[ACTIVE_VERSION_NUMBER]}` : ''}`,
     ),
   )
-  return flowsFileProps.map(prop => ({
-    ...fixFilePropertiesName(prop, activeVersions),
-    id: activeFlowVersionIdByApiName[prop.fullName] ?? prop.id,
-  }))
+  return flowsFileProps.map(prop =>
+    _.assign({}, fixFilePropertiesName(prop, activeVersions), activeFlowDetailsByApiName[prop.fullName]),
+  )
 }
 
 const getFlowWithoutVersion = (element: InstanceElement, flowType: ObjectType): InstanceElement => {

@@ -179,7 +179,7 @@ describe('SalesforceAdapter CRUD', () => {
           result = await createElement(adapter, instance)
         })
         describe('when the shouldPopulateInternalIdAfterDeploy feature is enabled', () => {
-          describe('when id from salesforce is defined', () => {
+          describe('when the deployed instance has internalId', () => {
             beforeEach(async () => {
               ;({ connection, adapter, client } = mockAdapter({
                 adapterParams: {
@@ -222,7 +222,7 @@ describe('SalesforceAdapter CRUD', () => {
               expect(result.value[constants.INTERNAL_ID_FIELD]).toBeDefined()
             })
           })
-          describe('when id from salesforce is undefined', () => {
+          describe('when the deployed instance does not have internalId', () => {
             beforeEach(async () => {
               ;({ connection, adapter, client } = mockAdapter({
                 adapterParams: {
@@ -247,7 +247,7 @@ describe('SalesforceAdapter CRUD', () => {
               )
               result = await createElement(adapter, instance)
             })
-            it('Should not add new instance with internal id', async () => {
+            it('Should not set the internalId on the deployed instance', async () => {
               expect(result).toBeInstanceOf(InstanceElement)
               expect(result.elemID).toEqual(instance.elemID)
               expect(result.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(instanceName)

@@ -15,6 +15,7 @@ import {
   isInstanceChange,
   isInstanceElement,
   isReferenceExpression,
+  ReferenceExpression,
   Value,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -29,6 +30,25 @@ import { isInstanceOfTypeSync } from '../filters/utils'
 
 export type ExactVersion = {
   exactVersion: boolean
+}
+
+type PackageVersionType = {
+  majorNumber: string
+  minorNumber: string
+  namespace: ReferenceExpression | string
+}
+
+const isPackageVersionType = (val: Value): val is PackageVersionType =>
+  typeof val === 'object' &&
+  val !== null &&
+  typeof val.majorNumber === 'number' &&
+  typeof val.minorNumber === 'number' &&
+  (isReferenceExpression(val.namespace) || typeof val.namespace === 'string') // namespace might be string NEED TO FIX WHAT HAPPENS IF NAMESPACE IS NOT REFERENCE
+
+const isArrayOfPackageVersionTypes = (arr: Value[]): arr is PackageVersionType[] => {
+  const a = Array.isArray(arr)
+  const b = arr.every(isPackageVersionType)
+  return a && b
 }
 
 export const TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION: Record<string, ExactVersion> = {
@@ -61,7 +81,7 @@ const convertNumStringsToNumber = (major: string, minor: string): Number | undef
 
 const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] => {
   const errors: ChangeError[] = []
-  if (!Array.isArray(instance.value.packageVersions)) {
+  if (!isArrayOfPackageVersionTypes(instance.value.packageVersions)) {
     return []
   }
   instance.value.packageVersions.forEach(

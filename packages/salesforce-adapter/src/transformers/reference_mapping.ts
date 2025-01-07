@@ -1146,7 +1146,6 @@ export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldRefere
   fieldNameToTypeMappingDefs
     .concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('networkReferences') ? NETWORK_REFERENCES_DEF : [])
-    .concat(fetchProfile.isFeatureEnabled('addParentToRecordTriggeredFlows') ? FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('packageVersionReference') ? PACKAGE_VERSION_REFERENCE_DEF : [])
 
 /**

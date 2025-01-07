@@ -66,8 +66,8 @@ describe('when deploying objects with installed packages', () => {
       })
       it('should catch instance', async () => {
         const expectedErrorMessage = requiresExactVersion
-          ? "Cannot deploy instances with different package version than target environment's package version"
-          : "Cannot deploy instances with greater package version than target environment's package version"
+          ? "Cannot deploy instances with a different package version than target environment's package version"
+          : "Cannot deploy instances with a greater package version than target environment's package version"
         const errs = await changeValidator([change])
         expect(errs).toHaveLength(2)
         expect(errs[0].message).toEqual(expectedErrorMessage)
@@ -108,7 +108,7 @@ describe('when deploying objects with installed packages', () => {
       })
       it('should catch instances that require exact version', async () => {
         const expectedErrorMessage =
-          "Cannot deploy instances with different package version than target environment's package version"
+          "Cannot deploy instances with a different package version than target environment's package version"
         const expectedNumOfErrors = requiresExactVersion ? 2 : 0
         const errs = await changeValidator([change])
         expect(errs).toHaveLength(expectedNumOfErrors)

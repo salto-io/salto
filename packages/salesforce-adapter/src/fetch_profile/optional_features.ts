@@ -24,7 +24,6 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   addParentToInstancesWithinFolder: false,
   packageVersionReference: false,
   omitTotalTrustedRequestsUsageField: false,
-  packageVersionReference: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

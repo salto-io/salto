@@ -53,33 +53,35 @@ const isHTMLBodyContentAutomationComponent = createSchemeGuard<MimeTypeComponent
   HTML_BODY_CONTENT_AUTOMATION_COMPONENT_SCHEME,
 )
 
-const getComponentErrorTypes = (component: MimeTypeComponent): HTMLBodyContentErrorType[] | [] => {
-  const errorTypes: HTMLBodyContentErrorType[] = []
+const getComponentErrorType = (component: MimeTypeComponent): HTMLBodyContentErrorType | undefined => {
   if (isStaticFile(component.value.body)) {
     if (component.value.mimeType !== 'text/html') {
-      errorTypes.push(HTMLBodyContentErrorType.mimeType)
+      return HTMLBodyContentErrorType.mimeType
     }
   } else if (component.value.mimeType === 'text/html') {
-    errorTypes.push(HTMLBodyContentErrorType.notStaticFile)
+    return HTMLBodyContentErrorType.notStaticFile
   }
-  return errorTypes
+  return undefined
 }
 
-const getErrorTypeFromEmailConfig = (
+const getErrorTypesFromEmailConfig = (
   instance: InstanceElement,
-): { elemID: ElemID; errorTypes: HTMLBodyContentErrorType[] }[] | undefined => {
-  const elemIDWithErrorTypes: { elemID: ElemID; errorTypes: HTMLBodyContentErrorType[] | [] }[] = []
+): { elemID: ElemID; errorType: HTMLBodyContentErrorType }[] | [] => {
+  const elemIDWithErrorType: { elemID: ElemID; errorType: HTMLBodyContentErrorType }[] = []
   walkOnValue({
     elemId: instance.elemID.createNestedID('components'),
     value: instance.value.components,
     func: ({ value, path }) => {
       if (isHTMLBodyContentAutomationComponent(value)) {
-        elemIDWithErrorTypes.push({ elemID: path, errorTypes: getComponentErrorTypes(value) })
+        const errorType = getComponentErrorType(value)
+        if (errorType !== undefined) {
+          elemIDWithErrorType.push({ elemID: path, errorType })
+        }
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return elemIDWithErrorTypes.length > 0 ? elemIDWithErrorTypes : []
+  return elemIDWithErrorType
 }
 
 const errorMessageMap = {
@@ -103,11 +105,9 @@ export const htmlBodyContentValidator: ChangeValidator = async changes =>
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-    .flatMap(getErrorTypeFromEmailConfig)
+    .flatMap(getErrorTypesFromEmailConfig)
     .filter(isDefined)
-    .flatMap(componentElemIDWithErrorTypes =>
-      componentElemIDWithErrorTypes.errorTypes.map(errorType => {
-        const errorMessageCreator = errorMessageMap[errorType]
-        return errorMessageCreator(componentElemIDWithErrorTypes.elemID)
-      }),
-    )
+    .flatMap(componentElemIDWithErrorType => {
+      const errorMessageCreator = errorMessageMap[componentElemIDWithErrorType.errorType]
+      return errorMessageCreator(componentElemIDWithErrorType.elemID)
+    })

@@ -86,8 +86,8 @@ describe('add alias filter', () => {
         'field name alias',
         'gadget name alias',
         undefined,
-        'field config:field name alias',
-        'field name alias context in c name',
+        undefined,
+        undefined,
         undefined,
       ])
     })

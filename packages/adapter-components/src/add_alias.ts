@@ -162,8 +162,7 @@ export const addAliasToElements = ({
       const alias = calculateAlias({ element, elementsById, aliasData })
       if (alias !== undefined) {
         element.annotations[CORE_ANNOTATIONS.ALIAS] = alias
-      }
-      else {
+      } else {
         elementsWithNoAlias.push(element.elemID.getFullName())
       }
     })

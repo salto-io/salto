@@ -1611,7 +1611,7 @@ describe('SalesforceAdapter CRUD', () => {
               progressReporter: nullProgressReporter,
             })
           })
-          it('should update internal id for non profile instances', async () => {
+          it('should not update internal id', async () => {
             const deployedInstance = getChangeData(result.appliedChanges[0]) as InstanceElement
             expect(deployedInstance).toBeInstanceOf(InstanceElement)
             expect(deployedInstance.value[constants.INTERNAL_ID_FIELD]).toEqual(

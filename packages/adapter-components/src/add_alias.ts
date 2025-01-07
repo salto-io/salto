@@ -167,7 +167,7 @@ export const addAliasToElements = ({
       }
     })
     if (!_.isEmpty(elementsWithNoAlias)) {
-      log.error(`Failed creating aliases for elements: ${elementsWithNoAlias.join(', ')}`)
+      log.warn(`Failed creating aliases for elements: ${elementsWithNoAlias.join(', ')}`)
     }
   }
   const graph = createAliasDependenciesGraph(relevantAliasMap, relevantElementsMap)

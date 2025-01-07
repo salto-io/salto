@@ -152,6 +152,7 @@ import scriptRunnerEmptyAccountIdsFilter from './filters/script_runner/workflow/
 import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
+import addAliasExtended from './filters/add_alias_extended'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
@@ -365,6 +366,7 @@ export const DEFAULT_FILTERS = [
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
   addAliasFilter,
+  addAliasExtended,
   // must be done before scriptRunnerInstances
   scriptRunnerListenersDeployFilter,
   // must be done before scriptRunnerInstances

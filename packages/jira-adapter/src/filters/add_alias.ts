@@ -10,10 +10,7 @@ import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { addAliasToElements, AliasData } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import {
-  PRIORITY_TYPE_NAME,
-  STATUS_TYPE_NAME,
-} from '../constants'
+import { PRIORITY_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
 import { JiraConfig } from '../config/config'
 
 const log = logger(module)
@@ -57,7 +54,11 @@ const aliasTypeMap: Record<string, AliasData> = {
   },
 }
 
-export const addAlias = async (config: JiraConfig, elements: Element[], aliasMap: Record<string, AliasData>): Promise<void> => {
+export const addAlias = async (
+  config: JiraConfig,
+  elements: Element[],
+  aliasMap: Record<string, AliasData>,
+): Promise<void> => {
   if (config.fetch.addAlias === false || config.fetch.addAlias === undefined) {
     log.info('not running addAlias filter as addAlias in the config is false')
     return

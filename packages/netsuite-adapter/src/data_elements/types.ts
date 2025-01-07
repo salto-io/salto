@@ -270,8 +270,8 @@ export const getTypesToInternalId = (
   const groupedByTypeId = _.groupBy(allSuiteQLTables, row => row.typeId)
   const groupedByName = _.groupBy(allSuiteQLTables, row => row.name)
 
-  const internalIdToTypes = _.mapValues(groupedByTypeId, rows => rows.map(row => row.name))
-  const typeToInternalId = _.mapValues(groupedByName, rows => rows.map(row => row.typeId))
+  const internalIdToTypes = _.mapValues(groupedByTypeId, rows => _.uniq(rows.map(row => row.name)))
+  const typeToInternalId = _.mapValues(groupedByName, rows => _.uniq(rows.map(row => row.typeId)))
 
   return { internalIdToTypes, typeToInternalId }
 }

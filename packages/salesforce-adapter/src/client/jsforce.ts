@@ -139,3 +139,19 @@ export interface RunTestsResult {
   successes?: ArrayOrSingle<object> // RunTestSuccess[]
   totalTime: number
 }
+
+export interface DeployMessage {
+  changed: boolean
+  columnNumber: number
+  componentType: string
+  created: boolean
+  createdDate: string
+  deleted: boolean
+  fileName: string
+  fullName: string
+  id: string | undefined
+  lineNumber: number
+  problem: string
+  problemType: string
+  success: boolean
+}

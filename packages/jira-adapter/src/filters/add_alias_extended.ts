@@ -188,7 +188,7 @@ const aliasTypeMap: Record<string, AliasData> = {
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'addAliasExtended',
   onFetch: async (elements: Element[]): Promise<void> => {
-    addAlias(config, elements, aliasTypeMap)
+    await addAlias(config, elements, aliasTypeMap)
   },
 })
 

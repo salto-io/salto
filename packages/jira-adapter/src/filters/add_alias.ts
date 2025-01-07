@@ -72,7 +72,7 @@ export const addAlias = async (config: JiraConfig, elements: Element[], aliasMap
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'addAlias',
   onFetch: async (elements: Element[]): Promise<void> => {
-    addAlias(config, elements, aliasTypeMap)
+    await addAlias(config, elements, aliasTypeMap)
   },
 })
 

@@ -102,14 +102,14 @@ const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] =>
             severity: 'Warning',
             message:
               "Cannot deploy instances with a different package version than target environment's package version",
-            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
+            detailedMessage: `${namespace.value.value.fullName}'s version at the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
           })
         } else if (isGreaterVersion(instanceVersion, targetVersion)) {
           errors.push({
             elemID: instance.elemID.createNestedID('packageVersions', String(index)),
             severity: 'Warning',
             message: "Cannot deploy instances with a greater package version than target environment's package version",
-            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
+            detailedMessage: `${namespace.value.value.fullName}'s version at the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
           })
         }
       }

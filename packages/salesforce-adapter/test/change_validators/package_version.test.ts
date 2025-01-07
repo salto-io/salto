@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { Change, ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import changeValidator, {
   TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION,
   ExactVersion,
@@ -71,7 +71,9 @@ describe('when deploying objects with installed packages', () => {
         const errs = await changeValidator([change])
         expect(errs).toHaveLength(2)
         expect(errs[0].message).toEqual(expectedErrorMessage)
+        expect(errs[0].elemID).toEqual(getChangeData(change).elemID.createNestedID('packageVersions', '0'))
         expect(errs[1].message).toEqual(expectedErrorMessage)
+        expect(errs[1].elemID).toEqual(getChangeData(change).elemID.createNestedID('packageVersions', '1'))
       })
     },
   )
@@ -114,7 +116,9 @@ describe('when deploying objects with installed packages', () => {
         expect(errs).toHaveLength(expectedNumOfErrors)
         if (requiresExactVersion) {
           expect(errs[0].message).toEqual(expectedErrorMessage)
+          expect(errs[0].elemID).toEqual(getChangeData(change).elemID.createNestedID('packageVersions', '0'))
           expect(errs[1].message).toEqual(expectedErrorMessage)
+          expect(errs[1].elemID).toEqual(getChangeData(change).elemID.createNestedID('packageVersions', '1'))
         }
       })
     },

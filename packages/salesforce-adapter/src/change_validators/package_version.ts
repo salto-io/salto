@@ -32,23 +32,15 @@ export type ExactVersion = {
   exactVersion: boolean
 }
 
-type PackageVersionType = {
-  majorNumber: string
-  minorNumber: string
-  namespace: ReferenceExpression | string
+type PackageVersion = {
+  majorNumber: Number
+  minorNumber: Number
+  namespace: ReferenceExpression
 }
 
-const isPackageVersionType = (val: Value): val is PackageVersionType =>
-  typeof val === 'object' &&
-  val !== null &&
-  typeof val.majorNumber === 'number' &&
-  typeof val.minorNumber === 'number' &&
-  (isReferenceExpression(val.namespace) || typeof val.namespace === 'string') // namespace might be string NEED TO FIX WHAT HAPPENS IF NAMESPACE IS NOT REFERENCE
-
-const isArrayOfPackageVersionTypes = (arr: Value[]): arr is PackageVersionType[] => {
-  const a = Array.isArray(arr)
-  const b = arr.every(isPackageVersionType)
-  return a && b
+type Version = {
+  major: Number
+  minor: Number
 }
 
 export const TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION: Record<string, ExactVersion> = {
@@ -59,59 +51,69 @@ export const TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION: Record<string, ExactV
   [APEX_TRIGGER_METADATA_TYPE]: { exactVersion: true },
 }
 
-type PackageVersionInstanceElement = InstanceElement & {
-  versionNumber: string
+const isPackageVersionType = (val: Value): val is PackageVersion =>
+  _.isPlainObject(val) &&
+  _.isNumber(val.majorNumber) &&
+  _.isNumber(val.minorNumber) &&
+  isReferenceExpression(val.namespace) &&
+  isInstanceElement(val.namespace.value) &&
+  _.isString(_.get(val.namespace.value.value, ['versionNumber']))
+
+const getTargetVersionMajorMinor = (namespace: ReferenceExpression): Version | undefined => {
+  const numberAsStrings = namespace.value.value.versionNumber.split('.')
+  const major = _.toInteger(numberAsStrings[0])
+  const minor = _.toInteger(numberAsStrings[1])
+  return numberAsStrings.length === 2 && major !== undefined && minor !== undefined ? { major, minor } : undefined
 }
 
-const isPackageVersionInstanceElement = (element: InstanceElement): element is PackageVersionInstanceElement =>
-  isInstanceElement(element) && _.isString(_.get(element.value, ['versionNumber']))
+const isExactVersion = (instanceVersion: Version, targetVersion: Version): boolean =>
+  instanceVersion.major === targetVersion.major && instanceVersion.minor === targetVersion.minor
 
-const getVersionNumber = (namespace: Value): Number | undefined => {
-  if (!isReferenceExpression(namespace) || !isPackageVersionInstanceElement(namespace.value)) {
-    return undefined
-  }
-  const numberAsNumber = Number(namespace.value.value.versionNumber)
-  return !Number.isNaN(numberAsNumber) ? numberAsNumber : undefined
-}
+const isGreaterVersion = (instanceVersion: Version, targetVersion: Version): boolean =>
+  instanceVersion.major > targetVersion.major ||
+  (instanceVersion.major === targetVersion.major && instanceVersion.minor > targetVersion.minor)
 
-const convertNumStringsToNumber = (major: string, minor: string): Number | undefined => {
-  const num = Number(`${major}.${minor}`)
-  return !Number.isNaN(num) ? num : undefined
-}
+const destructPackageVersion = (
+  packageVersion: PackageVersion,
+): { instanceVersion: Version; namespace: ReferenceExpression } => ({
+  instanceVersion: { major: packageVersion.majorNumber, minor: packageVersion.minorNumber },
+  namespace: packageVersion.namespace,
+})
+
+const printableVersion = (version: Version): string => `${version.major}.${version.minor}`
 
 const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] => {
   const errors: ChangeError[] = []
-  if (!isArrayOfPackageVersionTypes(instance.value.packageVersions)) {
+  if (!Array.isArray(instance.value.packageVersions)) {
     return []
   }
-  instance.value.packageVersions.forEach(
-    (packageVersion: { majorNumber: string; minorNumber: string; namespace: Value }, index: Number) => {
-      const { majorNumber, minorNumber, namespace } = packageVersion
-      const packageVersionNumber = getVersionNumber(namespace)
-      const instanceVersion = convertNumStringsToNumber(majorNumber, minorNumber)
-      if (instanceVersion !== undefined && packageVersionNumber !== undefined) {
+  instance.value.packageVersions
+    .filter(isPackageVersionType)
+    .forEach((packageVersion: PackageVersion, index: Number) => {
+      const { instanceVersion, namespace } = destructPackageVersion(packageVersion)
+      const targetVersion = getTargetVersionMajorMinor(namespace)
+      if (instance !== undefined && targetVersion !== undefined) {
         if (
           TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION[instance.elemID.typeName].exactVersion &&
-          instanceVersion !== packageVersionNumber
+          !isExactVersion(instanceVersion, targetVersion)
         ) {
           errors.push({
             elemID: instance.elemID.createNestedID('packageVersions', String(index)),
             severity: 'Warning',
             message:
               "Cannot deploy instances with a different package version than target environment's package version",
-            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${packageVersionNumber} and ${instanceVersion} in the instance`,
+            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
           })
-        } else if (instanceVersion > packageVersionNumber) {
+        } else if (isGreaterVersion(instanceVersion, targetVersion)) {
           errors.push({
             elemID: instance.elemID.createNestedID('packageVersions', String(index)),
             severity: 'Warning',
             message: "Cannot deploy instances with a greater package version than target environment's package version",
-            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${packageVersionNumber} and ${instanceVersion} in the instance`,
+            detailedMessage: `${namespace.value.fullName}'s version at the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
           })
         }
       }
-    },
-  )
+    })
   return errors
 }
 

@@ -63,13 +63,13 @@ microsoft_security {
 | --------------------------------------- | ---------------------- | ------------------------------------------------------------------------- |
 | [client](#client-configuration-options) | `{}` (no overrides)    | Configuration relating to the client used to interact with the service    |
 | [fetch](#fetch-configuration-options)   | `{}` (no overrides)    | Configuration relating to the endpoints that will be queried during fetch |
-| [deploy](#deploy-configuration-options) | `{}` (no overrides)    | Configuration relating to the deployment of changes to the service         |
+| [deploy](#deploy-configuration-options) | `{}` (no overrides)    | Configuration relating to the deployment of changes to the service        |
 
 ### Client configuration options
 
 | Name                                             | Default when undefined | Description                                                    |
 | ------------------------------------------------ | ---------------------- | -------------------------------------------------------------- |
-| [retry](#client-retry-configuration-options)            | `{}` (no overrides)    | Configuration for retrying on errors                           |
+| [retry](#client-retry-configuration-options)     | `{}` (no overrides)    | Configuration for retrying on errors                           |
 | [rateLimit](#rate-limit-configuration-options)   | `{}` (no overrides)    | Limits on the number of concurrent requests of different types |
 | maxRequestsPerMinute                             | unlimited              | Limits on the number of requests per minute                    |
 | delayPerRequestMS                                | 0                      | Delay waited between each request in milliseconds              |
@@ -138,40 +138,40 @@ microsoft_security {
 
 ## Deploy configuration options
 
-| Name                         | Default when undefined | Description                                                                                                             |
-| ---------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Name                                                           | Default when undefined | Description                                                             |
+| -------------------------------------------------------------- | ---------------------- | ----------------------------------------------------------------------- |
 | [omitAssignmentFields](#omit-assignment-fields-customizations) | {}                     | Allows omitting specific assignment related fields from being deployed. |
 
 ### Omit assignment fields customizations
 
-| Name | Default when undefined | Description |
-| ---- | ---------------------- | ----------- |
-| Intune | [] | List of Intune type names, from which to omit the "assignments" field |
-| [EntraConditionalAccessPolicy](#conditional-access-policy-omit-assignment-fields-customizations) | {} | Configuration for omitting specific assignments from Entra Conditional Access Policy instances |
+| Name                                                                                             | Default when undefined | Description                                                                                    |
+| ------------------------------------------------------------------------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------- |
+| Intune                                                                                           | []                     | List of Intune type names, from which to omit the "assignments" field                          |
+| [EntraConditionalAccessPolicy](#conditional-access-policy-omit-assignment-fields-customizations) | {}                     | Configuration for omitting specific assignments from Entra Conditional Access Policy instances |
 
 #### Conditional Access Policy omit assignment fields customizations
 
 Each entry in the configuration object represents a specific field under the "conditions" field of an Entra Conditional Access Policy instance.
-The value of each entry defines a [rule for omitting the field](#customization-structure).
+The value of each entry defines a [rule for omitting the field](#omit-field-rule-structure).
 
-| Name | Default when undefined | Description |
-| ---- | ---------------------- | ----------- |
-| includeApplications | {} | Configuration for omitting or replacing the "conditions.applications.includeApplications" field |
-| excludeApplications | {} | Configuration for omitting or replacing the "conditions.applications.excludeApplications" field |
-| includeServicePrincipals | {} | Configuration for omitting or replacing the "conditions.clientApplications.includeServicePrincipals" field |
-| excludeServicePrincipals | {} | Configuration for omitting or replacing the "conditions.clientApplications.excludeServicePrincipals" field |
-| includeUsers | {} | Configuration for omitting or replacing the "conditions.users.includeUsers" field |
-| excludeUsers | {} | Configuration for omitting or replacing the "conditions.users.excludeUsers" field |
-| includeGroups | {} | Configuration for omitting or replacing the "conditions.users.includeGroups" field |
-| excludeGroups | {} | Configuration for omitting or replacing the "conditions.users.excludeGroups" field |
-| includeRoles | {} | Configuration for omitting or replacing the "conditions.users.includeRoles" field |
-| excludeRoles | {} | Configuration for omitting or replacing the "conditions.users.excludeRoles" field |
-| includeDevices | {} | Configuration for omitting or replacing the "conditions.devices.includeDevices" field |
-| excludeDevices | {} | Configuration for omitting or replacing the "conditions.devices.excludeDevices" field |
+| Name                     | Default when undefined | Description                                                                                                |
+| ------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------- |
+| includeApplications      | {}                     | Configuration for omitting or replacing the "conditions.applications.includeApplications" field            |
+| excludeApplications      | {}                     | Configuration for omitting or replacing the "conditions.applications.excludeApplications" field            |
+| includeServicePrincipals | {}                     | Configuration for omitting or replacing the "conditions.clientApplications.includeServicePrincipals" field |
+| excludeServicePrincipals | {}                     | Configuration for omitting or replacing the "conditions.clientApplications.excludeServicePrincipals" field |
+| includeUsers             | {}                     | Configuration for omitting or replacing the "conditions.users.includeUsers" field                          |
+| excludeUsers             | {}                     | Configuration for omitting or replacing the "conditions.users.excludeUsers" field                          |
+| includeGroups            | {}                     | Configuration for omitting or replacing the "conditions.users.includeGroups" field                         |
+| excludeGroups            | {}                     | Configuration for omitting or replacing the "conditions.users.excludeGroups" field                         |
+| includeRoles             | {}                     | Configuration for omitting or replacing the "conditions.users.includeRoles" field                          |
+| excludeRoles             | {}                     | Configuration for omitting or replacing the "conditions.users.excludeRoles" field                          |
+| includeDevices           | {}                     | Configuration for omitting or replacing the "conditions.devices.includeDevices" field                      |
+| excludeDevices           | {}                     | Configuration for omitting or replacing the "conditions.devices.excludeDevices" field                      |
 
-##### customization structure
+##### Omit field rule structure
 
-| Name | Default when undefined | Description |
-| ---- | ---------------------- | ----------- |
-| strategy | undefined | The strategy to apply for the specified assignment field - "omit" or "fallback". If "omit" is set for a required field, the field will be replaced with a value of ["None"]. |
-| fallbackValue | undefined | The value to use as a fallback for the specified assignment field, when the strategy is "fallback". |
+| Name          | Default when undefined | Description                                                                                                                                                                  |
+| ------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| strategy      | undefined              | The strategy to apply for the specified assignment field - "omit" or "fallback". If "omit" is set for a required field, the field will be replaced with a value of ["None"]. |
+| fallbackValue | undefined              | The value to use as a fallback for the specified assignment field, when the strategy is "fallback".                                                                          |

@@ -24,7 +24,7 @@ import {
 import { addAlias } from './add_alias'
 
 // Add aliases for elements that need references in order to calculate aliases, and for JSM elements
-const aliasMap: Record<string, AliasData> = {
+const aliasTypeMap: Record<string, AliasData> = {
   CustomFieldContext: {
     aliasComponents: [
       {
@@ -188,7 +188,7 @@ const aliasMap: Record<string, AliasData> = {
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'addAliasExtended',
   onFetch: async (elements: Element[]): Promise<void> => {
-    addAlias(config, elements, aliasMap)
+    addAlias(config, elements, aliasTypeMap)
   },
 })
 

@@ -18,7 +18,7 @@ import { JiraConfig } from '../config/config'
 
 const log = logger(module)
 
-const aliasMap: Record<string, AliasData> = {
+const aliasTypeMap: Record<string, AliasData> = {
   Field: {
     aliasComponents: [
       {
@@ -72,7 +72,7 @@ export const addAlias = async (config: JiraConfig, elements: Element[], aliasMap
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'addAlias',
   onFetch: async (elements: Element[]): Promise<void> => {
-    addAlias(config, elements, aliasMap)
+    addAlias(config, elements, aliasTypeMap)
   },
 })
 

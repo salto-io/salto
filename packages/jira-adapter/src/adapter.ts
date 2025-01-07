@@ -221,38 +221,64 @@ export const DEFAULT_FILTERS = [
   automationLabelDeployFilter,
   automationFetchFilter,
   automationStructureFilter,
-  brokenReferences, // Should run before automationDeploymentFilter
+  // Should run before automationDeploymentFilter
+  brokenReferences,
   automationDeploymentFilter,
   addImportantValuesFilter,
   webhookFilter,
-  fieldNameFilter, // Should run before duplicateIdsFilter
+  // Should run before duplicateIdsFilter
+  fieldNameFilter,
   workflowFilter,
   workflowV1RemovalFilter,
   workflowStructureFilter,
   queryFilter,
-  projectRoleRemoveTeamManagedDuplicatesFilter, // This should run before duplicateIdsFilter
-  fieldStructureFilter, // fieldStructureFilter adds instances so it should run before duplicateIdsFilter. It also creates references so it should run before fieldReferencesFilter
+  // This should run before duplicateIdsFilter
+  projectRoleRemoveTeamManagedDuplicatesFilter,
+  // This should happen before any filter that creates references
+  duplicateIdsFilter,
+  fieldStructureFilter,
+  // This should run here again because fieldStructureFilter creates the instances and references
+  duplicateIdsFilter,
+  // This must run after duplicateIdsFilter
+  unresolvedParentsFilter,
   localeFilter,
+  contextReferencesFilter,
+  // must run after contextReferencesFilter
+  assetsObjectFieldConfigurationFilter,
+  fieldTypeReferencesFilter,
+  fieldDeploymentFilter,
+  // This must run after fieldDeploymentFilter
+  contextDeploymentFilter,
+  // This must run after contextDeploymentFilter
+  avatarsFilter,
   iconUrlFilter,
   triggersFilter,
   resolutionPropertyFilter,
   scriptRunnerFilter,
-  scriptedFieldsIssueTypesFilter, // must run before references are transformed
+  // must run before references are transformed
+  scriptedFieldsIssueTypesFilter,
   behaviorsMappingsFilter,
   behaviorsFieldUuidFilter,
   scriptRunnerWorkflowFilter,
-  scriptRunnerWorkflowListsFilter, // must run after scriptRunnerWorkflowFilter
+  // must run after scriptRunnerWorkflowFilter
+  scriptRunnerWorkflowListsFilter,
   scriptRunnerTemplateExpressionFilter,
   scriptRunnerEmptyAccountIdsFilter,
-  workflowPropertiesFilter, // resolves references in workflow instances!
-  scriptRunnerWorkflowReferencesFilter, // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
-  statusPropertiesReferencesFilter, // must run before workflowTransitionIdsFilter
-  workflowTransitionIdsFilter, // must run after scriptRunnerWorkflowReferencesFilter
+  // resolves references in workflow instances!
+  workflowPropertiesFilter,
+  // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
+  scriptRunnerWorkflowReferencesFilter,
+  // must run before workflowTransitionIdsFilter
+  statusPropertiesReferencesFilter,
+  // must run after scriptRunnerWorkflowReferencesFilter
+  workflowTransitionIdsFilter,
   transitionIdsFilter,
   workflowDeployFilter,
   workflowModificationFilter,
-  emptyValidatorWorkflowFilter, // must run after workflowFilter
-  formsFilter, // must run before fieldReferencesFilter
+  // must run after workflowFilter
+  emptyValidatorWorkflowFilter,
+  // must run before fieldReferencesFilter
+  formsFilter,
   objectTypeIconFilter,
   groupNameFilter,
   workflowGroupsFilter,
@@ -286,45 +312,42 @@ export const DEFAULT_FILTERS = [
   notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
   issueTypeHierarchyFilter,
+  fieldConfigurationFilter,
+  fieldConfigurationSchemeFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
-  enhancedSearchNoiseReductionFilter, // Must run before jqlReferencesFilter
+  // Must run before jqlReferencesFilter
+  enhancedSearchNoiseReductionFilter,
+  jqlReferencesFilter,
   removeEmptyValuesFilter,
   maskingFilter,
   pluginVersionFliter,
   referenceBySelfLinkFilter,
-  removeSelfFilter, // Must run after referenceBySelfLinkFilter
-  // serviceUrl filters must run before duplicateIdsFilter
+  // Must run after referenceBySelfLinkFilter
+  removeSelfFilter,
   serviceUrlJsmFilter, // Must run before fieldReferencesFilter
-  serviceUrlInformationFilter,
-  serviceUrlFilter,
-  addAliasFilter, // must run before duplicateIdsFilter
-  duplicateIdsFilter,
-  unresolvedParentsFilter, // must run after duplicateIdsFilter
-  fieldConfigurationFilter, // must run after duplicateIdsFilter
-  fieldConfigurationSchemeFilter,
-  contextReferencesFilter, // must run after duplicateIdsFilter
-  assetsObjectFieldConfigurationFilter, // must run after contextReferencesFilter
-  fieldTypeReferencesFilter,
-  fieldDeploymentFilter,
-  contextDeploymentFilter, // must run after fieldDeploymentFilter
-  avatarsFilter, // This must run after contextDeploymentFilter
-  jqlReferencesFilter, // must run after assetsObjectFieldConfigurationFilter
   fieldReferencesFilter,
-  addJsmTypesAsFieldsFilter, // Must run after fieldReferencesFilter
+  // Must run after fieldReferencesFilter
+  addJsmTypesAsFieldsFilter,
   issueLayoutFilter,
   fetchJsmTypesFilter,
   assetsObjectTypeChangeFields,
-  removeSimpleFieldProjectFilter, // Must run after issueLayoutFilter
+  // Must run after issueLayoutFilter
+  removeSimpleFieldProjectFilter,
   requestTypeLayoutsFilter,
   createReferencesIssueLayoutFilter,
-  requestTypelayoutsToValuesFilter, // Must run after createReferencesIssueLayoutFilter
+  // Must run after createReferencesIssueLayoutFilter
+  requestTypelayoutsToValuesFilter,
   projectFieldContextOrder,
   fieldContextOptionsSplitFilter,
   fieldConfigurationDeployment,
-  fieldConfigurationDependenciesFilter, // Must run after fieldConfigurationSplitFilter
-  missingFieldDescriptionsFilter, // Must run after fieldReferencesFilter
+  // Must run after fieldConfigurationSplitFilter
+  fieldConfigurationDependenciesFilter,
+  missingFieldDescriptionsFilter,
+  // Must run after fieldReferencesFilter
   sortListsFilter,
+  serviceUrlInformationFilter,
+  serviceUrlFilter,
   filtersFilter,
   hiddenValuesInListsFilter,
   missingDescriptionsFilter,
@@ -332,15 +355,20 @@ export const DEFAULT_FILTERS = [
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
   deployPermissionSchemeFilter,
-  accountIdFilter, // Must run after user filter
-  userIdFilter, // Must run after accountIdFilter
-  userFallbackFilter, // Must run after accountIdFilter
-  wrongUserPermissionSchemeFilter, // Must run after accountIdFilter
+  // Must run after user filter
+  accountIdFilter,
+  // Must run after accountIdFilter
+  userIdFilter,
+  // Must run after accountIdFilter
+  userFallbackFilter,
+  // Must run after accountIdFilter
+  wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
-  addAliasFilter, // we need to run addAliasFilter before duplicateIdsFilter but we add jsm instances after it.
-  // So we need to run it again. we should fix it in SALTO-7175.
-  scriptRunnerListenersDeployFilter, // must be done before scriptRunnerInstances
-  scriptedFragmentsDeployFilter, // must be done before scriptRunnerInstances
+  addAliasFilter,
+  // must be done before scriptRunnerInstances
+  scriptRunnerListenersDeployFilter,
+  // must be done before scriptRunnerInstances
+  scriptedFragmentsDeployFilter,
   scriptRunnerInstancesDeploy,
   portalSettingsFilter,
   queueDeploymentFilter,
@@ -349,19 +377,25 @@ export const DEFAULT_FILTERS = [
   requestTypeFilter,
   fieldContextOptionsDeploymentFilter,
   fieldContextOptionsDeploymentOrderFilter,
-  contextDefaultValueDeploymentFilter, // Must be ran after fieldContextOptionsDeploymentFilter
-  assetsInstancesDeploymentFilter, // Must run before asstesDeployFilter
-  jsmPathFilter, // Must be done after JsmTypesFilter
+  // Must be ran after fieldContextOptionsDeploymentFilter
+  contextDefaultValueDeploymentFilter,
+  // Must run before asstesDeployFilter
+  assetsInstancesDeploymentFilter,
+  // Must be done after JsmTypesFilter
+  jsmPathFilter,
   ...Object.values(otherCommonFilters),
-  assetsObjectTypePath, // Must run after otherCommonFilters and specificly after referencedInstanceNamesFilterCreator.
-  changeAttributesPathFilter, // Must run after assetsObjectTypePath
+  // Must run after otherCommonFilters and specificly after referencedInstanceNamesFilterCreator.
+  assetsObjectTypePath,
+  // Must run after assetsObjectTypePath
+  changeAttributesPathFilter,
   defaultAttributesFilter,
   assetsObjectTypeOrderFilter,
   deployAttributesFilter,
   objectSchemaDeployFilter, // Must run before deployJsmTypesFilter
   deployJsmTypesFilter,
   hideTypesFilter, // Must run after defaultAttributesFilter and assetsObjectTypeOrderFilter, which also create types.
-  defaultInstancesDeployFilter, // Must be last
+  // Must be last
+  defaultInstancesDeployFilter,
 ]
 
 export interface JiraAdapterParams {

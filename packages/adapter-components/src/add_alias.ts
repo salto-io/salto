@@ -42,7 +42,7 @@ const isInstanceAnnotation = (field: string): boolean =>
 const isValidAlias = (aliasParts: (string | undefined)[], element: TopLevelElement): boolean =>
   aliasParts.every((val, index) => {
     if (val === undefined) {
-      log.debug(
+      log.trace(
         `for element ${element.elemID.getFullName()}, component number ${index} in the alias map resulted in undefined`,
       )
       return false
@@ -74,7 +74,7 @@ const getAliasFromField = ({
     if (useFieldValueAsFallback === true && _.isString(fieldValue)) {
       return fieldValue
     }
-    log.error(
+    log.trace(
       `${fieldName} with useFieldValueAsFallback: ${useFieldValueAsFallback} is treated as a reference expression but it is not`,
     )
     return undefined
@@ -156,13 +156,20 @@ export const addAliasToElements = ({
   const relevantAliasMap = _.pick(aliasMap, Object.keys(relevantElementsMap))
 
   const addAlias = (group: collections.set.SetId): void => {
+    const elementsWithNoAlias: string[] = []
     const aliasData = aliasMap[group]
     relevantElementsMap[group].forEach(element => {
       const alias = calculateAlias({ element, elementsById, aliasData })
       if (alias !== undefined) {
         element.annotations[CORE_ANNOTATIONS.ALIAS] = alias
       }
+      else {
+        elementsWithNoAlias.push(element.elemID.getFullName())
+      }
     })
+    if (!_.isEmpty(elementsWithNoAlias)) {
+      log.error(`Failed creating aliases for elements: ${elementsWithNoAlias.join(', ')}`)
+    }
   }
   const graph = createAliasDependenciesGraph(relevantAliasMap, relevantElementsMap)
   graph.walkSync(group => addAlias(group))

@@ -2649,7 +2649,7 @@ describe('adapter', () => {
     })
 
     describe('type overrides', () => {
-      it.only('should fetch only the relevant types', async () => {
+      it('should fetch only the relevant types', async () => {
         ;(defaultBrandMockReplies as MockReply[]).forEach(({ url, params }) => {
           mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).replyOnce(callbackResponseFunc)
         })

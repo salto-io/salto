@@ -683,7 +683,7 @@ describe('workspace', () => {
       expect(errors.hasErrors()).toBeTruthy()
       const err = 'Expected block labels, found { instead.'
       expect(errors.strings()[0]).toMatch(err)
-      expect(errors.parse[0].message).toMatch('Element has invalid Nacl content')
+      expect(errors.parse[0].message).toMatch('Element has invalid NaCl content')
       expect(errors.parse[0].detailedMessage).toMatch(err)
 
       expect(await erroredWorkspace.hasErrors()).toBeTruthy()
@@ -721,7 +721,7 @@ describe('workspace', () => {
       expect(workspaceErrors).toHaveLength(1)
       const wsErrors = workspaceErrors[0]
       expect(wsErrors.sourceLocations).toHaveLength(2)
-      expect(wsErrors.message).toMatch('Other issues')
+      expect(wsErrors.message).toMatch('Element has invalid NaCl content')
       expect(wsErrors.detailedMessage).toMatch(mergeError)
       expect(wsErrors.severity).toBe('Error')
       const firstSourceLocation = wsErrors.sourceLocations[0]
@@ -1064,7 +1064,7 @@ describe('workspace', () => {
         ])
 
         expect((await ws.errors()).merge).toHaveLength(1)
-        expect((await ws.errors()).merge[0].message).toContain('Other issues')
+        expect((await ws.errors()).merge[0].message).toContain('Element has invalid NaCl content')
         expect((await ws.errors()).merge[0].detailedMessage).toContain('duplicate annotation key x')
         await ws.setNaclFiles([
           {
@@ -4112,7 +4112,7 @@ salesforce.staticFile staticFileInstance {
       )
 
       expect(objInstToUpdateErr).toBeDefined()
-      expect(objInstToUpdateErr?.message).toContain('Element has invalid Nacl content')
+      expect(objInstToUpdateErr?.message).toContain('Element has invalid NaCl content')
       expect(objInstToUpdateErr?.detailedMessage).toContain('Invalid value type for string')
     })
     it('create validation errors where the updated elements are used as value type', () => {
@@ -4121,7 +4121,7 @@ salesforce.staticFile staticFileInstance {
       )
 
       expect(usedAsTypeErr).toBeDefined()
-      expect(usedAsTypeErr?.message).toMatch('Element has invalid Nacl content')
+      expect(usedAsTypeErr?.message).toMatch('Element has invalid NaCl content')
       expect(usedAsTypeErr?.detailedMessage).toContain('Invalid value type for salto.prim')
     })
     it('create validation errors where the updated elements are used as references', () => {

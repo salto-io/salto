@@ -27,7 +27,7 @@ type HTMLBodyContentComponentValue = {
   body: string
 }
 
-type AutomationComponent = {
+type MimeTypeComponent = {
   type: string
   value: HTMLBodyContentComponentValue
 }
@@ -49,37 +49,32 @@ const HTML_BODY_CONTENT_AUTOMATION_COMPONENT_SCHEME = Joi.object({
   .unknown(true)
   .required()
 
-const isHTMLBodyContentAutomationComponent = createSchemeGuard<AutomationComponent>(
+const isHTMLBodyContentAutomationComponent = createSchemeGuard<MimeTypeComponent>(
   HTML_BODY_CONTENT_AUTOMATION_COMPONENT_SCHEME,
 )
 
-const getComponentErrorTypes = (component: AutomationComponent): HTMLBodyContentErrorType[] | undefined => {
+const getComponentErrorTypes = (component: MimeTypeComponent): HTMLBodyContentErrorType[] | [] => {
   const errorTypes: HTMLBodyContentErrorType[] = []
-  if (isStaticFile(component.value.body) && component.value.mimeType !== 'text/html') {
-    errorTypes.push(HTMLBodyContentErrorType.mimeType)
-  }
-  if (component.value.mimeType === 'text/html' && !isStaticFile(component.value.body)) {
+  if (isStaticFile(component.value.body)) {
+    if (component.value.mimeType !== 'text/html') {
+      errorTypes.push(HTMLBodyContentErrorType.mimeType)
+    }
+  } else if (component.value.mimeType === 'text/html') {
     errorTypes.push(HTMLBodyContentErrorType.notStaticFile)
   }
-  if (errorTypes.length > 0) {
-    return errorTypes
-  }
-  return []
+  return errorTypes
 }
 
 const getErrorTypeFromEmailConfig = (
   instance: InstanceElement,
 ): { elemID: ElemID; errorTypes: HTMLBodyContentErrorType[] }[] | undefined => {
-  const elemIDWithErrorTypes: { elemID: ElemID; errorTypes: HTMLBodyContentErrorType[] }[] = []
+  const elemIDWithErrorTypes: { elemID: ElemID; errorTypes: HTMLBodyContentErrorType[] | [] }[] = []
   walkOnValue({
     elemId: instance.elemID.createNestedID('components'),
     value: instance.value.components,
     func: ({ value, path }) => {
       if (isHTMLBodyContentAutomationComponent(value)) {
-        const componentErrors = getComponentErrorTypes(value)
-        if (componentErrors) {
-          elemIDWithErrorTypes.push({ elemID: path, errorTypes: componentErrors })
-        }
+        elemIDWithErrorTypes.push({ elemID: path, errorTypes: getComponentErrorTypes(value) })
       }
       return WALK_NEXT_STEP.RECURSE
     },
@@ -108,9 +103,8 @@ export const htmlBodyContentValidator: ChangeValidator = async changes =>
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-    .map(getErrorTypeFromEmailConfig)
+    .flatMap(getErrorTypeFromEmailConfig)
     .filter(isDefined)
-    .flat()
     .flatMap(componentElemIDWithErrorTypes =>
       componentElemIDWithErrorTypes.errorTypes.map(errorType => {
         const errorMessageCreator = errorMessageMap[errorType]

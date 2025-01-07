@@ -152,6 +152,7 @@ import scriptRunnerEmptyAccountIdsFilter from './filters/script_runner/workflow/
 import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
+import addAliasExtended from './filters/add_alias_extended'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
@@ -337,7 +338,7 @@ export const DEFAULT_FILTERS = [
   userFallbackFilter, // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter, // Must run after accountIdFilter
   deployDcIssueEventsFilter,
-  addAliasFilter, // we need to run addAliasFilter before duplicateIdsFilter but we add jsm instances after it.
+  addAliasExtendedFilter, // we need to run addAliasFilter before duplicateIdsFilter but we add jsm instances after it.
   // So we need to run it again. we should fix it in SALTO-7175.
   scriptRunnerListenersDeployFilter, // must be done before scriptRunnerInstances
   scriptedFragmentsDeployFilter, // must be done before scriptRunnerInstances

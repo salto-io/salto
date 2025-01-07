@@ -57,6 +57,7 @@ describe('SuiteQL table elements', () => {
       suiteAppClient: {
         additionalSuiteQLTables: [
           { name: 'someothertype', typeId: '111', queryParams: { internalIdField: 'id', nameField: 'name' } },
+          { name: 'workflow', typeId: '-129' },
         ],
       },
     }

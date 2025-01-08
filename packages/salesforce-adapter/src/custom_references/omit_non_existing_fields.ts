@@ -5,13 +5,12 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-
 import { ChangeError, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { isCustomMetadataRecordInstanceSync, isInstanceOfCustomObjectSync } from '../filters/utils'
 import { WeakReferencesHandler } from '../types'
 
-const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] = () => async elements => {
+const omitNonExistingFields: WeakReferencesHandler['removeWeakReferences'] = () => async elements => {
   const instanceElements = elements
     .filter(isInstanceElement)
     .filter(element => isInstanceOfCustomObjectSync(element) || isCustomMetadataRecordInstanceSync(element))
@@ -47,5 +46,5 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] = () =
 
 export const omitNonExistingFieldsHandler: WeakReferencesHandler = {
   findWeakReferences: async () => [],
-  removeWeakReferences,
+  removeWeakReferences: omitNonExistingFields,
 }

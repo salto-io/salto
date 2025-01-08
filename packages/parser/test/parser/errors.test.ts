@@ -15,6 +15,7 @@ import { MISSING_VALUE } from '../../src/parser/internal/native/consumers/values
 const { awu } = collections.asynciterable
 
 describe('parsing errors', () => {
+  const INVALID_NACL_CONTENT_ERROR = 'Element has invalid NaCl content'
   describe('general element block structure', () => {
     describe('no labels', () => {
       const nacl = `
@@ -38,7 +39,8 @@ describe('parsing errors', () => {
           filename: 'file.nacl',
         })
         expect(res.errors[0].summary).toBe('Expected block labels')
-        expect(res.errors[0].message).toBe('Expected block labels, found { instead.')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Expected block labels, found { instead.')
         expect(res.errors[1].summary).toBe('Missing block definition')
       })
 
@@ -66,7 +68,8 @@ describe('parsing errors', () => {
           filename: 'file.nacl',
         })
         expect(res.errors[0].summary).toBe('Expected {')
-        expect(res.errors[0].message).toBe('Expected {')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Expected {')
         expect(res.errors[1].summary).toBe('Invalid block item')
         expect(res.errors[2].summary).toBe('Invalid block item')
         expect(res.errors[3].summary).toBe('Invalid block item')
@@ -137,7 +140,10 @@ describe('parsing errors', () => {
             end: { byte: 109, col: 12, line: 6 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message).toBe('Unexpected field definition(s) in a primitive type. Expected no fields.')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe(
+            'Unexpected field definition(s) in a primitive type. Expected no fields.',
+          )
           expect(res.errors[0].summary).toBe('Invalid fields in primitive type')
         })
         it('should create the element without the fields', async () => {
@@ -169,7 +175,8 @@ describe('parsing errors', () => {
           end: { byte: 107, col: 10, line: 7 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe(
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe(
           'Unexpected field or annotation type definition(s) in a primitive type. Expected only values.',
         )
         expect(res.errors[0].summary).toBe('Invalid blocks in an instance')
@@ -201,7 +208,8 @@ describe('parsing errors', () => {
             end: { line: 4, col: 16, byte: 61 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message).toBe('Invalid variable definition')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe('Invalid variable definition')
           expect(res.errors[0].summary).toBe('Invalid variable definition')
         })
         it('should recover and parse other vars', async () => {
@@ -227,7 +235,8 @@ describe('parsing errors', () => {
             end: { line: 3, col: 20, byte: 37 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message).toBe('Invalid variable definition')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe('Invalid variable definition')
           expect(res.errors[0].summary).toBe('Invalid variable definition')
         })
         it('should recover and parse other vars', async () => {
@@ -254,7 +263,8 @@ describe('parsing errors', () => {
           end: { line: 3, col: 9, byte: 22 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Invalid variable definition')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Invalid variable definition')
         expect(res.errors[0].summary).toBe('Invalid variable definition')
       })
       it('should recover and parse other vars', async () => {
@@ -282,7 +292,8 @@ describe('parsing errors', () => {
           end: { line: 3, col: 20, byte: 33 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Invalid variable definition')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Invalid variable definition')
         expect(res.errors[0].summary).toBe('Invalid variable definition')
       })
       it('should recover and parse other vars', async () => {
@@ -312,7 +323,8 @@ describe('parsing errors', () => {
           filename: 'file.nacl',
         })
         expect(res.errors[0].summary).toBe('Invalid variable definition')
-        expect(res.errors[1].message).toBe('Invalid variable definition')
+        expect(res.errors[1].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[1].detailedMessage).toBe('Invalid variable definition')
       })
       it('should recover and parse other items', async () => {
         expect(await awu(res.elements).toArray()).toHaveLength(1)
@@ -342,7 +354,8 @@ describe('parsing errors', () => {
           end: { byte: 96, col: 10, line: 7 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Invalid nested block definition')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Invalid nested block definition')
         expect(res.errors[0].summary).toBe('Invalid nested block definition')
       })
       it('should still create the element properly', async () => {
@@ -373,7 +386,8 @@ describe('parsing errors', () => {
           end: { byte: 111, col: 24, line: 6 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Invalid annotations block, unexpected attribute definition.')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Invalid annotations block, unexpected attribute definition.')
         expect(res.errors[0].summary).toBe('Invalid annotations block')
       })
       it('should still create the element properly', async () => {
@@ -404,7 +418,8 @@ describe('parsing errors', () => {
           end: { byte: 99, col: 26, line: 5 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Invalid annotations block, unexpected attribute definition.')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Invalid annotations block, unexpected attribute definition.')
         expect(res.errors[0].summary).toBe('Invalid annotations block')
       })
       it('should still create the element properly', async () => {
@@ -438,7 +453,8 @@ describe('parsing errors', () => {
           end: { byte: 174, col: 12, line: 10 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe(
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe(
           'Invalid annotations block, only one annotation block can be defined in a fragment.',
         )
         expect(res.errors[0].summary).toBe('Invalid annotations block')
@@ -472,7 +488,8 @@ describe('parsing errors', () => {
           end: { byte: 93, col: 10, line: 8 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe(
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe(
           'Duplicated field name mycar, a field can only be defined once in a source fragment.',
         )
         expect(res.errors[0].summary).toBe('Duplicated field name')
@@ -518,7 +535,8 @@ describe('parsing errors', () => {
           end: { byte: 101, col: 51, line: 4 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Duplicated attribute candrive')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Duplicated attribute candrive')
         expect(res.errors[0].summary).toBe('Duplicated attribute')
       })
       it('should use the first definition of the field', async () => {
@@ -550,7 +568,10 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
           expect(res.errors[0].summary).toBe('Invalid block item')
-          expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe(
+            'Invalid block item. Expected a new block or an attribute definition.',
+          )
         })
         it('should recover and parse other items', async () => {
           expect(await awu(res.elements).toArray()).toHaveLength(1)
@@ -579,7 +600,10 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
           expect(res.errors[0].summary).toBe('Invalid block item')
-          expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe(
+            'Invalid block item. Expected a new block or an attribute definition.',
+          )
         })
         it('should recover and parse other items', async () => {
           expect(await awu(res.elements).toArray()).toHaveLength(1)
@@ -608,7 +632,10 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
           expect(res.errors[0].summary).toBe('Invalid block item')
-          expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe(
+            'Invalid block item. Expected a new block or an attribute definition.',
+          )
         })
         it('should recover and parse other items', async () => {
           expect(await awu(res.elements).toArray()).toHaveLength(1)
@@ -634,7 +661,10 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
           expect(res.errors[0].summary).toBe('Invalid block item')
-          expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe(
+            'Invalid block item. Expected a new block or an attribute definition.',
+          )
         })
         it('should recover and parse the block', async () => {
           expect(await awu(res.elements).toArray()).toHaveLength(1)
@@ -659,7 +689,10 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
           expect(res.errors[0].summary).toBe('Invalid block item')
-          expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe(
+            'Invalid block item. Expected a new block or an attribute definition.',
+          )
         })
         it('should recover and parse the block', async () => {
           expect(await awu(res.elements).toArray()).toHaveLength(1)
@@ -690,7 +723,8 @@ describe('parsing errors', () => {
             end: { line: 5, col: 16, byte: 86 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message).toBe('Invalid attribute definition, expected an equal sign')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe('Invalid attribute definition, expected an equal sign')
           expect(res.errors[0].summary).toBe('Invalid attribute definition')
         })
         it('should still parse the element, and create the object value without that key', async () => {
@@ -720,7 +754,8 @@ describe('parsing errors', () => {
             end: { line: 5, col: 22, byte: 92 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message).toBe('Invalid attribute key')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe('Invalid attribute key')
           expect(res.errors[0].summary).toBe('Invalid attribute key')
         })
         it('should still parse the element, and create the object value without that key', async () => {
@@ -751,7 +786,8 @@ describe('parsing errors', () => {
             end: { line: 5, col: 15, byte: 85 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message).toBe('Duplicated attribute in')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe('Duplicated attribute in')
           expect(res.errors[0].summary).toBe('Duplicated attribute')
         })
         it('should still parse the element and use the first time the key was defined', async () => {
@@ -783,7 +819,8 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
 
-          expect(res.errors[0].message).toBe('Expected a value')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe('Expected a value')
           expect(res.errors[0].summary).toBe('Expected a value')
         })
         it('parse the missing value as dynamic value', async () => {
@@ -818,7 +855,8 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
 
-          expect(res.errors[0].message).toBe('Expected a new line')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe('Expected a new line')
           expect(res.errors[0].summary).toBe('Expected a new line')
         })
         it('parse the rest of the attributes', async () => {
@@ -852,7 +890,8 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
           expect(res.errors[0].summary).toBe('Expected a comma')
-          expect(res.errors[0].message).toBe('Expected a comma or an array termination')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe('Expected a comma or an array termination')
         })
         it('should recover and parse other items', async () => {
           expect(await awu(res.elements).toArray()).toHaveLength(1)
@@ -884,7 +923,8 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
           expect(res.errors[0].summary).toBe('Expected a value')
-          expect(res.errors[0].message).toBe('Expected a value')
+          expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+          expect(res.errors[0].detailedMessage).toBe('Expected a value')
         })
         it('should recover and parse other items', async () => {
           expect(await awu(res.elements).toArray()).toHaveLength(1)
@@ -918,7 +958,8 @@ describe('parsing errors', () => {
           end: { line: 3, col: 39, byte: 64 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Unterminated string literal')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Unterminated string literal')
         expect(res.errors[0].summary).toBe('Unterminated string literal')
       })
       it('should parse items after the unterminated array', async () => {
@@ -943,7 +984,8 @@ describe('parsing errors', () => {
           end: { line: 2, col: 27, byte: 27 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Invalid string template expression')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Invalid string template expression')
         expect(res.errors[0].summary).toBe('Invalid string template expression')
       })
       it('should treat the template as a regular part of the string', async () => {
@@ -971,7 +1013,8 @@ describe('parsing errors', () => {
           end: { line: 3, col: 29, byte: 54 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Invalid string character')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Invalid string character')
         expect(res.errors[0].summary).toBe('Invalid string character')
       })
       it('should parse items after the unterminated array', async () => {
@@ -1000,7 +1043,8 @@ describe('parsing errors', () => {
           end: { line: 3, col: 42, byte: 67 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Unterminated string literal')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Unterminated string literal')
         expect(res.errors[0].summary).toBe('Unterminated string literal')
       })
       it('should parse items after the unterminated string', async () => {
@@ -1028,7 +1072,8 @@ describe('parsing errors', () => {
           end: { line: 3, col: 25, byte: 47 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Unknown function wantToKnow')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Unknown function wantToKnow')
         expect(res.errors[0].summary).toBe('Unknown function')
       })
     })
@@ -1056,7 +1101,8 @@ describe('parsing errors', () => {
           filename: 'file.nacl',
         })
         expect(res.errors[0].summary).toBe('Expected a comma')
-        expect(res.errors[0].message).toBe('Expected a comma or an array termination')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Expected a comma or an array termination')
       })
     })
   })
@@ -1097,7 +1143,8 @@ describe('parsing errors', () => {
 
     it('should throw an error', () => {
       expect(res.errors).toHaveLength(1)
-      expect(res.errors[0].message).toEqual('Unexpected end of file')
+      expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+      expect(res.errors[0].detailedMessage).toEqual('Unexpected end of file')
       expect(res.errors[0].summary).toEqual('Unexpected end of file')
     })
     it('should return a result of all of the parsed elements before the unfinished element', async () => {
@@ -1131,7 +1178,8 @@ describe('parsing errors', () => {
           end: { byte: 130, col: 1, line: 7 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Unresolved merge conflict')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe('Unresolved merge conflict')
         expect(res.errors[0].summary).toBe('Unresolved merge conflict')
       })
       it('should parse the first instance correctly', async () => {
@@ -1166,7 +1214,8 @@ describe('parsing errors', () => {
           end: { byte: 118, col: 1, line: 7 },
           filename: 'file.nacl',
         })
-        expect(res.errors[1].message).toBe('Invalid string character')
+        expect(res.errors[1].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[1].detailedMessage).toBe('Invalid string character')
         expect(res.errors[1].summary).toBe('Invalid string character')
       })
       it('should parse the first instance correctly', async () => {
@@ -1215,7 +1264,10 @@ describe('parsing errors', () => {
           end: { byte: 66, col: 1, line: 4 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+        expect(res.errors[0].message).toBe(INVALID_NACL_CONTENT_ERROR)
+        expect(res.errors[0].detailedMessage).toBe(
+          'Invalid block item. Expected a new block or an attribute definition.',
+        )
         expect(res.errors[0].summary).toBe('Invalid block item')
       })
     })

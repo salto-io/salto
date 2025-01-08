@@ -47,7 +47,7 @@ import {
   isTemplateExpression,
   UnresolvedReference,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify, toObjectType } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, safeJsonStringify, toObjectType } from '@salto-io/adapter-utils'
 import { parser } from '@salto-io/parser'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { CircularReference, resolve } from './expressions'
@@ -65,9 +65,7 @@ export abstract class ValidationError
   }>
   implements SaltoElementError
 {
-  get message(): string {
-    return `Error validating "${this.elemID.getFullName()}": ${this.error}`
-  }
+  message = ERROR_MESSAGES.INVALID_NACL_CONTENT
 
   get detailedMessage(): string {
     return `Error validating "${this.elemID.getFullName()}": ${this.error}`
@@ -345,6 +343,8 @@ export class UnresolvedReferenceValidationError extends ValidationError {
     super({ elemID, error: `unresolved reference ${target.getFullName()}`, severity: 'Warning' })
     this.target = target
   }
+
+  message = ERROR_MESSAGES.UNRESOLVED_REFERENCE
 }
 
 export const isUnresolvedRefError = (err: SaltoError): err is UnresolvedReferenceValidationError =>

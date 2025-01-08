@@ -30,7 +30,7 @@ microsoft_security {
         parts = [
           {
             fieldName = "displayName"
-          },
+          }
           {
             fieldName = "tags"
           }
@@ -40,7 +40,11 @@ microsoft_security {
   }
   deploy = {
     assignmentFieldsStrategy = {
-      Intune = ["IntuneDeviceConfiguration"]
+      Intune = {
+        IntuneDeviceConfiguration: {
+          strategy = "omit"
+        }
+      }
       EntraConditionalAccessPolicy = {
         includeApplications = {
           strategy = "fallback"

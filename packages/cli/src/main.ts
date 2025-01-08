@@ -7,7 +7,7 @@
  */
 import sourceMapSupport from 'source-map-support'
 import os from 'os'
-import { configFromDisk, telemetrySender } from '@salto-io/core'
+import { configFromDisk, telemetrySender } from '@salto-io/local-workspace'
 import { logger } from '@salto-io/logging'
 import { versionString, versionDetails } from './version'
 import cli from './cli'

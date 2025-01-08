@@ -30,15 +30,7 @@ import {
   ChangeDataType,
   DetailedChangeWithBaseChange,
 } from '@salto-io/adapter-api'
-import {
-  Plan,
-  PlanItem,
-  DeployResult,
-  Telemetry,
-  CommandConfig,
-  DeployParams,
-  deploy as coreDeploy,
-} from '@salto-io/core'
+import { Plan, PlanItem, DeployResult, DeployParams, deploy as coreDeploy } from '@salto-io/core'
 import {
   Workspace,
   errors as wsErrors,
@@ -48,6 +40,7 @@ import {
   pathIndex,
   staticFiles,
 } from '@salto-io/workspace'
+import { Telemetry, CommandConfig } from '@salto-io/local-workspace'
 import { parser } from '@salto-io/parser'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'

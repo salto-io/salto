@@ -7,8 +7,7 @@
  */
 import readdirp from 'readdirp'
 import tmp from 'tmp-promise'
-import { SALTO_HOME_VAR } from '@salto-io/core'
-import { initLocalWorkspace } from '@salto-io/local-workspace'
+import { initLocalWorkspace, SALTO_HOME_VAR } from '@salto-io/local-workspace'
 import { copyFile, rm, mkdirp } from '@salto-io/file'
 import { workspace as ws, context, provider, diagnostics, definitions } from '@salto-io/lang-server'
 import { adapterCreators } from '@salto-io/adapter-creators'

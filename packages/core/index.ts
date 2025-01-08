@@ -23,47 +23,6 @@ export {
 } from './src/core/adapters/adapters'
 export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
 export { RenameElementIdError } from './src/core/rename'
-// Note: SALTO-7000: These are exported for backward compatibility
-export {
-  localWorkspaceConfigSource,
-  LocalWorkspaceConfigSource,
-  SALTO_HOME_VAR,
-  AppConfig,
-  configFromDisk,
-  CommandConfig,
-  CONFIG_DIR_NAME,
-  localDirectoryStore,
-  telemetrySender,
-  Telemetry,
-  TelemetryEvent,
-  CountEvent,
-  StackEvent,
-  Tags,
-  RequiredTags,
-  OptionalTags,
-  isCountEvent,
-  isStackEvent,
-  EVENT_TYPES,
-  localAdaptersConfigSource,
-  buildS3DirectoryStore,
-  WORKSPACE_CONFIG_NAME,
-  USER_CONFIG_NAME,
-  ADAPTERS_CONFIG_NAME,
-  ENVS_CONFIG_NAME,
-  workspaceConfigTypes,
-  EnvsConfig,
-  createRemoteMapCreator,
-  closeAllRemoteMaps,
-  NoWorkspaceConfig,
-  closeRemoteMapsOfLocation,
-  replicateDB,
-  loadLocalElementsSources,
-  CACHE_DIR_NAME,
-  STATES_DIR_NAME,
-  locateWorkspaceRoot,
-  createEnvironmentSource,
-  createReadOnlyRemoteMap,
-} from '@salto-io/local-workspace'
 export * from './src/types'
 export {
   calculatePatch,

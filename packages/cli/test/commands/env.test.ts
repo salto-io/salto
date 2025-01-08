@@ -5,8 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { locateWorkspaceRoot } from '@salto-io/core'
-import { loadLocalWorkspace } from '@salto-io/local-workspace'
+import { loadLocalWorkspace, locateWorkspaceRoot } from '@salto-io/local-workspace'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { createAction, setAction, currentAction, listAction, deleteAction, renameAction } from '../../src/commands/env'

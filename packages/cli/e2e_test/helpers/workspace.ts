@@ -6,8 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import glob from 'glob'
-import { Plan, telemetrySender, preview, AppConfig } from '@salto-io/core'
-import { loadLocalWorkspace } from '@salto-io/local-workspace'
+import { Plan, preview } from '@salto-io/core'
+import { loadLocalWorkspace, AppConfig, telemetrySender } from '@salto-io/local-workspace'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
 import { adapterCreators } from '@salto-io/adapter-creators'

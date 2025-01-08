@@ -59,6 +59,7 @@ const generateFixedAssignmentsInfo = ({
     elemID,
     severity: 'Info',
     message: messagePrefix,
+    // TODO DOC-201: Add a link to our documentation
     detailedMessage: `${messagePrefix}${rule.strategy === 'fallback' ? ` with ${safeJsonStringify(rule.fallbackValue)}` : ''} in the deployment, according to the assignmentFieldsStrategy configuration`,
   }
 }

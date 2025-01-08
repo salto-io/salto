@@ -5,11 +5,10 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-
 import { Change, ElemID, getChangeData, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import changeValidator, {
-  TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION,
-  TypesRequirements,
+  TYPES_PACKAGE_VERSION_EXACT_VERSION,
+  TYPES_PACKAGE_VERSION_NO_GREATER_VERSION,
 } from '../../src/change_validators/package_version'
 import { ACCOUNT_SETTINGS_METADATA_TYPE } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
@@ -34,12 +33,12 @@ describe('when deploying objects with installed packages', () => {
   )
   const fakePackage = { resValue: { value: {} } }
   let requiresExactVersion: boolean
-  describe.each(Object.entries(TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION))(
+  describe.each([...TYPES_PACKAGE_VERSION_NO_GREATER_VERSION, ...TYPES_PACKAGE_VERSION_EXACT_VERSION])(
     'when the package version in the instance is higher than in the target environment',
-    (instanceType: string, exactVersion: TypesRequirements) => {
+    (instanceType: string) => {
       let change: Change
       beforeEach(() => {
-        requiresExactVersion = exactVersion.requiresExactVersion
+        requiresExactVersion = TYPES_PACKAGE_VERSION_EXACT_VERSION.has(instanceType)
         const objectTypeToValidate = createCustomObjectType(instanceType, {
           elemID: new ElemID('salesforce', instanceType),
         })
@@ -78,12 +77,12 @@ describe('when deploying objects with installed packages', () => {
     },
   )
 
-  describe.each(Object.entries(TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION))(
+  describe.each(Object.entries([...TYPES_PACKAGE_VERSION_NO_GREATER_VERSION, ...TYPES_PACKAGE_VERSION_EXACT_VERSION]))(
     'when the package version in the instance is lower than in the target environment',
-    (instanceType: string, exactVersion: TypesRequirements) => {
+    (instanceType: string) => {
       let change: Change
       beforeEach(() => {
-        requiresExactVersion = exactVersion.requiresExactVersion
+        requiresExactVersion = TYPES_PACKAGE_VERSION_EXACT_VERSION.has(instanceType)
         const objectTypeToValidate = createCustomObjectType(instanceType, {
           elemID: new ElemID('salesforce', instanceType),
         })
@@ -124,12 +123,12 @@ describe('when deploying objects with installed packages', () => {
     },
   )
 
-  describe.each(Object.entries(TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION))(
+  describe.each(Object.entries([...TYPES_PACKAGE_VERSION_NO_GREATER_VERSION, ...TYPES_PACKAGE_VERSION_EXACT_VERSION]))(
     'when the package version in the instance is equal to version in the target environment',
-    (instanceType: string, exactVersion: TypesRequirements) => {
+    (instanceType: string) => {
       let change: Change
       beforeEach(() => {
-        requiresExactVersion = exactVersion.requiresExactVersion
+        requiresExactVersion = TYPES_PACKAGE_VERSION_EXACT_VERSION.has(instanceType)
         const objectTypeToValidate = createCustomObjectType(instanceType, {
           elemID: new ElemID('salesforce', instanceType),
         })

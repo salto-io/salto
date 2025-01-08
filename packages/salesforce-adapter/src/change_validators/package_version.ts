@@ -30,10 +30,6 @@ import { isInstanceOfTypeSync } from '../filters/utils'
 
 const { isDefined } = lowerDashValues
 
-// export type TypesRequirements = {
-//   requiresExactVersion: boolean
-// }
-
 type PackageVersion = {
   majorNumber: Number
   minorNumber: Number
@@ -45,18 +41,13 @@ type Version = {
   minor: Number
 }
 
-export const TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION: Record<
-  string,
-  {
-    requiresExactVersion: boolean
-  }
-> = {
-  [APEX_CLASS_METADATA_TYPE]: { requiresExactVersion: false },
-  [APEX_PAGE_METADATA_TYPE]: { requiresExactVersion: false },
-  [APEX_COMPONENT_METADATA_TYPE]: { requiresExactVersion: false },
-  [EMAIL_TEMPLATE_METADATA_TYPE]: { requiresExactVersion: false },
-  [APEX_TRIGGER_METADATA_TYPE]: { requiresExactVersion: true },
-}
+export const TYPES_PACKAGE_VERSION_NO_GREATER_VERSION = new Set([
+  APEX_CLASS_METADATA_TYPE,
+  APEX_PAGE_METADATA_TYPE,
+  APEX_COMPONENT_METADATA_TYPE,
+  EMAIL_TEMPLATE_METADATA_TYPE,
+])
+export const TYPES_PACKAGE_VERSION_EXACT_VERSION = new Set([APEX_TRIGGER_METADATA_TYPE])
 
 const isPackageVersionType = (val: Value): val is PackageVersion =>
   _.isPlainObject(val) &&
@@ -101,7 +92,7 @@ const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] =>
       const targetVersion = parsePackageVersion(namespace)
       if (instance !== undefined && targetVersion !== undefined) {
         if (
-          TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION[instance.elemID.typeName].requiresExactVersion &&
+          TYPES_PACKAGE_VERSION_EXACT_VERSION.has(instance.elemID.typeName) &&
           !isExactVersion(instanceVersion, targetVersion)
         ) {
           return {
@@ -132,7 +123,7 @@ const changeValidator: ChangeValidator = async changes =>
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(isInstanceOfTypeSync(...Object.keys(TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION)))
+    .filter(isInstanceOfTypeSync(...TYPES_PACKAGE_VERSION_EXACT_VERSION, ...TYPES_PACKAGE_VERSION_NO_GREATER_VERSION))
     .flatMap(createPackageVersionErrors)
 
 export default changeValidator

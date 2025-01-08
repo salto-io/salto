@@ -18,7 +18,7 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       field: 'notificationMessageCCList',
       parentTypes: [intuneConstants.DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME],
     },
-    target: { type: entraConstants.GROUP_TYPE_NAME },
+    target: { type: entraConstants.TOP_LEVEL_TYPES.GROUP_TYPE_NAME },
     serializationStrategy: 'id',
   },
   {
@@ -26,7 +26,7 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       field: 'groupId',
       parentTypes: intuneConstants.TYPES_WITH_ASSIGNMENTS_TARGET,
     },
-    target: { type: entraConstants.GROUP_TYPE_NAME },
+    target: { type: entraConstants.TOP_LEVEL_TYPES.GROUP_TYPE_NAME },
     serializationStrategy: 'id',
   },
 ]

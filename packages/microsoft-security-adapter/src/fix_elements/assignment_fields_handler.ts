@@ -150,7 +150,7 @@ const handleConditionalAccessPolicyAssignmentFields = (
   conditionalAccessConfig: ConditionalAccessPolicyAssignmentFieldsConfig,
 ): FixedElementWithError[] =>
   elements
-    .filter(element => element.elemID.typeName === entraConstants.CONDITIONAL_ACCESS_POLICY_TYPE_NAME)
+    .filter(element => element.elemID.typeName === entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME)
     .flatMap(element => handleConditionalAccessPolicyAssignmentFieldsSingleElement(element, conditionalAccessConfig))
 
 /**

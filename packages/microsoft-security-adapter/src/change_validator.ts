@@ -16,7 +16,7 @@ export default (): Record<string, ChangeValidator> => ({
   createCheckDeploymentBasedOnDefinitions:
     deployment.changeValidators.createCheckDeploymentBasedOnDefinitionsValidator<Options>({
       deployDefinitions: createDeployDefinitions(),
-      typesDeployedViaParent: [entraConstants.APP_ROLE_TYPE_NAME],
+      typesDeployedViaParent: [entraConstants.TOP_LEVEL_TYPES.APP_ROLE_TYPE_NAME],
     }),
   ...changeValidators(),
 })

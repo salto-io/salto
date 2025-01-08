@@ -20,11 +20,11 @@ type BuiltInIndicator = {
   value: Value
 }
 const POTENTIAL_BUILD_IN_TYPES: Record<string, BuiltInIndicator> = {
-  [entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: {
+  [entraConstants.TOP_LEVEL_TYPES.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: {
     fieldName: 'policyType',
     value: 'builtIn',
   },
-  [entraConstants.ROLE_DEFINITION_TYPE_NAME]: {
+  [entraConstants.TOP_LEVEL_TYPES.ROLE_DEFINITION_TYPE_NAME]: {
     fieldName: 'isBuiltIn',
     value: true,
   },

@@ -83,7 +83,7 @@ describe('replaceGroupsDomainHandler', () => {
 
   describe('Entra conditional access policy', () => {
     const entraConditionalAccessPolicyType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.CONDITIONAL_ACCESS_POLICY_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME),
     })
     const entraConditionalAccessPolicy = new InstanceElement(
       'testEntraConditionalAccessPolicy',

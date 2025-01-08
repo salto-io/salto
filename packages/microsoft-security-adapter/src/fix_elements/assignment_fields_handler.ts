@@ -148,7 +148,9 @@ const handleConditionalAccessPolicyAssignmentFields = (
     .flatMap(element => handleConditionalAccessPolicyAssignmentFieldsSingleElement(element, conditionalAccessConfig))
 
 /**
- TODO: add docstring
+ * Handles selected assignment-related fields according to the user configuration.
+ * An error with severity "Info" will be returned for each fixed instance.
+ * The assignment related fields can be either omitted or replaced with a fallback value.
  */
 export const assignmentFieldsHandler: FixElementsHandler<Options, UserConfig> =
   ({ config }) =>

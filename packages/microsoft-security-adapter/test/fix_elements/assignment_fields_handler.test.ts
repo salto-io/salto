@@ -70,9 +70,9 @@ describe('replaceGroupsDomainHandler', () => {
               {
                 elemID: intuneApplicationInstance.elemID,
                 severity: 'Info',
-                message: 'The "assignments" field will be omitted',
+                message: 'Changes were made to assignment-related fields',
                 detailedMessage:
-                  'The "assignments" field will be omitted in the deployment, according to the assignmentFieldsStrategy configuration',
+                  'Changes were made to assignment-related fields according to the assignmentFieldsStrategy configuration:\n — Field "assignments" was omitted',
               },
             ],
           })
@@ -147,9 +147,9 @@ describe('replaceGroupsDomainHandler', () => {
                 {
                   elemID: entraConditionalAccessPolicy.elemID,
                   severity: 'Info',
-                  message: 'The "conditions.applications.includeApplications" field will be replaced',
+                  message: 'Changes were made to assignment-related fields',
                   detailedMessage:
-                    'The "conditions.applications.includeApplications" field will be replaced with ["None"] in the deployment, according to the assignmentFieldsStrategy configuration',
+                    'Changes were made to assignment-related fields according to the assignmentFieldsStrategy configuration:\n — Field "conditions.applications.includeApplications" was replaced with ["None"]',
                 },
               ],
             })
@@ -178,9 +178,42 @@ describe('replaceGroupsDomainHandler', () => {
                 {
                   elemID: entraConditionalAccessPolicy.elemID,
                   severity: 'Info',
-                  message: 'The "conditions.applications.excludeApplications" field will be omitted',
+                  message: 'Changes were made to assignment-related fields',
                   detailedMessage:
-                    'The "conditions.applications.excludeApplications" field will be omitted in the deployment, according to the assignmentFieldsStrategy configuration',
+                    'Changes were made to assignment-related fields according to the assignmentFieldsStrategy configuration:\n — Field "conditions.applications.excludeApplications" was omitted',
+                },
+              ],
+            })
+          })
+        })
+
+        describe('when multiple fields are specified', () => {
+          beforeEach(() => {
+            config.deploy = {
+              assignmentFieldsStrategy: {
+                EntraConditionalAccessPolicy: {
+                  includeApplications: { strategy: 'omit' },
+                  excludeApplications: { strategy: 'omit' },
+                },
+              },
+            }
+          })
+
+          it('should modify all the specified fields', async () => {
+            const expectedInstance = entraConditionalAccessPolicy.clone()
+            expectedInstance.value.conditions.applications.includeApplications = ['None']
+            delete expectedInstance.value.conditions.applications.excludeApplications
+
+            const result = await handler([entraConditionalAccessPolicy])
+            expect(result).toEqual({
+              fixedElements: [expectedInstance],
+              errors: [
+                {
+                  elemID: entraConditionalAccessPolicy.elemID,
+                  severity: 'Info',
+                  message: 'Changes were made to assignment-related fields',
+                  detailedMessage:
+                    'Changes were made to assignment-related fields according to the assignmentFieldsStrategy configuration:\n — Field "conditions.applications.includeApplications" was replaced with ["None"]\n — Field "conditions.applications.excludeApplications" was omitted',
                 },
               ],
             })
@@ -220,9 +253,9 @@ describe('replaceGroupsDomainHandler', () => {
                 {
                   elemID: entraConditionalAccessPolicy.elemID,
                   severity: 'Info',
-                  message: 'The "conditions.users.includeUsers" field will be replaced',
+                  message: 'Changes were made to assignment-related fields',
                   detailedMessage:
-                    'The "conditions.users.includeUsers" field will be replaced with ["TestFallbackUser"] in the deployment, according to the assignmentFieldsStrategy configuration',
+                    'Changes were made to assignment-related fields according to the assignmentFieldsStrategy configuration:\n — Field "conditions.users.includeUsers" was replaced with ["TestFallbackUser"]',
                 },
               ],
             })

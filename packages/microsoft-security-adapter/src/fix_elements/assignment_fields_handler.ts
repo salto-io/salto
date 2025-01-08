@@ -48,20 +48,25 @@ const CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS_INFO: Record<
 
 const generateFixedAssignmentsInfo = ({
   elemID,
-  fieldName,
-  rule,
+  appliedRules,
 }: {
   elemID: ElemID
-  fieldName: string
-  rule: AssignmentFieldRuleWithFallback
+  appliedRules: { fieldPath: string[]; rule: AssignmentFieldRuleWithFallback }[]
 }): ChangeError => {
-  const messagePrefix = `The "${fieldName}" field will be ${rule.strategy === 'omit' ? 'omitted' : 'replaced'}`
+  const messagePrefix = 'Changes were made to assignment-related fields'
+  const detailedMessageFieldDetails = appliedRules
+    .map(({ fieldPath, rule }) => {
+      const fieldName = fieldPath.join('.')
+      return ` — Field "${fieldName}" was ${rule.strategy === 'fallback' ? `replaced with ${safeJsonStringify(rule.fallbackValue)}` : 'omitted'}`
+    })
+    .join('\n')
+
   return {
     elemID,
     severity: 'Info',
     message: messagePrefix,
     // TODO DOC-201: Add a link to our documentation
-    detailedMessage: `${messagePrefix}${rule.strategy === 'fallback' ? ` with ${safeJsonStringify(rule.fallbackValue)}` : ''} in the deployment, according to the assignmentFieldsStrategy configuration`,
+    detailedMessage: `${messagePrefix} according to the assignmentFieldsStrategy configuration:\n${detailedMessageFieldDetails}`,
   }
 }
 
@@ -73,15 +78,15 @@ const handleAssignmentField = ({
   instance: InstanceElement
   fieldPath: string[]
   rule: AssignmentFieldRuleWithFallback
-}): FixedElementWithError | undefined => {
+}): InstanceElement | undefined => {
   const fieldValue = _.get(instance.value, fieldPath)
-  if (_.isEmpty(fieldValue)) {
-    return undefined
-  }
-
   const fixedElement = instance.clone()
+
   switch (rule.strategy) {
     case 'omit':
+      if (_.isEmpty(fieldValue)) {
+        return undefined
+      }
       _.set(fixedElement.value, fieldPath, undefined)
       break
     case 'fallback':
@@ -97,10 +102,7 @@ const handleAssignmentField = ({
   log.trace(
     `Fixed assignment field ${fieldPath.join('.')} in ${instance.elemID.getFullName()} according to the assignmentFieldsStrategy configuration: ${rule.strategy}`,
   )
-  return {
-    fixedElement,
-    error: generateFixedAssignmentsInfo({ elemID: instance.elemID, fieldName: fieldPath.join('.'), rule }),
-  }
+  return fixedElement
 }
 
 const calculateRuleToApplyWithPath = ({
@@ -138,18 +140,35 @@ const calculateRuleToApplyWithPath = ({
 const handleAssignmentFieldsSingleInstance = (
   instance: InstanceElement,
   assignmentFieldsConfig: IntuneAssignmentsFieldNamesConfig | ConditionalAccessPolicyAssignmentFieldNamesConfig,
-): FixedElementWithError[] =>
-  Object.entries(assignmentFieldsConfig)
+): FixedElementWithError | undefined => {
+  let resultFixedElement = instance
+  const appliedRules = Object.entries(assignmentFieldsConfig)
     .map(([fieldName, configRule]) => {
-      const result = calculateRuleToApplyWithPath({ instance, fieldName, requestedRule: configRule })
+      const ruleToApplyWithPath = calculateRuleToApplyWithPath({ instance, fieldName, requestedRule: configRule })
 
-      if (result === undefined) {
-        return undefined
+      if (ruleToApplyWithPath !== undefined) {
+        const fixedElement = handleAssignmentField({ instance: resultFixedElement, ...ruleToApplyWithPath })
+        if (fixedElement !== undefined) {
+          resultFixedElement = fixedElement
+          return ruleToApplyWithPath
+        }
       }
 
-      return handleAssignmentField({ instance, ...result })
+      return undefined
     })
     .filter(isDefined)
+
+  if (_.isEmpty(appliedRules)) {
+    return undefined
+  }
+
+  const error = generateFixedAssignmentsInfo({
+    elemID: instance.elemID,
+    appliedRules,
+  })
+
+  return { fixedElement: resultFixedElement, error }
+}
 
 const handleAssignmentFields = (
   instances: InstanceElement[],
@@ -157,10 +176,12 @@ const handleAssignmentFields = (
 ): FixedElementWithError[] => {
   const requestedTypeNames = Object.keys(assignmentFieldsConfig)
   const filteredInstances = instances.filter(instance => requestedTypeNames.includes(instance.elemID.typeName))
-  return Object.entries(assignmentFieldsConfig).flatMap(([typeName, config]) => {
-    const instancesWithTypeName = filteredInstances.filter(instance => instance.elemID.typeName === typeName)
-    return instancesWithTypeName.flatMap(instance => handleAssignmentFieldsSingleInstance(instance, config))
-  })
+  return Object.entries(assignmentFieldsConfig)
+    .flatMap(([typeName, config]) => {
+      const instancesWithTypeName = filteredInstances.filter(instance => instance.elemID.typeName === typeName)
+      return instancesWithTypeName.flatMap(instance => handleAssignmentFieldsSingleInstance(instance, config))
+    })
+    .filter(isDefined)
 }
 
 /**

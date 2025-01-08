@@ -13,11 +13,11 @@ import { ADAPTER_NAME, entraConstants, intuneConstants } from '../constants'
 const ASSIGNMENT_FIELD_STRATEGIES = ['omit', 'fallback'] as const
 type AssignmentFieldStrategy = (typeof ASSIGNMENT_FIELD_STRATEGIES)[number]
 
-export type IntuneTypesWithAssignments = (typeof intuneConstants.TYPES_WITH_ASSIGNMENTS)[number]
+type IntuneTypesWithAssignments = (typeof intuneConstants.TYPES_WITH_ASSIGNMENTS)[number]
 export type ConditionalAccessPolicyAssignmentField =
   (typeof entraConstants.CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS)[number]
 
-export type AssignmentFieldRuleWithoutFallback = {
+type AssignmentFieldRuleWithoutFallback = {
   strategy: Exclude<AssignmentFieldStrategy, 'fallback'>
 }
 export type AssignmentFieldRuleWithFallback =
@@ -27,19 +27,24 @@ export type AssignmentFieldRuleWithFallback =
       fallbackValue: unknown
     }
 
-export type IntuneAssignmentFieldsConfig = Partial<
-  Record<IntuneTypesWithAssignments, AssignmentFieldRuleWithoutFallback>
+export type IntuneAssignmentsFieldNamesConfig = Partial<
+  Record<typeof intuneConstants.ASSIGNMENTS_FIELD_NAME, AssignmentFieldRuleWithoutFallback>
 >
-export type ConditionalAccessPolicyAssignmentFieldsConfig = Partial<
+export type ConditionalAccessPolicyAssignmentFieldNamesConfig = Partial<
   Record<ConditionalAccessPolicyAssignmentField, AssignmentFieldRuleWithFallback>
 >
 
-export type AssignmentFieldsConfig = {
-  EntraConditionalAccessPolicy?: ConditionalAccessPolicyAssignmentFieldsConfig
-  Intune?: IntuneAssignmentFieldsConfig
-}
+type IntuneAssignmentFieldsConfig = Partial<Record<IntuneTypesWithAssignments, IntuneAssignmentsFieldNamesConfig>>
+type EntraAssignmentFieldsConfig = Partial<
+  Record<
+    typeof entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
+    ConditionalAccessPolicyAssignmentFieldNamesConfig
+  >
+>
 
-export const assignmentFieldRuleWithoutFallbackType = createMatchingObjectType<AssignmentFieldRuleWithoutFallback>({
+export type AssignmentFieldsConfig = IntuneAssignmentFieldsConfig & EntraAssignmentFieldsConfig
+
+const assignmentFieldRuleWithoutFallbackType = createMatchingObjectType<AssignmentFieldRuleWithoutFallback>({
   elemID: new ElemID(ADAPTER_NAME, 'AssignmentFieldRuleWithoutFallback'),
   fields: {
     strategy: {
@@ -53,7 +58,7 @@ export const assignmentFieldRuleWithoutFallbackType = createMatchingObjectType<A
     },
   },
 })
-export const assignmentFieldRuleWithFallbackType = createMatchingObjectType<AssignmentFieldRuleWithFallback>({
+const assignmentFieldRuleWithFallbackType = createMatchingObjectType<AssignmentFieldRuleWithFallback>({
   elemID: new ElemID(ADAPTER_NAME, 'AssignmentFieldRuleWithFallback'),
   fields: {
     strategy: {
@@ -69,9 +74,17 @@ export const assignmentFieldRuleWithFallbackType = createMatchingObjectType<Assi
   },
 })
 
-export const conditionalAccessPolicyAssignmentFieldsConfigType =
-  createMatchingObjectType<ConditionalAccessPolicyAssignmentFieldsConfig>({
-    elemID: new ElemID(ADAPTER_NAME, 'ConditionalAccessPolicyAssignmentFieldsConfig'),
+const intuneAssignmentsFieldNamesConfigType = createMatchingObjectType<IntuneAssignmentsFieldNamesConfig>({
+  elemID: new ElemID(ADAPTER_NAME, 'IntuneAssignmentsFieldNamesConfig'),
+  fields: {
+    [intuneConstants.ASSIGNMENTS_FIELD_NAME]: {
+      refType: assignmentFieldRuleWithoutFallbackType,
+    },
+  },
+})
+const conditionalAccessPolicyAssignmentFieldNamesConfigType =
+  createMatchingObjectType<ConditionalAccessPolicyAssignmentFieldNamesConfig>({
+    elemID: new ElemID(ADAPTER_NAME, 'ConditionalAccessPolicyAssignmentFieldNamesConfig'),
     fields: Object.fromEntries(
       entraConstants.CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS.map(field => [
         field,
@@ -82,30 +95,20 @@ export const conditionalAccessPolicyAssignmentFieldsConfigType =
     ) as Record<ConditionalAccessPolicyAssignmentField, { refType: ObjectType }>,
   })
 
-export const intuneAssignmentFieldsConfigType = createMatchingObjectType<IntuneAssignmentFieldsConfig>({
-  elemID: new ElemID(ADAPTER_NAME, 'IntuneAssignmentFieldsConfig'),
-  fields: Object.fromEntries(
-    intuneConstants.TYPES_WITH_ASSIGNMENTS.map(type => [
-      type,
-      {
-        refType: assignmentFieldRuleWithoutFallbackType,
-      },
-    ]),
-  ) as Record<IntuneTypesWithAssignments, { refType: ObjectType }>,
-})
-
 export const assignmentFieldsConfigType = createMatchingObjectType<AssignmentFieldsConfig>({
   elemID: new ElemID(ADAPTER_NAME, 'assignmentFieldsConfig'),
   fields: {
-    EntraConditionalAccessPolicy: {
-      refType: conditionalAccessPolicyAssignmentFieldsConfigType,
+    [entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME]: {
+      refType: conditionalAccessPolicyAssignmentFieldNamesConfigType,
     },
-    Intune: {
-      refType: intuneAssignmentFieldsConfigType,
-      annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: intuneConstants.TYPES_WITH_ASSIGNMENTS }),
-      },
-    },
+    ...(Object.fromEntries(
+      intuneConstants.TYPES_WITH_ASSIGNMENTS.map(type => [
+        type,
+        {
+          refType: intuneAssignmentsFieldNamesConfigType,
+        },
+      ]),
+    ) as Record<IntuneTypesWithAssignments, { refType: ObjectType }>),
   },
 })
 

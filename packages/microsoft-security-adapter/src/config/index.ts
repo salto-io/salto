@@ -7,3 +7,10 @@
  */
 
 export { DEFAULT_CONFIG, additionalDeployConfigFieldsType, UserConfig } from './config'
+export {
+  AssignmentFieldRuleWithFallback,
+  AssignmentFieldsConfig,
+  ConditionalAccessPolicyAssignmentField,
+  ConditionalAccessPolicyAssignmentFieldNamesConfig,
+  IntuneAssignmentsFieldNamesConfig,
+} from './assignment_fields'

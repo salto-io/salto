@@ -40,8 +40,8 @@ microsoft_security {
   }
   deploy = {
     assignmentFieldsStrategy = {
-      Intune = {
-        IntuneDeviceConfiguration: {
+      IntuneDeviceConfiguration = {
+        assignments: {
           strategy = "omit"
         }
       }
@@ -146,33 +146,36 @@ microsoft_security {
 
 ### Assignment fields strategy customizations
 
-| Name                                                                                                 | Default when undefined | Description                                                                                                                |
-| ---------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Intune                                                                                               | {}                     | Configuration for the strategy used to handle the `assignments` field defined under specific Intune instance types         |
-| [EntraConditionalAccessPolicy](#conditional-access-policy-assignment-fields-strategy-customizations) | {}                     | Configuration for the strategy used to handle specific assignments defined under Entra Conditional Access Policy instances |
+Each entry in the configuration object represents a specific instance type name.
+The value of each entry defines an object mapping from the field name to a [rule for omitting or replacing the field](#assignment-field-rule-strategy-structure).
+
+| Name                                                                                                 | Default when undefined | Description                                                                                                                                           |
+| ---------------------------------------------------------------------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [EntraConditionalAccessPolicy](#conditional-access-policy-assignment-fields-strategy-customizations) | {}                     | Configuration for the strategy used to handle specific assignments defined under Entra Conditional Access Policy instances                            |
+| IntuneApplication                                                                                    | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplication instances                                       |
+| IntuneApplicationConfigurationManagedApp                                                             | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationConfigurationManagedApp instances                |
+| IntuneApplicationConfigurationManagedDevice                                                          | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationConfigurationManagedDevice instances             |
+| IntuneApplicationProtectionAndroid                                                                   | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationProtectionAndroid instances                      |
+| IntuneApplicationProtectionIOS                                                                       | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationProtectionIOS instances                          |
+| IntuneApplicationProtectionWindows                                                                   | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationProtectionWindows instances                      |
+| IntuneApplicationProtectionWindowsInformationProtection                                              | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationProtectionWindowsInformationProtection instances |
+| IntuneDeviceConfiguration                                                                            | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneDeviceConfiguration instances                               |
+| IntuneDeviceConfigurationSettingCatalog                                                              | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneDeviceConfigurationSettingCatalog instances                 |
+| IntuneDeviceCompliance                                                                               | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneDeviceCompliance instances                                  |
+| IntuneFilter                                                                                         | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneFilter instances                                            |
+| IntunePlatformScriptLinux                                                                            | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntunePlatformScriptLinux instances                               |
+| IntunePlatformScriptMacOS                                                                            | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntunePlatformScriptMacOS instances                               |
+| IntunePlatformScriptWindows                                                                          | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntunePlatformScriptWindows instances                             |
+| IntuneScopeTag                                                                                       | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneScopeTag instances                                          |
 
 #### Intune assignment fields strategy customizations
 
-Each entry in the configuration object represents a specific Intune instance type.
-The value of each entry defines a [rule for omitting or replacing the field](#assignment-field-rule-strategy-structure).
+The only field that can be customized for Intune types is `assignments`.
+The value of each entry defines a [rule for omitting the field](#assignment-field-rule-strategy-structure).
 
-| Name                                                    | Default when undefined | Description                                                                                                                                           |
-| ------------------------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| IntuneApplication                                       | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplication instances                                       |
-| IntuneApplicationConfigurationManagedApp                | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationConfigurationManagedApp instances                |
-| IntuneApplicationConfigurationManagedDevice             | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationConfigurationManagedDevice instances             |
-| IntuneApplicationProtectionAndroid                      | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationProtectionAndroid instances                      |
-| IntuneApplicationProtectionIOS                          | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationProtectionIOS instances                          |
-| IntuneApplicationProtectionWindows                      | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationProtectionWindows instances                      |
-| IntuneApplicationProtectionWindowsInformationProtection | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneApplicationProtectionWindowsInformationProtection instances |
-| IntuneDeviceConfiguration                               | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneDeviceConfiguration instances                               |
-| IntuneDeviceConfigurationSettingCatalog                 | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneDeviceConfigurationSettingCatalog instances                 |
-| IntuneDeviceCompliance                                  | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneDeviceCompliance instances                                  |
-| IntuneFilter                                            | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneFilter instances                                            |
-| IntunePlatformScriptLinux                               | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntunePlatformScriptLinux instances                               |
-| IntunePlatformScriptMacOS                               | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntunePlatformScriptMacOS instances                               |
-| IntunePlatformScriptWindows                             | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntunePlatformScriptWindows instances                             |
-| IntuneScopeTag                                          | {}                     | Configuration for the strategy used to handle the `assignments` field defined under IntuneScopeTag instances                                          |
+| Name        | Default when undefined | Description                                        |
+| ----------- | ---------------------- | -------------------------------------------------- |
+| assignments | {}                     | Configuration for omitting the "assignments" field |
 
 #### Conditional Access Policy assignment fields strategy customizations
 
@@ -196,7 +199,7 @@ The value of each entry defines a [rule for omitting or replacing the field](#as
 
 ##### Assignment field rule strategy structure
 
-| Name          | Default when undefined | Description                                                                                                                                                                                                                                        |
-| ------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| strategy      | undefined              | The strategy to apply for the specified assignment - "omit" or "fallback". If "omit" is set for a required field, the field will be replaced with a value of ["None"]. "fallback" can only be set for Conditional Access Policy assignment fields. |
-| fallbackValue | undefined              | The value to use as a fallback for the specified assignment field, when the strategy is "fallback".                                                                                                                                                |
+| Name          | Default when undefined | Description                                                                                                                                                                                                                                |
+| ------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| strategy      | undefined              | The strategy to apply for the specified assignment - "omit" or "fallback". If "omit" is set for a required field, the field will be replaced with a value of ["None"]. "fallback" can only be set for EntraConditionalAccessPolicy fields. |
+| fallbackValue | undefined              | The value to use as a fallback for the specified assignment field, when the strategy is "fallback".                                                                                                                                        |

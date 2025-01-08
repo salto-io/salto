@@ -13,14 +13,15 @@ import { logger } from '@salto-io/logging'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { Options } from '../definitions/types'
-import { entraConstants, intuneConstants } from '../constants'
+import { entraConstants } from '../constants'
 import {
+  UserConfig,
   AssignmentFieldRuleWithFallback,
+  AssignmentFieldsConfig,
   ConditionalAccessPolicyAssignmentField,
-  ConditionalAccessPolicyAssignmentFieldsConfig,
-  IntuneAssignmentFieldsConfig,
-} from '../config/assignment_fields'
-import { UserConfig } from '../config'
+  ConditionalAccessPolicyAssignmentFieldNamesConfig,
+  IntuneAssignmentsFieldNamesConfig,
+} from '../config'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
@@ -65,20 +66,20 @@ const generateFixedAssignmentsInfo = ({
 }
 
 const handleAssignmentField = ({
-  element,
+  instance,
   fieldPath,
   rule,
 }: {
-  element: InstanceElement
+  instance: InstanceElement
   fieldPath: string[]
   rule: AssignmentFieldRuleWithFallback
 }): FixedElementWithError | undefined => {
-  const fieldValue = _.get(element.value, fieldPath)
+  const fieldValue = _.get(instance.value, fieldPath)
   if (_.isEmpty(fieldValue)) {
     return undefined
   }
 
-  const fixedElement = element.clone()
+  const fixedElement = instance.clone()
   switch (rule.strategy) {
     case 'omit':
       _.set(fixedElement.value, fieldPath, undefined)
@@ -94,68 +95,73 @@ const handleAssignmentField = ({
   }
 
   log.trace(
-    `Fixed assignment field ${fieldPath.join('.')} in ${element.elemID.getFullName()} according to the assignmentFieldsStrategy configuration: ${rule.strategy}`,
+    `Fixed assignment field ${fieldPath.join('.')} in ${instance.elemID.getFullName()} according to the assignmentFieldsStrategy configuration: ${rule.strategy}`,
   )
   return {
     fixedElement,
-    error: generateFixedAssignmentsInfo({ elemID: element.elemID, fieldName: fieldPath.join('.'), rule }),
+    error: generateFixedAssignmentsInfo({ elemID: instance.elemID, fieldName: fieldPath.join('.'), rule }),
   }
 }
 
-const handleIntuneAssignmentsField = (
-  elements: InstanceElement[],
-  intuneConfig: IntuneAssignmentFieldsConfig,
-): FixedElementWithError[] => {
-  const intuneTypesToHandle = Object.keys(intuneConfig)
-  const filteredElements = elements.filter(element => intuneTypesToHandle.includes(element.elemID.typeName))
-  return Object.entries(intuneConfig).flatMap(([typeName, rule]) =>
-    filteredElements
-      .filter(element => typeName === element.elemID.typeName)
-      .map(element =>
-        handleAssignmentField({
-          element,
-          fieldPath: [intuneConstants.ASSIGNMENTS_FIELD_NAME],
-          rule,
-        }),
-      )
-      .filter(isDefined),
-  )
+const calculateRuleToApplyWithPath = ({
+  instance,
+  fieldName,
+  requestedRule,
+}: {
+  instance: InstanceElement
+  fieldName: string
+  requestedRule: AssignmentFieldRuleWithFallback
+}): { rule: AssignmentFieldRuleWithFallback; fieldPath: string[] } | undefined => {
+  if (instance.elemID.typeName !== entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME) {
+    return { rule: requestedRule, fieldPath: [fieldName] }
+  }
+  const fieldInfo =
+    CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS_INFO[fieldName as ConditionalAccessPolicyAssignmentField]
+
+  if (fieldInfo === undefined) {
+    log.error(`Unknown field ${fieldName} configuration in ConditionalAccessPolicyAssignmentFieldsConfig`)
+    return undefined
+  }
+
+  const fieldPath = [entraConstants.CONDITIONS_FIELD_NAME, fieldInfo.parentField, fieldName]
+
+  if (requestedRule.strategy === 'omit' && fieldInfo.isRequired) {
+    return {
+      rule: { strategy: 'fallback', fallbackValue: ['None'] },
+      fieldPath,
+    }
+  }
+
+  return { rule: requestedRule, fieldPath }
 }
 
-const handleConditionalAccessPolicyAssignmentFieldsSingleElement = (
-  element: InstanceElement,
-  conditionalAccessConfig: ConditionalAccessPolicyAssignmentFieldsConfig,
+const handleAssignmentFieldsSingleInstance = (
+  instance: InstanceElement,
+  assignmentFieldsConfig: IntuneAssignmentsFieldNamesConfig | ConditionalAccessPolicyAssignmentFieldNamesConfig,
 ): FixedElementWithError[] =>
-  Object.entries(conditionalAccessConfig)
-    .map(([field, configRule]) => {
-      const fieldInfo =
-        CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS_INFO[field as ConditionalAccessPolicyAssignmentField]
+  Object.entries(assignmentFieldsConfig)
+    .map(([fieldName, configRule]) => {
+      const result = calculateRuleToApplyWithPath({ instance, fieldName, requestedRule: configRule })
 
-      if (fieldInfo === undefined) {
-        log.error(`Unknown field ${field} configuration in ConditionalAccessPolicyAssignmentFieldsConfig`)
+      if (result === undefined) {
         return undefined
       }
 
-      const rule =
-        configRule.strategy === 'omit' && fieldInfo.isRequired
-          ? ({ strategy: 'fallback', fallbackValue: ['None'] } as const)
-          : configRule
-
-      return handleAssignmentField({
-        element,
-        fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, fieldInfo.parentField, field],
-        rule,
-      })
+      return handleAssignmentField({ instance, ...result })
     })
     .filter(isDefined)
 
-const handleConditionalAccessPolicyAssignmentFields = (
-  elements: InstanceElement[],
-  conditionalAccessConfig: ConditionalAccessPolicyAssignmentFieldsConfig,
-): FixedElementWithError[] =>
-  elements
-    .filter(element => element.elemID.typeName === entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME)
-    .flatMap(element => handleConditionalAccessPolicyAssignmentFieldsSingleElement(element, conditionalAccessConfig))
+const handleAssignmentFields = (
+  instances: InstanceElement[],
+  assignmentFieldsConfig: AssignmentFieldsConfig,
+): FixedElementWithError[] => {
+  const requestedTypeNames = Object.keys(assignmentFieldsConfig)
+  const filteredInstances = instances.filter(instance => requestedTypeNames.includes(instance.elemID.typeName))
+  return Object.entries(assignmentFieldsConfig).flatMap(([typeName, config]) => {
+    const instancesWithTypeName = filteredInstances.filter(instance => instance.elemID.typeName === typeName)
+    return instancesWithTypeName.flatMap(instance => handleAssignmentFieldsSingleInstance(instance, config))
+  })
+}
 
 /**
  * Handles selected assignment-related fields according to the user configuration.
@@ -171,15 +177,10 @@ export const assignmentFieldsHandler: FixElementsHandler<Options, UserConfig> =
     }
 
     const instances = elements.filter(isInstanceElement)
-
-    const intuneResult = handleIntuneAssignmentsField(instances, assignmentFieldsStrategy.Intune ?? {})
-    const entraResult = handleConditionalAccessPolicyAssignmentFields(
-      instances,
-      assignmentFieldsStrategy.EntraConditionalAccessPolicy ?? {},
-    )
+    const result = handleAssignmentFields(instances, assignmentFieldsStrategy)
 
     return {
-      errors: [...intuneResult, ...entraResult].map(result => result.error),
-      fixedElements: [...intuneResult, ...entraResult].map(result => result.fixedElement),
+      errors: result.map(res => res.error),
+      fixedElements: result.map(res => res.fixedElement),
     }
   }

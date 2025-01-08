@@ -42,8 +42,8 @@ describe('replaceGroupsDomainHandler', () => {
       beforeEach(() => {
         config.deploy = {
           assignmentFieldsStrategy: {
-            Intune: {
-              [intuneConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME]: {
+            [intuneConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME]: {
+              assignments: {
                 strategy: 'omit',
               },
             },

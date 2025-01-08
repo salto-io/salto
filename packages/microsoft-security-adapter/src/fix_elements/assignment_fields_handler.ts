@@ -92,6 +92,9 @@ const handleAssignmentField = ({
       throw new Error(`Unknown assignment field strategy %o: ${rule}`)
   }
 
+  log.trace(
+    `Fixed assignment field ${fieldPath.join('.')} in ${element.elemID.getFullName()} according to the assignmentFieldsStrategy configuration: ${rule.strategy}`,
+  )
   return {
     fixedElement,
     error: generateFixedAssignmentsInfo({ elemID: element.elemID, fieldName: fieldPath.join('.'), rule }),

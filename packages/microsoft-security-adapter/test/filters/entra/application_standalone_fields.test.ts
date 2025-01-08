@@ -605,6 +605,7 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
         )
 
         describe('when the application parent object contains references to the standalone instances', () => {
+          let appRoleChange: Change<InstanceElement>
           let oauth2PermissionScopeChange: Change<InstanceElement>
           let changes: Change<InstanceElement>[]
 
@@ -619,9 +620,13 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
                 },
               ],
             }
+            appRoleInstanceA.annotations = {
+              [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
+            }
             oauth2PermissionScopeInstanceA.annotations = {
               [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
             }
+            appRoleChange = toChange({ after: appRoleInstanceA })
             oauth2PermissionScopeChange = toChange({ after: oauth2PermissionScopeInstanceA })
             changes = [otherChange, oauth2PermissionScopeChange]
 
@@ -655,30 +660,44 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
           })
 
           describe('when the reference value does not have an id field', () => {
-            beforeEach(() => {
-              oauth2PermissionScopeInstanceA.value = { not_id: 'scopeA' }
+            describe('when the referenced instance exists in the changes', () => {
+              beforeEach(() => {
+                oauth2PermissionScopeInstanceA.value = { not_id: 'scopeA' }
+              })
+
+              it('should update the reference value with the generated uuid', async () => {
+                const result = await filter.deploy(changes, { changes, groupID: 'test' })
+
+                expect(mockDeployChanges).toHaveBeenCalled()
+                const changesParam = mockDeployChanges.mock.calls[0][0].changes
+                expect(changesParam).toHaveLength(1)
+                expect(isModificationChange(changesParam[0])).toBeTruthy()
+                const changeData = getChangeData(changesParam[0] as ModificationChange<InstanceElement>)
+                const scopeRef = _.get(changeData.value, [
+                  API_FIELD_NAME,
+                  PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME,
+                  0,
+                  DELEGATED_PERMISSION_IDS_FIELD_NAME,
+                  0,
+                ])
+                expect(scopeRef.value.value.id).toEqual(expect.stringMatching(/^[\w-]{36}$/))
+
+                expect(result.deployResult.appliedChanges).toEqual([oauth2PermissionScopeChange])
+                expect(result.deployResult.errors).toHaveLength(0)
+                expect(result.leftoverChanges).toEqual([otherChange])
+              })
             })
 
-            it('should update the reference value with the generated uuid', async () => {
-              const result = await filter.deploy(changes, { changes, groupID: 'test' })
+            describe('when the referenced instance does not exist in the changes', () => {
+              it('should deploy without updating the reference value with the id', async () => {
+                changes = [otherChange, appRoleChange]
+                const result = await filter.deploy(changes, { changes, groupID: 'test' })
 
-              expect(mockDeployChanges).toHaveBeenCalled()
-              const changesParam = mockDeployChanges.mock.calls[0][0].changes
-              expect(changesParam).toHaveLength(1)
-              expect(isModificationChange(changesParam[0])).toBeTruthy()
-              const changeData = getChangeData(changesParam[0] as ModificationChange<InstanceElement>)
-              const scopeRef = _.get(changeData.value, [
-                API_FIELD_NAME,
-                PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME,
-                0,
-                DELEGATED_PERMISSION_IDS_FIELD_NAME,
-                0,
-              ])
-              expect(scopeRef.value.value.id).toEqual(expect.stringMatching(/^[\w-]{36}$/))
-
-              expect(result.deployResult.appliedChanges).toEqual([oauth2PermissionScopeChange])
-              expect(result.deployResult.errors).toHaveLength(0)
-              expect(result.leftoverChanges).toEqual([otherChange])
+                expect(mockDeployChanges).toHaveBeenCalled()
+                expect(result.deployResult.appliedChanges).toEqual([appRoleChange])
+                expect(result.deployResult.errors).toHaveLength(0)
+                expect(result.leftoverChanges).toEqual([otherChange])
+              })
             })
           })
         })

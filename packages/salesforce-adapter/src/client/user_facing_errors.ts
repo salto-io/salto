@@ -6,7 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { DeployMessage } from '@salto-io/jsforce'
 import { decorators } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -17,7 +16,7 @@ import {
   ERROR_PROPERTIES,
   INVALID_GRANT,
   isSalesforceError,
-  SALESFORCE_DEPLOY_PROBLEMS,
+  SALESFORCE_DEPLOY_ERROR_MESSAGES,
   SALESFORCE_ERRORS,
   SalesforceError,
 } from '../constants'
@@ -137,17 +136,18 @@ export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(async or
   }
 })
 
-// Deploy Problems Mapping
+// Deploy Error Messages Mapping
 
-export type DeployProblemMapper = {
-  test: (problem: string) => boolean
-  map: (deployMessage: DeployMessage) => string
+export type DeployErrorMessageMapper = {
+  test: (errorMessage: string) => boolean
+  map: (errorMessage: string) => string
 }
 
-export type DeployProblemMappers = {
-  [SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS]: DeployProblemMapper
-  [SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT]: DeployProblemMapper
-  [SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME]: DeployProblemMapper
+export type DeployErrorMessageMappers = {
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS]: DeployErrorMessageMapper
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT]: DeployErrorMessageMapper
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME]: DeployErrorMessageMapper
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION]: DeployErrorMessageMapper
 }
 
 export const SCHEDULABLE_CLASS_MESSAGE =
@@ -164,41 +164,48 @@ export const INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE =
   "Please make sure you're managing Dashboards in your Salto environment and that your deployment contains the referenced Dashboard instance.\n" +
   'For more information, please refer to: https://help.salto.io/en/articles/7439350-supported-salesforce-types'
 
-export const DEPLOY_PROBLEM_MAPPER: DeployProblemMappers = {
-  [SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS]: {
-    test: (problem: string) => problem === SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS,
-    map: (deployMessage: DeployMessage) => withSalesforceError(deployMessage.problem, SCHEDULABLE_CLASS_MESSAGE),
+export const FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE =
+  'The element does not meet the validation rules. Try deactivating the validation rules if possible.'
+
+export const DEPLOY_ERROR_MESSAGE_MAPPER: DeployErrorMessageMappers = {
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS]: {
+    test: (errorMessage: string) => errorMessage === SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS,
+    map: (errorMessage: string) => withSalesforceError(errorMessage, SCHEDULABLE_CLASS_MESSAGE),
   },
-  [SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT]: {
-    test: (problem: string) => problem === SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT,
-    map: (deployMessage: DeployMessage) =>
-      withSalesforceError(deployMessage.problem, MAX_METADATA_DEPLOY_LIMIT_MESSAGE),
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT]: {
+    test: (problem: string) => problem === SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT,
+    map: (errorMessage: string) => withSalesforceError(errorMessage, MAX_METADATA_DEPLOY_LIMIT_MESSAGE),
   },
-  [SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME]: {
-    test: (problem: string) => problem.includes(SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME),
-    map: (deployMessage: DeployMessage) => `${deployMessage.problem}\n${INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE}`,
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME]: {
+    test: (errorMessage: string) =>
+      errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME),
+    map: (errorMessage: string) => `${errorMessage}\n${INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE}`,
+  },
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION]: {
+    test: (errorMessage: string) =>
+      errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION),
+    map: (errorMessage: string) => withSalesforceError(errorMessage, FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE),
   },
 }
 
-export const getUserFriendlyDeployMessage = (deployMessage: DeployMessage): DeployMessage => {
-  const { problem } = deployMessage
+export const getUserFriendlyDeployErrorMessage = (errorMessage: string): string => {
   const userFriendlyMessageByMapperName = _.mapValues(
-    _.pickBy(DEPLOY_PROBLEM_MAPPER, mapper => mapper.test(problem)),
-    mapper => mapper.map(deployMessage),
+    _.pickBy(DEPLOY_ERROR_MESSAGE_MAPPER, mapper => mapper.test(errorMessage)),
+    mapper => mapper.map(errorMessage),
   )
   const matchedMapperNames = Object.keys(userFriendlyMessageByMapperName)
   if (_.isEmpty(matchedMapperNames)) {
-    return deployMessage
+    return errorMessage
   }
   if (matchedMapperNames.length > 1) {
     log.error(
       'The error %s matched on more than one mapper. Matcher mappers: %s',
-      problem,
+      errorMessage,
       inspectValue(matchedMapperNames),
     )
-    return deployMessage
+    return errorMessage
   }
   const [mapperName, userFriendlyMessage] = Object.entries(userFriendlyMessageByMapperName)[0]
-  log.debug('Replacing error %s message to %s. Original error: %o', mapperName, userFriendlyMessage, problem)
-  return { ...deployMessage, problem: userFriendlyMessage }
+  log.debug('Replacing error %s message to %s. Original error: %o', mapperName, userFriendlyMessage, errorMessage)
+  return userFriendlyMessage
 }

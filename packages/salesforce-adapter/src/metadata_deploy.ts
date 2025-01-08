@@ -259,7 +259,6 @@ const processDeployResponse = (
 
   const failedComponentErrors = allFailureMessages
     .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
-    .map(getUserFriendlyDeployMessage)
     .map(failure => ({
       elemID: getElemIdForDeployError(failure),
       message: failure.problem,

@@ -420,7 +420,7 @@ describe('SalesforceAdapter CRUD', () => {
                 {
                   fullName: await apiName(newInst),
                   componentType: await metadataType(newInst),
-                  problem: constants.SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS,
+                  problem: constants.SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS,
                 },
               ],
             }),
@@ -437,8 +437,10 @@ describe('SalesforceAdapter CRUD', () => {
 
         it('should return an error with user friendly message', () => {
           expect(result.errors).toHaveLength(1)
-          expect(result.errors[0].message).toContain(constants.SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS)
-          expect(result.errors[0].detailedMessage).toContain(constants.SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS)
+          expect(result.errors[0].message).toContain(constants.SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS)
+          expect(result.errors[0].detailedMessage).toContain(
+            constants.SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS,
+          )
         })
       })
 

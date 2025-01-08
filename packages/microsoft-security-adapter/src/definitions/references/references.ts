@@ -79,9 +79,17 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
     resourceAccessType: referenceUtils.neighborContextGetter({
       contextFieldName: 'type',
       getLookUpName: async ({ ref }) => ref.elemID.name,
-      // TODO SALTO-6933: Cover 'Scope' type
-      contextValueMapper: typeFieldValue =>
-        typeFieldValue === 'Role' ? entraConstants.TOP_LEVEL_TYPES.APP_ROLE_TYPE_NAME : undefined,
+      contextValueMapper: typeFieldValue => {
+        switch (typeFieldValue) {
+          case 'Role':
+            return entraConstants.TOP_LEVEL_TYPES.APP_ROLE_TYPE_NAME
+          case 'Scope':
+            return entraConstants.TOP_LEVEL_TYPES.OAUTH2_PERMISSION_SCOPE_TYPE_NAME
+          default:
+            log.error('Unexpected resource access type %s', typeFieldValue)
+            return undefined
+        }
+      },
     }),
   },
 }

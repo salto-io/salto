@@ -16,7 +16,10 @@ export default (): Record<string, ChangeValidator> => ({
   createCheckDeploymentBasedOnDefinitions:
     deployment.changeValidators.createCheckDeploymentBasedOnDefinitionsValidator<Options>({
       deployDefinitions: createDeployDefinitions(),
-      typesDeployedViaParent: [entraConstants.TOP_LEVEL_TYPES.APP_ROLE_TYPE_NAME],
+      typesDeployedViaParent: [
+        entraConstants.TOP_LEVEL_TYPES.APP_ROLE_TYPE_NAME,
+        entraConstants.TOP_LEVEL_TYPES.OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
+      ],
     }),
   ...changeValidators(),
 })

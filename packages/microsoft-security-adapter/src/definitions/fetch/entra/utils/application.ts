@@ -19,6 +19,7 @@ const { APP_ROLES_FIELD_NAME, IDENTIFIER_URIS_FIELD_NAME, API_FIELD_NAME, OAUTH2
  * Adjust the Entra application object.
  * 1. Remove the default identifier uri, as it's not deployable between envs.
  * 2. Add the parent id to the app roles.
+ * 3. Add the parent id to the oauth2 permission scopes.
  */
 export const adjustApplication: AdjustFunctionSingle = async ({ value }) => {
   validatePlainObject(value, 'application')

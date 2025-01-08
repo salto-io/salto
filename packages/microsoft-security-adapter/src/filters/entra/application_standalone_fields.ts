@@ -17,7 +17,7 @@ import {
   ReadOnlyElementsSource,
   SaltoElementError,
   getChangeData,
-  isAdditionOrModificationChange,
+  isAdditionChange,
   isInstanceChange,
   isInstanceElement,
   isReferenceExpression,
@@ -189,30 +189,18 @@ const addIdToStandaloneFields = ({
   })
 }
 
-// Update the parent change with the standalone fields.
-// The standalone fields are deployed as part of the parent, so we need to include them in the parent change.
-const updateParentChangeWithStandaloneFields = ({
-  parentChange,
-  standaloneFields,
+// The application parent may contain pre-authorized applications fields with delegated permissions.
+// The delegated permissions are references to the standalone fields.
+// In the case where the referenced scopes are newly created, they don't have an id yet, and we manually set it.
+// We also need to manually set the id in the *parent's references*, since the parent is deployed as part of the same request.
+// Which means that the references will not be updated with the id we applied on the standalone fields.
+const updateDelegatedPermissionReferences = ({
+  parent,
+  permissionScopeInstances,
 }: {
-  parentChange: Change<InstanceElement>
-  standaloneFields: InstanceElement[]
+  parent: InstanceElement
+  permissionScopeInstances: InstanceElement[]
 }): void => {
-  const parent = getChangeData(parentChange)
-  const [appRoleInstances, permissionScopeInstances] = _.partition(
-    standaloneFields,
-    instance => instance.elemID.typeName === APP_ROLE_TYPE_NAME,
-  )
-  _.set(
-    parent.value,
-    APP_ROLES_FIELD_NAME,
-    appRoleInstances.map(appRole => appRole.value),
-  )
-  _.set(
-    parent.value,
-    getPermissionScopeFieldPath(parent.elemID.typeName),
-    permissionScopeInstances.map(permissionScope => permissionScope.value),
-  )
   const preAuthorizedApps = _.get(parent.value, [API_FIELD_NAME, PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME], [])
   preAuthorizedApps.forEach((preAuthorizedApp: unknown) => {
     if (!isPlainObject(preAuthorizedApp)) {
@@ -238,6 +226,36 @@ const updateParentChangeWithStandaloneFields = ({
       }
     })
   })
+}
+
+// Update the parent change with the standalone fields.
+// The standalone fields are deployed as part of the parent, so we need to include them in the parent change.
+const updateParentChangeWithStandaloneFields = ({
+  parentChange,
+  standaloneFields,
+}: {
+  parentChange: Change<InstanceElement>
+  standaloneFields: InstanceElement[]
+}): void => {
+  const parent = getChangeData(parentChange)
+  const [appRoleInstances, permissionScopeInstances] = _.partition(
+    standaloneFields,
+    instance => instance.elemID.typeName === APP_ROLE_TYPE_NAME,
+  )
+  _.set(
+    parent.value,
+    APP_ROLES_FIELD_NAME,
+    appRoleInstances.map(appRole => appRole.value),
+  )
+  _.set(
+    parent.value,
+    getPermissionScopeFieldPath(parent.elemID.typeName),
+    permissionScopeInstances.map(permissionScope => permissionScope.value),
+  )
+
+  if (parent.elemID.typeName === APPLICATION_TYPE_NAME) {
+    updateDelegatedPermissionReferences({ parent, permissionScopeInstances })
+  }
 }
 
 // The standalone fields are added to the parent change in place, but they shouldn't be included in the applied change to avoid modifying the nacls.
@@ -368,7 +386,7 @@ const calculateDeployResult = ({
  * This is needed to ensure uniqueness in serviceId for those fields, whose IDs uniqueness is parent-contextual.
  */
 const addParentIdToChanges = async (changes: Change[]): Promise<void> => {
-  const relevantChanges = changes.filter(isInstanceChangeOfRelevantTypes).filter(isAdditionOrModificationChange)
+  const relevantChanges = changes.filter(isInstanceChangeOfRelevantTypes).filter(isAdditionChange)
   relevantChanges.forEach(relevantChange => {
     const changeData = getChangeData(relevantChange)
     if (changeData.value[PARENT_ID_FIELD_NAME] === undefined) {

@@ -605,7 +605,6 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
         )
 
         describe('when the application parent object contains references to the standalone instances', () => {
-          let appRoleChange: Change<InstanceElement>
           let oauth2PermissionScopeChange: Change<InstanceElement>
           let changes: Change<InstanceElement>[]
 
@@ -626,7 +625,6 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
             oauth2PermissionScopeInstanceA.annotations = {
               [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
             }
-            appRoleChange = toChange({ after: appRoleInstanceA })
             oauth2PermissionScopeChange = toChange({ after: oauth2PermissionScopeInstanceA })
             changes = [otherChange, oauth2PermissionScopeChange]
 
@@ -688,13 +686,31 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
               })
             })
 
-            describe('when the referenced instance does not exist in the changes', () => {
-              it('should deploy without updating the reference value with the id', async () => {
-                changes = [otherChange, appRoleChange]
+            describe('when the referenced instance does not exist in the element source', () => {
+              beforeEach(() => {
+                const newOauth2PermissionScopeInstance = new InstanceElement('newScope', oauth2PermissionScopeType, {
+                  not_id: 'newScope',
+                })
+                applicationInstance.value.api = {
+                  [PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME]: [
+                    {
+                      appId: 'someApp',
+                      [DELEGATED_PERMISSION_IDS_FIELD_NAME]: [
+                        new ReferenceExpression(
+                          newOauth2PermissionScopeInstance.elemID,
+                          newOauth2PermissionScopeInstance,
+                        ),
+                      ],
+                    },
+                  ],
+                }
+              })
+
+              it('should deploy without updating the reference value with the instance id', async () => {
                 const result = await filter.deploy(changes, { changes, groupID: 'test' })
 
                 expect(mockDeployChanges).toHaveBeenCalled()
-                expect(result.deployResult.appliedChanges).toEqual([appRoleChange])
+                expect(result.deployResult.appliedChanges).toEqual([oauth2PermissionScopeChange])
                 expect(result.deployResult.errors).toHaveLength(0)
                 expect(result.leftoverChanges).toEqual([otherChange])
               })

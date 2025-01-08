@@ -86,6 +86,7 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
           case 'Scope':
             return entraConstants.TOP_LEVEL_TYPES.OAUTH2_PERMISSION_SCOPE_TYPE_NAME
           default:
+            log.error('Unexpected resource access type %s', typeFieldValue)
             return undefined
         }
       },

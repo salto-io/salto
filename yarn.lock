@@ -18003,7 +18003,6 @@ __metadata:
   resolution: "salto-vscode@workspace:packages/vscode"
   dependencies:
     "@salto-io/adapter-creators": 0.4.9
-    "@salto-io/core": 0.4.9
     "@salto-io/element-test-utils": 0.4.9
     "@salto-io/file": 0.4.9
     "@salto-io/lang-server": 0.4.9

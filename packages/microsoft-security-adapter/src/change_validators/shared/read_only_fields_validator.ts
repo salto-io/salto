@@ -73,13 +73,13 @@ const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, ReadOnlyFieldDefinition[]> =
   ],
 
   /* Intune instances */
-  [intuneConstants.APPLICATION_TYPE_NAME]: [
+  [intuneConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME]: [
     { fieldName: intuneConstants.PACKAGE_ID_FIELD_NAME },
     { fieldName: intuneConstants.APP_IDENTIFIER_FIELD_NAME },
     { fieldName: intuneConstants.APP_STORE_URL_FIELD_NAME },
     { fieldName: intuneConstants.BUNDLE_ID_FIELD_NAME },
   ],
-  [intuneConstants.FILTER_TYPE_NAME]: [{ fieldName: 'platform' }],
+  [intuneConstants.TOP_LEVEL_TYPES.FILTER_TYPE_NAME]: [{ fieldName: 'platform' }],
 }
 
 export const TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION = _.fromPairs(

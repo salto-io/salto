@@ -9,9 +9,11 @@
 import _ from 'lodash'
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../../shared/types'
-import { DEVICE_CONFIGURATION_TYPE_NAME } from '../../../../constants/intune'
+import { intuneConstants } from '../../../../constants'
 import { createStaticFileFromBase64Blob } from '../../shared/utils'
 import { NAME_ID_FIELD } from '../../shared/defaults'
+
+const { DEVICE_CONFIGURATION_TYPE_NAME } = intuneConstants.TOP_LEVEL_TYPES
 
 /**
  * Extracts the payload from the device configuration and creates a static file from it, if exists

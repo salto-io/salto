@@ -13,28 +13,25 @@ import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { odataType } from '../../../utils'
 import { DeployCustomDefinitions, InstanceDeployApiDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, adjustWrapper } from '../shared/utils'
-import {
-  application as applicationDeployUtils,
-  targetApps,
-  deviceConfigurationSettings,
-  groupAssignments,
-} from './utils'
+import { application as applicationDeployUtils, targetApps, deviceConfigurationSettings, assignments } from './utils'
 import { application, applicationConfiguration } from '../../../utils/intune'
 import { AdditionalAction, ClientOptions } from '../../types'
 
 const {
   // Type names
-  APPLICATION_TYPE_NAME,
-  APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
-  APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME,
-  DEVICE_CONFIGURATION_TYPE_NAME,
-  DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
-  DEVICE_COMPLIANCE_TYPE_NAME,
-  FILTER_TYPE_NAME,
-  PLATFORM_SCRIPT_LINUX_TYPE_NAME,
-  PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
-  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
-  SCOPE_TAG_TYPE_NAME,
+  TOP_LEVEL_TYPES: {
+    APPLICATION_TYPE_NAME,
+    APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+    APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME,
+    DEVICE_CONFIGURATION_TYPE_NAME,
+    DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
+    DEVICE_COMPLIANCE_TYPE_NAME,
+    FILTER_TYPE_NAME,
+    PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+    PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
+    PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
+    SCOPE_TAG_TYPE_NAME,
+  },
   // Field names
   APPS_FIELD_NAME,
   SCHEDULED_ACTIONS_FIELD_NAME,
@@ -122,7 +119,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          groupAssignments.createAssignmentsRequest({
+          assignments.createAssignmentsRequest({
             resourcePath: '/deviceAppManagement/mobileApps',
             rootField: applicationDeployUtils.DEPLOY_ASSIGNMENTS_ROOT_FIELD_NAME,
           }),
@@ -144,7 +141,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          groupAssignments.createAssignmentsRequest({
+          assignments.createAssignmentsRequest({
             resourcePath: '/deviceAppManagement/mobileApps',
             rootField: applicationDeployUtils.DEPLOY_ASSIGNMENTS_ROOT_FIELD_NAME,
           }),
@@ -184,7 +181,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          groupAssignments.createAssignmentsRequest({
+          assignments.createAssignmentsRequest({
             resourcePath: '/deviceAppManagement/mobileAppConfigurations',
           }),
         ],
@@ -205,7 +202,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          groupAssignments.createAssignmentsRequest({
+          assignments.createAssignmentsRequest({
             resourcePath: '/deviceAppManagement/mobileAppConfigurations',
           }),
         ],
@@ -223,10 +220,10 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
     },
   },
   [APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME]:
-    groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+    assignments.createBasicDeployDefinitionForTypeWithAssignments({
       resourcePath: '/deviceAppManagement/mdmWindowsInformationProtectionPolicies',
     }),
-  [DEVICE_CONFIGURATION_TYPE_NAME]: groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+  [DEVICE_CONFIGURATION_TYPE_NAME]: assignments.createBasicDeployDefinitionForTypeWithAssignments({
     resourcePath: '/deviceManagement/deviceConfigurations',
   }),
   [DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME]:
@@ -246,7 +243,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          groupAssignments.createAssignmentsRequest({
+          assignments.createAssignmentsRequest({
             resourcePath: '/deviceManagement/deviceCompliancePolicies',
           }),
         ],
@@ -290,7 +287,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          groupAssignments.createAssignmentsRequest({
+          assignments.createAssignmentsRequest({
             resourcePath: '/deviceManagement/deviceCompliancePolicies',
           }),
         ],
@@ -308,15 +305,15 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
     },
   },
   [PLATFORM_SCRIPT_LINUX_TYPE_NAME]: deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_DEPLOY_DEFINITION,
-  [PLATFORM_SCRIPT_WINDOWS_TYPE_NAME]: groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+  [PLATFORM_SCRIPT_WINDOWS_TYPE_NAME]: assignments.createBasicDeployDefinitionForTypeWithAssignments({
     resourcePath: '/deviceManagement/deviceManagementScripts',
     assignmentRootField: 'deviceManagementScriptAssignments',
   }),
-  [PLATFORM_SCRIPT_MAC_OS_TYPE_NAME]: groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+  [PLATFORM_SCRIPT_MAC_OS_TYPE_NAME]: assignments.createBasicDeployDefinitionForTypeWithAssignments({
     resourcePath: '/deviceManagement/deviceShellScripts',
     assignmentRootField: 'deviceManagementScriptAssignments',
   }),
-  [SCOPE_TAG_TYPE_NAME]: groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+  [SCOPE_TAG_TYPE_NAME]: assignments.createBasicDeployDefinitionForTypeWithAssignments({
     resourcePath: '/deviceManagement/roleScopeTags',
   }),
   ..._.mapValues(
@@ -337,7 +334,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
             targetApps.createTargetAppsDeployDefinition({ resourcePath, targetTypeFieldName }),
-            groupAssignments.createAssignmentsRequest({ resourcePath }),
+            assignments.createAssignmentsRequest({ resourcePath }),
           ],
           modify: [
             {
@@ -357,7 +354,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
             targetApps.createTargetAppsDeployDefinition({ resourcePath, targetTypeFieldName }),
-            groupAssignments.createAssignmentsRequest({ resourcePath }),
+            assignments.createAssignmentsRequest({ resourcePath }),
           ],
           remove: [
             {

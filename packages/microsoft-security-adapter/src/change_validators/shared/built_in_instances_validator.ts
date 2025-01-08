@@ -28,7 +28,7 @@ const POTENTIAL_BUILD_IN_TYPES: Record<string, BuiltInIndicator> = {
     fieldName: 'isBuiltIn',
     value: true,
   },
-  [intuneConstants.SCOPE_TAG_TYPE_NAME]: {
+  [intuneConstants.TOP_LEVEL_TYPES.SCOPE_TAG_TYPE_NAME]: {
     fieldName: 'isBuiltIn',
     value: true,
   },

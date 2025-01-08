@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { groupAssignments } from '.'
+import { assignments } from '.'
 import { intuneConstants } from '../../../../constants'
 import { InstanceDeployApiDefinitions } from '../../shared/types'
 
@@ -29,7 +29,7 @@ export const DEVICE_CONFIGURATION_SETTINGS_DEPLOY_DEFINITION: InstanceDeployApiD
             },
           },
         },
-        groupAssignments.createAssignmentsRequest({
+        assignments.createAssignmentsRequest({
           resourcePath: '/deviceManagement/configurationPolicies',
         }),
       ],
@@ -50,7 +50,7 @@ export const DEVICE_CONFIGURATION_SETTINGS_DEPLOY_DEFINITION: InstanceDeployApiD
             },
           },
         },
-        groupAssignments.createAssignmentsRequest({
+        assignments.createAssignmentsRequest({
           resourcePath: '/deviceManagement/configurationPolicies',
         }),
       ],

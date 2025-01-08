@@ -8,5 +8,5 @@
 
 export * as application from './application'
 export * as targetApps from './target_apps'
-export * as groupAssignments from './group_assignments'
+export * as assignments from './assignments'
 export * as deviceConfigurationSettings from './device_configuration_settings'

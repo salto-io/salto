@@ -16,8 +16,12 @@ import { contextMock } from '../../../../mocks'
 
 const { getAdjustedOdataTypeFieldName } = odataType
 
-const { APP_IDENTIFIER_FIELD_NAME, PACKAGE_ID_FIELD_NAME, APP_STORE_URL_FIELD_NAME, APPLICATION_TYPE_NAME } =
-  intuneConstants
+const {
+  APP_IDENTIFIER_FIELD_NAME,
+  PACKAGE_ID_FIELD_NAME,
+  APP_STORE_URL_FIELD_NAME,
+  TOP_LEVEL_TYPES: { APPLICATION_TYPE_NAME },
+} = intuneConstants
 
 const isManagedGooglePlayAppMock = jest.fn()
 

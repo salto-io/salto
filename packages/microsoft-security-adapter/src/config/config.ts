@@ -25,9 +25,6 @@ export type AdditionalDeployConfigFields = {
 export const additionalDeployConfigFieldsType: Record<DeployConfigFieldsNames, FieldDefinition> = {
   assignmentFieldsStrategy: {
     refType: assignmentFieldsConfigType,
-    annotations: {
-      _required: false,
-    },
   },
 }
 type UserDeployConfig = definitions.UserDeployConfig & AdditionalDeployConfigFields

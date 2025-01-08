@@ -65,9 +65,6 @@ export const assignmentFieldRuleWithFallbackType = createMatchingObjectType<Assi
     },
     fallbackValue: {
       refType: BuiltinTypes.UNKNOWN,
-      annotations: {
-        _required: false,
-      },
     },
   },
 })
@@ -80,12 +77,9 @@ export const conditionalAccessPolicyAssignmentFieldsConfigType =
         field,
         {
           refType: assignmentFieldRuleWithFallbackType,
-          annotations: {
-            _required: false,
-          },
         },
       ]),
-    ) as Record<ConditionalAccessPolicyAssignmentField, { refType: ObjectType; annotations: { _required: false } }>,
+    ) as Record<ConditionalAccessPolicyAssignmentField, { refType: ObjectType }>,
   })
 
 export const intuneAssignmentFieldsConfigType = createMatchingObjectType<IntuneAssignmentFieldsConfig>({
@@ -95,12 +89,9 @@ export const intuneAssignmentFieldsConfigType = createMatchingObjectType<IntuneA
       type,
       {
         refType: assignmentFieldRuleWithoutFallbackType,
-        annotations: {
-          _required: false,
-        },
       },
     ]),
-  ) as Record<IntuneTypesWithAssignments, { refType: ObjectType; annotations: { _required: false } }>,
+  ) as Record<IntuneTypesWithAssignments, { refType: ObjectType }>,
 })
 
 export const assignmentFieldsConfigType = createMatchingObjectType<AssignmentFieldsConfig>({
@@ -108,14 +99,10 @@ export const assignmentFieldsConfigType = createMatchingObjectType<AssignmentFie
   fields: {
     EntraConditionalAccessPolicy: {
       refType: conditionalAccessPolicyAssignmentFieldsConfigType,
-      annotations: {
-        _required: false,
-      },
     },
     Intune: {
       refType: intuneAssignmentFieldsConfigType,
       annotations: {
-        _required: false,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: intuneConstants.TYPES_WITH_ASSIGNMENTS }),
       },
     },

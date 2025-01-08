@@ -10,7 +10,11 @@ import { entraConstants } from '../../constants'
 import { mapMemberRefToChangeData } from '../shared'
 import { deployArrayFieldsFilterCreator } from '../shared/array_fields_deployment'
 
-const { MEMBERS_FIELD_NAME, DIRECTORY_ROLE_TYPE_NAME, DIRECTORY_ROLE_MEMBERS_TYPE_NAME } = entraConstants
+const {
+  TOP_LEVEL_TYPES: { DIRECTORY_ROLE_TYPE_NAME },
+  MEMBERS_FIELD_NAME,
+  DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
+} = entraConstants
 
 export const deployDirectoryRoleMembersFilter = deployArrayFieldsFilterCreator({
   topLevelTypeName: DIRECTORY_ROLE_TYPE_NAME,

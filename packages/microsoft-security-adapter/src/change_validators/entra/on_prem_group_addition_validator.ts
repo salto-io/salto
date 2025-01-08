@@ -16,6 +16,8 @@ import {
 } from '@salto-io/adapter-api'
 import { entraConstants } from '../../constants'
 
+const { GROUP_TYPE_NAME } = entraConstants.TOP_LEVEL_TYPES
+
 // If onPremisesSyncEnabled is defined, it means the group was originally (or is currently) synced from an on-premises directory.
 // In any case, we block the creation of such groups, as the created group will differ from the original on-premises group.
 const isOnPremGroup = (instance: InstanceElement): boolean =>
@@ -30,7 +32,7 @@ export const onPremGroupAdditionValidator: ChangeValidator = async changes => {
     .filter(isAdditionChange)
     .map(getChangeData)
     .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === entraConstants.GROUP_TYPE_NAME)
+    .filter(instance => instance.elemID.typeName === GROUP_TYPE_NAME)
     .filter(isOnPremGroup)
 
   return onPremGroupAdditions.map(instance => ({

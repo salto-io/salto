@@ -10,7 +10,7 @@ import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE } from '../../shared/defaults'
 import { AdjustFunctionMergeAndTransform, FetchCustomizations } from '../../shared/types'
 import { intuneConstants } from '../../../../constants'
 import { EndpointPath } from '../../../types'
-import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './group_assignments'
+import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './assignments'
 
 const {
   SETTINGS_FIELD_NAME,

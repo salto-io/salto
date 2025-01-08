@@ -27,7 +27,10 @@ import { ADAPTER_NAME, entraConstants } from '../../../src/constants'
 import { appRolesFilter } from '../../../src/filters'
 import { UserConfig } from '../../../src/config'
 
-const { APP_ROLE_TYPE_NAME, APPLICATION_TYPE_NAME, SERVICE_PRINCIPAL_TYPE_NAME, APP_ROLES_FIELD_NAME } = entraConstants
+const {
+  TOP_LEVEL_TYPES: { APP_ROLE_TYPE_NAME, APPLICATION_TYPE_NAME, SERVICE_PRINCIPAL_TYPE_NAME },
+  APP_ROLES_FIELD_NAME,
+} = entraConstants
 
 type ClientInterface = clientUtils.HTTPReadClientInterface & clientUtils.HTTPWriteClientInterface
 

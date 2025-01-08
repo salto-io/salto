@@ -13,7 +13,10 @@ import { contextMock } from '../../../../mocks'
 import { intuneConstants, ODATA_TYPE_FIELD } from '../../../../../src/constants'
 import { getAdjustedOdataTypeFieldName } from '../../../../../src/utils/shared/odata_type'
 
-const { APPLICATION_TYPE_NAME, SCRIPT_CONTENT_FIELD_NAME } = intuneConstants
+const {
+  TOP_LEVEL_TYPES: { APPLICATION_TYPE_NAME },
+  SCRIPT_CONTENT_FIELD_NAME,
+} = intuneConstants
 
 describe('Intune application fetch utils', () => {
   describe(application.setApplicationScriptValueAsStaticFile.name, () => {

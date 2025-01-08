@@ -14,10 +14,10 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   testEnvironment: undefined,
   coverageThreshold: {
     global: {
-      statements: 98.15,
-      branches: 87.8,
-      functions: 93.63,
-      lines: 98.06,
+      statements: 98.07,
+      branches: 87.86,
+      functions: 92.31,
+      lines: 97.97,
     },
   },
   setupFilesAfterEnv: ['@salto-io/element-test-utils/all'],

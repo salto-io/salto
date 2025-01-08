@@ -49,7 +49,7 @@ const {
 const log = logger(module)
 const { isDefined, isPlainObject } = values
 
-const RELEVANT_TYPE_NAMES = [APP_ROLE_TYPE_NAME, OAUTH2_PERMISSION_SCOPE_TYPE_NAME]
+const RELEVANT_TYPE_NAMES = [APP_ROLE_TYPE_NAME, OAUTH2_PERMISSION_SCOPE_TYPE_NAME] as string[]
 
 const isInstanceElementOfRelevantTypes = (elem: Element): elem is InstanceElement =>
   isInstanceElement(elem) && RELEVANT_TYPE_NAMES.includes(elem.elemID.typeName)

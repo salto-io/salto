@@ -1,10 +1,11 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+
 import _ from 'lodash'
 import {
   ObjectType,
@@ -29,11 +30,13 @@ import { UserConfig } from '../../../src/config'
 import { entraApplicationStandaloneFieldsFilter } from '../../../src/filters'
 
 const {
-  APP_ROLE_TYPE_NAME,
-  APPLICATION_TYPE_NAME,
-  SERVICE_PRINCIPAL_TYPE_NAME,
+  TOP_LEVEL_TYPES: {
+    APP_ROLE_TYPE_NAME,
+    APPLICATION_TYPE_NAME,
+    SERVICE_PRINCIPAL_TYPE_NAME,
+    OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
+  },
   APP_ROLES_FIELD_NAME,
-  OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
   API_FIELD_NAME,
   DELEGATED_PERMISSION_IDS_FIELD_NAME,
   OAUTH2_PERMISSION_SCOPES_FIELD_NAME,

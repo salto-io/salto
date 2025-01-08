@@ -8,21 +8,23 @@
 import { elements, definitions } from '@salto-io/adapter-components'
 import { FieldDefinition } from '@salto-io/adapter-api'
 import {
-  OMIT_ASSIGNMENT_FIELDS_CONFIG_FIELD_NAME,
-  OmitAssignmentFieldsConfig,
-  omitAssignmentFieldsConfigType,
-} from './omit_assignment_fields'
+  ASSIGNMENT_FIELDS_STRATEGY_CONFIG_FIELD_NAME,
+  AssignmentFieldsConfig,
+  assignmentFieldsConfigType,
+} from './assignment_fields'
 
 type UserFetchConfig = definitions.UserFetchConfig<{
   customNameMappingOptions: never
   fetchCriteria: definitions.DefaultFetchCriteria
 }>
 
-type DeployConfigFieldsNames = typeof OMIT_ASSIGNMENT_FIELDS_CONFIG_FIELD_NAME
-export type AdditionalDeployConfigFields = { [OMIT_ASSIGNMENT_FIELDS_CONFIG_FIELD_NAME]?: OmitAssignmentFieldsConfig }
+type DeployConfigFieldsNames = typeof ASSIGNMENT_FIELDS_STRATEGY_CONFIG_FIELD_NAME
+export type AdditionalDeployConfigFields = {
+  [ASSIGNMENT_FIELDS_STRATEGY_CONFIG_FIELD_NAME]?: AssignmentFieldsConfig
+}
 export const additionalDeployConfigFieldsType: Record<DeployConfigFieldsNames, FieldDefinition> = {
-  omitAssignmentFields: {
-    refType: omitAssignmentFieldsConfigType,
+  assignmentFieldsStrategy: {
+    refType: assignmentFieldsConfigType,
     annotations: {
       _required: false,
     },

@@ -11,7 +11,7 @@ import { ElemID, FixElementsFunc, InstanceElement, ObjectType } from '@salto-io/
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { DEFAULT_CONFIG, UserConfig } from '../../src/config'
 import { ADAPTER_NAME, entraConstants, intuneConstants } from '../../src/constants'
-import { omitAssignmentFieldsHandler } from '../../src/fix_elements/omit_assignment_fields'
+import { assignmentFieldsHandler } from '../../src/fix_elements/assignment_fields_handler'
 
 describe('replaceGroupsDomainHandler', () => {
   let config: UserConfig
@@ -19,7 +19,7 @@ describe('replaceGroupsDomainHandler', () => {
 
   beforeEach(() => {
     config = _.cloneDeep(DEFAULT_CONFIG)
-    handler = omitAssignmentFieldsHandler({ config, elementsSource: buildElementsSourceFromElements([]) })
+    handler = assignmentFieldsHandler({ config, elementsSource: buildElementsSourceFromElements([]) })
   })
 
   describe('Intune types', () => {
@@ -41,7 +41,7 @@ describe('replaceGroupsDomainHandler', () => {
     describe('when the instance type name is specified in the config', () => {
       beforeEach(() => {
         config.deploy = {
-          omitAssignmentFields: {
+          assignmentFieldsStrategy: {
             Intune: [intuneConstants.APPLICATION_TYPE_NAME],
           },
         }
@@ -68,7 +68,7 @@ describe('replaceGroupsDomainHandler', () => {
                 severity: 'Info',
                 message: 'The "assignments" field will be omitted',
                 detailedMessage:
-                  'The "assignments" field will be omitted in the deployment, according to the omitAssignmentField configuration',
+                  'The "assignments" field will be omitted in the deployment, according to the assignmentFieldsStrategy configuration',
               },
             ],
           })
@@ -124,7 +124,7 @@ describe('replaceGroupsDomainHandler', () => {
         describe('when the specified field is required', () => {
           beforeEach(() => {
             config.deploy = {
-              omitAssignmentFields: {
+              assignmentFieldsStrategy: {
                 EntraConditionalAccessPolicy: {
                   includeApplications: { strategy: 'omit' },
                 },
@@ -145,7 +145,7 @@ describe('replaceGroupsDomainHandler', () => {
                   severity: 'Info',
                   message: 'The "conditions.applications.includeApplications" field will be replaced',
                   detailedMessage:
-                    'The "conditions.applications.includeApplications" field will be replaced with ["None"] in the deployment, according to the omitAssignmentField configuration',
+                    'The "conditions.applications.includeApplications" field will be replaced with ["None"] in the deployment, according to the assignmentFieldsStrategy configuration',
                 },
               ],
             })
@@ -155,7 +155,7 @@ describe('replaceGroupsDomainHandler', () => {
         describe('when the specified field is not required', () => {
           beforeEach(() => {
             config.deploy = {
-              omitAssignmentFields: {
+              assignmentFieldsStrategy: {
                 EntraConditionalAccessPolicy: {
                   excludeApplications: { strategy: 'omit' },
                 },
@@ -176,7 +176,7 @@ describe('replaceGroupsDomainHandler', () => {
                   severity: 'Info',
                   message: 'The "conditions.applications.excludeApplications" field will be omitted',
                   detailedMessage:
-                    'The "conditions.applications.excludeApplications" field will be omitted in the deployment, according to the omitAssignmentField configuration',
+                    'The "conditions.applications.excludeApplications" field will be omitted in the deployment, according to the assignmentFieldsStrategy configuration',
                 },
               ],
             })
@@ -187,7 +187,7 @@ describe('replaceGroupsDomainHandler', () => {
       describe('when the config specifies fallback strategy', () => {
         beforeEach(() => {
           config.deploy = {
-            omitAssignmentFields: {
+            assignmentFieldsStrategy: {
               EntraConditionalAccessPolicy: {
                 includeUsers: { strategy: 'fallback', fallbackValue: ['TestFallbackUser'] },
               },
@@ -218,7 +218,7 @@ describe('replaceGroupsDomainHandler', () => {
                   severity: 'Info',
                   message: 'The "conditions.users.includeUsers" field will be replaced',
                   detailedMessage:
-                    'The "conditions.users.includeUsers" field will be replaced with ["TestFallbackUser"] in the deployment, according to the omitAssignmentField configuration',
+                    'The "conditions.users.includeUsers" field will be replaced with ["TestFallbackUser"] in the deployment, according to the assignmentFieldsStrategy configuration',
                 },
               ],
             })

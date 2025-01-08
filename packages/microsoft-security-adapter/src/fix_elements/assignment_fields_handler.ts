@@ -16,9 +16,9 @@ import { Options } from '../definitions/types'
 import { entraConstants, intuneConstants } from '../constants'
 import {
   ConditionalAccessPolicyAssignmentField,
-  OmitAssignmentFieldRule,
-  OmitConditionalAccessPolicyAssignmentFieldsConfig,
-} from '../config/omit_assignment_fields'
+  AssignmentFieldRule,
+  ConditionalAccessPolicyAssignmentFieldsConfig,
+} from '../config/assignment_fields'
 import { UserConfig } from '../config'
 
 const { isDefined } = lowerDashValues
@@ -44,32 +44,32 @@ const CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS_INFO: Record<
   excludeDevices: { parentField: 'devices' },
 }
 
-const generateOmitAssignmentsInfo = ({
+const generateFixedAssignmentsInfo = ({
   elemID,
   fieldName,
   rule,
 }: {
   elemID: ElemID
   fieldName: string
-  rule: OmitAssignmentFieldRule
+  rule: AssignmentFieldRule
 }): ChangeError => {
   const messagePrefix = `The "${fieldName}" field will be ${rule.strategy === 'omit' ? 'omitted' : 'replaced'}`
   return {
     elemID,
     severity: 'Info',
     message: messagePrefix,
-    detailedMessage: `${messagePrefix}${rule.strategy === 'fallback' ? ` with ${safeJsonStringify(rule.fallbackValue)}` : ''} in the deployment, according to the omitAssignmentField configuration`,
+    detailedMessage: `${messagePrefix}${rule.strategy === 'fallback' ? ` with ${safeJsonStringify(rule.fallbackValue)}` : ''} in the deployment, according to the assignmentFieldsStrategy configuration`,
   }
 }
 
-const omitAssignmentField = ({
+const handleAssignmentField = ({
   element,
   fieldPath,
   rule,
 }: {
   element: InstanceElement
   fieldPath: string[]
-  rule: OmitAssignmentFieldRule
+  rule: AssignmentFieldRule
 }): FixedElementWithError | undefined => {
   const fieldValue = _.get(element.value, fieldPath)
   if (_.isEmpty(fieldValue)) {
@@ -88,37 +88,41 @@ const omitAssignmentField = ({
       _.set(fixedElement.value, fieldPath, rule.fallbackValue)
       break
     default:
-      throw new Error(`Unknown omit assignment field strategy %o: ${rule}`)
+      throw new Error(`Unknown assignment field strategy %o: ${rule}`)
   }
 
   return {
     fixedElement,
-    error: generateOmitAssignmentsInfo({ elemID: element.elemID, fieldName: fieldPath.join('.'), rule }),
+    error: generateFixedAssignmentsInfo({ elemID: element.elemID, fieldName: fieldPath.join('.'), rule }),
   }
 }
 
-const omitAssignmentsFieldForIntuneTypes = (
+const handleAssignmentsFieldForIntuneTypes = (
   elements: InstanceElement[],
   intuneTypesToOmit: string[],
 ): FixedElementWithError[] =>
   elements
     .filter(element => intuneTypesToOmit.includes(element.elemID.typeName))
     .map(element =>
-      omitAssignmentField({ element, fieldPath: [intuneConstants.ASSIGNMENTS_FIELD_NAME], rule: { strategy: 'omit' } }),
+      handleAssignmentField({
+        element,
+        fieldPath: [intuneConstants.ASSIGNMENTS_FIELD_NAME],
+        rule: { strategy: 'omit' },
+      }),
     )
     .filter(isDefined)
 
-const omitConditionalAccessPolicyAssignmentFieldsSingleElement = (
+const handleConditionalAccessPolicyAssignmentFieldsSingleElement = (
   element: InstanceElement,
-  omitConfig: OmitConditionalAccessPolicyAssignmentFieldsConfig,
+  conditionalAccessConfig: ConditionalAccessPolicyAssignmentFieldsConfig,
 ): FixedElementWithError[] =>
-  Object.entries(omitConfig)
+  Object.entries(conditionalAccessConfig)
     .map(([field, configRule]) => {
       const fieldInfo =
         CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS_INFO[field as ConditionalAccessPolicyAssignmentField]
 
       if (fieldInfo === undefined) {
-        log.error(`Unknown field ${field} in omitConditionalAccessPolicyAssignmentFields`)
+        log.error(`Unknown field ${field} configuration in ConditionalAccessPolicyAssignmentFieldsConfig`)
         return undefined
       }
 
@@ -127,7 +131,7 @@ const omitConditionalAccessPolicyAssignmentFieldsSingleElement = (
           ? ({ strategy: 'fallback', fallbackValue: ['None'] } as const)
           : configRule
 
-      return omitAssignmentField({
+      return handleAssignmentField({
         element,
         fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, fieldInfo.parentField, field],
         rule,
@@ -135,31 +139,31 @@ const omitConditionalAccessPolicyAssignmentFieldsSingleElement = (
     })
     .filter(isDefined)
 
-const omiConditionalAccessPolicyAssignmentFields = (
+const handleConditionalAccessPolicyAssignmentFields = (
   elements: InstanceElement[],
-  omitConfig: OmitConditionalAccessPolicyAssignmentFieldsConfig,
+  conditionalAccessConfig: ConditionalAccessPolicyAssignmentFieldsConfig,
 ): FixedElementWithError[] =>
   elements
     .filter(element => element.elemID.typeName === entraConstants.CONDITIONAL_ACCESS_POLICY_TYPE_NAME)
-    .flatMap(element => omitConditionalAccessPolicyAssignmentFieldsSingleElement(element, omitConfig))
+    .flatMap(element => handleConditionalAccessPolicyAssignmentFieldsSingleElement(element, conditionalAccessConfig))
 
 /**
  TODO: add docstring
  */
-export const omitAssignmentFieldsHandler: FixElementsHandler<Options, UserConfig> =
+export const assignmentFieldsHandler: FixElementsHandler<Options, UserConfig> =
   ({ config }) =>
   async elements => {
-    const omitAssignmentFields = config.deploy?.omitAssignmentFields
-    if (omitAssignmentFields === undefined) {
+    const assignmentFieldsStrategy = config.deploy?.assignmentFieldsStrategy
+    if (assignmentFieldsStrategy === undefined) {
       return { errors: [], fixedElements: [] }
     }
 
     const instances = elements.filter(isInstanceElement)
 
-    const intuneResult = omitAssignmentsFieldForIntuneTypes(instances, omitAssignmentFields.Intune ?? [])
-    const entraResult = omiConditionalAccessPolicyAssignmentFields(
+    const intuneResult = handleAssignmentsFieldForIntuneTypes(instances, assignmentFieldsStrategy.Intune ?? [])
+    const entraResult = handleConditionalAccessPolicyAssignmentFields(
       instances,
-      omitAssignmentFields.EntraConditionalAccessPolicy ?? {},
+      assignmentFieldsStrategy.EntraConditionalAccessPolicy ?? {},
     )
 
     return {

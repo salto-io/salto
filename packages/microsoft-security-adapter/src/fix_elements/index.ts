@@ -9,11 +9,11 @@
 import { FixElementsFunc } from '@salto-io/adapter-api'
 import { FixElementsArgs } from '@salto-io/adapter-components'
 import { Options } from '../definitions/types'
-import { omitAssignmentFieldsHandler } from './omit_assignment_fields'
+import { assignmentFieldsHandler } from './assignment_fields_handler'
 import { UserConfig } from '../config'
 
 export const createFixElementFunctions = (
   args: FixElementsArgs<Options, UserConfig>,
 ): Record<string, FixElementsFunc> => ({
-  omitAssignmentFields: omitAssignmentFieldsHandler(args),
+  assignmentFields: assignmentFieldsHandler(args),
 })

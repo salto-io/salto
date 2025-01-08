@@ -9,38 +9,38 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
 import { ADAPTER_NAME, entraConstants, intuneConstants } from '../constants'
 
-const OMIT_ASSIGNMENT_STRATEGIES = ['omit', 'fallback'] as const
-type OmitAssignmentStrategy = (typeof OMIT_ASSIGNMENT_STRATEGIES)[number]
+const ASSIGNMENT_FIELD_STRATEGIES = ['omit', 'fallback'] as const
+type AssignmentFieldStrategy = (typeof ASSIGNMENT_FIELD_STRATEGIES)[number]
 
 export type ConditionalAccessPolicyAssignmentField =
   (typeof entraConstants.CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS)[number]
 
-export type OmitAssignmentFieldRule =
+export type AssignmentFieldRule =
   | {
-      strategy: Exclude<OmitAssignmentStrategy, 'fallback'>
+      strategy: Exclude<AssignmentFieldStrategy, 'fallback'>
     }
   | {
-      strategy: Extract<OmitAssignmentStrategy, 'fallback'>
+      strategy: Extract<AssignmentFieldStrategy, 'fallback'>
       fallbackValue: unknown
     }
 
-export type OmitConditionalAccessPolicyAssignmentFieldsConfig = Partial<
-  Record<ConditionalAccessPolicyAssignmentField, OmitAssignmentFieldRule>
+export type ConditionalAccessPolicyAssignmentFieldsConfig = Partial<
+  Record<ConditionalAccessPolicyAssignmentField, AssignmentFieldRule>
 >
 
-export type OmitAssignmentFieldsConfig = {
-  EntraConditionalAccessPolicy?: OmitConditionalAccessPolicyAssignmentFieldsConfig
+export type AssignmentFieldsConfig = {
+  EntraConditionalAccessPolicy?: ConditionalAccessPolicyAssignmentFieldsConfig
   Intune?: string[]
 }
 
-export const omitAssignmentFieldRuleType = createMatchingObjectType<OmitAssignmentFieldRule>({
-  elemID: new ElemID(ADAPTER_NAME, 'OmitAssignmentFieldRule'),
+export const assignmentFieldRuleType = createMatchingObjectType<AssignmentFieldRule>({
+  elemID: new ElemID(ADAPTER_NAME, 'AssignmentFieldRule'),
   fields: {
     strategy: {
       refType: BuiltinTypes.STRING,
       annotations: {
         _required: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: OMIT_ASSIGNMENT_STRATEGIES }),
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ASSIGNMENT_FIELD_STRATEGIES }),
       },
     },
     fallbackValue: {
@@ -52,14 +52,14 @@ export const omitAssignmentFieldRuleType = createMatchingObjectType<OmitAssignme
   },
 })
 
-export const omitConditionalAccessPolicyAssignmentFieldsType =
-  createMatchingObjectType<OmitConditionalAccessPolicyAssignmentFieldsConfig>({
+export const conditionalAccessPolicyAssignmentFieldsType =
+  createMatchingObjectType<ConditionalAccessPolicyAssignmentFieldsConfig>({
     elemID: new ElemID(ADAPTER_NAME, 'ConditionalAccessPolicyAssignmentFieldsConfig'),
     fields: Object.fromEntries(
       entraConstants.CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS.map(field => [
         field,
         {
-          refType: omitAssignmentFieldRuleType,
+          refType: assignmentFieldRuleType,
           annotations: {
             _required: false,
           },
@@ -68,11 +68,11 @@ export const omitConditionalAccessPolicyAssignmentFieldsType =
     ) as Record<ConditionalAccessPolicyAssignmentField, { refType: ObjectType; annotations: { _required: false } }>,
   })
 
-export const omitAssignmentFieldsConfigType = createMatchingObjectType<OmitAssignmentFieldsConfig>({
-  elemID: new ElemID(ADAPTER_NAME, 'OmitAssignmentConfig'),
+export const assignmentFieldsConfigType = createMatchingObjectType<AssignmentFieldsConfig>({
+  elemID: new ElemID(ADAPTER_NAME, 'assignmentFieldsConfig'),
   fields: {
     EntraConditionalAccessPolicy: {
-      refType: omitConditionalAccessPolicyAssignmentFieldsType,
+      refType: conditionalAccessPolicyAssignmentFieldsType,
       annotations: {
         _required: false,
       },
@@ -87,4 +87,4 @@ export const omitAssignmentFieldsConfigType = createMatchingObjectType<OmitAssig
   },
 })
 
-export const OMIT_ASSIGNMENT_FIELDS_CONFIG_FIELD_NAME = 'omitAssignmentFields'
+export const ASSIGNMENT_FIELDS_STRATEGY_CONFIG_FIELD_NAME = 'assignmentFieldsStrategy'

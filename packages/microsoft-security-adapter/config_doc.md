@@ -1,4 +1,4 @@
-# serviceplaceholder configuration
+# Microsoft Security adapter configuration
 
 ## Configuration example
 
@@ -22,26 +22,24 @@ microsoft_security {
     ]
     exclude = [
       {
-        type = "Group" // TODO replace with a service type
+        type = "EntraConditionalAccessPolicy"
       }
     ]
     elemID = {
-      myType = {
+      EntraApplication = {
         parts = [
           {
-            fieldName = "label"
+            fieldName = "displayName"
           },
           {
-            fieldName = "status"
-            isReference = true
+            fieldName = "tags"
           }
         ]
-        extendsParent = true
       }
     }
   }
   deploy = {
-    omitAssignmentFields = {
+    assignmentFieldsStrategy = {
       Intune = ["IntuneDeviceConfiguration"]
       EntraConditionalAccessPolicy = {
         includeApplications = {
@@ -138,21 +136,21 @@ microsoft_security {
 
 ## Deploy configuration options
 
-| Name                                                           | Default when undefined | Description                                                             |
-| -------------------------------------------------------------- | ---------------------- | ----------------------------------------------------------------------- |
-| [omitAssignmentFields](#omit-assignment-fields-customizations) | {}                     | Allows omitting specific assignment related fields from being deployed. |
+| Name                                                                   | Default when undefined | Description                                                              |
+| ---------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------ |
+| [assignmentFieldsStrategy](#assignment-fields-strategy-customizations) | {}                     | Allows customizing the fields of specific assignment types during deploy |
 
-### Omit assignment fields customizations
+### Assignment fields strategy customizations
 
-| Name                                                                                             | Default when undefined | Description                                                                                    |
-| ------------------------------------------------------------------------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------- |
-| Intune                                                                                           | []                     | List of Intune type names, from which to omit the "assignments" field                          |
-| [EntraConditionalAccessPolicy](#conditional-access-policy-omit-assignment-fields-customizations) | {}                     | Configuration for omitting specific assignments from Entra Conditional Access Policy instances |
+| Name                                                                                                 | Default when undefined | Description                                                                                                                |
+| ---------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Intune                                                                                               | []                     | List of Intune type names, from which to omit the "assignments" field                                                      |
+| [EntraConditionalAccessPolicy](#conditional-access-policy-assignment-fields-strategy-customizations) | {}                     | Configuration for the strategy used to handle specific assignments defined under Entra Conditional Access Policy instances |
 
-#### Conditional Access Policy omit assignment fields customizations
+#### Conditional Access Policy assignment fields strategy customizations
 
 Each entry in the configuration object represents a specific field under the "conditions" field of an Entra Conditional Access Policy instance.
-The value of each entry defines a [rule for omitting the field](#omit-field-rule-structure).
+The value of each entry defines a [rule for omitting or replacing the field](#assignment-field-rule-strategy-structure).
 
 | Name                     | Default when undefined | Description                                                                                                |
 | ------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -169,7 +167,7 @@ The value of each entry defines a [rule for omitting the field](#omit-field-rule
 | includeDevices           | {}                     | Configuration for omitting or replacing the "conditions.devices.includeDevices" field                      |
 | excludeDevices           | {}                     | Configuration for omitting or replacing the "conditions.devices.excludeDevices" field                      |
 
-##### Omit field rule structure
+##### Assignment field rule strategy structure
 
 | Name          | Default when undefined | Description                                                                                                                                                                  |
 | ------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

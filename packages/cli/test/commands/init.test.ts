@@ -34,10 +34,6 @@ jest.mock('@salto-io/local-workspace', () => ({
         } as unknown as Workspace
       },
     ),
-}))
-
-jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual<{}>('@salto-io/core'),
   locateWorkspaceRoot: jest.fn(),
 }))
 

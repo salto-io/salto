@@ -140,7 +140,7 @@ const shouldElementBeIncluded =
 const getAccountToServiceNameMap = (workspace: Workspace, accounts: string[]): Record<string, string> =>
   Object.fromEntries(accounts.map(account => [account, workspace.getServiceFromAccountName(account)]))
 
-type previewArgs = {
+type PreviewArgs = {
   workspace: Workspace
   accounts?: string[]
   checkOnly?: boolean
@@ -156,7 +156,7 @@ export async function preview({
   skipValidations = false,
   topLevelFilters,
   adapterCreators,
-}: previewArgs): Promise<Plan> {
+}: PreviewArgs): Promise<Plan> {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
     accounts,
@@ -595,7 +595,7 @@ export const installAdapter = async (
   throw new AdapterInstallError(adapterName, installResult)
 }
 
-type addAdapterParams = {
+type AddAdapterArgs = {
   workspace: Workspace
   adapterName: string
   accountName?: string
@@ -607,7 +607,7 @@ export async function addAdapter({
   adapterName,
   accountName,
   adapterCreators,
-}: addAdapterParams): Promise<AdapterAuthentication> {
+}: AddAdapterArgs): Promise<AdapterAuthentication> {
   const adapter = getAdapterCreator({ adapterName, adapterCreators })
   await workspace.addAccount(adapterName, accountName)
   const adapterAccountName = accountName ?? adapterName

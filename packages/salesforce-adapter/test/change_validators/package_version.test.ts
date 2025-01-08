@@ -9,7 +9,7 @@
 import { Change, ElemID, getChangeData, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import changeValidator, {
   TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION,
-  ExactVersion,
+  TypesRequirements,
 } from '../../src/change_validators/package_version'
 import { ACCOUNT_SETTINGS_METADATA_TYPE } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
@@ -35,11 +35,11 @@ describe('when deploying objects with installed packages', () => {
   const fakePackage = { resValue: { value: {} } }
   let requiresExactVersion: boolean
   describe.each(Object.entries(TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION))(
-    'when package version in the instance is higher than in the target environment',
-    (instanceType: string, exactVersion: ExactVersion) => {
+    'when the package version in the instance is higher than in the target environment',
+    (instanceType: string, exactVersion: TypesRequirements) => {
       let change: Change
       beforeEach(() => {
-        requiresExactVersion = exactVersion.exactVersion
+        requiresExactVersion = exactVersion.requiresExactVersion
         const objectTypeToValidate = createCustomObjectType(instanceType, {
           elemID: new ElemID('salesforce', instanceType),
         })
@@ -64,10 +64,10 @@ describe('when deploying objects with installed packages', () => {
         })
         change = toChange({ after: instance })
       })
-      it('should catch instance', async () => {
+      it('should return an error for every package that require a version match', async () => {
         const expectedErrorMessage = requiresExactVersion
-          ? "Cannot deploy instances with a different package version than target environment's package version"
-          : "Cannot deploy instances with a greater package version than target environment's package version"
+          ? 'Cannot deploy instances with a package version that does not match the version in the target environment'
+          : 'Cannot deploy instances with a package version that is greater than the version in the target environment'
         const errs = await changeValidator([change])
         expect(errs).toHaveLength(2)
         expect(errs[0].message).toEqual(expectedErrorMessage)
@@ -79,11 +79,11 @@ describe('when deploying objects with installed packages', () => {
   )
 
   describe.each(Object.entries(TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION))(
-    'when package version in the instance is lower than in the target environment',
-    (instanceType: string, exactVersion: ExactVersion) => {
+    'when the package version in the instance is lower than in the target environment',
+    (instanceType: string, exactVersion: TypesRequirements) => {
       let change: Change
       beforeEach(() => {
-        requiresExactVersion = exactVersion.exactVersion
+        requiresExactVersion = exactVersion.requiresExactVersion
         const objectTypeToValidate = createCustomObjectType(instanceType, {
           elemID: new ElemID('salesforce', instanceType),
         })
@@ -108,9 +108,9 @@ describe('when deploying objects with installed packages', () => {
         })
         change = toChange({ after: instance })
       })
-      it('should catch instances that require exact version', async () => {
+      it('should return an error for all packages that require an exact version match', async () => {
         const expectedErrorMessage =
-          "Cannot deploy instances with a different package version than target environment's package version"
+          'Cannot deploy instances with a package version that does not match the version in the target environment'
         const expectedNumOfErrors = requiresExactVersion ? 2 : 0
         const errs = await changeValidator([change])
         expect(errs).toHaveLength(expectedNumOfErrors)
@@ -125,11 +125,11 @@ describe('when deploying objects with installed packages', () => {
   )
 
   describe.each(Object.entries(TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION))(
-    'when package version in the instance is equal to version in the target environment',
-    (instanceType: string, exactVersion: ExactVersion) => {
+    'when the package version in the instance is equal to version in the target environment',
+    (instanceType: string, exactVersion: TypesRequirements) => {
       let change: Change
       beforeEach(() => {
-        requiresExactVersion = exactVersion.exactVersion
+        requiresExactVersion = exactVersion.requiresExactVersion
         const objectTypeToValidate = createCustomObjectType(instanceType, {
           elemID: new ElemID('salesforce', instanceType),
         })
@@ -154,13 +154,13 @@ describe('when deploying objects with installed packages', () => {
         })
         change = toChange({ after: instance })
       })
-      it('should deploy instance', async () => {
+      it('should not return errors', async () => {
         const errs = await changeValidator([change])
         expect(errs).toHaveLength(0)
       })
     },
   )
-  describe('when type of instance is not in the list', () => {
+  describe('When the type of the instance does not require package version matching', () => {
     const objectTypeNotInTheList = createCustomObjectType(ACCOUNT_SETTINGS_METADATA_TYPE, {
       elemID: new ElemID('salesforce', ACCOUNT_SETTINGS_METADATA_TYPE),
     })
@@ -184,7 +184,7 @@ describe('when deploying objects with installed packages', () => {
       ],
     })
     const change = toChange({ after: instance })
-    it('should not be caught', async () => {
+    it('should not return any errors', async () => {
       const errs = await changeValidator([change])
       expect(errs).toHaveLength(0)
     })

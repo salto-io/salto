@@ -5,7 +5,6 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-
 import {
   ChangeError,
   ChangeValidator,
@@ -18,6 +17,7 @@ import {
   ReferenceExpression,
   Value,
 } from '@salto-io/adapter-api'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import {
   APEX_CLASS_METADATA_TYPE,
@@ -28,9 +28,11 @@ import {
 } from '../constants'
 import { isInstanceOfTypeSync } from '../filters/utils'
 
-export type ExactVersion = {
-  exactVersion: boolean
-}
+const { isDefined } = lowerDashValues
+
+// export type TypesRequirements = {
+//   requiresExactVersion: boolean
+// }
 
 type PackageVersion = {
   majorNumber: Number
@@ -43,12 +45,17 @@ type Version = {
   minor: Number
 }
 
-export const TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION: Record<string, ExactVersion> = {
-  [APEX_CLASS_METADATA_TYPE]: { exactVersion: false },
-  [APEX_PAGE_METADATA_TYPE]: { exactVersion: false },
-  [APEX_COMPONENT_METADATA_TYPE]: { exactVersion: false },
-  [EMAIL_TEMPLATE_METADATA_TYPE]: { exactVersion: false },
-  [APEX_TRIGGER_METADATA_TYPE]: { exactVersion: true },
+export const TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION: Record<
+  string,
+  {
+    requiresExactVersion: boolean
+  }
+> = {
+  [APEX_CLASS_METADATA_TYPE]: { requiresExactVersion: false },
+  [APEX_PAGE_METADATA_TYPE]: { requiresExactVersion: false },
+  [APEX_COMPONENT_METADATA_TYPE]: { requiresExactVersion: false },
+  [EMAIL_TEMPLATE_METADATA_TYPE]: { requiresExactVersion: false },
+  [APEX_TRIGGER_METADATA_TYPE]: { requiresExactVersion: true },
 }
 
 const isPackageVersionType = (val: Value): val is PackageVersion =>
@@ -59,11 +66,11 @@ const isPackageVersionType = (val: Value): val is PackageVersion =>
   isInstanceElement(val.namespace.value) &&
   _.isString(_.get(val.namespace.value.value, ['versionNumber']))
 
-const getTargetVersionMajorMinor = (namespace: ReferenceExpression): Version | undefined => {
-  const numberAsStrings = namespace.value.value.versionNumber.split('.')
-  const major = _.toInteger(numberAsStrings[0])
-  const minor = _.toInteger(numberAsStrings[1])
-  return numberAsStrings.length === 2 && major !== undefined && minor !== undefined ? { major, minor } : undefined
+const parsePackageVersion = (namespace: ReferenceExpression): Version | undefined => {
+  const versionParts = namespace.value.value.versionNumber.split('.')
+  const major = parseInt(versionParts[0], 10)
+  const minor = parseInt(versionParts[1], 10)
+  return versionParts.length === 2 && major !== undefined && minor !== undefined ? { major, minor } : undefined
 }
 
 const isExactVersion = (instanceVersion: Version, targetVersion: Version): boolean =>
@@ -83,38 +90,41 @@ const destructPackageVersion = (
 const printableVersion = (version: Version): string => `${version.major}.${version.minor}`
 
 const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] => {
-  const errors: ChangeError[] = []
+  // const errors: ChangeError[] = []
   if (!Array.isArray(instance.value.packageVersions)) {
     return []
   }
-  instance.value.packageVersions
+  return instance.value.packageVersions
     .filter(isPackageVersionType)
-    .forEach((packageVersion: PackageVersion, index: Number) => {
+    .map<ChangeError | undefined>((packageVersion: PackageVersion, index: Number) => {
       const { instanceVersion, namespace } = destructPackageVersion(packageVersion)
-      const targetVersion = getTargetVersionMajorMinor(namespace)
+      const targetVersion = parsePackageVersion(namespace)
       if (instance !== undefined && targetVersion !== undefined) {
         if (
-          TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION[instance.elemID.typeName].exactVersion &&
+          TYPES_PACKAGE_VERSION_MATCHING_EXACT_VERSION[instance.elemID.typeName].requiresExactVersion &&
           !isExactVersion(instanceVersion, targetVersion)
         ) {
-          errors.push({
+          return {
             elemID: instance.elemID.createNestedID('packageVersions', String(index)),
             severity: 'Warning',
             message:
-              "Cannot deploy instances with a different package version than target environment's package version",
-            detailedMessage: `${namespace.value.value.fullName}'s version at the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
-          })
-        } else if (isGreaterVersion(instanceVersion, targetVersion)) {
-          errors.push({
+              'Cannot deploy instances with a package version that does not match the version in the target environment',
+            detailedMessage: `${namespace.value.value.fullName}'s version in the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
+          }
+        }
+        if (isGreaterVersion(instanceVersion, targetVersion)) {
+          return {
             elemID: instance.elemID.createNestedID('packageVersions', String(index)),
             severity: 'Warning',
-            message: "Cannot deploy instances with a greater package version than target environment's package version",
-            detailedMessage: `${namespace.value.value.fullName}'s version at the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
-          })
+            message:
+              'Cannot deploy instances with a package version that is greater than the version in the target environment',
+            detailedMessage: `${namespace.value.value.fullName}'s version in the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
+          }
         }
       }
+      return undefined
     })
-  return errors
+    .filter(isDefined)
 }
 
 const changeValidator: ChangeValidator = async changes =>

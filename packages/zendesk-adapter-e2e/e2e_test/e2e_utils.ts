@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -866,28 +866,28 @@ export const getAllInstancesToDeploy = async ({
   ]
 
   const instancesToAdd = [
-    // ticketFieldInstance,
-    // ticketFieldOption1,
-    // ticketFieldOption2,
-    // userFieldInstance,
-    // userFieldOption1,
-    // userFieldOption2,
-    // automationInstance,
-    // scheduleInstance,
-    // customRoleInstance,
+    ticketFieldInstance,
+    ticketFieldOption1,
+    ticketFieldOption2,
+    userFieldInstance,
+    userFieldOption1,
+    userFieldOption2,
+    automationInstance,
+    scheduleInstance,
+    customRoleInstance,
     groupInstance,
-    // queueInstance,
-    // macroInstance,
-    // slaPolicyInstance,
-    // viewInstance,
-    // brandInstanceToAdd,
-    // userSegmentInstance,
-    // layoutInstance,
-    // workspaceInstance,
-    // ...customObjectInstances,
-    // // guide elements
-    // ...guideInstances,
-    // guideThemeInstance,
+    queueInstance,
+    macroInstance,
+    slaPolicyInstance,
+    viewInstance,
+    brandInstanceToAdd,
+    userSegmentInstance,
+    layoutInstance,
+    workspaceInstance,
+    ...customObjectInstances,
+    // guide elements
+    ...guideInstances,
+    guideThemeInstance,
   ]
   return { instancesToDeploy: instancesToAdd }
 }

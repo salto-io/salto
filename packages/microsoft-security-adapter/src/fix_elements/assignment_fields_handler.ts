@@ -70,7 +70,7 @@ const generateFixedAssignmentsInfo = ({
   }
 }
 
-const handleAssignmentField = ({
+const createFixedElementWithAppliedRule = ({
   instance,
   fieldPath,
   rule,
@@ -137,7 +137,7 @@ const calculateRuleToApplyWithPath = ({
   return { rule: requestedRule, fieldPath }
 }
 
-const handleAssignmentFieldsSingleInstance = (
+const handleInstanceAssignmentFields = (
   instance: InstanceElement,
   assignmentFieldsConfig: IntuneAssignmentsFieldNamesConfig | ConditionalAccessPolicyAssignmentFieldNamesConfig,
 ): FixedElementWithError | undefined => {
@@ -147,7 +147,7 @@ const handleAssignmentFieldsSingleInstance = (
       const ruleToApplyWithPath = calculateRuleToApplyWithPath({ instance, fieldName, requestedRule: configRule })
 
       if (ruleToApplyWithPath !== undefined) {
-        const fixedElement = handleAssignmentField({ instance: resultFixedElement, ...ruleToApplyWithPath })
+        const fixedElement = createFixedElementWithAppliedRule({ instance: resultFixedElement, ...ruleToApplyWithPath })
         if (fixedElement !== undefined) {
           resultFixedElement = fixedElement
           return ruleToApplyWithPath
@@ -174,12 +174,13 @@ const handleAssignmentFields = (
   instances: InstanceElement[],
   assignmentFieldsConfig: AssignmentFieldsConfig,
 ): FixedElementWithError[] => {
-  const requestedTypeNames = Object.keys(assignmentFieldsConfig)
-  const filteredInstances = instances.filter(instance => requestedTypeNames.includes(instance.elemID.typeName))
+  const configuredTypeNames = Object.keys(assignmentFieldsConfig)
+  const relevantInstances = instances.filter(instance => configuredTypeNames.includes(instance.elemID.typeName))
+  const typeNameToInstancesMap = _.groupBy(relevantInstances, instance => instance.elemID.typeName)
   return Object.entries(assignmentFieldsConfig)
     .flatMap(([typeName, config]) => {
-      const instancesWithTypeName = filteredInstances.filter(instance => instance.elemID.typeName === typeName)
-      return instancesWithTypeName.flatMap(instance => handleAssignmentFieldsSingleInstance(instance, config))
+      const instancesWithTypeName = typeNameToInstancesMap[typeName] ?? []
+      return instancesWithTypeName.flatMap(instance => handleInstanceAssignmentFields(instance, config))
     })
     .filter(isDefined)
 }

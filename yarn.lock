@@ -4459,6 +4459,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@salto-io/jamf-adapter@npm:0.4.8":
+  version: 0.4.8
+  resolution: "@salto-io/jamf-adapter@npm:0.4.8"
+  dependencies:
+    "@salto-io/adapter-api": 0.4.8
+    "@salto-io/adapter-components": 0.4.8
+    "@salto-io/adapter-utils": 0.4.8
+    "@salto-io/logging": 0.4.8
+    "@salto-io/lowerdash": 0.4.8
+    "@types/xml-js": ^1.0.0
+    axios: ^1.7.2
+    lodash: ^4.17.21
+    xml-js: ^1.6.11
+  checksum: 0d432f0a5ecccdec26a3085e285ccd84f3190a4093472b6bb4c0dd1e5e52811f8e4e41652e4739f084f0ca91ff8fd6bc372e38af6f362947e028bfcf37d77e95
+  languageName: node
+  linkType: hard
+
 "@salto-io/jest-extended@npm:^4.0.3":
   version: 4.0.3
   resolution: "@salto-io/jest-extended@npm:4.0.3"
@@ -4512,6 +4529,27 @@ __metadata:
     uuid: ^10.0.0
   languageName: unknown
   linkType: soft
+
+"@salto-io/jira-adapter@npm:0.4.8":
+  version: 0.4.8
+  resolution: "@salto-io/jira-adapter@npm:0.4.8"
+  dependencies:
+    "@atlassianlabs/jql-ast": ^1.0.0
+    "@salto-io/adapter-api": 0.4.8
+    "@salto-io/adapter-components": 0.4.8
+    "@salto-io/adapter-utils": 0.4.8
+    "@salto-io/dag": 0.4.8
+    "@salto-io/logging": 0.4.8
+    "@salto-io/lowerdash": 0.4.8
+    joi: ^17.4.0
+    lodash: ^4.17.21
+    node-html-parser: ^6.1.5
+    pako: ^1.0.11
+    semver: ^7.3.2
+    uuid: ^10.0.0
+  checksum: 6ef570cd171cb6f8e99a43d75c9ddfe4843ad4f2a1bb8fa183aa39ed50f4a1e2abf95718ba1e673214bc17d99053087efcec14d82bc304cf1d2a89b3de4a737e
+  languageName: node
+  linkType: hard
 
 "@salto-io/jsforce-types@npm:^0.1.0":
   version: 0.1.0
@@ -4985,6 +5023,33 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@salto-io/salesforce-adapter@npm:0.4.8":
+  version: 0.4.8
+  resolution: "@salto-io/salesforce-adapter@npm:0.4.8"
+  dependencies:
+    "@salesforce/core": ^8.1.1
+    "@salesforce/source-deploy-retrieve": ^12.1.4
+    "@salesforce/templates": ^61.4.11
+    "@salto-io/adapter-api": 0.4.8
+    "@salto-io/adapter-components": 0.4.8
+    "@salto-io/adapter-utils": 0.4.8
+    "@salto-io/file": 0.4.8
+    "@salto-io/jsforce": ^1.9.4
+    "@salto-io/logging": 0.4.8
+    "@salto-io/lowerdash": 0.4.8
+    "@salto-io/salesforce-formula-parser": 0.1.5
+    fast-xml-parser: ^4.4.0
+    humanize-duration: ^3.22.0
+    joi: ^17.4.0
+    jszip: ^3.10.1
+    lodash: ^4.17.21
+    mime-types: ^2.1.27
+    requestretry: ^7.1.0
+    wu: ^2.1.0
+  checksum: f46c9659c7eae05a18c984bfb40ba54c425fab6031860fc94e9957d009cd5c28a6dd19402f5e4d896058385ac268b3280d898723abb94796eb8968cfd962578d
+  languageName: node
+  linkType: hard
+
 "@salto-io/salesforce-formula-parser@npm:0.1.5":
   version: 0.1.5
   resolution: "@salto-io/salesforce-formula-parser@npm:0.1.5"
@@ -5068,6 +5133,20 @@ __metadata:
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
+
+"@salto-io/stripe-adapter@npm:0.4.8":
+  version: 0.4.8
+  resolution: "@salto-io/stripe-adapter@npm:0.4.8"
+  dependencies:
+    "@salto-io/adapter-api": 0.4.8
+    "@salto-io/adapter-components": 0.4.8
+    "@salto-io/adapter-utils": 0.4.8
+    "@salto-io/logging": 0.4.8
+    axios: ^1.7.2
+    lodash: ^4.17.21
+  checksum: 1f0eb4aebcbb449de5c216af9b2a483ea2fe96b4066d56feae53479c3e7a107871d694144661dcffd662575f92f606b0d030e5ee20deb3bfdf62484f3c41f702
+  languageName: node
+  linkType: hard
 
 "@salto-io/suitecloud-cli-legacy@npm:@salto-io/suitecloud-cli@1.9.0-salto-4":
   version: 1.9.0-salto-4
@@ -5174,9 +5253,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 "@salto-io/zendesk-adapter@0.5.0, @salto-io/zendesk-adapter@workspace:packages/zendesk-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/zendesk-adapter@workspace:packages/zendesk-adapter"
@@ -5247,6 +5323,20 @@ __metadata:
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
+
+"@salto-io/zuora-billing-adapter@npm:0.4.8":
+  version: 0.4.8
+  resolution: "@salto-io/zuora-billing-adapter@npm:0.4.8"
+  dependencies:
+    "@salto-io/adapter-api": 0.4.8
+    "@salto-io/adapter-components": 0.4.8
+    "@salto-io/adapter-utils": 0.4.8
+    "@salto-io/logging": 0.4.8
+    "@salto-io/lowerdash": 0.4.8
+    lodash: ^4.17.21
+  checksum: 4640889259ffa362ab4aa1475436dfbef8377c71f4a498e5082bfc3e04b56f2888ba8d75df6d49cd39621d097f385a6654cdc2e9207933aa9775716de90ce87e
+  languageName: node
+  linkType: hard
 
 "@sideway/address@npm:^4.1.3":
   version: 4.1.3

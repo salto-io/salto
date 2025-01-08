@@ -146,7 +146,7 @@ import hideAccountFeatures from './filters/hide_account_features'
 import auditTimeFilter from './filters/audit_logs'
 import sideConversationsFilter from './filters/side_conversation'
 import { isCurrentUserResponse } from './user_utils'
-import addAliasFilter from './filters/add_alias'
+import addRemainingAliasFilter from './filters/add_alias'
 import addRecurseIntoFieldFilter from './filters/add_recurse_into_field'
 import macroFilter from './filters/macro'
 import customRoleDeployFilter from './filters/custom_role_deploy'
@@ -274,7 +274,7 @@ export const DEFAULT_FILTERS = [
   deployTriggerSkills,
   guideThemeFilter, // fetches a lot of data, so should be after omitCollisionFilter to remove theme collisions
   guideThemeSettingFilter, // needs to be after guideThemeFilter as it depends on successful theme fetches
-  addAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter
+  addRemainingAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter
   guideArrangePaths,
   botBuilderArrangePaths, // should run after fieldReferencesFilter
   hideAccountFeatures,

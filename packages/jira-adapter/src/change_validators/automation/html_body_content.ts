@@ -54,11 +54,10 @@ const isHTMLBodyContentAutomationComponent = createSchemeGuard<MimeTypeComponent
 )
 
 const getComponentErrorType = (component: MimeTypeComponent): HTMLBodyContentErrorType | undefined => {
-  if (isStaticFile(component.value.body)) {
-    if (component.value.mimeType !== 'text/html') {
-      return HTMLBodyContentErrorType.mimeType
-    }
-  } else if (component.value.mimeType === 'text/html') {
+  if (isStaticFile(component.value.body) && !(component.value.mimeType === 'text/html')) {
+    return HTMLBodyContentErrorType.mimeType
+  }
+  if (!isStaticFile(component.value.body) && component.value.mimeType === 'text/html') {
     return HTMLBodyContentErrorType.notStaticFile
   }
   return undefined

@@ -41,10 +41,10 @@ const log = logger(module)
 
 type getAdaptersCredentialsTypesArgs = { names?: ReadonlyArray<string>; adapterCreators: Record<string, Adapter> }
 
-export function getAdaptersCredentialsTypes(
-  args: getAdaptersCredentialsTypesArgs,
-): Record<string, AdapterAuthentication> {
-  const { names, adapterCreators } = args
+export function getAdaptersCredentialsTypes({
+  names,
+  adapterCreators,
+}: getAdaptersCredentialsTypesArgs): Record<string, AdapterAuthentication> {
   let relevantAdapterCreators: Record<string, Adapter>
   if (names === undefined) {
     relevantAdapterCreators = adapterCreators
@@ -102,11 +102,12 @@ type GetDefaultAdapterConfigParams = {
   adapterCreators: Record<string, Adapter>
 }
 
-export async function getDefaultAdapterConfig(
-  args: GetDefaultAdapterConfigParams,
-): Promise<InstanceElement[] | undefined> {
-  const { adapterName, accountName, options, adapterCreators } = args
-
+export async function getDefaultAdapterConfig({
+  adapterName,
+  accountName,
+  options,
+  adapterCreators,
+}: GetDefaultAdapterConfigParams): Promise<InstanceElement[] | undefined> {
   const { getConfig } = adapterCreators[adapterName]?.configCreator ?? {}
   const defaultConf = [
     getConfig !== undefined

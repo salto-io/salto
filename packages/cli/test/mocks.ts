@@ -767,9 +767,6 @@ export const preview = (): Plan => {
 }
 
 export const deploy: typeof coreDeploy = async (workspace: DeployParams): Promise<DeployResult> => {
-  if (!('adapterCreators' in workspace)) {
-    throw new Error('invalid params for mock')
-  }
   let numOfChangesReported = 0
   wu(workspace.actionPlan.itemsByEvalOrder()).forEach(change => {
     numOfChangesReported += 1

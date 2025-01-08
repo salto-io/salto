@@ -149,17 +149,14 @@ type previewArgs = {
   adapterCreators: Record<string, Adapter>
 }
 
-export async function preview(args: previewArgs): Promise<Plan> {
-  // for backward compatibility
-  const {
-    workspace,
-    accounts = workspace.accounts(),
-    checkOnly = false,
-    skipValidations = false,
-    topLevelFilters,
-    adapterCreators,
-  } = args
-
+export async function preview({
+  workspace,
+  accounts = workspace.accounts(),
+  checkOnly = false,
+  skipValidations = false,
+  topLevelFilters,
+  adapterCreators,
+}: previewArgs): Promise<Plan> {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
     accounts,
@@ -199,16 +196,14 @@ export type CompatibleDeployFunc = (
   checkOnly?: boolean,
 ) => Promise<DeployResult>
 
-export async function deploy(args: DeployParams): Promise<DeployResult> {
-  const {
-    workspace,
-    actionPlan,
-    reportProgress,
-    accounts = workspace.accounts(),
-    checkOnly = false,
-    adapterCreators,
-  } = args
-
+export async function deploy({
+  workspace,
+  actionPlan,
+  reportProgress,
+  accounts = workspace.accounts(),
+  checkOnly = false,
+  adapterCreators,
+}: DeployParams): Promise<DeployResult> {
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])
   const adapters = await getAdapters(
@@ -292,19 +287,16 @@ export type FetchFromWorkspaceFuncParams = {
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
 
-export async function fetch(args: FetchFuncParams): Promise<FetchResult> {
+export async function fetch({
+  workspace,
+  progressEmitter,
+  accounts,
+  ignoreStateElemIdMapping,
+  withChangesDetection,
+  ignoreStateElemIdMappingForSelectors,
+  adapterCreators,
+}: FetchFuncParams): Promise<FetchResult> {
   log.debug('fetch starting..')
-  // for backward compatibility
-  const {
-    workspace,
-    progressEmitter,
-    accounts,
-    ignoreStateElemIdMapping,
-    withChangesDetection,
-    ignoreStateElemIdMappingForSelectors,
-    adapterCreators,
-  } = args
-
   const fetchAccounts = accounts ?? workspace.accounts()
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
   const { currentConfigs, adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup({
@@ -610,10 +602,12 @@ type addAdapterParams = {
   adapterCreators: Record<string, Adapter>
 }
 
-export async function addAdapter(args: addAdapterParams): Promise<AdapterAuthentication> {
-  // for backward compatibility
-  const { workspace, adapterName, accountName, adapterCreators } = args
-
+export async function addAdapter({
+  workspace,
+  adapterName,
+  accountName,
+  adapterCreators,
+}: addAdapterParams): Promise<AdapterAuthentication> {
   const adapter = getAdapterCreator({ adapterName, adapterCreators })
   await workspace.addAccount(adapterName, accountName)
   const adapterAccountName = accountName ?? adapterName

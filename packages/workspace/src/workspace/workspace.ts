@@ -1667,17 +1667,16 @@ type InitWorkspaceParams = {
   adapterCreators: Record<string, Adapter>
 }
 
-export async function initWorkspace(args: InitWorkspaceParams): Promise<Workspace> {
-  const {
-    uid,
-    defaultEnvName,
-    config,
-    adaptersConfig,
-    credentials,
-    environmentSources,
-    remoteMapCreator,
-    adapterCreators,
-  } = args
+export async function initWorkspace({
+  uid,
+  defaultEnvName,
+  config,
+  adaptersConfig,
+  credentials,
+  environmentSources,
+  remoteMapCreator,
+  adapterCreators,
+}: InitWorkspaceParams): Promise<Workspace> {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
     uid,

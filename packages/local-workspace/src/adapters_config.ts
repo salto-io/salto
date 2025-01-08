@@ -60,24 +60,22 @@ type BuildLocalAdaptersConfigSourceParams = {
   envs: EnvConfig[]
 }
 
-export async function buildLocalAdaptersConfigSource(
-  args: BuildLocalAdaptersConfigSourceParams,
-): Promise<acs.AdaptersConfigSource> {
-  const {
-    baseDir,
-    remoteMapCreator,
-    persistent,
-    envs,
-    adapterCreators,
-    configTypes = await getAdapterConfigsPerAccount(envs, adapterCreators),
-    configOverrides = [],
-  } = args
+export async function buildLocalAdaptersConfigSource({
+  baseDir,
+  remoteMapCreator,
+  persistent,
+  envs,
+  adapterCreators,
+  configTypes,
+  configOverrides = [],
+}: BuildLocalAdaptersConfigSourceParams): Promise<acs.AdaptersConfigSource> {
+  const validConfigType = configTypes ?? (await getAdapterConfigsPerAccount(envs, adapterCreators))
   return acs.buildAdaptersConfigSource({
     naclSource: await createNaclSource(baseDir, remoteMapCreator, persistent),
     ignoreFileChanges: false,
     remoteMapCreator,
     persistent,
-    configTypes,
+    configTypes: validConfigType,
     configOverrides,
   })
 }

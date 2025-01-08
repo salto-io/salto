@@ -323,15 +323,13 @@ type InitLocalWorkspaceParams = {
   adapterCreators: Record<string, Adapter>
 }
 
-export async function initLocalWorkspace(args: InitLocalWorkspaceParams): Promise<Workspace> {
-  const {
-    baseDir,
-    envName = 'default',
-    adapterCreators,
-    configTypes = Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
-    stateStaticFilesSource,
-  } = args
-
+export async function initLocalWorkspace({
+  baseDir,
+  envName = 'default',
+  adapterCreators,
+  configTypes = Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
+  stateStaticFilesSource,
+}: InitLocalWorkspaceParams): Promise<Workspace> {
   const uid = uuidv4()
   const localStorage = getLocalStoragePath(uid)
   if (await locateWorkspaceRoot(path.resolve(baseDir))) {

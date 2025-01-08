@@ -15,9 +15,10 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { Options } from '../definitions/types'
 import { entraConstants, intuneConstants } from '../constants'
 import {
+  AssignmentFieldRuleWithFallback,
   ConditionalAccessPolicyAssignmentField,
-  AssignmentFieldRule,
   ConditionalAccessPolicyAssignmentFieldsConfig,
+  IntuneAssignmentFieldsConfig,
 } from '../config/assignment_fields'
 import { UserConfig } from '../config'
 
@@ -51,7 +52,7 @@ const generateFixedAssignmentsInfo = ({
 }: {
   elemID: ElemID
   fieldName: string
-  rule: AssignmentFieldRule
+  rule: AssignmentFieldRuleWithFallback
 }): ChangeError => {
   const messagePrefix = `The "${fieldName}" field will be ${rule.strategy === 'omit' ? 'omitted' : 'replaced'}`
   return {
@@ -69,7 +70,7 @@ const handleAssignmentField = ({
 }: {
   element: InstanceElement
   fieldPath: string[]
-  rule: AssignmentFieldRule
+  rule: AssignmentFieldRuleWithFallback
 }): FixedElementWithError | undefined => {
   const fieldValue = _.get(element.value, fieldPath)
   if (_.isEmpty(fieldValue)) {
@@ -97,20 +98,25 @@ const handleAssignmentField = ({
   }
 }
 
-const handleAssignmentsFieldForIntuneTypes = (
+const handleIntuneAssignmentsField = (
   elements: InstanceElement[],
-  intuneTypesToOmit: string[],
-): FixedElementWithError[] =>
-  elements
-    .filter(element => intuneTypesToOmit.includes(element.elemID.typeName))
-    .map(element =>
-      handleAssignmentField({
-        element,
-        fieldPath: [intuneConstants.ASSIGNMENTS_FIELD_NAME],
-        rule: { strategy: 'omit' },
-      }),
-    )
-    .filter(isDefined)
+  intuneConfig: IntuneAssignmentFieldsConfig,
+): FixedElementWithError[] => {
+  const intuneTypesToHandle = Object.keys(intuneConfig)
+  const filteredElements = elements.filter(element => intuneTypesToHandle.includes(element.elemID.typeName))
+  return Object.entries(intuneConfig).flatMap(([typeName, rule]) =>
+    filteredElements
+      .filter(element => typeName === element.elemID.typeName)
+      .map(element =>
+        handleAssignmentField({
+          element,
+          fieldPath: [intuneConstants.ASSIGNMENTS_FIELD_NAME],
+          rule,
+        }),
+      )
+      .filter(isDefined),
+  )
+}
 
 const handleConditionalAccessPolicyAssignmentFieldsSingleElement = (
   element: InstanceElement,
@@ -162,7 +168,7 @@ export const assignmentFieldsHandler: FixElementsHandler<Options, UserConfig> =
 
     const instances = elements.filter(isInstanceElement)
 
-    const intuneResult = handleAssignmentsFieldForIntuneTypes(instances, assignmentFieldsStrategy.Intune ?? [])
+    const intuneResult = handleIntuneAssignmentsField(instances, assignmentFieldsStrategy.Intune ?? {})
     const entraResult = handleConditionalAccessPolicyAssignmentFields(
       instances,
       assignmentFieldsStrategy.EntraConditionalAccessPolicy ?? {},

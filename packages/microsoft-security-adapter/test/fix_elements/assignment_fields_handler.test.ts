@@ -24,7 +24,7 @@ describe('replaceGroupsDomainHandler', () => {
 
   describe('Intune types', () => {
     const intuneApplicationType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, intuneConstants.APPLICATION_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, intuneConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME),
     })
     const intuneApplicationInstance = new InstanceElement('testIntuneApplication', intuneApplicationType, {
       displayName: 'testIntuneApplication',
@@ -42,7 +42,11 @@ describe('replaceGroupsDomainHandler', () => {
       beforeEach(() => {
         config.deploy = {
           assignmentFieldsStrategy: {
-            Intune: [intuneConstants.APPLICATION_TYPE_NAME],
+            Intune: {
+              [intuneConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME]: {
+                strategy: 'omit',
+              },
+            },
           },
         }
       })

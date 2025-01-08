@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import { types } from '@salto-io/lowerdash'
 import { ElemID, SaltoElementError, SeverityLevel } from '@salto-io/adapter-api'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, inspectValue } from '@salto-io/adapter-utils'
 
 export abstract class MergeError
   extends types.Bean<
@@ -19,9 +19,7 @@ export abstract class MergeError
   >
   implements SaltoElementError
 {
-  get message(): string {
-    return `Error merging ${this.elemID.getFullName()}: ${this.error}`
-  }
+  message = ERROR_MESSAGES.INVALID_NACL_CONTENT
 
   get detailedMessage(): string {
     return `Error merging ${this.elemID.getFullName()}: ${this.error}`

@@ -61,6 +61,9 @@ export const PROJECT_EXPENSE_TYPE = 'projectExpenseType'
 export const ALLOCATION_TYPE = 'allocationType'
 export const SUPPORT_CASE_PROFILE = 'supportCaseProfile'
 export const FIELD_TYPE = 'fieldType'
+export const FILE_TYPE = 'fileType'
+export const WORKFLOW_RELEASE_STATUS = 'workflowReleaseStatus'
+export const WORKFLOW_TRIGGER_TYPE = 'workflowTriggerType'
 
 // Type Annotations
 export const SOURCE = 'source'

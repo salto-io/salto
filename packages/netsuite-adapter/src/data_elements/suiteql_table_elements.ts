@@ -23,10 +23,15 @@ import { NetsuiteConfig, SuiteQLTableQueryParams } from '../config/types'
 import {
   ALLOCATION_TYPE,
   FIELD_TYPE,
+  FILE_TYPE,
   NETSUITE,
   PROJECT_EXPENSE_TYPE,
+  SAVED_SEARCH,
   SUPPORT_CASE_PROFILE,
   TAX_SCHEDULE,
+  WORKFLOW,
+  WORKFLOW_RELEASE_STATUS,
+  WORKFLOW_TRIGGER_TYPE,
 } from '../constants'
 import { SuiteQLTableName } from './types'
 
@@ -46,9 +51,14 @@ export type MissingInternalId = {
 export type AdditionalQueryName =
   | typeof TAX_SCHEDULE
   | typeof PROJECT_EXPENSE_TYPE
+  | typeof WORKFLOW
+  | typeof SAVED_SEARCH
   | typeof ALLOCATION_TYPE
   | typeof SUPPORT_CASE_PROFILE
   | typeof FIELD_TYPE
+  | typeof FILE_TYPE
+  | typeof WORKFLOW_RELEASE_STATUS
+  | typeof WORKFLOW_TRIGGER_TYPE
 
 type InternalIdsMap = Record<string, { name: string }>
 
@@ -60,8 +70,7 @@ type SavedSearchInternalIdsResult = {
       value: string
     },
   ]
-  name: string
-}
+} & Record<string, string>
 
 type ColumnSearchResult = Record<
   string,
@@ -73,13 +82,13 @@ type ColumnSearchResult = Record<
   ]
 >
 
-const SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA = {
+const getSavedSearchInternalIdsResultSchema = (nameField: string): Schema => ({
   type: 'array',
   items: {
     type: 'object',
-    required: ['name', 'internalid'],
+    required: [nameField, 'internalid'],
     properties: {
-      name: {
+      [nameField]: {
         type: 'string',
       },
       internalid: {
@@ -98,7 +107,7 @@ const SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA = {
       },
     },
   },
-}
+})
 
 const getColumnSearchResultSchema = (searchColumn: string): Schema => ({
   type: 'array',
@@ -465,18 +474,18 @@ export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): Intern
 }
 
 const getSavedSearchInternalIdsMap =
-  (searchType: string) =>
+  (searchType: string, { nameField, searchField }: { nameField: string; searchField?: string }) =>
   async (client: NetsuiteClient, queryBy: QueryBy, items: string[]): Promise<InternalIdsMap> => {
     const result = await Promise.all(
       _.chunk(items, ITEMS_PER_QUERY_LIMIT).map(itemsChunk =>
         client.runSavedSearchQuery({
           type: searchType,
-          columns: ['internalid', 'name'],
+          columns: ['internalid', nameField],
           filters:
             queryBy === 'internalId'
               ? [['internalid', 'anyof', ...itemsChunk]]
               : itemsChunk
-                  .map(name => ['name', 'is', name])
+                  .map(name => [searchField ?? nameField, 'is', name])
                   .reduce(
                     (filter, curr, i) => (i < itemsChunk.length - 1 ? [...filter, curr, 'OR'] : [...filter, curr]),
                     [] as Array<string[] | string>,
@@ -489,11 +498,11 @@ const getSavedSearchInternalIdsMap =
       log.warn('failed to search %s using saved search query', searchType)
       return {}
     }
-    if (!ajv.validate<SavedSearchInternalIdsResult[]>(SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA, result)) {
+    if (!ajv.validate<SavedSearchInternalIdsResult[]>(getSavedSearchInternalIdsResultSchema(nameField), result)) {
       log.error('Got invalid results from %s saved search query: %s', searchType, ajv.errorsText())
       return {}
     }
-    return Object.fromEntries(result.map(res => [res.internalid[0].value, { name: res.name }]))
+    return Object.fromEntries(result.map(res => [res.internalid[0].value, { name: res[nameField] }]))
   }
 
 const getSavedSearchInternalIdsMapFromColumn =
@@ -572,12 +581,73 @@ const getFieldTypeStaticInternalIdsMap = async (): Promise<InternalIdsMap> => ({
   '46': { name: 'Date/Time' },
 })
 
+const getFileTypeStaticInternalIdsMap = async (): Promise<InternalIdsMap> => ({
+  '1': { name: 'Flash Animation' },
+  '2': { name: 'JPEG Image' },
+  '3': { name: 'PJPEG Image' },
+  '4': { name: 'GIF Image' },
+  '5': { name: 'PNG Image' },
+  '6': { name: 'BMP Image' },
+  '7': { name: 'TIFF Image' },
+  '8': { name: 'Icon Image' },
+  '9': { name: 'HTML File' },
+  '10': { name: 'Plain Text File' },
+  '11': { name: 'CSS File' },
+  '12': { name: 'XML File' },
+  '13': { name: 'JavaScript File' },
+  '14': { name: 'CSV File' },
+  '15': { name: 'SuiteScript Page' },
+  '16': { name: 'SuiteScript File' },
+  '17': { name: 'PDF File' },
+  '18': { name: 'SMS File' },
+  '19': { name: 'Word File' },
+  '20': { name: 'RTF File' },
+  '21': { name: 'PostScript File' },
+  '22': { name: 'Excel File' },
+  '23': { name: 'PowerPoint File' },
+  '24': { name: 'Visio File' },
+  '25': { name: 'Project File' },
+  '26': { name: 'Zip File' },
+  '27': { name: 'GNU Zip File' },
+  '28': { name: 'QuickTime Video' },
+  '29': { name: 'MPEG Video' },
+  '30': { name: 'MP3 Audio' },
+  '31': { name: 'Image' },
+  '32': { name: 'Other Binary File' },
+  '33': { name: 'Text File' },
+})
+
+const getWorkflowReleaseStatusStaticInternalIdsMap = async (): Promise<InternalIdsMap> => ({
+  '1': { name: 'Not Initiating' },
+  '2': { name: 'Testing' },
+  '3': { name: 'Released' },
+})
+
+const getWorkflowTriggerTypeStaticInternalIdsMap = async (): Promise<InternalIdsMap> => ({
+  '1': { name: 'Entry' },
+  '2': { name: 'Exit' },
+  '3': { name: 'Before Record Load' },
+  '4': { name: 'Before Record Submit' },
+  '5': { name: 'After Record Submit' },
+  '6': { name: 'Scheduled' },
+  '7': { name: 'Before User Edit' },
+  '8': { name: 'Before Field Edit' },
+  '9': { name: 'After Field Edit' },
+  '10': { name: 'After Field Sourcing' },
+  '11': { name: 'Before User Submit' },
+})
+
 export const ADDITIONAL_QUERIES: Record<AdditionalQueryName, ReturnType<typeof getSavedSearchInternalIdsMap>> = {
-  [TAX_SCHEDULE]: getSavedSearchInternalIdsMap(TAX_SCHEDULE),
-  [PROJECT_EXPENSE_TYPE]: getSavedSearchInternalIdsMap(PROJECT_EXPENSE_TYPE),
+  [TAX_SCHEDULE]: getSavedSearchInternalIdsMap(TAX_SCHEDULE, { nameField: 'name' }),
+  [PROJECT_EXPENSE_TYPE]: getSavedSearchInternalIdsMap(PROJECT_EXPENSE_TYPE, { nameField: 'name' }),
+  [WORKFLOW]: getSavedSearchInternalIdsMap(WORKFLOW, { nameField: 'name' }),
+  [SAVED_SEARCH]: getSavedSearchInternalIdsMap(SAVED_SEARCH, { nameField: 'title', searchField: 'titletext' }),
   [ALLOCATION_TYPE]: getSavedSearchInternalIdsMapFromColumn('resourceAllocation', ALLOCATION_TYPE),
   [SUPPORT_CASE_PROFILE]: getSavedSearchInternalIdsMapFromColumn('supportCase', 'profile'),
   [FIELD_TYPE]: getFieldTypeStaticInternalIdsMap,
+  [FILE_TYPE]: getFileTypeStaticInternalIdsMap,
+  [WORKFLOW_RELEASE_STATUS]: getWorkflowReleaseStatusStaticInternalIdsMap,
+  [WORKFLOW_TRIGGER_TYPE]: getWorkflowTriggerTypeStaticInternalIdsMap,
 }
 
 export const getQueriesByTableName = (config: NetsuiteConfig): Record<string, SuiteQLTableQueryParams | undefined> => {
@@ -696,6 +766,11 @@ export const getSuiteQLTableElements = async (
       .filter(([_tableName, queryParams]) => queryParams !== undefined)
       .map(([tableName, _queryParams]) => tableName)
       .concat(Object.keys(ADDITIONAL_QUERIES))
+      .filter(
+        tableName =>
+          // SALTO-7050 include workflow only if it's in additionalSuiteQLTables in order to avoid noise.
+          tableName !== WORKFLOW || config.suiteAppClient?.additionalSuiteQLTables?.find(row => row.name === WORKFLOW),
+      )
       .map(tableName => getSuiteQLTableInstance(suiteQLTableType, tableName, elementsSource, isPartial)),
   )
 

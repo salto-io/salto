@@ -229,7 +229,7 @@ const fetchSystemNotes = async (
 
 const getInstancesWithInternalIds = (
   elements: Element[],
-  typeToInternalId: Record<string, string>,
+  typeToInternalId: Record<string, string[]>,
 ): InstanceElement[] =>
   elements
     .filter(isInstanceElement)
@@ -277,8 +277,8 @@ const filterCreator: RemoteFilterCreator = ({
       {
         ...originalTypeToInternalId,
         // Types without record type id that are given new ids.
-        file: FILE_TYPE,
-        folder: FOLDER_TYPE,
+        file: [FILE_TYPE],
+        folder: [FOLDER_TYPE],
       },
       (_value, key) => key.toLowerCase(),
     )
@@ -289,7 +289,7 @@ const filterCreator: RemoteFilterCreator = ({
     const customRecordTypeNames = new Set(customRecordsWithInternalIds.map(({ elemID }) => elemID.typeName))
 
     const queryIds = _.uniq(
-      instancesWithInternalId.map(instance => typeToInternalId[instance.elemID.typeName.toLowerCase()]),
+      instancesWithInternalId.flatMap(instance => typeToInternalId[instance.elemID.typeName.toLowerCase()]),
     )
     if (customRecordTypesWithInternalIds.length > 0) {
       queryIds.push(
@@ -333,18 +333,17 @@ const filterCreator: RemoteFilterCreator = ({
     }
 
     instancesWithInternalId.forEach(instance => {
-      const info =
-        systemNotes[
-          getRecordIdAndTypeStringKey(
-            instance.value.internalId,
-            typeToInternalId[instance.elemID.typeName.toLowerCase()],
-          )
-        ]
+      const info = typeToInternalId[instance.elemID.typeName.toLowerCase()]
+        ?.map(typeId => systemNotes[getRecordIdAndTypeStringKey(instance.value.internalId, typeId)])
+        .find(note => note !== undefined)
+
       setAuthorInformation(instance, info)
     })
     customRecordTypesWithInternalIds.forEach(type => {
-      const info =
-        systemNotes[getRecordIdAndTypeStringKey(type.annotations.internalId, typeToInternalId[CUSTOM_RECORD_TYPE])]
+      const info = typeToInternalId[CUSTOM_RECORD_TYPE]?.map(
+        typeId => systemNotes[getRecordIdAndTypeStringKey(type.annotations.internalId, typeId)],
+      ).find(note => note !== undefined)
+
       setAuthorInformation(type, info)
     })
     await awu(customRecordsWithInternalIds).forEach(async instance => {

@@ -21,7 +21,7 @@ export type LocalFilterOpts = {
   isPartial: boolean
   config: NetsuiteConfig
   internalIdToTypes: Record<string, string[]>
-  typeToInternalId: Record<string, string>
+  typeToInternalId: Record<string, string[]>
   timeZoneAndFormat?: TimeZoneAndFormat
   changesGroupId?: string
   fetchTime?: Date

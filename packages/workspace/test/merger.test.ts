@@ -226,8 +226,9 @@ describe('merger', () => {
         .toArray()
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(ConflictingFieldTypesError)
-      expect(errors[0].message).toContain(BuiltinTypes.STRING.elemID.getFullName())
-      expect(errors[0].message).toContain(BuiltinTypes.NUMBER.elemID.getFullName())
+      expect(errors[0].message).toEqual('Element has invalid NaCl content')
+      expect(errors[0].detailedMessage).toContain(BuiltinTypes.STRING.elemID.getFullName())
+      expect(errors[0].detailedMessage).toContain(BuiltinTypes.NUMBER.elemID.getFullName())
       expect(String(errors[0])).toEqual(errors[0].message)
     })
 
@@ -422,7 +423,8 @@ describe('merger', () => {
         .flat()
         .toArray()
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Error merging salto.settingObj: conflicting is settings definitions')
+      expect(errors[0].message).toEqual('Element has invalid NaCl content')
+      expect(errors[0].detailedMessage).toEqual('Error merging salto.settingObj: conflicting is settings definitions')
     })
   })
 

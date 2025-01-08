@@ -52,10 +52,10 @@ describe('omitCollisionsFilter', () => {
       errors: [
         {
           severity: 'Warning',
-          detailedMessage: expect.any(String),
-          message: expect.stringContaining(
+          detailedMessage: expect.stringContaining(
             'Omitted 2 instances and all their child instances of t1 due to Salto ID collisions.\nCurrent Salto ID configuration for t1 is defined as [name, status].',
           ),
+          message: 'Some elements were not fetched due to Salto ID collisions',
         },
       ],
     })
@@ -74,10 +74,10 @@ describe('omitCollisionsFilter', () => {
       errors: [
         {
           severity: 'Warning',
-          detailedMessage: expect.any(String),
-          message: expect.stringContaining(
+          detailedMessage: expect.stringContaining(
             'Omitted 2 instances and all their child instances of t1 due to Salto ID collisions.\nCurrent Salto ID configuration for t1 is defined as [name, status].',
           ),
+          message: expect.stringContaining('Some elements were not fetched due to Salto ID collisions'),
         },
       ],
     })

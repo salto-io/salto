@@ -391,11 +391,13 @@ describe('Custom Object Instances References filter', () => {
           expect(errors).toIncludeSameMembers([
             expect.objectContaining({
               severity: 'Warning',
-              message: expect.stringContaining('collisions') && expect.stringContaining('Product2'),
+              detailedMessage: expect.stringContaining('collisions') && expect.stringContaining('Product2'),
+              message: 'Some elements were not fetched due to Salto ID collisions',
             }),
             expect.objectContaining({
               severity: 'Warning',
-              message: expect.stringContaining('Omitted Instance of type Account'),
+              detailedMessage: expect.stringContaining('Omitted Instance of type Account'),
+              message: 'Some elements were not fetched due to Salto ID collisions',
             }),
           ])
           expect(elements).not.toIncludeAnyMembers(instancesWithEmptyNames)

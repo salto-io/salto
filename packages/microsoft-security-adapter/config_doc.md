@@ -192,7 +192,7 @@ The value of each entry defines a [rule for omitting or replacing the field](#as
 
 ##### Assignment field rule strategy structure
 
-| Name          | Default when undefined | Description                                                                                                                                                                                                                                              |
-| ------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name          | Default when undefined | Description                                                                                                                                                                                                                                        |
+| ------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | strategy      | undefined              | The strategy to apply for the specified assignment - "omit" or "fallback". If "omit" is set for a required field, the field will be replaced with a value of ["None"]. "fallback" can only be set for Conditional Access Policy assignment fields. |
-| fallbackValue | undefined              | The value to use as a fallback for the specified assignment field, when the strategy is "fallback".                                                                                                                                                      |
+| fallbackValue | undefined              | The value to use as a fallback for the specified assignment field, when the strategy is "fallback".                                                                                                                                                |

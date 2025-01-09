@@ -391,6 +391,88 @@ describe('handleHiddenChanges', () => {
     })
   })
 
+  // This scenario happens when a field changes both hidden_value and refType
+  describe('when a hidden value annotation is part of a field modification', () => {
+    describe('when changed to hidden', () => {
+      it('should hide existing field values', async () => {
+        const objectTypeBefore = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            myField: {
+              refType: BuiltinTypes.STRING,
+            },
+          },
+        })
+        const objectTypeAfter = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            myField: {
+              refType: BuiltinTypes.STRING,
+              annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+            },
+          },
+        })
+        const instance = new InstanceElement('instance', objectTypeAfter, {
+          myField: 'myValue',
+        })
+        const change = toDetailedChangeFromBaseChange(
+          toChange({ before: objectTypeBefore.fields.myField, after: objectTypeAfter.fields.myField }),
+        )
+        const { visible } = await handleHiddenChanges(
+          [change],
+          mockState([objectTypeAfter, instance]),
+          createInMemoryElementSource([objectTypeAfter, instance]),
+        )
+
+        expect(visible).toContainEqual(
+          expect.objectContaining({
+            id: instance.elemID.createNestedID('myField'),
+            action: 'remove',
+          }),
+        )
+      })
+    })
+    describe('when changed to visible', () => {
+      it('should unhide existing field values', async () => {
+        const objectTypeBefore = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            myField: {
+              refType: BuiltinTypes.STRING,
+              annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+            },
+          },
+        })
+        const objectTypeAfter = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            myField: {
+              refType: BuiltinTypes.STRING,
+            },
+          },
+        })
+        const instance = new InstanceElement('instance', objectTypeAfter, {
+          myField: 'myValue',
+        })
+        const instanceVisible = new InstanceElement('instance', objectTypeBefore)
+        const change = toDetailedChangeFromBaseChange(
+          toChange({ before: objectTypeBefore.fields.myField, after: objectTypeAfter.fields.myField }),
+        )
+        const { visible } = await handleHiddenChanges(
+          [change],
+          mockState([objectTypeAfter, instance]),
+          createInMemoryElementSource([objectTypeAfter, instanceVisible]),
+        )
+        expect(visible).toContainEqual(
+          expect.objectContaining({
+            id: instance.elemID.createNestedID('myField'),
+            action: 'add',
+          }),
+        )
+      })
+    })
+  })
+
   describe('hidden_string in instance annotations', () => {
     let instance: InstanceElement
     let instanceType: ObjectType

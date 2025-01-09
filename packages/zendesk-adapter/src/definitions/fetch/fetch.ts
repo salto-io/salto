@@ -665,7 +665,7 @@ const createCustomizations = (): Record<
         alias: { aliasComponents: [{ fieldName: 'filename' }] },
       },
       fieldCustomizations: {
-        id: { hide: true },
+        id: { hide: true, fieldType: 'number' },
         filename: { fieldType: 'string' },
         contentType: { fieldType: 'string' },
         content: { fieldType: 'string' },
@@ -1578,7 +1578,7 @@ const createCustomizations = (): Record<
         alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
-        id: { hide: true },
+        id: { hide: true }, // id is a string
         name: { fieldType: 'string' },
       },
     },

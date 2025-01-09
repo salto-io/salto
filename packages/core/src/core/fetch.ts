@@ -138,7 +138,6 @@ export const getDetailedChanges = async (
   topLevelFilters: IDFilter[],
 ): Promise<DetailedChangeWithBaseChange[]> => {
   if (getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch)) {
-    log.info('fetching detailed changes with getPlan')
     return wu(
       (
         await getPlan({
@@ -452,7 +451,7 @@ const toFetchChanges = (
       return wsChanges.map(createFetchChange)
     })
     .filter(values.isDefined)
-    .flatten()
+    .flatten(true)
 }
 
 export type FetchChangesResult = {

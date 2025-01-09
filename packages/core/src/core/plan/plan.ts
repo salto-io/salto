@@ -92,7 +92,7 @@ const addDifferentElements =
         outputGraph.addNode(changeId(change), [], changeToDiffNode(change))
       })
       return outputGraph
-    }, 'add differing elements to graph')
+    }, 'add nodes to graph')
 
 const resolveNodeElements =
   (before: ReadOnlyElementsSource, after: ReadOnlyElementsSource): PlanTransformer =>

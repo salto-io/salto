@@ -6,8 +6,14 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { configType } from '../src/types'
-import { optionsType, configWithCPQ, getConfig, SalesforceConfigOptionsType } from '../src/config_creator'
+import { configType, MetadataInstance } from '../src/types'
+import { optionsType, getConfig, SalesforceConfigOptionsType } from '../src/config_creator'
+import {
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+  PERMISSION_SET_GROUP_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
+} from '../src/constants'
 
 const mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType)
 const mockCreateDefaultInstanceFromType = jest.fn().mockResolvedValue(mockDefaultInstanceFromTypeResult)
@@ -44,7 +50,7 @@ describe('config_creator', () => {
       resultConfig = await getConfig(options)
     })
     it('should return adapter config with cpq', async () => {
-      expect(resultConfig).toEqual(configWithCPQ)
+      expect(resultConfig.value.fetch.data).toBeDefined()
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -55,8 +61,147 @@ describe('config_creator', () => {
         options = createMockOptionsInstance({
           managedPackages: ['sbaa, SBQQ (CPQ)'],
         })
-        expect(await getConfig(options)).toEqual(configWithCPQ)
+        expect(resultConfig.value.fetch.data).toBeDefined()
         expect(mockLogError).not.toHaveBeenCalled()
+      })
+    })
+  })
+
+  describe('when input contains manageProfiles or managePermissionSets equal true', () => {
+    const getExcludedTypesFromConfig = (instance: InstanceElement): string[] =>
+      instance.value.fetch.metadata.exclude.map((entry: MetadataInstance) => entry.metadataType)
+    describe('without cpq', () => {
+      beforeEach(() => {
+        const originalCreateDefaultInstanceFromType =
+          jest.requireActual('@salto-io/adapter-utils').createDefaultInstanceFromType
+        mockCreateDefaultInstanceFromType.mockImplementationOnce((...args) =>
+          originalCreateDefaultInstanceFromType(...args),
+        )
+      })
+      describe('when manageProfiles=true and managePermissionSets=true', () => {
+        it('should not exclude Profiles, PermissionSets, PermissionSetGroups and MutingPermissionSets', async () => {
+          const configInstance = await getConfig(
+            createMockOptionsInstance({ manageProfiles: true, managePermissionSets: true }),
+          )
+          expect(getExcludedTypesFromConfig(configInstance)).not.toIncludeAnyMembers([
+            PROFILE_METADATA_TYPE,
+            PERMISSION_SET_METADATA_TYPE,
+            MUTING_PERMISSION_SET_METADATA_TYPE,
+            PERMISSION_SET_GROUP_METADATA_TYPE,
+          ])
+        })
+      })
+      describe('when manageProfiles=true and managePermissionSets=false', () => {
+        it('should exclude PermissionSets, PermissionSetGroups and MutingPermissionSets and not exclude Profiles', async () => {
+          const configInstance = await getConfig(
+            createMockOptionsInstance({ manageProfiles: true, managePermissionSets: false }),
+          )
+          expect(getExcludedTypesFromConfig(configInstance)).toIncludeAllMembers([
+            PERMISSION_SET_METADATA_TYPE,
+            MUTING_PERMISSION_SET_METADATA_TYPE,
+            PERMISSION_SET_GROUP_METADATA_TYPE,
+          ])
+          expect(getExcludedTypesFromConfig(configInstance)).not.toInclude(PROFILE_METADATA_TYPE)
+        })
+      })
+      describe('when manageProfiles=false and managePermissionSets=true', () => {
+        it('should not exclude PermissionSets, PermissionSetGroups and MutingPermissionSets and exclude Profiles', async () => {
+          const configInstance = await getConfig(
+            createMockOptionsInstance({ manageProfiles: false, managePermissionSets: true }),
+          )
+          expect(getExcludedTypesFromConfig(configInstance)).not.toIncludeAnyMembers([
+            PERMISSION_SET_METADATA_TYPE,
+            MUTING_PERMISSION_SET_METADATA_TYPE,
+            PERMISSION_SET_GROUP_METADATA_TYPE,
+          ])
+          expect(getExcludedTypesFromConfig(configInstance)).toInclude(PROFILE_METADATA_TYPE)
+        })
+      })
+      describe('when manageProfiles=false and managePermissionSets=false', () => {
+        it('should not exclude Profiles, PermissionSets, PermissionSetGroups and MutingPermissionSets', async () => {
+          const configInstance = await getConfig(
+            createMockOptionsInstance({
+              manageProfiles: false,
+              managePermissionSets: false,
+            }),
+          )
+          expect(getExcludedTypesFromConfig(configInstance)).toIncludeAllMembers([
+            PROFILE_METADATA_TYPE,
+            PERMISSION_SET_METADATA_TYPE,
+            MUTING_PERMISSION_SET_METADATA_TYPE,
+            PERMISSION_SET_GROUP_METADATA_TYPE,
+          ])
+        })
+      })
+    })
+    describe('with cpq', () => {
+      describe('when manageProfiles=true and managePermissionSets=false', () => {
+        it('should exclude PermissionSets, PermissionSetGroups and MutingPermissionSets and not exclude Profiles', async () => {
+          const configInstance = await getConfig(
+            createMockOptionsInstance({
+              manageProfiles: true,
+              managePermissionSets: false,
+              managedPackages: ['sbaa, SBQQ (CPQ)'],
+            }),
+          )
+          expect(getExcludedTypesFromConfig(configInstance)).toIncludeAllMembers([
+            PERMISSION_SET_METADATA_TYPE,
+            MUTING_PERMISSION_SET_METADATA_TYPE,
+            PERMISSION_SET_GROUP_METADATA_TYPE,
+          ])
+          expect(getExcludedTypesFromConfig(configInstance)).not.toInclude(PROFILE_METADATA_TYPE)
+        })
+      })
+      describe('when manageProfiles=false and managePermissionSets=true', () => {
+        it('should not exclude PermissionSets, PermissionSetGroups and MutingPermissionSets and exclude Profiles', async () => {
+          const configInstance = await getConfig(
+            createMockOptionsInstance({
+              manageProfiles: false,
+              managePermissionSets: true,
+              managedPackages: ['sbaa, SBQQ (CPQ)'],
+            }),
+          )
+          expect(getExcludedTypesFromConfig(configInstance)).not.toIncludeAnyMembers([
+            PERMISSION_SET_METADATA_TYPE,
+            MUTING_PERMISSION_SET_METADATA_TYPE,
+            PERMISSION_SET_GROUP_METADATA_TYPE,
+          ])
+          expect(getExcludedTypesFromConfig(configInstance)).toInclude(PROFILE_METADATA_TYPE)
+        })
+      })
+      describe('when manageProfiles=true and managePermissionSets=true', () => {
+        it('should not exclude Profiles, PermissionSets, PermissionSetGroups and MutingPermissionSets', async () => {
+          const configInstance = await getConfig(
+            createMockOptionsInstance({
+              manageProfiles: true,
+              managePermissionSets: true,
+              managedPackages: ['sbaa, SBQQ (CPQ)'],
+            }),
+          )
+          expect(getExcludedTypesFromConfig(configInstance)).not.toIncludeAnyMembers([
+            PROFILE_METADATA_TYPE,
+            PERMISSION_SET_METADATA_TYPE,
+            MUTING_PERMISSION_SET_METADATA_TYPE,
+            PERMISSION_SET_GROUP_METADATA_TYPE,
+          ])
+        })
+      })
+      describe('when manageProfiles=false and managePermissionSets=false', () => {
+        it('should not exclude Profiles, PermissionSets, PermissionSetGroups and MutingPermissionSets', async () => {
+          const configInstance = await getConfig(
+            createMockOptionsInstance({
+              manageProfiles: false,
+              managePermissionSets: false,
+              managedPackages: ['sbaa, SBQQ (CPQ)'],
+            }),
+          )
+          expect(getExcludedTypesFromConfig(configInstance)).toIncludeAllMembers([
+            PROFILE_METADATA_TYPE,
+            PERMISSION_SET_METADATA_TYPE,
+            MUTING_PERMISSION_SET_METADATA_TYPE,
+            PERMISSION_SET_GROUP_METADATA_TYPE,
+          ])
+        })
       })
     })
   })

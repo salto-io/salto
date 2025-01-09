@@ -19,10 +19,14 @@ import {
   createDefaultInstanceFromType,
   createMatchingObjectType,
   createOptionsTypeGuard,
+  inspectValue,
 } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { configType } from './types'
 import * as constants from './constants'
 import { CPQ_NAMESPACE, CUSTOM_OBJECT_ID_FIELD } from './constants'
+
+const log = logger(module)
 
 export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType, {
   fetch: {
@@ -65,18 +69,6 @@ export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType,
         },
         {
           metadataType: 'DocumentFolder',
-        },
-        {
-          metadataType: 'Profile',
-        },
-        {
-          metadataType: 'PermissionSet',
-        },
-        {
-          metadataType: 'MutingPermissionSet',
-        },
-        {
-          metadataType: 'PermissionSetGroup',
         },
         {
           metadataType: 'SiteDotCom',
@@ -177,6 +169,24 @@ export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType,
   maxItemsInRetrieveRequest: 2500,
 })
 
+const excludeProfiles = [
+  {
+    metadataType: constants.PROFILE_METADATA_TYPE,
+  },
+]
+
+const excludePermissionSets = [
+  {
+    metadataType: constants.PERMISSION_SET_METADATA_TYPE,
+  },
+  {
+    metadataType: constants.MUTING_PERMISSION_SET_METADATA_TYPE,
+  },
+  {
+    metadataType: constants.PERMISSION_SET_GROUP_METADATA_TYPE,
+  },
+]
+
 const optionsElemId = new ElemID(constants.SALESFORCE, 'configOptionsType')
 
 const CPQ_MANAGED_PACKAGE = 'sbaa, SBQQ (CPQ)'
@@ -188,6 +198,8 @@ type ManagedPackage = (typeof MANAGED_PACKAGES)[number]
 export type SalesforceConfigOptionsType = {
   cpq?: boolean
   managedPackages?: ManagedPackage[]
+  manageProfiles?: boolean
+  managePermissionSets?: boolean
 }
 
 export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>({
@@ -205,18 +217,50 @@ export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>
           'Names of managed packages to fetch into the environment [Learn more](https://help.salto.io/en/articles/9164974-extending-your-salesforce-configuration-with-managed-packages)',
       },
     },
+    manageProfiles: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: false,
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Manage Profiles in the environment',
+      },
+    },
+    managePermissionSets: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: false,
+        [CORE_ANNOTATIONS.DESCRIPTION]:
+          'Manage PermissionSets, PermissionSetGroups and MutingPermissionSets in the environment',
+      },
+    },
   },
 })
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
-  const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+  let config = (await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)).clone()
   if (options === undefined || !createOptionsTypeGuard<SalesforceConfigOptionsType>(optionsElemId)(options)) {
-    return defaultConf
+    return config
   }
   if (options.value.cpq === true || options.value.managedPackages?.includes(CPQ_MANAGED_PACKAGE)) {
-    return configWithCPQ
+    config = configWithCPQ.clone()
   }
-  return defaultConf
+  const shouldExcludeProfiles = !(options.value.manageProfiles ?? true)
+  const shouldExcludePermissionSets = !(options.value.managePermissionSets ?? true)
+  if (shouldExcludePermissionSets || shouldExcludeProfiles) {
+    const excludeSection = config.value?.fetch?.metadata?.exclude
+    if (Array.isArray(excludeSection)) {
+      config.value.fetch.metadata.exclude = [
+        ...excludeSection,
+        ...(shouldExcludeProfiles ? excludeProfiles : []),
+        ...(shouldExcludePermissionSets ? excludePermissionSets : []),
+      ]
+    } else {
+      log.error(
+        'Failed to exclude Profiles, PermissionSets, PermissionSetGroups and MutingPermissionSets due to invalid exclude section in config instance: %s',
+        inspectValue(config.value),
+      )
+    }
+  }
+  return config
 }
 
 export const configCreator: ConfigCreator = {

@@ -7,7 +7,8 @@
  */
 import wu from 'wu'
 import { EOL } from 'os'
-import { FetchChange, Tags, StepEmitter } from '@salto-io/core'
+import { FetchChange, StepEmitter } from '@salto-io/core'
+import { Tags } from '@salto-io/local-workspace'
 import { SaltoError, DetailedChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Workspace, nacl, validator as wsValidator } from '@salto-io/workspace'

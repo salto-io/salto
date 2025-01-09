@@ -30,16 +30,7 @@ import {
   ChangeDataType,
   DetailedChangeWithBaseChange,
 } from '@salto-io/adapter-api'
-import {
-  Plan,
-  PlanItem,
-  DeployResult,
-  Telemetry,
-  CommandConfig,
-  ItemStatus,
-  DeployParams,
-  CompatibleDeployFunc,
-} from '@salto-io/core'
+import { Plan, PlanItem, DeployResult, DeployParams, deploy as coreDeploy } from '@salto-io/core'
 import {
   Workspace,
   errors as wsErrors,
@@ -49,6 +40,7 @@ import {
   pathIndex,
   staticFiles,
 } from '@salto-io/workspace'
+import { Telemetry, CommandConfig } from '@salto-io/local-workspace'
 import { parser } from '@salto-io/parser'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -774,17 +766,7 @@ export const preview = (): Plan => {
   return result as Plan
 }
 
-export const deploy: CompatibleDeployFunc = async (
-  workspace: Workspace | DeployParams,
-  _actionPlan?: Plan,
-  _reportProgress?: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  _accounts?: string[],
-  _checkOnly = false,
-): Promise<DeployResult> => {
-  // for backward compatibility
-  if (!('adapterCreators' in workspace)) {
-    throw new Error('invalid params for mock')
-  }
+export const deploy: typeof coreDeploy = async (workspace: DeployParams): Promise<DeployResult> => {
   let numOfChangesReported = 0
   wu(workspace.actionPlan.itemsByEvalOrder()).forEach(change => {
     numOfChangesReported += 1

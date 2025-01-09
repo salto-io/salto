@@ -14,7 +14,8 @@ import { copyFile, rm, mkdirp, exists, readFile, writeFile } from '@salto-io/fil
 import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 // eslint-disable-next-line no-restricted-imports
 import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
-import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
+import { Plan } from '@salto-io/core'
+import { SALTO_HOME_VAR } from '@salto-io/local-workspace'
 import { Workspace } from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
 // eslint-disable-next-line no-restricted-imports

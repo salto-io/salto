@@ -8,14 +8,8 @@
 import { EventEmitter } from 'pietile-eventemitter'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { adapterCreators } from '@salto-io/adapter-creators'
-import {
-  fetch,
-  fetchFromWorkspace,
-  FetchProgressEvents,
-  StepEmitter,
-  FetchFunc,
-  loadLocalWorkspace,
-} from '@salto-io/core'
+import { fetch, fetchFromWorkspace, FetchProgressEvents, StepEmitter, FetchFunc } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { createElementSelector, Workspace } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { CliExitCode, CliTelemetry, CliError } from '../../src/types'
@@ -45,6 +39,10 @@ jest.mock('@salto-io/core', () => ({
       success: true,
     }),
   ),
+}))
+
+jest.mock('@salto-io/local-workspace', () => ({
+  ...jest.requireActual<{}>('@salto-io/local-workspace'),
   loadLocalWorkspace: jest.fn().mockImplementation(() => mocks.mockWorkspace({})),
 }))
 describe('fetch command', () => {

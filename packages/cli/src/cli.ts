@@ -9,7 +9,7 @@ import os from 'os'
 import chalk from 'chalk'
 import { logger } from '@salto-io/logging'
 import { streams } from '@salto-io/lowerdash'
-import { closeAllRemoteMaps } from '@salto-io/core'
+import { closeAllRemoteMaps } from '@salto-io/local-workspace'
 import { CliInput, CliOutput, CliExitCode, SpinnerCreator, CliError } from './types'
 import { CommandOrGroupDef } from './command_builder'
 import {

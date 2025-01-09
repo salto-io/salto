@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { streams, types } from '@salto-io/lowerdash'
-import { Telemetry, Tags, CommandConfig } from '@salto-io/core'
+import { Telemetry, Tags, CommandConfig } from '@salto-io/local-workspace'
 
 export type WriteStream = streams.MaybeTty & {
   write(s: string): void

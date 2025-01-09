@@ -147,7 +147,6 @@ salesforce {
 | [fetch](#fetch-configuration-options)          |                        | Fetch configuration                                                               |
 | [client](#client-configuration-options)        | {} (no overrides)      | Configuration relating to the client used to interact with salesforce             |
 | [validators](#validator-configuration-options) | {} (all enabled)       | Configuration for choosing which validators will be applied to deploy plans       |
-| enumFieldPermissions                           | true                   | Change the FieldPermission values to be enum instead of an Object with references |
 
 ## Fetch configuration options
 

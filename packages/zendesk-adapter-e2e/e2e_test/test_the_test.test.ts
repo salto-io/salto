@@ -10,15 +10,8 @@ import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { adapter, Credentials, GROUP_TYPE_NAME } from '@salto-io/zendesk-adapter'
 import { Workspace } from '@salto-io/workspace'
-import {
-  addAdapter,
-  deploy,
-  fetch,
-  getDefaultAdapterConfig,
-  initLocalWorkspace,
-  preview,
-  updateCredentials,
-} from '@salto-io/core'
+import { initLocalWorkspace } from '@salto-io/local-workspace'
+import { addAdapter, deploy, fetch, getDefaultAdapterConfig, preview, updateCredentials } from '@salto-io/core'
 import {
   DetailedChangeWithBaseChange,
   ElemID,
@@ -51,6 +44,10 @@ const GUIDE_CONFIG = {
   },
 }
 
+const adapterCreators = {
+  zendesk: adapter,
+}
+
 const updateConfig = async ({
   workspace,
   adapterName,
@@ -60,7 +57,7 @@ const updateConfig = async ({
   adapterName: string
   fetchAddition: Record<string, unknown>
 }): Promise<void> => {
-  const defaultConfig = await getDefaultAdapterConfig(adapterName, adapterName)
+  const defaultConfig = await getDefaultAdapterConfig({ adapterName, accountName: adapterName, adapterCreators })
   if (!_.isUndefined(defaultConfig)) {
     defaultConfig[0].value.fetch = { ...defaultConfig[0].value.fetch, ...fetchAddition }
     await workspace.updateAccountConfig(adapterName, defaultConfig, adapterName)
@@ -77,7 +74,7 @@ const initWorkspace = async ({
   adapterName: string
 }): Promise<Workspace> => {
   const baseDir = (await tmp.dir()).path
-  const workspace = await initLocalWorkspace(baseDir, envName)
+  const workspace = await initLocalWorkspace({ baseDir, envName, adapterCreators })
   await workspace.setCurrentEnv(envName, false)
   const authMethods = adapter.authenticationMethods
   const configType = authMethods.basic
@@ -89,7 +86,7 @@ const initWorkspace = async ({
     adapterName,
     fetchAddition: GUIDE_CONFIG,
   })
-  await addAdapter(workspace, adapterName)
+  await addAdapter({ workspace, adapterName, adapterCreators })
   await workspace.flush()
   return workspace
 }
@@ -104,7 +101,7 @@ const updateWorkspace = async (workspace: Workspace, changes: DetailedChangeWith
 }
 
 const fetchWorkspace = async (workspace: Workspace): Promise<void> => {
-  const res = await fetch(workspace)
+  const res = await fetch({ workspace, adapterCreators })
   expect(res.success).toBeTruthy()
   await updateWorkspace(
     workspace,
@@ -141,8 +138,8 @@ describe('Zendesk adapter E2E - 2', () => {
       const changes = instancesToDeploy.map(inst => toChange({ after: inst }))
       const detailedChanges = changes.flatMap(change => getDetailedChanges(change))
       await updateWorkspace(workspace, detailedChanges)
-      const actionPlan = await preview(workspace)
-      const result = await deploy(workspace, actionPlan, () => {})
+      const actionPlan = await preview({ workspace, adapterCreators })
+      const result = await deploy({ workspace, actionPlan, reportProgress: () => {}, adapterCreators })
       if (result.errors.length > 0) {
         log.error('error')
       }
@@ -154,7 +151,7 @@ describe('Zendesk adapter E2E - 2', () => {
         workspace,
         Array.from(result.changes).map(c => c.change),
       )
-      const actionPlan2 = await preview(workspace)
+      const actionPlan2 = await preview({ workspace, adapterCreators })
       if (_.isEmpty(actionPlan2)) {
         log.error('plan is empty')
       }

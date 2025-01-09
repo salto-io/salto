@@ -2812,7 +2812,6 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     resolveOrganizationIDs: false,
     resolveUserIDs: true,
     includeAuditDetails: false,
-    addAlias: true,
     handleIdenticalAttachmentConflicts: false,
     omitInactive: {
       default: OMIT_INACTIVE_DEFAULT,
@@ -3194,7 +3193,6 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           resolveUserIDs: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
-          addAlias: { refType: BuiltinTypes.BOOLEAN },
           handleIdenticalAttachmentConflicts: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
@@ -3238,7 +3236,6 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.resolveOrganizationIDs`,
       `${FETCH_CONFIG}.resolveUserIDs`,
       `${FETCH_CONFIG}.includeAuditDetails`,
-      `${FETCH_CONFIG}.addAlias`,
       `${FETCH_CONFIG}.handleIdenticalAttachmentConflicts`,
       `${FETCH_CONFIG}.extractReferencesFromFreeText`,
       `${FETCH_CONFIG}.convertJsonIdsToReferences`,

@@ -3158,6 +3158,28 @@ const fixerConfigType = createMatchingObjectType<Partial<ZendeskFixElementsConfi
   },
 })
 
+type ZendeskFetchCriteria = {
+  name?: string
+  key?: string
+  raw_title?: string
+  title?: string
+  type?: string
+}
+
+const zendeskFetchCriteriaType = createMatchingObjectType<ZendeskFetchCriteria>({
+  elemID: new ElemID(ZENDESK, 'FetchFilters'),
+  fields: {
+    name: { refType: BuiltinTypes.STRING },
+    key: { refType: BuiltinTypes.STRING },
+    raw_title: { refType: BuiltinTypes.STRING },
+    title: { refType: BuiltinTypes.STRING },
+    type: { refType: BuiltinTypes.STRING },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
@@ -3166,6 +3188,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
     },
     [FETCH_CONFIG]: {
       refType: definitions.createUserFetchConfigType({
+        fetchCriteriaType: zendeskFetchCriteriaType,
         adapterName: ZENDESK,
         additionalFields: {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },

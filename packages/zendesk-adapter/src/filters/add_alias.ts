@@ -27,6 +27,7 @@ export const aliasMap: Record<string, AliasData> = {
   },
 }
 
+// we run this filter only on elements that are created later in the flow (after the collision filter)
 const filterCreator: FilterCreator = () => ({
   name: 'addAliasToRemainingTypes',
   onFetch: async (elements: Element[]): Promise<void> => {

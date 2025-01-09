@@ -733,8 +733,8 @@ export default class ZendeskAdapter implements AdapterOperations {
             main: this.client,
             guide: this.guideClient,
           }),
-        pagination: PAGINATION,
-        fetch: guideFetchDef,
+          pagination: PAGINATION,
+          fetch: guideFetchDef,
         },
         this.accountName,
       )

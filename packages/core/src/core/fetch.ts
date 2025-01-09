@@ -400,15 +400,7 @@ const toFetchChanges = (
       // When there are no pending changes, the state and workspace are already aligned, so we can reuse service changes
       // as workspace changes. We are guaranteed no conflicts, so we can return early here. This reuse relies on the
       // assumption that reference expressions in the state element source used to compute the diff are *not* resolved.
-      //
-      // Note: There is another optimization for diff computation when the state itself is empty, in which case only the
-      // service-to-workspace diffs are computed (and pending changes are empty). We need to check that no workspace
-      // changes exist to avoid catching that edge case in the condition below.
-      if (
-        !getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) &&
-        pendingChanges.length === 0 &&
-        wsChanges.length === 0
-      ) {
+      if (!getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) && pendingChanges.length === 0) {
         return serviceChanges.map(change => ({ change, serviceChanges, pendingChanges: [] }))
       }
 

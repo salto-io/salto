@@ -53,7 +53,15 @@ const log = logger(module)
 jest.setTimeout(1000 * 60 * 10)
 
 const fieldsToOmitOnComparisonPerType: Record<string, string[]> = {
-  [SPACE_TYPE_NAME]: ['permissionInternalIdMap', 'homepageId', 'permissions', 'authorId', 'createdAt', 'id'],
+  [SPACE_TYPE_NAME]: [
+    'permissionInternalIdMap',
+    'homepageId',
+    'permissions',
+    'authorId',
+    'createdAt',
+    'id',
+    'currentActiveAlias',
+  ],
   [PAGE_TYPE_NAME]: ['version', 'createdAt', 'parentId', 'spaceId', 'ownerId', 'authorId'],
   [TEMPLATE_TYPE_NAME]: [],
 }

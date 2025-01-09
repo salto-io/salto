@@ -12,13 +12,15 @@ import { client as clientUtils, config as configUtils, definitions, elements } f
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
-CONVERSATION_BOT,
+  CONVERSATION_BOT,
   BRAND_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   EVERYONE_USER_TYPE,
   SECTION_ORDER_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
+  BOT_BUILDER_ANSWER,
+  BOT_BUILDER_NODE,
 } from './constants'
 import {
   fixerNames,
@@ -158,13 +160,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brandId', 'name'],
     },
   },
-  bot_builder_answer: {
+  [BOT_BUILDER_ANSWER]: {
     transformation: {
       idFields: ['name'],
       extendsParentId: true,
     },
   },
-  bot_builder_node: {
+  [BOT_BUILDER_NODE]: {
     transformation: {
       idFields: ['id'],
       extendsParentId: true,
@@ -2983,6 +2985,7 @@ const OmitInactiveType = createMatchingObjectType<OmitInactiveConfig>({
 export type ChangeValidatorName =
   | 'deployTypesNotSupported'
   | 'createCheckDeploymentBasedOnConfig'
+  | 'createCheckDeploymentBasedOnDefinitions'
   | 'accountSettings'
   | 'emptyCustomFieldOptions'
   | 'emptyVariants'
@@ -3064,6 +3067,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   fields: {
     deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
     createCheckDeploymentBasedOnConfig: { refType: BuiltinTypes.BOOLEAN },
+    createCheckDeploymentBasedOnDefinitions: { refType: BuiltinTypes.BOOLEAN },
     accountSettings: { refType: BuiltinTypes.BOOLEAN },
     emptyCustomFieldOptions: { refType: BuiltinTypes.BOOLEAN },
     emptyVariants: { refType: BuiltinTypes.BOOLEAN },

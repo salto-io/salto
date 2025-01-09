@@ -25,7 +25,7 @@ export const UNSORTED = 'unsorted'
 export const BOT_BUILDER_PATH = [ZENDESK, RECORDS_PATH, CONVERSATION_BOT]
 
 const BOT_BUILDER_ELEMENT_DIRECTORY: Record<string, string> = {
-  [CONVERSATION_BOT]: 'flows',
+  [CONVERSATION_BOT]: 'bots',
   [BOT_BUILDER_ANSWER]: 'answers',
   [BOT_BUILDER_NODE]: 'nodes',
 }

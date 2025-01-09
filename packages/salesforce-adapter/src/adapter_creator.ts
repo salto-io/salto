@@ -15,10 +15,11 @@ import {
   Values,
   ProgressReporter,
   DeployOptions,
+  Element,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { inspectValue } from '@salto-io/adapter-utils'
 import humanizeDuration from 'humanize-duration'
 import SalesforceClient, { validateCredentials } from './client/client'
@@ -60,6 +61,7 @@ type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivati
 
 const log = logger(module)
 const { isDefined } = values
+const { awu } = collections.asynciterable
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   if (isAccessTokenConfig(config)) {
@@ -224,6 +226,7 @@ export type DeployProgressReporter = ProgressReporter & {
 
 export type SalesforceAdapterDeployOptions = DeployOptions & {
   progressReporter: DeployProgressReporter
+  getAllElements?: () => Promise<Element[]>
 }
 
 export const createDeployProgressReporter = async (
@@ -300,6 +303,14 @@ export const adapter: Adapter = {
       config: config[CLIENT_CONFIG],
     })
     let deployProgressReporterPromise: Promise<DeployProgressReporter> | undefined
+    let allElements: Element[] | undefined
+
+    const getAllElements = async (): Promise<Element[]> => {
+      if (_.isUndefined(allElements)) {
+        allElements = await awu(await context.elementsSource.getAll()).toArray()
+      }
+      return allElements
+    }
 
     const createSalesforceAdapter = (): SalesforceAdapter => {
       const { elementsSource, getElemIdFunc } = context
@@ -332,6 +343,7 @@ export const adapter: Adapter = {
         return salesforceAdapter.deploy({
           ...opts,
           progressReporter: await deployProgressReporterPromise,
+          getAllElements,
         })
       },
 

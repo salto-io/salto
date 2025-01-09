@@ -6,10 +6,11 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { decorators } from '@salto-io/lowerdash'
+import { decorators, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
+import { SaltoError, Element, InstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import {
   ENOTFOUND,
   ERROR_HTTP_502,
@@ -19,8 +20,11 @@ import {
   SALESFORCE_DEPLOY_ERROR_MESSAGES,
   SALESFORCE_ERRORS,
   SalesforceError,
+  VALIDATION_RULES_METADATA_TYPE,
 } from '../constants'
+import { isInstanceOfTypeSync } from '../filters/utils'
 
+const { DefaultMap } = collections.map
 const log = logger(module)
 
 export const REQUEST_LIMIT_EXCEEDED_MESSAGE =
@@ -208,4 +212,63 @@ export const getUserFriendlyDeployErrorMessage = (errorMessage: string): string 
   const [mapperName, userFriendlyMessage] = Object.entries(userFriendlyMessageByMapperName)[0]
   log.debug('Replacing error %s message to %s. Original error: %o', mapperName, userFriendlyMessage, errorMessage)
   return userFriendlyMessage
+}
+
+type ValidationRule = InstanceElement & {
+  value: InstanceElement['value'] & {
+    errorMessage: string
+  }
+}
+
+const isValidationRule = (instance: Element): instance is ValidationRule =>
+  isInstanceOfTypeSync(VALIDATION_RULES_METADATA_TYPE)(instance) && _.isString(_.get(instance.value, 'errorMessage'))
+
+const getValidationRuleMessage = (error: SaltoError): string => error.message.split(':')[1]
+
+const createValidationRulesIndex = (elements: Element[]): Map<string, ValidationRule[]> => {
+  const validationRules = elements.filter(isValidationRule)
+  return validationRules.reduce(
+    (acc: Map<string, ValidationRule[]>, validationRule) => {
+      acc.get(validationRule.value.errorMessage)?.push(validationRule)
+      return acc
+    },
+    new DefaultMap<string, ValidationRule[]>(() => []),
+  )
+}
+
+const getValidaitonRulesUrl = (validationRules: ValidationRule[]): string[] =>
+  validationRules.map(validationRule => validationRule.annotations[CORE_ANNOTATIONS.SERVICE_URL])
+
+export const enrichSaltoDeployErrors = async (
+  errors: readonly SaltoError[],
+  getAllElements: () => Promise<Element[]>,
+): Promise<SaltoError[] | readonly SaltoError[]> => {
+  const indexToValidationRuleMessage: Record<number, string> = []
+
+  errors.forEach((error, index) => {
+    if (error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION))
+      indexToValidationRuleMessage[index] = getValidationRuleMessage(error)
+  })
+
+  const validationRulesIndex: Map<string, ValidationRule[]> =
+    Object.keys(indexToValidationRuleMessage).length > 0
+      ? createValidationRulesIndex(await getAllElements())
+      : new DefaultMap(() => [])
+
+  if (validationRulesIndex.size > 0) {
+    return errors.reduce((acc: SaltoError[], error, index) => {
+      acc.push(
+        _.isUndefined(indexToValidationRuleMessage[index])
+          ? error
+          : {
+              ...error,
+              message: `${error.message}\n${getValidaitonRulesUrl(
+                validationRulesIndex.get(indexToValidationRuleMessage[index]) ?? [],
+              ).join('\n')}`,
+            },
+      )
+      return acc
+    }, [])
+  }
+  return errors
 }

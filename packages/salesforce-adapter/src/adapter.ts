@@ -182,7 +182,7 @@ import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_
 import { fixElementsFunc } from './custom_references/handlers'
 import { createListApexClassesDef, createListMissingWaveDataflowsDef } from './client/custom_list_funcs'
 import { SalesforceAdapterDeployOptions } from './adapter_creator'
-import { getUserFriendlyDeployErrorMessage } from './client/user_facing_errors'
+import { enrichSaltoDeployErrors, getUserFriendlyDeployErrorMessage } from './client/user_facing_errors'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -812,7 +812,11 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     // Check old configuration flag for backwards compatibility (SALTO-2700)
     const checkOnly = this.userConfig?.client?.deploy?.checkOnly ?? false
     const result = await this.deployOrValidate(deployOptions, checkOnly)
-    const friendlyErrors = result.errors.map(error => ({
+    const enrichedErrors = await enrichSaltoDeployErrors(
+      result.errors,
+      deployOptions.getAllElements ?? (async () => []),
+    )
+    const friendlyErrors = enrichedErrors.map(error => ({
       ...error,
       detailedMessage: getUserFriendlyDeployErrorMessage(error.message),
     }))

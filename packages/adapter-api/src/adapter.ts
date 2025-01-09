@@ -44,7 +44,7 @@ export type DeployExtraProperties = {
   groups?: AdapterGroupProperties[]
 }
 
-type SaltoDeployErrors = {
+export type SaltoDeployErrors = {
   errors: ReadonlyArray<SaltoError | SaltoElementError>
 }
 

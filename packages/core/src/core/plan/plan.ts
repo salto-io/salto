@@ -79,19 +79,20 @@ const addDifferentElements =
     topLevelFilters: IDFilter[],
     compareOptions?: CompareOptions,
   ): PlanTransformer =>
-  async graph => {
-    const outputGraph = graph.clone()
-    const changes = await calculateDiff({
-      before,
-      after,
-      topLevelFilters,
-      compareOptions: { ...compareOptions, createFieldChanges: true },
-    })
-    await awu(changes).forEach(change => {
-      outputGraph.addNode(changeId(change), [], changeToDiffNode(change))
-    })
-    return outputGraph
-  }
+  async graph =>
+    log.timeDebug(async () => {
+      const outputGraph = graph.clone()
+      const changes = await calculateDiff({
+        before,
+        after,
+        topLevelFilters,
+        compareOptions: { ...compareOptions, createFieldChanges: true },
+      })
+      await awu(changes).forEach(change => {
+        outputGraph.addNode(changeId(change), [], changeToDiffNode(change))
+      })
+      return outputGraph
+    }, 'add differing elements to graph')
 
 const resolveNodeElements =
   (before: ReadOnlyElementsSource, after: ReadOnlyElementsSource): PlanTransformer =>

@@ -271,90 +271,87 @@ export const calculateDiff = async ({
   topLevelFilters: IDFilter[]
   compareOptions?: CompareOptions
   removeRedundantChanges?: boolean
-}): Promise<AsyncIterable<Change>> =>
-  log.timeDebug(async () => {
-    const splitFieldChanges = (change: Change): Change[] => {
-      const changes: Change[] = [change]
-      if (
-        compareOptions?.createFieldChanges !== true &&
-        isAdditionOrRemovalChange(change) &&
-        isObjectTypeChange(change)
-      ) {
-        // When the entire element was either added or removed, there's no need
-        // to create changes for individual fields.
-        return changes
-      }
-      const beforeFields =
-        isRemovalOrModificationChange(change) && isObjectType(change.data.before) ? change.data.before.fields : {}
-      const afterFields =
-        isAdditionOrModificationChange(change) && isObjectType(change.data.after) ? change.data.after.fields : {}
-      const allFieldNames = [...Object.keys(beforeFields), ...Object.keys(afterFields)]
-      allFieldNames.forEach(fieldName =>
-        changes.push(
-          toChange({
-            // We check `hasOwnProperty` and don't just do `beforeFields[fieldName]`
-            // because fieldName might be a builtin function name such as
-            // `toString` and in that case `beforeFields[fieldName]` will
-            // unexpectedly return a function
-            before: Object.prototype.hasOwnProperty.call(beforeFields, fieldName) ? beforeFields[fieldName] : undefined,
-            after: Object.prototype.hasOwnProperty.call(afterFields, fieldName) ? afterFields[fieldName] : undefined,
-          }),
-        ),
-      )
+}): Promise<AsyncIterable<Change>> => {
+  const splitFieldChanges = (change: Change): Change[] => {
+    const changes: Change[] = [change]
+    if (
+      compareOptions?.createFieldChanges !== true &&
+      isAdditionOrRemovalChange(change) &&
+      isObjectTypeChange(change)
+    ) {
+      // When the entire element was either added or removed, there's no need
+      // to create changes for individual fields.
       return changes
     }
-
-    /**
-     * Ids that represent types or containers need to be handled separately,
-     * because they would not necessarily be included in getAll.
-     */
-    const handleSpecialIds = async (elementPair: BeforeAfter<ChangeDataType>): Promise<BeforeAfter<ChangeDataType>> => {
-      const isSpecialId = (id: ElemID): boolean =>
-        BuiltinTypesByFullName[id.getFullName()] !== undefined || id.getContainerPrefixAndInnerType() !== undefined
-
-      const id = elementPair.before?.elemID ?? elementPair.after?.elemID
-      if (id !== undefined && isSpecialId(id)) {
-        return {
-          before: elementPair.before ?? (await before.get(id)),
-          after: elementPair.after ?? (await after.get(id)),
-        }
-      }
-      return elementPair
-    }
-
-    const sieve = new Set<string>()
-
-    const isDifferent = async (change: Change): Promise<boolean> => {
-      const fullName = getChangeData(change).elemID.getFullName()
-      if (!sieve.has(fullName)) {
-        sieve.add(fullName)
-        if (
-          !(await isEqualChangeDataType(
-            isRemovalOrModificationChange(change) ? change.data.before : undefined,
-            isAdditionOrModificationChange(change) ? change.data.after : undefined,
-            before,
-            after,
-            compareOptions,
-          ))
-        ) {
-          return true
-        }
-      }
-      return false
-    }
-
-    return awu(
-      iterateTogether(
-        await getFilteredElements(before, topLevelFilters),
-        await getFilteredElements(after, topLevelFilters),
-        (e1, e2) => compareElementIDs(e1.elemID, e2.elemID),
+    const beforeFields =
+      isRemovalOrModificationChange(change) && isObjectType(change.data.before) ? change.data.before.fields : {}
+    const afterFields =
+      isAdditionOrModificationChange(change) && isObjectType(change.data.after) ? change.data.after.fields : {}
+    const allFieldNames = [...Object.keys(beforeFields), ...Object.keys(afterFields)]
+    allFieldNames.forEach(fieldName =>
+      changes.push(
+        toChange({
+          // We check `hasOwnProperty` and don't just do `beforeFields[fieldName]`
+          // because fieldName might be a builtin function name such as
+          // `toString` and in that case `beforeFields[fieldName]` will
+          // unexpectedly return a function
+          before: Object.prototype.hasOwnProperty.call(beforeFields, fieldName) ? beforeFields[fieldName] : undefined,
+          after: Object.prototype.hasOwnProperty.call(afterFields, fieldName) ? afterFields[fieldName] : undefined,
+        }),
       ),
     )
-      .map(handleSpecialIds)
-      .filter(
-        ({ before: beforeElement, after: afterElement }) => !isVariable(beforeElement) && !isVariable(afterElement),
-      )
-      .map(toChange)
-      .flatMap(splitFieldChanges)
-      .filter(isDifferent)
-  }, 'calculate diff between element sources')
+    return changes
+  }
+
+  /**
+   * Ids that represent types or containers need to be handled separately,
+   * because they would not necessarily be included in getAll.
+   */
+  const handleSpecialIds = async (elementPair: BeforeAfter<ChangeDataType>): Promise<BeforeAfter<ChangeDataType>> => {
+    const isSpecialId = (id: ElemID): boolean =>
+      BuiltinTypesByFullName[id.getFullName()] !== undefined || id.getContainerPrefixAndInnerType() !== undefined
+
+    const id = elementPair.before?.elemID ?? elementPair.after?.elemID
+    if (id !== undefined && isSpecialId(id)) {
+      return {
+        before: elementPair.before ?? (await before.get(id)),
+        after: elementPair.after ?? (await after.get(id)),
+      }
+    }
+    return elementPair
+  }
+
+  const sieve = new Set<string>()
+
+  const isDifferent = async (change: Change): Promise<boolean> => {
+    const fullName = getChangeData(change).elemID.getFullName()
+    if (!sieve.has(fullName)) {
+      sieve.add(fullName)
+      if (
+        !(await isEqualChangeDataType(
+          isRemovalOrModificationChange(change) ? change.data.before : undefined,
+          isAdditionOrModificationChange(change) ? change.data.after : undefined,
+          before,
+          after,
+          compareOptions,
+        ))
+      ) {
+        return true
+      }
+    }
+    return false
+  }
+
+  return awu(
+    iterateTogether(
+      await getFilteredElements(before, topLevelFilters),
+      await getFilteredElements(after, topLevelFilters),
+      (e1, e2) => compareElementIDs(e1.elemID, e2.elemID),
+    ),
+  )
+    .map(handleSpecialIds)
+    .filter(({ before: beforeElement, after: afterElement }) => !isVariable(beforeElement) && !isVariable(afterElement))
+    .map(toChange)
+    .flatMap(splitFieldChanges)
+    .filter(isDifferent)
+}

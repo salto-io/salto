@@ -81,6 +81,7 @@ import {
   isElementIdMatchSelectors,
   updateElementsWithAlternativeAccount,
   Workspace,
+  flags,
 } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
@@ -97,6 +98,7 @@ const { mapValuesAsync } = promises.object
 const { withLimitedConcurrency } = promises.array
 const { mergeElements } = merger
 const { isTypeOfOrUndefined } = types
+const { getSaltoFlagBool, WORKSPACE_FLAGS } = flags
 const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
@@ -135,6 +137,22 @@ export const getDetailedChanges = async (
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
 ): Promise<DetailedChangeWithBaseChange[]> => {
+  if (getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch)) {
+    log.info('fetching detailed changes with getPlan')
+    return wu(
+      (
+        await getPlan({
+          before,
+          after,
+          dependencyChangers: [],
+          topLevelFilters,
+        })
+      ).itemsByEvalOrder(),
+    )
+      .map(item => item.detailedChanges())
+      .flatten()
+      .toArray()
+  }
   const changes = await calculateDiff({ before, after, topLevelFilters })
   return awu(changes)
     .map(change => getDetailedChangesFromChange(change))
@@ -386,7 +404,11 @@ const toFetchChanges = (
       // Note: There is another optimization for diff computation when the state itself is empty, in which case only the
       // service-to-workspace diffs are computed (and pending changes are empty). We need to check that no workspace
       // changes exist to avoid catching that edge case in the condition below.
-      if (pendingChanges.length === 0 && wsChanges.length === 0) {
+      if (
+        !getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) &&
+        pendingChanges.length === 0 &&
+        wsChanges.length === 0
+      ) {
         return serviceChanges.map(change => ({ change, serviceChanges, pendingChanges: [] }))
       }
 
@@ -895,7 +917,11 @@ export const calcFetchChanges = async ({
         getDetailedChangeTree(
           workspaceElements,
           partialFetchElementSource,
-          [accountFetchFilter, partialFetchFilter, pendingChangeIdsFilter],
+          [
+            accountFetchFilter,
+            partialFetchFilter,
+            getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) ? serviceChangeIdsFilter : pendingChangeIdsFilter,
+          ],
           'service',
         ),
       'calculate service-workspace changes',

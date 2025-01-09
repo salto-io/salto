@@ -182,7 +182,7 @@ import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_
 import { fixElementsFunc } from './custom_references/handlers'
 import { createListApexClassesDef, createListMissingWaveDataflowsDef } from './client/custom_list_funcs'
 import { SalesforceAdapterDeployOptions } from './adapter_creator'
-import { enrichSaltoDeployErrors, getUserFriendlyDeployErrorMessage } from './client/user_facing_errors'
+import { enrichSaltoDeployErrors } from './client/user_facing_errors'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -818,7 +818,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     )
     const friendlyErrors = enrichedErrors.map(error => ({
       ...error,
-      detailedMessage: getUserFriendlyDeployErrorMessage(error.message),
+      detailedMessage: error.message,
     }))
     result.errors = friendlyErrors
     // If we got here with checkOnly we must not return any applied changes

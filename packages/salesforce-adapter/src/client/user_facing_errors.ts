@@ -223,7 +223,10 @@ type ValidationRule = InstanceElement & {
 const isValidationRule = (instance: Element): instance is ValidationRule =>
   isInstanceOfTypeSync(VALIDATION_RULES_METADATA_TYPE)(instance) && _.isString(_.get(instance.value, 'errorMessage'))
 
-const getValidationRuleMessage = (error: SaltoError): string => error.message.split(':')[1]
+const getValidationRulesMessages = (error: SaltoError): string[] => {
+  const pattern = /FIELD_CUSTOM_VALIDATION_EXCEPTION:(.*?):--/g
+  return [...error.message.matchAll(pattern)].map(match => match[1])
+}
 
 const createValidationRulesIndex = (elements: Element[]): Map<string, ValidationRule[]> => {
   const validationRules = elements.filter(isValidationRule)
@@ -236,35 +239,39 @@ const createValidationRulesIndex = (elements: Element[]): Map<string, Validation
   )
 }
 
-const getValidaitonRulesUrl = (validationRules: ValidationRule[]): string[] =>
+const getValidationRulesUrl = (validationRules: ValidationRule[]): string[] =>
   validationRules.map(validationRule => validationRule.annotations[CORE_ANNOTATIONS.SERVICE_URL])
 
 export const enrichSaltoDeployErrors = async (
   errors: readonly SaltoError[],
   getAllElements: () => Promise<Element[]>,
 ): Promise<SaltoError[] | readonly SaltoError[]> => {
-  const indexToValidationRuleMessage: Record<number, string> = []
-
+  const indexToValidationRulesMessages: Record<number, string[]> = []
   errors.forEach((error, index) => {
     if (error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION))
-      indexToValidationRuleMessage[index] = getValidationRuleMessage(error)
+      indexToValidationRulesMessages[index] = getValidationRulesMessages(error)
   })
 
   const validationRulesIndex: Map<string, ValidationRule[]> =
-    Object.keys(indexToValidationRuleMessage).length > 0
+    Object.keys(indexToValidationRulesMessages).length > 0
       ? createValidationRulesIndex(await getAllElements())
       : new DefaultMap(() => [])
 
   if (validationRulesIndex.size > 0) {
     return errors.reduce((acc: SaltoError[], error, index) => {
       acc.push(
-        _.isUndefined(indexToValidationRuleMessage[index])
+        _.isUndefined(indexToValidationRulesMessages[index])
           ? error
           : {
               ...error,
-              message: `${error.message}\n${getValidaitonRulesUrl(
-                validationRulesIndex.get(indexToValidationRuleMessage[index]) ?? [],
-              ).join('\n')}`,
+              message: `${indexToValidationRulesMessages[index]
+                .map(
+                  validationRuleMessage =>
+                    `${validationRuleMessage}\n${getValidationRulesUrl(
+                      validationRulesIndex.get(validationRuleMessage) ?? [],
+                    )}`,
+                )
+                .join('\n\n')}`,
             },
       )
       return acc

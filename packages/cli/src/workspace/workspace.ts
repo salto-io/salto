@@ -14,11 +14,11 @@ import { logger } from '@salto-io/logging'
 import { Workspace, nacl, validator as wsValidator } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
-  formatWorkspaceError,
   formatWorkspaceLoadFailed,
   formatDetailedChanges,
   formatFinishedLoading,
   formatWorkspaceAbort,
+  formatWorkspaceErrorDetailedMessage,
 } from '../formatter'
 import { CliOutput, SpinnerCreator, CliTelemetry } from '../types'
 import { shouldContinueInCaseOfWarnings, shouldAbortWorkspaceInCaseOfValidationError } from '../callbacks'
@@ -97,7 +97,7 @@ export const formatWorkspaceErrors = async (workspace: Workspace, errors: Iterab
       wu(errors)
         .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
         .map(err => workspace.transformError(err))
-        .map(async err => formatWorkspaceError(await err)),
+        .map(async err => formatWorkspaceErrorDetailedMessage(await err)),
     )
   ).join(EOL)
 

@@ -50,27 +50,10 @@ const log = logger(module)
 
 export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
 
-const changeToDiffNode = (change: Change<ChangeDataType>): DiffNode<ChangeDataType> => {
-  if (isAdditionChange(change)) {
-    return {
-      originalId: change.data.after.elemID.getFullName(),
-      action: 'add',
-      data: { after: change.data.after },
-    }
-  }
-  if (isRemovalChange(change)) {
-    return {
-      originalId: change.data.before.elemID.getFullName(),
-      action: 'remove',
-      data: { before: change.data.before },
-    }
-  }
-  return {
-    originalId: change.data.before.elemID.getFullName(),
-    action: 'modify',
-    data: { before: change.data.before, after: change.data.after },
-  }
-}
+const changeToDiffNode = (change: Change<ChangeDataType>): DiffNode<ChangeDataType> => ({
+  ...change,
+  originalId: getChangeData(change).elemID.getFullName(),
+})
 
 const addDifferentElements =
   (

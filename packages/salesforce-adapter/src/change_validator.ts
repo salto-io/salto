@@ -121,7 +121,7 @@ const wrapChangeValidatorWithIsErrorEnabled = (
   changeValidator: ChangeValidator,
   changeValidatorName: ChangeValidatorName,
 ): ChangeValidator =>
-  isErrorEnabledByValidatorName[changeValidatorName]
+  !isErrorEnabledByValidatorName[changeValidatorName]
     ? async (...args) => {
         const errors = (await changeValidator(...args)).filter(error => error.severity === 'Error')
         if (errors.length === 0) {

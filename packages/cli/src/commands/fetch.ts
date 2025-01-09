@@ -18,10 +18,10 @@ import {
   StepEmitter,
   PlanItem,
   FetchFromWorkspaceFunc,
-  loadLocalWorkspace,
   fetchFromWorkspace,
   FetchFuncParams,
 } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { Workspace, nacl, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { promises, values } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -183,8 +183,6 @@ export const fetchCommand = async ({
   const fetchResult = await fetch({
     workspace,
     progressEmitter: fetchProgress,
-    // remove when there is no need to be backward compatible
-    // @ts-expect-error accounts is getting mixed up with workspace accounts. in here its string[] and not ((env?: string | undefined) => string[]) and we  get an error
     accounts,
     ignoreStateElemIdMapping: regenerateSaltoIds,
     withChangesDetection,

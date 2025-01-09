@@ -28,7 +28,6 @@ import {
   buildStaticFilesCache,
   getBaseDirFromEnvName,
   getStaticFileCacheName,
-  WorkspaceGetCustomReferencesFunc,
   getAdaptersConfigTypesMap,
 } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
@@ -324,65 +323,13 @@ type InitLocalWorkspaceParams = {
   adapterCreators: Record<string, Adapter>
 }
 
-const getInitLocalWorkspace: (
-  baseDirOrParams: string | InitLocalWorkspaceParams,
-  envName?: string,
-  configTypes?: ObjectType[],
-  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
-  stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-) => InitLocalWorkspaceParams & { getCustomReferences?: WorkspaceGetCustomReferencesFunc } = (
-  baseDirOrParams,
-  envName,
-  configTypes,
-  getCustomReferences,
+export async function initLocalWorkspace({
+  baseDir,
+  envName = 'default',
+  adapterCreators,
+  configTypes = Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
   stateStaticFilesSource,
-) => {
-  if (!_.isString(baseDirOrParams)) {
-    return baseDirOrParams
-  }
-  if (configTypes === undefined) {
-    throw new Error('configTypes cannot be undefined')
-  }
-  return {
-    baseDir: baseDirOrParams,
-    envName,
-    configTypes,
-    getCustomReferences,
-    stateStaticFilesSource,
-    adapterCreators: {},
-  }
-}
-// As a transitionary step, we support both a string input and an argument object
-export function initLocalWorkspace(args: InitLocalWorkspaceParams): Promise<Workspace>
-// @deprecated
-export function initLocalWorkspace(
-  baseDir: string,
-  envName: string,
-  configTypes?: ObjectType[],
-  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
-  stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-): Promise<Workspace>
-
-export async function initLocalWorkspace(
-  inputBaseDir: string | InitLocalWorkspaceParams,
-  inputEnvName?: string,
-  inputConfigTypes?: ObjectType[],
-  inputGetCustomReferences?: WorkspaceGetCustomReferencesFunc,
-  inputStateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-): Promise<Workspace> {
-  const {
-    baseDir,
-    envName = 'default',
-    adapterCreators,
-    configTypes = Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
-    stateStaticFilesSource,
-  } = getInitLocalWorkspace(
-    inputBaseDir,
-    inputEnvName,
-    inputConfigTypes,
-    inputGetCustomReferences,
-    inputStateStaticFilesSource,
-  )
+}: InitLocalWorkspaceParams): Promise<Workspace> {
   const uid = uuidv4()
   const localStorage = getLocalStoragePath(uid)
   if (await locateWorkspaceRoot(path.resolve(baseDir))) {

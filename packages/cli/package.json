@@ -42,6 +42,7 @@
     "@salto-io/core": "0.4.9",
     "@salto-io/dag": "0.4.9",
     "@salto-io/file": "0.4.9",
+    "@salto-io/local-workspace": "0.4.9",
     "@salto-io/logging": "0.4.9",
     "@salto-io/lowerdash": "0.4.9",
     "@salto-io/parser": "0.4.9",

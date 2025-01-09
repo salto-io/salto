@@ -5,16 +5,16 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { locateWorkspaceRoot, loadLocalWorkspace } from '@salto-io/core'
+import { loadLocalWorkspace, locateWorkspaceRoot } from '@salto-io/local-workspace'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { createAction, setAction, currentAction, listAction, deleteAction, renameAction } from '../../src/commands/env'
 import { CliExitCode } from '../../src/types'
 
-jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual<{}>('@salto-io/core'),
-  localWorkspaceConfigSource: jest.fn().mockResolvedValue({ localStorage: '.' }),
+jest.mock('@salto-io/local-workspace', () => ({
+  ...jest.requireActual<{}>('@salto-io/local-workspace'),
   loadLocalWorkspace: jest.fn(),
+  localWorkspaceConfigSource: jest.fn().mockResolvedValue({ localStorage: '.' }),
   locateWorkspaceRoot: jest.fn(),
 }))
 

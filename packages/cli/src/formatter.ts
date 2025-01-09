@@ -72,7 +72,8 @@ export const emptyLine = (): string => ''
 
 const planItemName = (step: PlanItem): string => step.groupKey
 
-const formatError = (err: { message: string }): string => header(err.message)
+const formatErrorDetailedMessage = (err: { detailedMessage: string }): string => header(err.detailedMessage)
+const formatErrorMessage = (err: { message: string }): string => header(err.message)
 
 export const formatWordsSeries = (words: string[]): string =>
   words.length > 1 ? `${words.slice(0, -1).join(', ')} and ${_.last(words)}` : words[0]
@@ -87,9 +88,14 @@ const formatSourceLocation = (sl: Readonly<SourceLocation>): string =>
 const formatSourceLocations = (sourceLocations: ReadonlyArray<SourceLocation>): string =>
   `${sourceLocations.map(formatSourceLocation).join(EOL)}`
 
-export const formatWorkspaceError = (we: Readonly<errors.WorkspaceError<SaltoError>>): string => {
+export const formatWorkspaceErrorMessage = (we: Readonly<errors.WorkspaceError<SaltoError>>): string => {
   const possibleEOL = we.sourceLocations.length > 0 ? EOL : ''
-  return `${formatError(we)}${possibleEOL}${formatSourceLocations(we.sourceLocations)}`
+  return `${formatErrorMessage(we)}${possibleEOL}${formatSourceLocations(we.sourceLocations)}`
+}
+
+export const formatWorkspaceErrorDetailedMessage = (we: Readonly<errors.WorkspaceError<SaltoError>>): string => {
+  const possibleEOL = we.sourceLocations.length > 0 ? EOL : ''
+  return `${formatErrorDetailedMessage(we)}${possibleEOL}${formatSourceLocations(we.sourceLocations)}`
 }
 
 const indent = (text: string, level: number): string => {
@@ -266,8 +272,8 @@ type ChangeWorkspaceError = errors.WorkspaceError<ChangeError>
 export const formatChangeErrors = (wsChangeErrors: ReadonlyArray<ChangeWorkspaceError>, detailed = false): string => {
   const errorsIndent = 2
   const formatSingleChangeError = (changeError: ChangeWorkspaceError): string => {
-    const formattedError = formatWorkspaceError(changeError)
-    return indent(`${formattedError}${EOL}${changeError.severity}: ${changeError.detailedMessage}`, errorsIndent)
+    const formattedErrorMessage = formatWorkspaceErrorMessage(changeError)
+    return indent(`${formattedErrorMessage}${EOL}${changeError.severity}: ${changeError.detailedMessage}`, errorsIndent)
   }
   const formatElement = (changeError: ChangeWorkspaceError): string => {
     const possibleDetailed: string = detailed
@@ -285,7 +291,7 @@ export const formatChangeErrors = (wsChangeErrors: ReadonlyArray<ChangeWorkspace
     }
 
     const resultMessages: string = [
-      indent(`${firstErr.severity}: ${formatError(firstErr)} in the following elements:`, errorsIndent),
+      indent(`${firstErr.severity}: ${formatErrorMessage(firstErr)} in the following elements:`, errorsIndent),
     ]
       .concat(groupedChangeErrors.map(formatElement))
       .join(EOL)
@@ -540,7 +546,10 @@ export const formatFetchFinish = (): string => [emptyLine(), Prompts.FETCH_SUCCE
 
 export const formatMergeErrors = (mergeErrors: FetchResult['mergeErrors']): string =>
   `${Prompts.FETCH_MERGE_ERRORS}\n${mergeErrors
-    .map(me => `${formatError(me.error)}, dropped elements: ${me.elements.map(e => e.elemID.getFullName()).join(', ')}`)
+    .map(
+      me =>
+        `${formatErrorDetailedMessage(me.error)}, dropped elements: ${me.elements.map(e => e.elemID.getFullName()).join(', ')}`,
+    )
     .join('\n')}`
 
 export const formatFetchWarnings = (warnings: string[]): string =>

@@ -81,7 +81,6 @@ const destructPackageVersion = (
 const printableVersion = (version: Version): string => `${version.major}.${version.minor}`
 
 const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] => {
-  // const errors: ChangeError[] = []
   if (!Array.isArray(instance.value.packageVersions)) {
     return []
   }
@@ -90,29 +89,31 @@ const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] =>
     .map<ChangeError | undefined>((packageVersion: PackageVersion, index: Number) => {
       const { instanceVersion, namespace } = destructPackageVersion(packageVersion)
       const targetVersion = parsePackageVersion(namespace)
-      if (instance !== undefined && targetVersion !== undefined) {
-        if (
-          TYPES_PACKAGE_VERSION_EXACT_VERSION.has(instance.elemID.typeName) &&
-          !isExactVersion(instanceVersion, targetVersion)
-        ) {
-          return {
-            elemID: instance.elemID.createNestedID('packageVersions', String(index)),
-            severity: 'Warning',
-            message:
-              'Cannot deploy instances with a package version that does not match the version in the target environment',
-            detailedMessage: `${namespace.value.value.fullName}'s version in the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
-          }
-        }
-        if (isGreaterVersion(instanceVersion, targetVersion)) {
-          return {
-            elemID: instance.elemID.createNestedID('packageVersions', String(index)),
-            severity: 'Warning',
-            message:
-              'Cannot deploy instances with a package version that is greater than the version in the target environment',
-            detailedMessage: `${namespace.value.value.fullName}'s version in the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
-          }
+      if (instance === undefined || targetVersion === undefined) {
+        return undefined
+      }
+      if (
+        TYPES_PACKAGE_VERSION_EXACT_VERSION.has(instance.elemID.typeName) &&
+        !isExactVersion(instanceVersion, targetVersion)
+      ) {
+        return {
+          elemID: instance.elemID.createNestedID('packageVersions', String(index)),
+          severity: 'Warning',
+          message:
+            'Cannot deploy instances with a package version that does not match the version in the target environment',
+          detailedMessage: `${namespace.value.value.fullName}'s version in the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
         }
       }
+      if (isGreaterVersion(instanceVersion, targetVersion)) {
+        return {
+          elemID: instance.elemID.createNestedID('packageVersions', String(index)),
+          severity: 'Warning',
+          message:
+            'Cannot deploy instances with a package version that is greater than the version in the target environment',
+          detailedMessage: `${namespace.value.value.fullName}'s version in the target environment is ${printableVersion(targetVersion)} and ${printableVersion(instanceVersion)} in the instance`,
+        }
+      }
+
       return undefined
     })
     .filter(isDefined)

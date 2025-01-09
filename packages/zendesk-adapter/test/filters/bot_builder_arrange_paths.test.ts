@@ -7,7 +7,7 @@
  */
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ZENDESK, BRAND_TYPE_NAME, BOT_BUILDER_FLOW, BOT_BUILDER_ANSWER, BOT_BUILDER_NODE } from '../../src/constants'
+import { ZENDESK, BRAND_TYPE_NAME, CONVERSATION_BOT, BOT_BUILDER_ANSWER, BOT_BUILDER_NODE } from '../../src/constants'
 import filterCreator from '../../src/filters/bot_builder_arrange_paths'
 import { createFilterCreatorParams } from '../utils'
 
@@ -18,7 +18,7 @@ describe('bot_builder_arrange_paths', () => {
   const brandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
   })
-  const botBuilderFlowType = new ObjectType({ elemID: new ElemID(ZENDESK, BOT_BUILDER_FLOW) })
+  const botBuilderFlowType = new ObjectType({ elemID: new ElemID(ZENDESK, CONVERSATION_BOT) })
   const botBuilderAnswerType = new ObjectType({ elemID: new ElemID(ZENDESK, BOT_BUILDER_ANSWER) })
   const botBuilderNodeType = new ObjectType({ elemID: new ElemID(ZENDESK, BOT_BUILDER_NODE) })
 

@@ -15,17 +15,17 @@ import {
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { BOT_BUILDER, BOT_BUILDER_ANSWER, BOT_BUILDER_FLOW, BOT_BUILDER_NODE, ZENDESK } from '../constants'
+import { BOT_BUILDER_ANSWER, CONVERSATION_BOT, BOT_BUILDER_NODE, ZENDESK } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { RECORDS_PATH } = elementsUtils
 const log = logger(module)
 
 export const UNSORTED = 'unsorted'
-export const BOT_BUILDER_PATH = [ZENDESK, RECORDS_PATH, BOT_BUILDER]
+export const BOT_BUILDER_PATH = [ZENDESK, RECORDS_PATH, CONVERSATION_BOT]
 
 const BOT_BUILDER_ELEMENT_DIRECTORY: Record<string, string> = {
-  [BOT_BUILDER_FLOW]: 'flows',
+  [CONVERSATION_BOT]: 'flows',
   [BOT_BUILDER_ANSWER]: 'answers',
   [BOT_BUILDER_NODE]: 'nodes',
 }
@@ -33,7 +33,7 @@ const BOT_BUILDER_ELEMENT_DIRECTORY: Record<string, string> = {
 const NO_VALUE_DEFAULT = 'unknown'
 
 const ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string> = {
-  [BOT_BUILDER_FLOW]: (instance?: InstanceElement) => instance?.value.name ?? NO_VALUE_DEFAULT,
+  [CONVERSATION_BOT]: (instance?: InstanceElement) => instance?.value.name ?? NO_VALUE_DEFAULT,
   [BOT_BUILDER_ANSWER]: (instance?: InstanceElement) => instance?.value.name ?? NO_VALUE_DEFAULT,
   [BOT_BUILDER_NODE]: (instance?: InstanceElement) => instance?.value.id ?? NO_VALUE_DEFAULT,
 }
@@ -94,7 +94,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const botBuilderFlowInstances = elements
       .filter(isInstanceElement)
-      .filter(inst => inst.elemID.typeName === BOT_BUILDER_FLOW)
+      .filter(inst => inst.elemID.typeName === CONVERSATION_BOT)
 
     botBuilderFlowInstances.forEach(flowInstance => {
       const brandName = flowInstance.value.brandId?.value.value?.name

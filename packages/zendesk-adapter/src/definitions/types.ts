@@ -13,13 +13,8 @@ type PaginationOptions = 'basic_cursor' | 'basic_cursor_with_args' | 'links' | '
 export type ReferenceContextStrategies = 'never'
 export type CustomReferenceSerializationStrategyName = 'never'
 export type CustomIndexField = CustomReferenceSerializationStrategyName
-export type ZendeskFetchOptions = { clientOptions: ClientOptions; paginationOptions: PaginationOptions }
 
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions
   paginationOptions: PaginationOptions
-  additionalAction: AdditionalAction
-  referenceContextStrategies: ReferenceContextStrategies
-  referenceSerializationStrategies: CustomReferenceSerializationStrategyName
-  referenceIndexNames: CustomIndexField
 }

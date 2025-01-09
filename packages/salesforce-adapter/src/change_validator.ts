@@ -5,7 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ChangeValidator } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { buildLazyShallowTypeResolverElementsSource, GetLookupNameFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
@@ -56,6 +57,8 @@ import flowReferencedElements from './change_validators/flow_referenced_elements
 
 const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
 
+const log = logger(module)
+
 type ChangeValidatorCreator = (params: {
   config: SalesforceConfig
   isSandbox: boolean
@@ -70,6 +73,67 @@ export const defaultChangeValidatorsDeployConfig: Record<string, boolean> = {
 export const defaultChangeValidatorsValidateConfig: Record<string, boolean> = {
   dataChange: false,
 }
+
+const isErrorEnabledByValidatorName: Record<ChangeValidatorName, boolean> = {
+  managedPackage: true,
+  picklistStandardField: true,
+  customObjectInstances: true,
+  customFieldType: true,
+  standardFieldLabel: true,
+  mapKeys: true,
+  defaultRules: true,
+  picklistPromote: true,
+  cpqValidator: true,
+  recordTypeDeletion: true,
+  flowsValidator: true,
+  fullNameChangedValidator: true,
+  invalidListViewFilterScope: true,
+  caseAssignmentRulesValidator: true,
+  omitData: true,
+  dataChange: true,
+  unknownUser: true,
+  animationRuleRecordType: true,
+  duplicateRulesSortOrder: true,
+  currencyIsoCodes: true,
+  lastLayoutRemoval: true,
+  accountSettings: true,
+  unknownPicklistValues: true,
+  installedPackages: true,
+  dataCategoryGroup: true,
+  standardFieldOrObjectAdditionsOrDeletions: true,
+  deletedNonQueryableFields: true,
+  instanceWithUnknownType: true,
+  artificialTypes: true,
+  metadataTypes: true,
+  taskOrEventFieldsModifications: true,
+  newFieldsAndObjectsFLS: true,
+  elementApiVersion: true,
+  cpqBillingStartDate: true,
+  cpqBillingTriggers: true,
+  managedApexComponent: true,
+  orderedMaps: true,
+  layoutDuplicateFields: true,
+  customApplications: true,
+  flowReferencedElements: true,
+}
+
+const wrapChangeValidatorWithIsErrorEnabled = (
+  changeValidator: ChangeValidator,
+  changeValidatorName: ChangeValidatorName,
+): ChangeValidator =>
+  isErrorEnabledByValidatorName[changeValidatorName]
+    ? async (...args) => {
+        const errors = (await changeValidator(...args)).filter(error => error.severity === 'Error')
+        if (errors.length === 0) {
+          return errors
+        }
+        log.debug('Converting ChangeValidator %s errors to Warnings', changeValidatorName)
+        return errors.map<ChangeError>(error => ({
+          ...error,
+          severity: 'Warning',
+        }))
+      }
+    : changeValidator
 
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
   managedPackage: () => packageValidator,
@@ -134,8 +198,11 @@ const createSalesforceChangeValidator = ({
   const fetchProfile = buildFetchProfile({ fetchParams: config.fetch ?? {} })
   const getLookupNameFunc: GetLookupNameFunc = getLookUpName(fetchProfile)
   const changeValidator = createChangeValidator({
-    validators: _.mapValues(changeValidators, validator =>
-      validator({ config, isSandbox, client, fetchProfile, getLookupNameFunc }),
+    validators: _.mapValues(changeValidators, (validator, validatorName) =>
+      wrapChangeValidatorWithIsErrorEnabled(
+        validator({ config, isSandbox, client, fetchProfile, getLookupNameFunc }),
+        validatorName as ChangeValidatorName,
+      ),
     ),
     validatorsActivationConfig: {
       ...defaultValidatorsActivationConfig,

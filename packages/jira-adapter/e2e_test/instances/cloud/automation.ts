@@ -236,10 +236,11 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
                 bcc: [],
                 subject: 'Test',
                 body: new StaticFile({
-                  filepath: `${JIRA}/${AUTOMATION_TYPE}/${name}.components.0.children.0.children.0.value.html`,
+                  filepath: `${JIRA}/${AUTOMATION_TYPE}/${name}.components.3.children.0.children.0.value.html`,
                   content: fs.readFileSync(
                     path.resolve(`${__dirname}/../../../e2e_test/stringStaticFiles/testRule1.html`),
                   ),
+                  encoding: 'utf8',
                 }),
                 mimeType: 'text/html',
                 convertLineBreaks: true,
@@ -255,7 +256,7 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
               value: {
                 conditions: [
                   {
-                    field: 'jira.Field.instance.Reporter__user',
+                    field: 'reporter',
                     check: 'USER_IS',
                     criteria: [
                       {
@@ -298,10 +299,11 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
                 bcc: [],
                 subject: 'Test1',
                 body: new StaticFile({
-                  filepath: `${JIRA}/${AUTOMATION_TYPE}/${name}.components.0.children.1.children.0.value.html`,
+                  filepath: `${JIRA}/${AUTOMATION_TYPE}/${name}.components.3.children.1.children.0.value.html`,
                   content: fs.readFileSync(
                     path.resolve(`${__dirname}/../../../e2e_test/stringStaticFiles/testRule2.html`),
                   ),
+                  encoding: 'utf8',
                 }),
                 mimeType: 'text/html',
                 convertLineBreaks: true,

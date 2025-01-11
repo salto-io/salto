@@ -432,6 +432,7 @@ export const syncWorkspaceToFolder = ({
 type UpdateElementFolderArgs = {
   workspace: Workspace
   baseDir: string
+  toWorkspace?: Workspace
   accountName: string
   changes: ReadonlyArray<Change>
   adapterCreators: Record<string, Adapter>
@@ -445,6 +446,7 @@ export type UpdateElementFolderResult = {
 export const updateElementFolder = ({
   workspace,
   baseDir,
+  toWorkspace,
   changes,
   accountName,
   adapterCreators,
@@ -469,7 +471,7 @@ export const updateElementFolder = ({
           ],
         }
       }
-      return dumpElementsToFolder({
+      const { errors, unappliedChanges } = await dumpElementsToFolder({
         baseDir,
         changes: await filterHiddenChanges(
           await resolveChanges(changes, adapterContext.elementsSource),
@@ -477,6 +479,14 @@ export const updateElementFolder = ({
         ),
         elementsSource: adapterContext.elementsSource,
       })
+
+      if (toWorkspace) {
+        log.debug('Updating nacl files with the %d unapplied changes', unappliedChanges.length)
+        await toWorkspace.updateNaclFiles(unappliedChanges.map(change => getDetailedChanges(change)).flat())
+        await toWorkspace.flush()
+      }
+
+      return { errors, unappliedChanges: toWorkspace ? [] : unappliedChanges }
     },
     'updateElementFolder %s',
     baseDir,

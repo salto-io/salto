@@ -90,7 +90,7 @@ describe('deployChanges', () => {
               requestsByAction: {
                 customizations: {},
               },
-              toActionNames: ({ change }) => {
+              toActionNames: async ({ change }) => {
                 if (change.action === 'add') {
                   return ['add', 'activate']
                 }

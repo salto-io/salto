@@ -34,6 +34,7 @@ import {
   updateElementFolder,
   UpdateElementFolderResult,
 } from '../../src/core/adapter_format'
+import { FetchResult } from '../../src/types'
 
 const { awu } = collections.asynciterable
 
@@ -237,6 +238,10 @@ describe('calculatePatch', () => {
   const instanceNacl = instanceState.clone()
   instanceNacl.value.f = 'v2'
 
+  const instance1 = new InstanceElement('instance1', type, { f: 'v' })
+  const instance2 = new InstanceElement('instance2', type, { f: 'v' })
+  const instance3 = new InstanceElement('instance3', type, { f: 'v' })
+
   let mockAdapter: ReturnType<typeof createMockAdapter>
   let workspace: Workspace
   beforeEach(() => {
@@ -244,8 +249,8 @@ describe('calculatePatch', () => {
     mockAdapterCreator[mockAdapterName] = mockAdapter
 
     workspace = mockWorkspace({
-      elements: [type, instanceWithHidden, instanceNacl],
-      elementsWithoutHidden: [type, instance, instanceNacl],
+      elements: [type, instanceWithHidden, instanceNacl, instance1, instance2, instance3],
+      elementsWithoutHidden: [type, instance, instanceNacl, instance1, instance2, instance3],
       stateElements: [type, instanceWithHidden, instanceState],
       name: 'workspace',
       accounts: [mockAdapterName],
@@ -260,7 +265,7 @@ describe('calculatePatch', () => {
     it('should return the changes with no errors', async () => {
       const afterModifyInstance = instance.clone()
       afterModifyInstance.value.f = 'v3'
-      const afterNewInstance = new InstanceElement('instance2', type, { f: 'v' })
+      const afterNewInstance = new InstanceElement('instanceNew', type, { f: 'v' })
       const beforeElements = [instance]
       const afterElements = [afterModifyInstance, afterNewInstance]
       mockAdapter.adapterFormat.loadElementsFromFolder
@@ -278,6 +283,121 @@ describe('calculatePatch', () => {
       expect(res.mergeErrors).toHaveLength(0)
       expect(res.changes).toHaveLength(2)
       expect(res.partiallyFetchedAccounts).toEqual(new Set(['mock']))
+    })
+  })
+
+  describe('when there is a difference between the folders and workspaces', () => {
+    let res: FetchResult
+
+    const afterModifyInstance = instance.clone()
+    afterModifyInstance.value.f = 'v3'
+    const afterNewInstance = new InstanceElement('instanceNew', type, { f: 'v' })
+
+    const beforeWorkspaceInstance = instance1.clone()
+    const afterWorkspaceInstance = beforeWorkspaceInstance.clone()
+    afterWorkspaceInstance.value.f = 'v2'
+    const newWorkspaceInstance = new InstanceElement('instanceNewWorkspace', type, { f: 'v' })
+
+    const beforeMovedFromFolderInstance = instance2.clone()
+    const afterMovedToWorkspaceInstance = beforeMovedFromFolderInstance.clone()
+    afterMovedToWorkspaceInstance.value.f = 'toWorkspace'
+
+    const beforeMovedFromWorkspaceInstance = instance3.clone()
+    const afterMovedToFolderInstance = beforeMovedFromWorkspaceInstance.clone()
+    afterMovedToFolderInstance.value.f = 'toFolder'
+
+    beforeEach(async () => {
+      const beforeElements = [instance, beforeMovedFromFolderInstance]
+      const afterElements = [afterModifyInstance, afterNewInstance, afterMovedToFolderInstance]
+
+      const beforeWorkspaceElements = [beforeWorkspaceInstance, beforeMovedFromWorkspaceInstance]
+      const afterWorkspaceElements = [afterWorkspaceInstance, newWorkspaceInstance, afterMovedToWorkspaceInstance]
+      const beforeWorkspace = mockWorkspace({
+        elements: beforeWorkspaceElements,
+        name: 'workspace',
+        accounts: [mockAdapterName],
+        accountToServiceName: { [mockAdapterName]: mockAdapterName },
+      })
+      const afterWorkspace = mockWorkspace({
+        elements: afterWorkspaceElements,
+        name: 'workspace',
+        accounts: [mockAdapterName],
+        accountToServiceName: { [mockAdapterName]: mockAdapterName },
+      })
+
+      mockAdapter.adapterFormat.loadElementsFromFolder
+        .mockResolvedValueOnce({ elements: beforeElements })
+        .mockResolvedValueOnce({ elements: afterElements })
+      res = await calculatePatch({
+        workspace,
+        fromDir: 'before',
+        fromWorkspace: beforeWorkspace,
+        toDir: 'after',
+        toWorkspace: afterWorkspace,
+        accountName: mockAdapterName,
+        adapterCreators: mockAdapterCreator,
+      })
+    })
+    it('should return success', () => {
+      expect(res.success).toBeTruthy()
+    })
+
+    it('should return no errors', () => {
+      expect(res.fetchErrors).toHaveLength(0)
+      expect(res.mergeErrors).toHaveLength(0)
+    })
+
+    it('should return changes between elements in the folders', () => {
+      expect(res.changes.map(change => change.change)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: 'modify',
+            id: afterModifyInstance.elemID.createNestedID('f'),
+          }),
+          expect.objectContaining({
+            action: 'add',
+            id: afterNewInstance.elemID,
+          }),
+        ]),
+      )
+    })
+    it('should return changes between elements in the workspaces', () => {
+      expect(res.changes.map(change => change.change)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: 'modify',
+            data: { after: 'v2', before: 'v' },
+            id: beforeWorkspaceInstance.elemID.createNestedID('f'),
+          }),
+          expect.objectContaining({
+            action: 'add',
+            id: newWorkspaceInstance.elemID,
+          }),
+        ]),
+      )
+    })
+
+    it('should return changes between elements in folder before and workspace after', () => {
+      expect(res.changes.map(change => change.change)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: 'modify',
+            data: { after: 'toWorkspace', before: 'v' },
+            id: beforeMovedFromFolderInstance.elemID.createNestedID('f'),
+          }),
+        ]),
+      )
+    })
+    it('should return changes between elements in workspace before and folder after', () => {
+      expect(res.changes.map(change => change.change)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: 'modify',
+            data: { after: 'toFolder', before: 'v' },
+            id: beforeMovedFromWorkspaceInstance.elemID.createNestedID('f'),
+          }),
+        ]),
+      )
     })
   })
 

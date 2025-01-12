@@ -45,6 +45,8 @@ describe('apply-patch command', () => {
   let baseElements: Element[]
   let cliCommandArgs: mocks.MockCommandArgs
   beforeEach(async () => {
+    jest.resetAllMocks()
+
     baseElements = mocks.elements()
     await updateElementsWithAlternativeAccount(baseElements, 'salesforce', 'salto')
 
@@ -114,6 +116,105 @@ describe('apply-patch command', () => {
       const instFromState = await workspace.state('env1').get(updatedInstance.elemID)
       expect(instFromState.value).toEqual(originalInstance.value)
       expect(await workspace.state('env1').has(newInstance.elemID)).toBeFalsy()
+    })
+  })
+  describe('when there are nacl workspaces provided with the folders', () => {
+    let exitCode: CliExitCode
+    let originalInstance: InstanceElement
+    let updatedInstance: InstanceElement
+    let newInstance: InstanceElement
+    let mockToWorkspace: mocks.MockWorkspace
+    let mockFromWorkspace: mocks.MockWorkspace
+
+    beforeEach(async () => {
+      const type = baseElements[3] as ObjectType
+      originalInstance = baseElements[4] as InstanceElement
+      updatedInstance = originalInstance.clone()
+      updatedInstance.value.newVal = 'asd'
+      newInstance = new InstanceElement('new', type, { val: 1 }, ['path'])
+      const modifyInstanceChanges = detailedCompare(originalInstance, updatedInstance)
+      const baseChange = toChange({ after: newInstance })
+      const additionChange = {
+        ...baseChange,
+        id: newInstance.elemID,
+        baseChange,
+      }
+      mockCalculatePatch.mockResolvedValue({
+        changes: [
+          ...modifyInstanceChanges.map(c => ({ change: c, serviceChanges: [c] })),
+          { change: additionChange, serviceChanges: [additionChange] },
+        ],
+        mergeErrors: [],
+        fetchErrors: [],
+        success: true,
+        updatedConfig: {},
+        partiallyFetchedAccounts: new Set(['salesforce']),
+      })
+
+      mockFromWorkspace = mocks.mockWorkspace({})
+      mockToWorkspace = mocks.mockWorkspace({})
+      mockLoadLocalWorkspace.mockResolvedValueOnce(mockToWorkspace).mockResolvedValueOnce(mockFromWorkspace)
+
+      exitCode = await applyPatchAction({
+        ...cliCommandArgs,
+        input: {
+          fromDir: 'a',
+          fromWorkspaceDir: 'aWorkspaceDir',
+          toDir: 'b',
+          toWorkspaceDir: 'bWorkspaceDir',
+          targetEnvs: ['env1', 'env2'],
+          accountName: 'salesforce',
+          mode: 'default',
+        },
+        workspace,
+      })
+    })
+    it('should pass loaded workspaces to calculatePath', () => {
+      expect(mockCalculatePatch).toHaveBeenCalledWith(
+        expect.objectContaining({ fromWorkspace: mockFromWorkspace, toWorkspace: mockToWorkspace }),
+      )
+    })
+    it('should flush the workspace and succeed', () => {
+      expect(workspace.flush).toHaveBeenCalled()
+      expect(exitCode).toEqual(CliExitCode.Success)
+    })
+  })
+  describe('when there are nacl invalid workspaces provieded with the folders', () => {
+    it('should fail if first workspace is invalid', async () => {
+      mockLoadLocalWorkspace.mockRejectedValueOnce(new Error('Error!'))
+      const exitCode = await applyPatchAction({
+        ...cliCommandArgs,
+        input: {
+          fromDir: 'a',
+          fromWorkspaceDir: 'aWorkspaceDir',
+          toDir: 'b',
+          toWorkspaceDir: 'bWorkspaceDir',
+          targetEnvs: ['env1', 'env2'],
+          accountName: 'salesforce',
+          mode: 'default',
+        },
+        workspace,
+      })
+      expect(exitCode).toEqual(CliExitCode.AppError)
+      expect(workspace.flush).not.toHaveBeenCalled()
+    })
+    it('should fail if second workspace is invalid', async () => {
+      mockLoadLocalWorkspace.mockRejectedValueOnce(new Error('Error!')).mockResolvedValueOnce(mocks.mockWorkspace({}))
+      const exitCode = await applyPatchAction({
+        ...cliCommandArgs,
+        input: {
+          fromDir: 'a',
+          fromWorkspaceDir: 'aWorkspaceDir',
+          toDir: 'b',
+          toWorkspaceDir: 'bWorkspaceDir',
+          targetEnvs: ['env1', 'env2'],
+          accountName: 'salesforce',
+          mode: 'default',
+        },
+        workspace,
+      })
+      expect(exitCode).toEqual(CliExitCode.AppError)
+      expect(workspace.flush).not.toHaveBeenCalled()
     })
   })
   describe('when there is no difference between the folders', () => {

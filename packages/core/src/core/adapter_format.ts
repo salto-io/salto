@@ -248,12 +248,16 @@ const resolveChanges = async (
 type CalculatePatchArgs = {
   fromDir: string
   toDir: string
+  fromWorkspace?: Workspace
+  toWorkspace?: Workspace
 } & GetAdapterAndContextArgs
 
 export const calculatePatch = async ({
   workspace,
   fromDir,
+  fromWorkspace,
   toDir,
+  toWorkspace,
   accountName,
   ignoreStateElemIdMapping,
   ignoreStateElemIdMappingForSelectors,
@@ -303,10 +307,17 @@ export const calculatePatch = async ({
       partiallyFetchedAccounts,
     }
   }
+
+  const beforeWorkspaceElements = fromWorkspace ? await getResolvedWorkspaceElements(fromWorkspace) : []
+  const afterWorkspaceElements = toWorkspace ? await getResolvedWorkspaceElements(toWorkspace) : []
+
   const { changes } = await calcFetchChanges({
-    accountElements: afterElements,
-    mergedAccountElements: mergedAfterElements,
-    stateElements: elementSource.createInMemoryElementSource(mergedBeforeElements),
+    // We are passing the merged elements as accountElements, which will not propogate correctly
+    // changes with elements in multiple files. To resolve that we need to calculate the non-merged changes
+    // like in fetchFromWorkspace, but it is not a realistic use-case so we are skipping it for now.
+    accountElements: afterElements.concat(afterWorkspaceElements),
+    mergedAccountElements: mergedAfterElements.concat(afterWorkspaceElements),
+    stateElements: elementSource.createInMemoryElementSource(mergedBeforeElements.concat(beforeWorkspaceElements)),
     workspaceElements: await workspace.elements(false),
     partiallyFetchedAccounts: new Map([[accountName, {}]]),
     allFetchedAccounts: new Set([accountName]),

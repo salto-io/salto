@@ -188,7 +188,7 @@ export const DEPLOY_ERROR_MESSAGE_MAPPER: DeployErrorMessageMappers = {
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION]: {
     test: (errorMessage: string) =>
       errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION),
-    map: (errorMessage: string) => withSalesforceError(errorMessage, FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE),
+    map: () => FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE,
   },
 }
 
@@ -213,6 +213,8 @@ export const getUserFriendlyDeployErrorMessage = (errorMessage: string): string 
   log.debug('Replacing error %s message to %s. Original error: %o', mapperName, userFriendlyMessage, errorMessage)
   return userFriendlyMessage
 }
+
+// Deploy Error message enrichment
 
 type ValidationRule = InstanceElement & {
   value: InstanceElement['value'] & {
@@ -264,14 +266,14 @@ export const enrichSaltoDeployErrors = async (
           ? error
           : {
               ...error,
-              message: `${indexToValidationRulesMessages[index]
+              detailedMessage: `${indexToValidationRulesMessages[index]
                 .map(
                   validationRuleMessage =>
-                    `${validationRuleMessage}\n${getValidationRulesUrl(
+                    `${validationRuleMessage}:${getValidationRulesUrl(
                       validationRulesIndex.get(validationRuleMessage) ?? [],
                     )}`,
                 )
-                .join('\n\n')}`,
+                .join('\n')}`,
             },
       )
       return acc

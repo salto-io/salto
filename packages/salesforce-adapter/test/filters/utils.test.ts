@@ -62,6 +62,7 @@ import {
   getMetadataIncludeFromFetchTargets,
   isOrderedMapTypeOrRefType,
   isCustomMetadataRecordInstanceSync,
+  metadataTypeOrUndefined,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -88,6 +89,8 @@ import {
   CUSTOM_OBJECTS_LOOKUPS_FIELD,
   ORDERED_MAP_PREFIX,
   METADATA_TYPES_FIELD,
+  APEX_CLASS_METADATA_TYPE,
+  CUSTOM_FIELD,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomField, CustomObject, CustomPicklistValue, FilterItem } from '../../src/client/types'
@@ -1615,6 +1618,33 @@ describe('filter utils', () => {
     })
     it('should return false for non customMetadataRecordType', async () => {
       expect(isCustomMetadataRecordInstanceSync(profileInstance)).toBeFalse()
+    })
+  })
+  describe('metadataTypeOrUndefined', () => {
+    describe('when Element is a Metadata Type', () => {
+      it('should return the metadata type of the Element', () => {
+        expect(metadataTypeOrUndefined(mockTypes.ApexClass)).toEqual(APEX_CLASS_METADATA_TYPE)
+      })
+    })
+    describe('when Element is a Metadata Instance', () => {
+      it('should return the metadata type of the Element', () => {
+        expect(metadataTypeOrUndefined(mockInstances().ApexClass)).toEqual(APEX_CLASS_METADATA_TYPE)
+      })
+    })
+    describe('when Element is a CustomObject', () => {
+      it('should return CustomObject', () => {
+        expect(metadataTypeOrUndefined(mockTypes.Account)).toEqual(CUSTOM_OBJECT)
+      })
+    })
+    describe('when Element is a CustomField', () => {
+      it('should return CustomField', () => {
+        expect(metadataTypeOrUndefined(mockTypes.Account.fields.Name)).toEqual(CUSTOM_FIELD)
+      })
+    })
+    describe('when Element is not a Metadata Type', () => {
+      it('should return undefined', () => {
+        expect(metadataTypeOrUndefined(ArtificialTypes.FetchTargets)).toBeUndefined()
+      })
     })
   })
 })

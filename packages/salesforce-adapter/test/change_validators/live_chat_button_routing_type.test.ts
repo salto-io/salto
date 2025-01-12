@@ -48,7 +48,7 @@ describe('live chat button routing type change validator', () => {
         elemID: liveChatButton.elemID,
         severity: 'Warning',
         message: 'Salesforce does not support LiveChatButton with routingType "Omni-Channel"',
-        detailedMessage: `Cannot deploy LiveChatButton with routingType set to "Omni-Channel" because Salesforce does not support them: https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_livechatbutton.htm?_ga=2.198568300.2106099414.1736670790-665087354.1736070429#:~:text=Chats%20routed%20with%20Omni%2DChannel%20aren%E2%80%99t%20supported%20in%20the%20Metadata%20API. To proceed with deployment, update the routingType to a value other than "Omni-Channel" before deploying, here:${liveChatButton.annotations[CORE_ANNOTATIONS.SERVICE_URL]}. After deployment, you can change it back to "Omni-Channel" if required.`,
+        detailedMessage: `Cannot deploy LiveChatButton with routingType set to "Omni-Channel" because [Salesforce does not support them](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_livechatbutton.htm?_ga=2.198568300.2106099414.1736670790-665087354.1736070429#:~:text=Chats%20routed%20with%20Omni%2DChannel%20aren%E2%80%99t%20supported%20in%20the%20Metadata%20API). To proceed with deployment, before deploying change the routingType to a value other than "Omni-Channel", [here](${liveChatButton.annotations[CORE_ANNOTATIONS.SERVICE_URL]}). After deployment, you can change it back to "Omni-Channel" if required.`,
       }
       expect(errors[0]).toEqual(expected)
     })

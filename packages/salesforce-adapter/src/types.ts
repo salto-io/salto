@@ -153,6 +153,7 @@ const CHANGE_VALIDATORS = [
   'standardFieldLabel',
   'mapKeys',
   'defaultRules',
+  'packageVersion',
   'picklistPromote',
   'cpqValidator',
   'recordTypeDeletion',

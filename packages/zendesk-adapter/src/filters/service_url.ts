@@ -8,11 +8,9 @@
 import { filters } from '@salto-io/adapter-components'
 import { FilterAdditionalParams, FilterCreator, FilterResult } from '../filter'
 import { ZendeskUserConfig } from '../user_config'
-import { ZendeskFetchOptions } from '../definitions/types'
+import { Options } from '../definitions/types'
 
 const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<ZendeskUserConfig, FilterResult, FilterAdditionalParams, ZendeskFetchOptions>()(
-    params,
-  )
+  filters.serviceUrlFilterCreator<ZendeskUserConfig, FilterResult, FilterAdditionalParams, Options>()(params)
 
 export default filter

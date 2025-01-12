@@ -57,7 +57,7 @@ import {
 } from './config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
-  BOT_BUILDER_FLOW,
+  CONVERSATION_BOT,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
@@ -162,7 +162,7 @@ import customObjectFieldOptionsFilter from './filters/custom_field_options/custo
 import botBuilderArrangePaths from './filters/bot_builder_arrange_paths'
 import { createFixElementFunctions } from './fix_elements'
 import guideThemeSettingFilter from './filters/guide_theme_settings'
-import { ZendeskFetchOptions } from './definitions/types'
+import { Options } from './definitions/types'
 import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
@@ -374,7 +374,7 @@ const getGuideElements = async ({
 }: {
   brandsList: InstanceElement[]
   brandToPaginator: Record<string, clientUtils.Paginator>
-  brandFetchDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
+  brandFetchDefinitions: definitionsUtils.RequiredDefinitions<Options>
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
@@ -485,19 +485,17 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
-  private adapterDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
-  private fetchSupportDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
+  private adapterDefinitions: definitionsUtils.RequiredDefinitions<Options>
+  private fetchSupportDefinitions: definitionsUtils.RequiredDefinitions<Options>
   private accountName?: string
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
     brandIdToClient,
-    definitions,
   }: {
     filterRunnerClient?: ZendeskClient
     paginator?: clientUtils.Paginator
     brandIdToClient?: BrandIdToClient
-    definitions?: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
   }) => Promise<Required<Filter>>
 
   public constructor({
@@ -573,7 +571,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
     const fetchConfig = this.userConfig[FETCH_CONFIG]
     if (fetchConfig.fetchBotBuilder === false) {
-      fetchConfig.exclude.push({ type: BOT_BUILDER_FLOW })
+      fetchConfig.exclude.push({ type: CONVERSATION_BOT })
     }
     this.fetchQuery = elementUtils.query.createElementQuery(fetchConfig, fetchCriteria)
 
@@ -725,19 +723,21 @@ export default class ZendeskAdapter implements AdapterOperations {
         'brand',
       ])
       this.guideClient = new ZendeskGuideClient(brandClients)
-      const client = createClientDefinitions({
-        main: this.client,
-        guide: this.guideClient,
-      })
       const guideFetchDef = definitionsUtils.mergeWithUserElemIDDefinitions({
         userElemID: _.pick(this.userConfig.fetch.elemID, typesToPick) as ZendeskFetchConfig['elemID'],
         fetchConfig: createFetchDefinitions({ typesToPick, baseUrl: this.client.getUrl().href }),
       })
-      const guideDefinitions = {
-        clients: client,
-        pagination: PAGINATION,
-        fetch: guideFetchDef,
-      }
+      const guideDefinitions = definitionsUtils.mergeDefinitionsWithOverrides(
+        {
+          clients: createClientDefinitions({
+            main: this.client,
+            guide: this.guideClient,
+          }),
+          pagination: PAGINATION,
+          fetch: guideFetchDef,
+        },
+        this.accountName,
+      )
 
       const zendeskGuideElements = await getGuideElements({
         brandsList,

@@ -70,7 +70,6 @@ fragment SubflowFields on SubflowType {
   }
   nodes {
     ...NodeWithAuxiliaryData
-    __typename
   }
 }
 
@@ -81,7 +80,6 @@ fragment NodeWithAuxiliaryData on NodeType {
   targetType
   data
   version
-  __typename
 }
 
 fragment ProactiveCampaignFields on ProactiveCampaignType {

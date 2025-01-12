@@ -17,14 +17,14 @@ import ZendeskClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
 import { FilterCreator } from '../src/filter'
 import { createClientDefinitions, createFetchDefinitions } from '../src/definitions'
-import { ZendeskFetchOptions } from '../src/definitions/types'
+import { Options } from '../src/definitions/types'
 import { PAGINATION } from '../src/definitions/requests/pagination'
 
 export const createDefinitions = ({
   client,
 }: {
   client: ZendeskClient
-}): definitionsUtils.RequiredDefinitions<ZendeskFetchOptions> => ({
+}): definitionsUtils.RequiredDefinitions<Options> => ({
   clients: createClientDefinitions({ main: client, guide: client }),
   pagination: PAGINATION,
   fetch: createFetchDefinitions({ baseUrl: client.getUrl().href }),

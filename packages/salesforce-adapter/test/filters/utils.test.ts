@@ -87,6 +87,7 @@ import {
   CUSTOM_OBJECTS_FIELD,
   CUSTOM_OBJECTS_LOOKUPS_FIELD,
   ORDERED_MAP_PREFIX,
+  METADATA_TYPES_FIELD,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomField, CustomObject, CustomPicklistValue, FilterItem } from '../../src/client/types'
@@ -1495,9 +1496,10 @@ describe('filter utils', () => {
         })
       })
     })
-    describe('when Custom Objects Targets are valid in the organization settings instance', () => {
+    describe('when FetchTargets instance is valid', () => {
       beforeEach(() => {
         const fetchTargets = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
+          [METADATA_TYPES_FIELD]: ['ApexClass', 'Role', 'CustomObject'],
           [CUSTOM_OBJECTS_FIELD]: ['Account', 'Contact'],
           [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
             Account: ['Contact'],
@@ -1507,7 +1509,7 @@ describe('filter utils', () => {
       })
       it('should return correct fetch targets', async () => {
         expect(await getAccountFetchTargets({ elementsSource, accountName: SALESFORCE })).toEqual({
-          metadataTypes: SUPPORTED_METADATA_TYPES,
+          metadataTypes: ['ApexClass', 'Role', 'CustomObject'],
           customObjects: ['Account', 'Contact'],
           customObjectsLookups: { Account: ['Contact'] },
         })
@@ -1518,6 +1520,7 @@ describe('filter utils', () => {
     let elementsSource: ReadOnlyElementsSource
     beforeEach(() => {
       const fetchTargets = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
+        [METADATA_TYPES_FIELD]: ['ApexClass', 'Role', 'CustomObject'],
         [CUSTOM_OBJECTS_FIELD]: ['Account', 'Contact', 'Product2', 'User'],
         [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
           Account: ['Product2'],

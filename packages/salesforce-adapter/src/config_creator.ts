@@ -238,6 +238,8 @@ export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   let config = (await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)).clone()
   if (options === undefined || !createOptionsTypeGuard<SalesforceConfigOptionsType>(optionsElemId)(options)) {
+    const excludeSection = config.value?.fetch?.metadata?.exclude
+    config.value.fetch.metadata.exclude = [...excludeSection, ...excludeProfiles, ...excludePermissionSets]
     return config
   }
   if (options.value.cpq === true || options.value.managedPackages?.includes(CPQ_MANAGED_PACKAGE)) {

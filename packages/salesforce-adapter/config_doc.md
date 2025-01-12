@@ -338,6 +338,7 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | standardFieldLabel           | true                   | Disallow changing a label of a standard field                                              |
 | mapKeys                      | true                   | Ensure proper structure of profiles before deploying                                       |
 | defaults_rules               | true                   | Check for default rules violations such as multiple defaults, no default etc.              |
+| package_version              | true                   | Check if the deployed instance's package-version is the same as the target environment     |
 | picklistPromote              | true                   | Disallow promoting picklist value-set to global since it cannot be done with the API       |
 | dataCategoryGroup            | true                   | Warn when deploying additions or changes to DataCategoryGroup elements                     |
 | installedPackages            | true                   | Disallow any changes on metadata instances of type InstalledPackage.                       |

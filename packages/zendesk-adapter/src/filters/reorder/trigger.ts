@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -92,7 +92,7 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
 /**
  * Add trigger order element with all the triggers ordered
  */
-const filterCreator: FilterCreator = ({ config, client, paginator, fetchQuery, elementsSource }) => ({
+const filterCreator: FilterCreator = args => ({
   name: 'triggerOrderFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     const orderTypeName = createOrderTypeName(TRIGGER_TYPE_NAME)
@@ -170,7 +170,7 @@ const filterCreator: FilterCreator = ({ config, client, paginator, fetchQuery, e
     orderFieldName: 'order',
     deployFunc,
     activeFieldName: 'active',
-  })({ client, config, paginator, fetchQuery, elementsSource }).deploy,
+  })(args).deploy,
 })
 
 export default filterCreator

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -70,7 +70,7 @@ const needToOmit = (change: Change<InstanceElement>, languageSettingsByIds: Reco
  * we transform the change to a modification change and deploy it in this way.
  * The rest of the translations will be deployed in the default deploy filter.
  */
-const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, elementSource }) => ({
   name: 'guideTranslationFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const translationInstances = changes.filter(change =>
@@ -86,9 +86,9 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
         leftoverChanges: changes,
       }
     }
-    const guideLanguageSettingsInstances = await awu(await elementsSource.list())
+    const guideLanguageSettingsInstances = await awu(await elementSource.list())
       .filter(id => id.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
-      .map(async id => elementsSource.get(id))
+      .map(async id => elementSource.get(id))
       .toArray()
     log.debug(`there are ${guideLanguageSettingsInstances.length} guide language setting instances`)
     const languageSettingsByIds = _.keyBy(guideLanguageSettingsInstances, instance => instance.elemID.name)
@@ -112,7 +112,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     const articleTranslationDeployResult = await deployChanges(
       defaultArticleTranslationModificationChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions)
+        await deployChange(change, client, oldApiDefinitions)
       },
     )
     const successfulModificationDeployChangesSet = new Set(

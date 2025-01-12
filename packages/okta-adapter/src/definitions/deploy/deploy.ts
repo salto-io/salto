@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -50,11 +50,15 @@ import {
   ROLE_TYPE_NAME,
   APP_PROVISIONING_FIELD_NAMES,
   USER_ROLES_TYPE_NAME,
+  API_SCOPES_FIELD_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
   createDeployAppPolicyRequests,
+  getIssuerField,
+  getOAuth2ScopeConsentGrantIdFromSharedContext,
   getSubdomainFromElementsSource,
+  GRANTS_CHANGE_ID_FIELDS,
   isInactiveCustomAppChange,
 } from './types/application'
 import { isActivationChange, isDeactivationChange } from './utils/status'
@@ -138,7 +142,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      toActionNames: async ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [
         {
           first: 'add',
@@ -299,7 +303,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: changeContext => {
+      toActionNames: async changeContext => {
         const { change } = changeContext
         if (isRemovalChange(change) && getChangeData(change).value.status !== INACTIVE_STATUS) {
           return ['deactivate', 'remove']
@@ -390,7 +394,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: changeContext => {
+      toActionNames: async changeContext => {
         // NetworkZone works like other "simple status" types, except it must
         // be deactivated before removal.
         const { change } = changeContext
@@ -436,7 +440,14 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     }),
                 },
                 transformation: {
-                  omit: [ID_FIELD, LINKS_FIELD, CUSTOM_NAME_FIELD, ...APP_POLICIES],
+                  omit: [
+                    ID_FIELD,
+                    LINKS_FIELD,
+                    CUSTOM_NAME_FIELD,
+                    ...APP_POLICIES,
+                    ...APP_PROVISIONING_FIELD_NAMES,
+                    API_SCOPES_FIELD_NAME,
+                  ],
                 },
               },
               copyFromResponse: {
@@ -463,7 +474,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 skipIfIdentical: true,
                 transformForCheck: {
-                  omit: [...APP_POLICIES, ...APP_PROVISIONING_FIELD_NAMES],
+                  omit: [...APP_POLICIES, ...APP_PROVISIONING_FIELD_NAMES, API_SCOPES_FIELD_NAME],
                 },
               },
               request: {
@@ -492,6 +503,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                           CUSTOM_NAME_FIELD,
                           ...APP_POLICIES,
                           ...APP_PROVISIONING_FIELD_NAMES,
+                          API_SCOPES_FIELD_NAME,
                         ]),
                       },
                     }
@@ -586,8 +598,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           typeName: 'ApplicationProvisioningGeneral',
           changeIdFields: [],
         },
+        {
+          fieldPath: [API_SCOPES_FIELD_NAME],
+          typeName: 'OAuth2ScopeConsentGrant',
+          changeIdFields: GRANTS_CHANGE_ID_FIELDS,
+        },
       ],
-      toActionNames: ({ change }) => {
+      toActionNames: async ({ change }) => {
         if (isRemovalChange(change)) {
           return ['deactivate', 'remove']
         }
@@ -649,7 +666,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => {
+      toActionNames: async ({ change }) => {
         if (isAdditionChange(change)) {
           return ['add', 'modify']
         }
@@ -688,7 +705,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => {
+      toActionNames: async ({ change }) => {
         if (isAdditionChange(change)) {
           return ['add', 'modify']
         }
@@ -738,7 +755,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => {
+      toActionNames: async ({ change }) => {
         if (isAdditionChange(change)) {
           return ['add', 'modify']
         }
@@ -867,7 +884,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      toActionNames: async ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
     [SIGN_IN_PAGE_TYPE_NAME]: {
@@ -1171,6 +1188,39 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    OAuth2ScopeConsentGrant: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/apps/{parent_id}/grants', method: 'post' },
+                transformation: {
+                  adjust: async ({ value, context }) => {
+                    validatePlainObject(value, 'OAuth2ScopeConsentGrant')
+                    const domain = await getIssuerField(context.elementSource)
+                    return {
+                      value: {
+                        ...value,
+                        issuer: domain,
+                      },
+                    }
+                  },
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/apps/{parent_id}/grants/{id}', method: 'delete' },
+                context: getOAuth2ScopeConsentGrantIdFromSharedContext,
+              },
+            },
+          ],
+        },
+      },
+    },
     [IDENTITY_PROVIDER_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
@@ -1363,7 +1413,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) =>
+      toActionNames: async ({ change }) =>
         isAdditionChange(change) && isSystemScope(change) ? ['add', 'modify'] : [change.action],
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
@@ -1424,7 +1474,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) =>
+      toActionNames: async ({ change }) =>
         isAdditionChange(change) && isSubDefaultClaim(change) ? ['add', 'modify'] : [change.action],
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
@@ -1477,7 +1527,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           remove: [{ request: { earlySuccess: true } }],
         },
       },
-      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      toActionNames: async ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
     [EMAIL_CUSTOMIZATION_TYPE_NAME]: {
@@ -1651,7 +1701,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change, changeGroup }) => {
+      toActionNames: async ({ change, changeGroup }) => {
         if (isAdditionChange(change) && isPermissionChangeOfAddedRole(change, changeGroup)) {
           return ['modify']
         }

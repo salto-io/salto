@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -73,7 +73,7 @@ const deployIntervals = async (client: ZendeskClient, change: Change<InstanceEle
 /**
  * Deploys business hours schedules and their intervals
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'businessHoursScheduleFilter',
   onFetch: async (elements: Element[]) => {
     elements
@@ -92,7 +92,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === BUSINESS_HOURS_SCHEDULE_TYPE_NAME,
     )
     const deployResult = await deployChanges(scheduleChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions, ['holidays'])
+      await deployChange(change, client, oldApiDefinitions, ['holidays'])
       await deployIntervals(client, change)
     })
     return { deployResult, leftoverChanges }

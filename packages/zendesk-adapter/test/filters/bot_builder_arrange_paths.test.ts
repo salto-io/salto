@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,7 +7,7 @@
  */
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ZENDESK, BRAND_TYPE_NAME, BOT_BUILDER_FLOW, BOT_BUILDER_ANSWER, BOT_BUILDER_NODE } from '../../src/constants'
+import { ZENDESK, BRAND_TYPE_NAME, CONVERSATION_BOT, BOT_BUILDER_ANSWER, BOT_BUILDER_NODE } from '../../src/constants'
 import filterCreator from '../../src/filters/bot_builder_arrange_paths'
 import { createFilterCreatorParams } from '../utils'
 
@@ -18,7 +18,7 @@ describe('bot_builder_arrange_paths', () => {
   const brandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
   })
-  const botBuilderFlowType = new ObjectType({ elemID: new ElemID(ZENDESK, BOT_BUILDER_FLOW) })
+  const botBuilderFlowType = new ObjectType({ elemID: new ElemID(ZENDESK, CONVERSATION_BOT) })
   const botBuilderAnswerType = new ObjectType({ elemID: new ElemID(ZENDESK, BOT_BUILDER_ANSWER) })
   const botBuilderNodeType = new ObjectType({ elemID: new ElemID(ZENDESK, BOT_BUILDER_NODE) })
 
@@ -46,20 +46,20 @@ describe('bot_builder_arrange_paths', () => {
       expect(botBuilderFlowInstanceClone.path).toEqual([
         ZENDESK,
         'Records',
-        'bot_builder',
+        'conversation_bot',
         'brands',
         'brandName',
-        'flows',
+        'bots',
         'flowName',
         'flowName',
       ])
       expect(botBuilderAnswerRes.path).toEqual([
         ZENDESK,
         'Records',
-        'bot_builder',
+        'conversation_bot',
         'brands',
         'brandName',
-        'flows',
+        'bots',
         'flowName',
         'answers',
         'answerName',
@@ -68,10 +68,10 @@ describe('bot_builder_arrange_paths', () => {
       expect(botBuilderNodeRes.path).toEqual([
         ZENDESK,
         'Records',
-        'bot_builder',
+        'conversation_bot',
         'brands',
         'brandName',
-        'flows',
+        'bots',
         'flowName',
         'answers',
         'answerName',
@@ -89,17 +89,17 @@ describe('bot_builder_arrange_paths', () => {
       expect(botBuilderFlowInstanceClone.path).toEqual([
         ZENDESK,
         'Records',
-        'bot_builder',
+        'conversation_bot',
         'unsorted',
-        'flows',
+        'bots',
         'flowName',
       ])
       expect(botBuilderAnswerRes.path).toEqual([
         ZENDESK,
         'Records',
-        'bot_builder',
+        'conversation_bot',
         'unsorted',
-        'flows',
+        'bots',
         'answers',
         'answerName',
         'answerName',
@@ -107,9 +107,9 @@ describe('bot_builder_arrange_paths', () => {
       expect(botBuilderNodeRes.path).toEqual([
         ZENDESK,
         'Records',
-        'bot_builder',
+        'conversation_bot',
         'unsorted',
-        'flows',
+        'bots',
         'answers',
         'answerName',
         'nodes',

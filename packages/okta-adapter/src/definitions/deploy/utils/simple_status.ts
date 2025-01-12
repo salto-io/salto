@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -57,7 +57,7 @@ export const modificationCondition: definitionUtils.deploy.DeployRequestConditio
 
 export const toActionNames: ({
   change,
-}: definitionUtils.deploy.ChangeAndContext) => (ActionName | AdditionalAction)[] = ({ change }) => {
+}: definitionUtils.deploy.ChangeAndContext) => Promise<(ActionName | AdditionalAction)[]> = async ({ change }) => {
   if (isAdditionChange(change)) {
     // Conditions inside 'activate' and 'deactivate' will determine which one to run, based on the service
     // response to the 'add' action.

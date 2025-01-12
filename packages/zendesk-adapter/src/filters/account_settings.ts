@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -15,7 +15,7 @@ export const ACCOUNT_SETTING_TYPE_NAME = 'account_setting'
 /**
  * Deploys account settings
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'accountSettingsFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [accountSettingChanges, leftoverChanges] = _.partition(
@@ -41,7 +41,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(accountSettingChanges, async change => {
       const fieldsToIgnore =
         getChangeData(change).value.routing?.autorouting_tag === '' ? ['routing.autorouting_tag'] : []
-      await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
+      await deployChange(change, client, oldApiDefinitions, fieldsToIgnore)
     })
     return { deployResult, leftoverChanges }
   },

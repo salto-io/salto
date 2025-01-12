@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -55,8 +55,6 @@ import {
   inspectValue,
   resolveTypeShallow,
 } from '@salto-io/adapter-utils'
-// for backward comptability
-import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { deployActions, ItemStatus } from './core/deploy'
 import {
   getAdapterDependencyChangers,
@@ -106,11 +104,9 @@ type VerifyCredentialsResult =
 
 export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>,
-  adapterCreators?: Record<string, Adapter>,
+  adapterCreators: Record<string, Adapter>,
 ): Promise<VerifyCredentialsResult> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
-  const adapterCreator = getAdapterFromLoginConfig(loginConfig, actualAdapterCreator)
+  const adapterCreator = getAdapterFromLoginConfig(loginConfig, adapterCreators)
   if (adapterCreator) {
     try {
       const account = await adapterCreator.validateCredentials(loginConfig)
@@ -144,7 +140,7 @@ const shouldElementBeIncluded =
 const getAccountToServiceNameMap = (workspace: Workspace, accounts: string[]): Record<string, string> =>
   Object.fromEntries(accounts.map(account => [account, workspace.getServiceFromAccountName(account)]))
 
-type previewArgs = {
+type PreviewArgs = {
   workspace: Workspace
   accounts?: string[]
   checkOnly?: boolean
@@ -152,54 +148,15 @@ type previewArgs = {
   topLevelFilters?: IDFilter[]
   adapterCreators: Record<string, Adapter>
 }
-const getPreviewArgs: (
-  workspaceOrParams: Workspace | previewArgs,
-  accounts?: string[],
-  checkOnly?: boolean,
-  skipValidations?: boolean,
-  topLevelFilters?: IDFilter[],
-) => previewArgs = (workspaceOrParams, accounts, checkOnly, skipValidations, topLevelFilters) => {
-  if ('adapterCreators' in workspaceOrParams) {
-    return workspaceOrParams
-  }
-  return {
-    workspace: workspaceOrParams,
-    accounts,
-    checkOnly,
-    skipValidations,
-    topLevelFilters,
-    adapterCreators: allAdapterCreators,
-  }
-}
 
-// As a transitionary step, we support both a workspace input and an argument object
-export function preview(args: previewArgs): Promise<Plan>
-// @deprecated
-export function preview(
-  inputWorkspace: Workspace | previewArgs,
-  inputAccounts?: string[],
-  inputCheckOnly?: boolean,
-  inputSkipValidations?: boolean,
-  inputTopLevelFilters?: IDFilter[],
-): Promise<Plan>
-
-export async function preview(
-  inputWorkspace: Workspace | previewArgs,
-  inputAccounts?: string[],
-  inputCheckOnly?: boolean,
-  inputSkipValidations?: boolean,
-  inputTopLevelFilters?: IDFilter[],
-): Promise<Plan> {
-  // for backward compatibility
-  const {
-    workspace,
-    accounts = workspace.accounts(),
-    checkOnly = false,
-    skipValidations = false,
-    topLevelFilters,
-    adapterCreators,
-  } = getPreviewArgs(inputWorkspace, inputAccounts, inputCheckOnly, inputSkipValidations, inputTopLevelFilters)
-
+export async function preview({
+  workspace,
+  accounts = workspace.accounts(),
+  checkOnly = false,
+  skipValidations = false,
+  topLevelFilters,
+  adapterCreators,
+}: PreviewArgs): Promise<Plan> {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
     accounts,
@@ -239,57 +196,14 @@ export type CompatibleDeployFunc = (
   checkOnly?: boolean,
 ) => Promise<DeployResult>
 
-const getDeployArgs: (
-  workspaceOrParams: Workspace | DeployParams,
-  actionPlan?: Plan,
-  reportProgress?: ReportProgress,
-  accounts?: string[],
-  checkOnly?: boolean,
-) => DeployParams = (workspaceOrParams, actionPlan, reportProgress, accounts, checkOnly) => {
-  if ('adapterCreators' in workspaceOrParams) {
-    return workspaceOrParams
-  }
-  if (actionPlan === undefined || reportProgress === undefined) {
-    throw new Error('actionPlan and reportProgress should not be undefined if workspace is a workspace')
-  }
-  return {
-    workspace: workspaceOrParams,
-    accounts,
-    checkOnly,
-    actionPlan,
-    reportProgress,
-    adapterCreators: allAdapterCreators,
-  }
-}
-
-// As a transitionary step, we support both a workspace input and an argument object
-export function deploy(args: DeployParams): Promise<DeployResult>
-// @deprecated
-export function deploy(
-  inputWorkspace: Workspace,
-  inputActionPlan?: Plan,
-  inputReportProgress?: ReportProgress,
-  inputAccounts?: string[],
-  inputCheckOnly?: boolean,
-): Promise<DeployResult>
-
-export async function deploy(
-  inputWorkspace: Workspace | DeployParams,
-  inputActionPlan?: Plan,
-  inputReportProgress?: ReportProgress,
-  inputAccounts?: string[],
-  inputCheckOnly = false,
-): Promise<DeployResult> {
-  // for backward compatibility
-  const {
-    workspace,
-    actionPlan,
-    reportProgress,
-    accounts = workspace.accounts(),
-    checkOnly = false,
-    adapterCreators,
-  } = getDeployArgs(inputWorkspace, inputActionPlan, inputReportProgress, inputAccounts, inputCheckOnly)
-
+export async function deploy({
+  workspace,
+  actionPlan,
+  reportProgress,
+  accounts = workspace.accounts(),
+  checkOnly = false,
+  adapterCreators,
+}: DeployParams): Promise<DeployResult> {
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])
   const adapters = await getAdapters(
@@ -359,17 +273,7 @@ export type FetchFuncParams = {
   adapterCreators: Record<string, Adapter>
 }
 
-type NewFetchFunc = (inputWorkspace: FetchFuncParams) => Promise<FetchResult>
-type OldFetchFunc = (
-  inputWorkspace: Workspace,
-  progressEmitter?: EventEmitter<FetchProgressEvents>,
-  accounts?: string[],
-  ignoreStateElemIdMapping?: boolean,
-  withChangesDetection?: boolean,
-  ignoreStateElemIdMappingForSelectors?: ElementSelector[],
-) => Promise<FetchResult>
-
-export type FetchFunc = OldFetchFunc | NewFetchFunc
+export type FetchFunc = (inputWorkspace: FetchFuncParams) => Promise<FetchResult>
 
 export type FetchFromWorkspaceFuncParams = {
   workspace: Workspace
@@ -379,78 +283,20 @@ export type FetchFromWorkspaceFuncParams = {
   services?: string[]
   fromState?: boolean
   env: string
-  adapterCreators?: Record<string, Adapter>
+  adapterCreators: Record<string, Adapter>
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
 
-const getFetchArgs: (
-  workspaceOrParams: Workspace | FetchFuncParams,
-  progressEmitter?: EventEmitter<FetchProgressEvents>,
-  accounts?: string[],
-  ignoreStateElemIdMapping?: boolean,
-  withChangesDetection?: boolean,
-  ignoreStateElemIdMappingForSelectors?: ElementSelector[],
-) => FetchFuncParams = (
-  workspaceOrParams,
+export async function fetch({
+  workspace,
   progressEmitter,
   accounts,
   ignoreStateElemIdMapping,
   withChangesDetection,
   ignoreStateElemIdMappingForSelectors,
-) => {
-  if ('adapterCreators' in workspaceOrParams) {
-    return workspaceOrParams
-  }
-
-  return {
-    workspace: workspaceOrParams,
-    progressEmitter,
-    accounts,
-    ignoreStateElemIdMapping,
-    withChangesDetection,
-    ignoreStateElemIdMappingForSelectors,
-    adapterCreators: allAdapterCreators,
-  }
-}
-
-// As a transitionary step, we support both a workspace input and an argument object
-export function fetch(workspace: FetchFuncParams): Promise<FetchResult>
-// @deprecated
-export function fetch(
-  inputWorkspace: Workspace,
-  inputProgressEmitter?: EventEmitter<FetchProgressEvents>,
-  inputAccounts?: string[],
-  inputIgnoreStateElemIdMapping?: boolean,
-  inputWithChangesDetection?: boolean,
-  inputIgnoreStateElemIdMappingForSelectors?: ElementSelector[],
-): Promise<FetchResult>
-
-export async function fetch(
-  inputWorkspace: Workspace | FetchFuncParams,
-  inputProgressEmitter?: EventEmitter<FetchProgressEvents>,
-  inputAccounts?: string[],
-  inputIgnoreStateElemIdMapping?: boolean,
-  inputWithChangesDetection?: boolean,
-  inputIgnoreStateElemIdMappingForSelectors?: ElementSelector[],
-): Promise<FetchResult> {
+  adapterCreators,
+}: FetchFuncParams): Promise<FetchResult> {
   log.debug('fetch starting..')
-  // for backward compatibility
-  const {
-    workspace,
-    progressEmitter,
-    accounts,
-    ignoreStateElemIdMapping,
-    withChangesDetection,
-    ignoreStateElemIdMappingForSelectors,
-    adapterCreators,
-  } = getFetchArgs(
-    inputWorkspace,
-    inputProgressEmitter,
-    inputAccounts,
-    inputIgnoreStateElemIdMapping,
-    inputWithChangesDetection,
-    inputIgnoreStateElemIdMappingForSelectors,
-  )
   const fetchAccounts = accounts ?? workspace.accounts()
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
   const { currentConfigs, adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup({
@@ -517,8 +363,6 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   adapterCreators,
 }: FetchFromWorkspaceFuncParams) => {
   log.debug('fetch starting from workspace..')
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const fetchAccounts = services ?? accounts ?? workspace.accounts()
 
   const { currentConfigs } = await getFetchAdapterAndServicesSetup({
@@ -526,7 +370,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     fetchAccounts,
     accountToServiceNameMap: getAccountToServiceNameMap(workspace, fetchAccounts),
     elementsSource: await workspace.elements(),
-    adapterCreators: actualAdapterCreator,
+    adapterCreators,
   })
 
   const {
@@ -738,11 +582,9 @@ const getAdapterCreator = ({
 
 export const installAdapter = async (
   adapterName: string,
-  adapterCreators?: Record<string, Adapter>,
+  adapterCreators: Record<string, Adapter>,
 ): Promise<AdapterSuccessInstallResult | undefined> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
-  const adapter = getAdapterCreator({ adapterName, adapterCreators: actualAdapterCreator })
+  const adapter = getAdapterCreator({ adapterName, adapterCreators })
   if (adapter.install === undefined) {
     return undefined
   }
@@ -753,53 +595,19 @@ export const installAdapter = async (
   throw new AdapterInstallError(adapterName, installResult)
 }
 
-type addAdapterParams = {
+type AddAdapterArgs = {
   workspace: Workspace
   adapterName: string
   accountName?: string
   adapterCreators: Record<string, Adapter>
 }
 
-const getAddAdapterArgs: (
-  workspaceOrParams: Workspace | addAdapterParams,
-  adapterName?: string,
-  accountName?: string,
-) => addAdapterParams = (workspaceOrParams, adapterName, accountName) => {
-  if ('adapterCreators' in workspaceOrParams) {
-    return workspaceOrParams
-  }
-  if (adapterName === undefined) {
-    throw new Error('adapterName is undefined when workspace is a workspace')
-  }
-  return {
-    workspace: workspaceOrParams,
-    adapterName,
-    accountName,
-    adapterCreators: allAdapterCreators,
-  }
-}
-
-// As a transitionary step, we support both a workspace input and an argument object
-export function addAdapter(args: addAdapterParams): Promise<AdapterAuthentication>
-// @deprecated
-export function addAdapter(
-  inputWorkspace: Workspace,
-  inputAdapterName?: string,
-  inputAccountName?: string,
-): Promise<AdapterAuthentication>
-
-export async function addAdapter(
-  inputWorkspace: Workspace | addAdapterParams,
-  inputAdapterName?: string,
-  inputAccountName?: string,
-): Promise<AdapterAuthentication> {
-  // for backward compatibility
-  const { workspace, adapterName, accountName, adapterCreators } = getAddAdapterArgs(
-    inputWorkspace,
-    inputAdapterName,
-    inputAccountName,
-  )
-
+export async function addAdapter({
+  workspace,
+  adapterName,
+  accountName,
+  adapterCreators,
+}: AddAdapterArgs): Promise<AdapterAuthentication> {
   const adapter = getAdapterCreator({ adapterName, adapterCreators })
   await workspace.addAccount(adapterName, accountName)
   const adapterAccountName = accountName ?? adapterName
@@ -820,17 +628,15 @@ export type LoginStatus = { configTypeOptions: AdapterAuthentication; isLoggedIn
 export const getLoginStatuses = async (
   workspace: Workspace,
   accounts = workspace.accounts(),
-  adapterCreators?: Record<string, Adapter>,
+  adapterCreators: Record<string, Adapter>,
 ): Promise<Record<string, LoginStatus>> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const creds = await workspace.accountCredentials(accounts)
   const accountToServiceMap = Object.fromEntries(
     accounts.map(account => [account, workspace.getServiceFromAccountName(account)]),
   )
   const relevantServices = _.uniq(Object.values(accountToServiceMap))
   const logins = await mapValuesAsync(
-    getAdaptersCredentialsTypes({ names: relevantServices, adapterCreators: actualAdapterCreator }),
+    getAdaptersCredentialsTypes({ names: relevantServices, adapterCreators }),
     async (configTypeOptions, adapter) => ({
       configTypeOptions,
       isLoggedIn: !!creds[adapter],
@@ -867,16 +673,14 @@ export const rename = async (
 export const getAdditionalReferences = async (
   workspace: Workspace,
   changes: Change[],
-  adapterCreators?: Record<string, Adapter>,
+  adapterCreators: Record<string, Adapter>,
 ): Promise<ReferenceMapping[]> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
   log.debug('accountToServiceMap: %s', inspectValue(accountToService))
   const changeGroups = _.groupBy(changes, change => getChangeData(change).elemID.adapter)
   const referenceGroups = await Promise.all(
     Object.entries(changeGroups).map(([account, changeGroup]) =>
-      actualAdapterCreator[accountToService[account]]?.getAdditionalReferences?.(changeGroup),
+      adapterCreators[accountToService[account]]?.getAdditionalReferences?.(changeGroup),
     ),
   )
   return referenceGroups.flat().filter(values.isDefined)
@@ -948,10 +752,8 @@ export class SelectorsError extends Error {
 export const fixElements = async (
   workspace: Workspace,
   selectors: ElementSelector[],
-  adapterCreators?: Record<string, Adapter>,
+  adapterCreators: Record<string, Adapter>,
 ): Promise<{ errors: ChangeError[]; changes: DetailedChangeWithBaseChange[] }> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const accounts = workspace.accounts()
   const adapters = await getAdapters(
     accounts,
@@ -960,7 +762,7 @@ export const fixElements = async (
     await workspace.elements(),
     getAccountToServiceNameMap(workspace, accounts),
     {},
-    actualAdapterCreator,
+    adapterCreators,
   )
 
   const nonTopLevelSelectors = selectors.filter(selector => !isTopLevelSelector(selector))
@@ -1059,11 +861,9 @@ export const cancelServiceAsyncTask = async ({
   workspace: Workspace
   account: string
   input: CancelServiceAsyncTaskInput
-  adapterCreators?: Record<string, Adapter>
+  adapterCreators: Record<string, Adapter>
 }): Promise<CancelServiceAsyncTaskResult> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
-  const adapter = await initAccountAdapter({ account, workspace, adapterCreators: actualAdapterCreator })
+  const adapter = await initAccountAdapter({ account, workspace, adapterCreators })
   if (isSaltoError(adapter)) {
     return {
       errors: [adapter],

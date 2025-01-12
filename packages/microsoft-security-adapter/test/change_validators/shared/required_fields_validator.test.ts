@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -8,7 +8,7 @@
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { ADAPTER_NAME, entraConstants, ODATA_TYPE_FIELD_NACL_CASE } from '../../../src/constants'
-import { requiredFieldsValidator } from '../../../src/change_validators'
+import { requiredFieldsValidator } from '../../../src/change_validators/shared/required_fields_validator'
 
 describe(`${requiredFieldsValidator.name}`, () => {
   describe.each(['addition', 'modification'])(
@@ -63,11 +63,14 @@ describe(`${requiredFieldsValidator.name}`, () => {
   )
 
   describe.each(['addition', 'modification'])(
-    `${entraConstants.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME} with %s change`,
+    `${entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME} with %s change`,
     changeType => {
       const INSTANCE_NAME = 'testConditionalAccessPolicyNamedLocation'
       const conditionalAccessPolicyNamedLocationType = new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, entraConstants.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME),
+        elemID: new ElemID(
+          ADAPTER_NAME,
+          entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
+        ),
       })
       it('when displayName is missing', async () => {
         const conditionalAccessPolicyNamedLocation = new InstanceElement(
@@ -251,9 +254,9 @@ describe(`${requiredFieldsValidator.name}`, () => {
     },
   )
 
-  describe(entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, () => {
+  describe(entraConstants.TOP_LEVEL_TYPES.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, () => {
     const authenticationStrengthPolicyType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME),
     })
 
     it('should return change error when allowedCombinations field is missing on addition', async () => {
@@ -314,9 +317,9 @@ describe(`${requiredFieldsValidator.name}`, () => {
     })
   })
 
-  describe(entraConstants.DIRECTORY_ROLE_TYPE_NAME, () => {
+  describe(entraConstants.TOP_LEVEL_TYPES.DIRECTORY_ROLE_TYPE_NAME, () => {
     const directoryRoleType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.DIRECTORY_ROLE_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.DIRECTORY_ROLE_TYPE_NAME),
     })
 
     it('should return change error when roleTemplateId field is missing on addition', async () => {
@@ -365,9 +368,9 @@ describe(`${requiredFieldsValidator.name}`, () => {
     })
   })
 
-  describe(entraConstants.ROLE_DEFINITION_TYPE_NAME, () => {
+  describe(entraConstants.TOP_LEVEL_TYPES.ROLE_DEFINITION_TYPE_NAME, () => {
     const roleDefinitionType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.ROLE_DEFINITION_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.ROLE_DEFINITION_TYPE_NAME),
     })
 
     it('should return change error when displayName, rolePermissions, isBuiltIn fields are missing on addition', async () => {

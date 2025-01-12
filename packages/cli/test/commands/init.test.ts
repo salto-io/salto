@@ -1,12 +1,12 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { staticFiles, Workspace } from '@salto-io/workspace'
-import { initLocalWorkspace, locateWorkspaceRoot } from '@salto-io/core'
+import { initLocalWorkspace, locateWorkspaceRoot } from '@salto-io/local-workspace'
 import { adapterCreators } from '@salto-io/adapter-creators'
 import { Adapter } from '@salto-io/adapter-api'
 import * as mocks from '../mocks'
@@ -15,8 +15,8 @@ import { buildEventName } from '../../src/telemetry'
 import { getEnvName } from '../../src/callbacks'
 import { CommandArgs } from '../../src/command_builder'
 
-jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual<{}>('@salto-io/core'),
+jest.mock('@salto-io/local-workspace', () => ({
+  ...jest.requireActual<{}>('@salto-io/local-workspace'),
   initLocalWorkspace: jest
     .fn()
     .mockImplementation(

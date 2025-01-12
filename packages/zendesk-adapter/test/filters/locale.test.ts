@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -33,7 +33,7 @@ describe('locale filter', () => {
       filter = filterCreator(
         createFilterCreatorParams({
           client,
-          elementsSource: buildElementsSourceFromElements([]),
+          elementSource: buildElementsSourceFromElements([]),
         }),
       ) as FilterType
     })
@@ -88,7 +88,7 @@ describe('locale filter', () => {
       filter = filterCreator(
         createFilterCreatorParams({
           client,
-          elementsSource: buildElementsSourceFromElements([enUsLocaleInstance, frLocaleInstance]),
+          elementSource: buildElementsSourceFromElements([enUsLocaleInstance, frLocaleInstance]),
         }),
       ) as FilterType
       mockPut = jest.spyOn(client, 'put')

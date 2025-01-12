@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -344,7 +344,7 @@ const fixThemeTypes = (elements: Element[]): void => {
 /**
  * Fetches guide theme content
  */
-const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
+const filterCreator: FilterCreator = ({ config, client, elementSource }) => ({
   name: 'guideThemesFilter',
   onFetch: async elements => {
     if (!isGuideThemesEnabled(config[FETCH_CONFIG])) {
@@ -371,7 +371,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       return brandName
     }
     const matchBrandSubdomain = matchBrandSubdomainFunc(instances, config[FETCH_CONFIG])
-    const idsToElements = await awu(await elementsSource.getAll())
+    const idsToElements = await awu(await elementSource.getAll())
       .filter(isInstanceElement)
       .filter(element => element.value.id !== undefined)
       .reduce<Record<string, InstanceElement>>((acc, elem) => {
@@ -449,7 +449,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     // If multiple theme settings exist for a single brand, we will randomly select and examine only one setting to
     // ensure there is just one live theme per brand.
     const liveThemesByBrand = Object.fromEntries(
-      (await getInstancesFromElementSource(elementsSource, [THEME_SETTINGS_TYPE_NAME]))
+      (await getInstancesFromElementSource(elementSource, [THEME_SETTINGS_TYPE_NAME]))
         .filter(
           instance => isReferenceExpression(instance.value.liveTheme) && isReferenceExpression(instance.value.brand),
         )

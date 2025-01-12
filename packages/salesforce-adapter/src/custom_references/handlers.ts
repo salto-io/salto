@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -20,23 +20,27 @@ import {
 import { profilesAndPermissionSetsHandler } from './profiles_and_permission_sets'
 import { managedElementsHandler } from './managed_elements'
 import { formulaRefsHandler } from './formula_refs'
+import { omitNonExistingFieldsHandler } from './omit_non_existing_fields'
 
 const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
   profilesAndPermissionSets: profilesAndPermissionSetsHandler,
   managedElements: managedElementsHandler,
   formulaRefs: formulaRefsHandler,
+  omitNonExistingFields: omitNonExistingFieldsHandler,
 }
 
 const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> = {
   profilesAndPermissionSets: true,
   managedElements: true,
   formulaRefs: false,
+  omitNonExistingFields: false,
 }
 
 const defaultFixElementsConfiguration: Required<FixElementsSettings> = {
   profilesAndPermissionSets: true,
   managedElements: true,
   formulaRefs: false,
+  omitNonExistingFields: true,
 }
 
 export const customReferencesConfiguration = (

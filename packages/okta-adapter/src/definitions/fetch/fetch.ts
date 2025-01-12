@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -442,6 +442,22 @@ const createCustomizations = ({
             },
           },
         },
+        apiScopes: {
+          typeName: 'OAuth2ScopeConsentGrant',
+          conditions: [
+            {
+              fromField: 'signOnMode',
+              match: ['^OPENID_CONNECT$'],
+            },
+          ],
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+        },
         applicationUserProvisioning: {
           typeName: 'ApplicationUserProvisioning',
           conditions: [
@@ -589,6 +605,7 @@ const createCustomizations = ({
         applicationProvisioningGeneral: { fieldType: 'unknown' },
         applicationInboundProvisioning: { fieldType: 'ApplicationFeature' },
         applicationUserProvisioning: { fieldType: 'ApplicationFeature' },
+        apiScopes: { fieldType: 'list<OAuth2ScopeConsentGrant>' },
         settings: { fieldType: 'unknown' },
         profileEnrollment: { fieldType: 'string' },
         accessPolicy: { fieldType: 'string' },
@@ -681,6 +698,26 @@ const createCustomizations = ({
         type: { omit: true },
         properties: { omit: true },
         [naclCase('$schema')]: { omit: true },
+      },
+    },
+  },
+  OAuth2ScopeConsentGrant: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/apps/{appId}/grants',
+        },
+        transformation: {
+          omit: ['_links', 'createdBy', 'status', 'created', 'lastUpdated', 'clientId', 'source', 'issuer'],
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      fieldCustomizations: {
+        id: { omit: true },
       },
     },
   },

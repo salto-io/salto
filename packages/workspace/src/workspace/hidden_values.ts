@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -52,6 +52,8 @@ import {
   isTypeReference,
   DetailedChangeWithBaseChange,
   toChange,
+  isAdditionChange,
+  isFieldChange,
 } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
@@ -231,15 +233,44 @@ const isAttributeChangeToNotHidden = (change: DetailedChange, hiddenValue: boole
   isRemovalOrModificationChange(change) &&
   change.data.before === true
 
+const isFieldAdditionWithHiddenValue = (change: DetailedChange): boolean =>
+  isFieldChange(change) &&
+  isAdditionChange(change) &&
+  change.data.after?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+
+const isFieldRemovalWithHiddenValue = (change: DetailedChange): boolean =>
+  isFieldChange(change) &&
+  isRemovalChange(change) &&
+  change.data.before?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+
 const isHiddenAttributeChange = (change: DetailedChange, hiddenValue: boolean): boolean =>
   change.id.idType === 'attr' &&
   change.id.nestingLevel === 1 &&
   (isAttributeChangeToHidden(change, hiddenValue) || isAttributeChangeToNotHidden(change, hiddenValue))
 
+const isFieldModificationChangeToHiddenValue = (change: DetailedChange): boolean =>
+  isFieldChange(change) &&
+  isModificationChange(change) &&
+  change.data.before?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] !== false &&
+  change.data.after?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+
+const isFieldModificationChangeToNotHiddenValue = (change: DetailedChange): boolean =>
+  isFieldChange(change) &&
+  isModificationChange(change) &&
+  change.data.before?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true &&
+  change.data.after?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] !== false
+
+const isFieldModificationWithHiddenValue = (change: DetailedChange): boolean =>
+  (change.id.idType === 'field' &&
+    change.id.nestingLevel === 2 &&
+    (isAttributeChangeToHidden(change, true) || isAttributeChangeToNotHidden(change, true))) ||
+  isFieldModificationChangeToHiddenValue(change) ||
+  isFieldModificationChangeToNotHiddenValue(change)
+
 const isHiddenChangeOnField = (change: DetailedChange): boolean =>
-  change.id.idType === 'field' &&
-  change.id.nestingLevel === 2 &&
-  (isAttributeChangeToHidden(change, true) || isAttributeChangeToNotHidden(change, true))
+  isFieldModificationWithHiddenValue(change) ||
+  isFieldAdditionWithHiddenValue(change) ||
+  isFieldRemovalWithHiddenValue(change)
 
 const isTopLevelModificationWithHiddenChange = <T>(
   change: DetailedChange<T>,
@@ -375,10 +406,30 @@ const groupAnnotationIdsByParentAndName = (ids: ElemID[]): Record<string, Set<st
   )
 
 const getChangeParentIdsByHideAction = (changes: DetailedChange[]): { hide: Set<string>; unhide: Set<string> } => {
-  const [hideChanges, unhideChanges] = _.partition(changes, c => isAttributeChangeToHidden(c, true))
+  const [hideChanges, unhideChanges] = _.partition(
+    changes,
+    c =>
+      isAttributeChangeToHidden(c, true) ||
+      isFieldAdditionWithHiddenValue(c) ||
+      isFieldModificationChangeToHiddenValue(c),
+  )
   return {
-    hide: new Set(hideChanges.map(change => change.id.createParentID().getFullName())),
-    unhide: new Set(unhideChanges.map(change => change.id.createParentID().getFullName())),
+    hide: new Set(
+      hideChanges.map(change => {
+        if (isAttributeChangeToHidden(change, true)) {
+          return change.id.createParentID().getFullName()
+        }
+        return change.id.getFullName()
+      }),
+    ),
+    unhide: new Set(
+      unhideChanges.map(change => {
+        if (isAttributeChangeToNotHidden(change, true)) {
+          return change.id.createParentID().getFullName()
+        }
+        return change.id.getFullName()
+      }),
+    ),
   }
 }
 
@@ -404,6 +455,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   const { hide: hideFieldIds, unhide: unhideFieldIds } = getChangeParentIdsByHideAction(
     changes.filter(isHiddenChangeOnField),
   )
+
   const { hide: hideTypeIds, unhide: unhideTypeIds } = getChangeParentIdsByHideAction(
     changes.filter(c => isHiddenAttributeChange(c, true)),
   )

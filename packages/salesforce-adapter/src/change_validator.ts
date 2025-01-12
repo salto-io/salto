@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -16,6 +16,7 @@ import customFieldTypeValidator from './change_validators/custom_field_type'
 import standardFieldLabelValidator from './change_validators/standard_field_label'
 import mapKeysValidator from './change_validators/map_keys'
 import defaultRulesValidator from './change_validators/default_rules'
+import packageVersionValidator from './change_validators/package_version'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import omitDataValidator from './change_validators/omit_data'
 import dataChangeValidator from './change_validators/data_change'
@@ -79,6 +80,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   standardFieldLabel: () => standardFieldLabelValidator,
   mapKeys: ({ getLookupNameFunc, fetchProfile }) => mapKeysValidator(getLookupNameFunc, fetchProfile),
   defaultRules: () => defaultRulesValidator,
+  packageVersion: () => packageVersionValidator,
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,
   recordTypeDeletion: () => recordTypeDeletionValidator,

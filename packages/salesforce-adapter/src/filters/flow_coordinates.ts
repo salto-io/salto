@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -44,22 +44,24 @@ const isInCanvasAutoLayoutMode = (instance: InstanceElement): boolean => {
   return canvasMode?.value?.stringValue === 'AUTO_LAYOUT_CANVAS'
 }
 
-const removeCoordinatesFromAllSections: TransformFuncSync = ({ value, field }) => {
-  if (!field) {
+const removeCoordinatesFromAllSections: (removeOnlyZeros?: boolean) => TransformFuncSync =
+  (removeOnlyZeros: boolean = false) =>
+  ({ value, field }) => {
+    if (!field) {
+      return value
+    }
+    const typeName = apiNameSync(field.parent)
+    if (!typeName || !TYPES_WITH_COORDINATES.includes(typeName)) {
+      return value
+    }
+
+    if (['locationX', 'locationY'].includes(field.name) && (!removeOnlyZeros || value === 0)) {
+      log.trace('Removing field %s', field.elemID.getFullName())
+      return undefined
+    }
+
     return value
   }
-  const typeName = apiNameSync(field.parent)
-  if (!typeName || !TYPES_WITH_COORDINATES.includes(typeName)) {
-    return value
-  }
-
-  if (['locationX', 'locationY'].includes(field.name)) {
-    log.debug('Removing field %s', field.elemID.getFullName())
-    return undefined
-  }
-
-  return value
-}
 
 const addZeroCoordinatesToAllSections: TransformFuncSync = ({ value, field }) => {
   if (!field) {
@@ -70,7 +72,7 @@ const addZeroCoordinatesToAllSections: TransformFuncSync = ({ value, field }) =>
     return value
   }
 
-  log.debug('Adding field %s.{locationX,locationY}', field.elemID.getFullName())
+  log.trace('Adding field %s.{locationX,locationY}', field.elemID.getFullName())
 
   value.locationX = value.locationX ?? 0
   value.locationY = value.locationY ?? 0
@@ -91,7 +93,7 @@ const filter: FilterCreator = ({ config }) => ({
           instance.value = transformValuesSync({
             values: instance.value,
             type: instance.getTypeSync(),
-            transformFunc: removeCoordinatesFromAllSections,
+            transformFunc: removeCoordinatesFromAllSections(),
           })
         })
     },
@@ -119,7 +121,7 @@ const filter: FilterCreator = ({ config }) => ({
         instance.value = transformValuesSync({
           values: instance.value,
           type: instance.getTypeSync(),
-          transformFunc: removeCoordinatesFromAllSections,
+          transformFunc: removeCoordinatesFromAllSections(true),
         })
       })
   },

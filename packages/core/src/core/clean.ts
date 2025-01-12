@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -11,8 +11,6 @@ import { collections } from '@salto-io/lowerdash'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { cleanDatabases } from '@salto-io/local-workspace'
 import { Adapter } from '@salto-io/adapter-api'
-// for backward comptability
-import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { getDefaultAdapterConfig } from './adapters'
 
 const { awu } = collections.asynciterable
@@ -22,10 +20,8 @@ const log = logger(module)
 export const cleanWorkspace = async (
   workspace: Workspace,
   cleanArgs: WorkspaceComponents,
-  adapterCreators?: Record<string, Adapter>,
+  adapterCreators: Record<string, Adapter>,
 ): Promise<void> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   await workspace.clear(_.omit(cleanArgs, 'accountConfig'))
   if (cleanArgs.accountConfig === true) {
     await awu(workspace.accounts()).forEach(async account => {
@@ -33,7 +29,7 @@ export const cleanWorkspace = async (
       const defaultConfig = await getDefaultAdapterConfig({
         adapterName: service,
         accountName: account,
-        adapterCreators: actualAdapterCreator,
+        adapterCreators,
       })
       if (defaultConfig === undefined) {
         // some services might not have configs to restore

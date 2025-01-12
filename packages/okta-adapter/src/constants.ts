@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -98,6 +98,7 @@ export const SCHEMA_TYPES = [GROUP_SCHEMA_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, 
 export const EMAIL_DOMAIN_TYPE_NAME = 'EmailDomain'
 export const SIGN_IN_PAGE_TYPE_NAME = 'SignInPage'
 export const ERROR_PAGE_TYPE_NAME = 'ErrorPage'
+export const API_SCOPES_FIELD_NAME = 'apiScopes'
 
 export const APP_PROVISIONING_FIELD_NAMES = [
   'applicationUserProvisioning',

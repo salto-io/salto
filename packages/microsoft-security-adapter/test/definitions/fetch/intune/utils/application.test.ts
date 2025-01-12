@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -13,7 +13,10 @@ import { contextMock } from '../../../../mocks'
 import { intuneConstants, ODATA_TYPE_FIELD } from '../../../../../src/constants'
 import { getAdjustedOdataTypeFieldName } from '../../../../../src/utils/shared/odata_type'
 
-const { APPLICATION_TYPE_NAME, SCRIPT_CONTENT_FIELD_NAME } = intuneConstants
+const {
+  TOP_LEVEL_TYPES: { APPLICATION_TYPE_NAME },
+  SCRIPT_CONTENT_FIELD_NAME,
+} = intuneConstants
 
 describe('Intune application fetch utils', () => {
   describe(application.setApplicationScriptValueAsStaticFile.name, () => {

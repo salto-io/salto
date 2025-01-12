@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -27,7 +27,7 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { DeployResult as SFDeployResult, DeployMessage } from '@salto-io/jsforce'
+import { DeployResult as SFDeployResult } from '@salto-io/jsforce'
 import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
 import {
@@ -49,7 +49,7 @@ import {
   INSTANCE_FULL_NAME_FIELD,
   SalesforceArtifacts,
 } from './constants'
-import { RunTestsResult } from './client/jsforce'
+import { DeployMessage, RunTestsResult } from './client/jsforce'
 import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
 import { FetchProfile, QuickDeployParams } from './types'
 import { GLOBAL_VALUE_SET } from './filters/global_value_sets'
@@ -186,11 +186,7 @@ export const addChangeToPackage = async (
   return addedIds
 }
 
-type MetadataId = {
-  type: string
-  fullName: string
-  id: string
-}
+type MetadataId = Pick<DeployMessage, 'id' | 'componentType' | 'fullName'>
 
 const getUnFoundDeleteName = (message: DeployMessage, deletionsPackageName: string): MetadataId | undefined => {
   const match =
@@ -198,7 +194,7 @@ const getUnFoundDeleteName = (message: DeployMessage, deletionsPackageName: stri
       ? message.problem.match(/No.*named: (?<fullName>.*) found/)
       : undefined
   const fullName = match?.groups?.fullName
-  return fullName === undefined ? undefined : { type: message.componentType, fullName, id: message.id }
+  return fullName === undefined ? undefined : { componentType: message.componentType, fullName, id: message.id }
 }
 
 const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): boolean =>
@@ -362,8 +358,8 @@ const processDeployResponse = (
     .filter(isDefined)
 
   const successfulFullNames = allSuccessMessages
-    .map(success => ({
-      type: success.componentType,
+    .map<MetadataId>(success => ({
+      componentType: success.componentType,
       fullName: success.fullName,
       id: success.id,
     }))
@@ -616,10 +612,10 @@ export const deployMetadata = async (
     // TODO - this logic is not perfect, it might produce false positives when there are
     // child xml instances (because we pass in everything with a single change)
     const metadataId = successfulFullNames.find(successfulId =>
-      changeDeployedIds[successfulId.type]?.has(successfulId.fullName),
+      changeDeployedIds[successfulId.componentType]?.has(successfulId.fullName),
     )
     if (metadataId) {
-      if (fetchProfile.isFeatureEnabled('shouldPopulateInternalIdAfterDeploy')) {
+      if (fetchProfile.isFeatureEnabled('shouldPopulateInternalIdAfterDeploy') && metadataId.id) {
         setInternalId(getChangeData(change), metadataId.id)
       }
       return true

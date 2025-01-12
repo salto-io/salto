@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -17,21 +17,22 @@ import { odataType } from '../../../utils'
 import { applicationConfiguration } from '../../../utils/intune'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
 import { application, deviceConfiguration, deviceConfigurationSettings, platformScript } from './utils'
-import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './utils/group_assignments'
+import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './utils/assignments'
 
 const {
-  // Top level types
-  APPLICATION_TYPE_NAME,
-  APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
-  APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME,
-  DEVICE_CONFIGURATION_TYPE_NAME,
-  DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
-  DEVICE_COMPLIANCE_TYPE_NAME,
-  FILTER_TYPE_NAME,
-  PLATFORM_SCRIPT_LINUX_TYPE_NAME,
-  PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
-  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
-  SCOPE_TAG_TYPE_NAME,
+  TOP_LEVEL_TYPES: {
+    APPLICATION_TYPE_NAME,
+    APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+    APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME,
+    DEVICE_CONFIGURATION_TYPE_NAME,
+    DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
+    DEVICE_COMPLIANCE_TYPE_NAME,
+    FILTER_TYPE_NAME,
+    PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+    PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
+    PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
+    SCOPE_TAG_TYPE_NAME,
+  },
   // Nested types
   DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
@@ -43,7 +44,7 @@ const {
   // Other
   SERVICE_BASE_URL,
   ASSIGNMENTS_ODATA_CONTEXT,
-  TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS,
+  TYPES_WITH_ASSIGNMENTS_ASSIGNMENTS,
   TYPES_WITH_TARGET_APPS_APPS,
   TYPES_WITH_TARGET_APPS_PATH_MAP,
 } = intuneConstants
@@ -393,7 +394,7 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   })),
-  ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
+  ...TYPES_WITH_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
     [typeName]: {
       ...(typeName === SCOPE_TAG_ASSIGNMENTS_TYPE_NAME
         ? {

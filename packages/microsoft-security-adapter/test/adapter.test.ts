@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -95,6 +95,7 @@ describe('Microsoft Security adapter', () => {
           'EntraGroupLifeCyclePolicy',
           'EntraGroup__appRoleAssignments',
           'EntraOauth2PermissionGrant',
+          'EntraOauth2PermissionScope',
           'EntraPermissionGrantPolicy',
           'EntraRoleDefinition',
           'EntraServicePrincipal',
@@ -155,10 +156,15 @@ describe('Microsoft Security adapter', () => {
                 )
 
                 const { resourceAccess } = appResourceRef
-                expect(resourceAccess).toHaveLength(1)
+                expect(resourceAccess).toHaveLength(2)
                 expect(resourceAccess[0].id).toBeInstanceOf(ReferenceExpression)
                 expect(resourceAccess[0].id.elemID.getFullName()).toEqual(
                   'microsoft_security.EntraAppRole.instance.test_application__testAppRole_variation1@suuu',
+                )
+
+                expect(resourceAccess[1].id).toBeInstanceOf(ReferenceExpression)
+                expect(resourceAccess[1].id.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraOauth2PermissionScope.instance.test_application__testValue@suu',
                 )
               })
 
@@ -221,6 +227,31 @@ describe('Microsoft Security adapter', () => {
             })
           })
 
+          describe('oauth2 permission scopes', () => {
+            let permissionScopeInstances: InstanceElement[]
+            beforeEach(async () => {
+              permissionScopeInstances = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraOauth2PermissionScope')
+            })
+
+            it('should create the correct instances for Entra oauth2 permission scopes', async () => {
+              expect(permissionScopeInstances).toHaveLength(1)
+
+              const permissionScopeNames = permissionScopeInstances.map(e => e.elemID.name)
+              expect(permissionScopeNames).toEqual(expect.arrayContaining(['test_application__testValue@suu']))
+            })
+
+            it('should include parent reference to the application', async () => {
+              const parentRefs = permissionScopeInstances.map(ps => getParent(ps))
+              expect(
+                parentRefs.every(
+                  p => p?.elemID.getFullName() === 'microsoft_security.EntraApplication.instance.test_application@s',
+                ),
+              ).toBeTruthy()
+            })
+          })
+
           describe('service principals', () => {
             let servicePrincipalInstances: InstanceElement[]
             beforeEach(async () => {
@@ -256,6 +287,56 @@ describe('Microsoft Security adapter', () => {
               const { appId: appIdString } = (servicePrincipalWithoutAppRef as InstanceElement).value
               expect(appIdString).not.toBeInstanceOf(ReferenceExpression)
               expect(appIdString).toEqual('b0d12345-ef57-41d3-a7f7-cb2dcd0ef7c8')
+            })
+          })
+
+          describe('authentication strength policies', () => {
+            let authenticationStrengthPolicies: InstanceElement[]
+            beforeEach(async () => {
+              authenticationStrengthPolicies = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraAuthenticationStrengthPolicy')
+            })
+
+            it('should create the correct instances for Entra authentication strength policies', async () => {
+              expect(authenticationStrengthPolicies).toHaveLength(1)
+
+              const authenticationStrengthPolicyNames = authenticationStrengthPolicies.map(e => e.elemID.name)
+              expect(authenticationStrengthPolicyNames).toEqual(
+                expect.arrayContaining(['test_authentication_strength_policy@s']),
+              )
+            })
+          })
+
+          describe('conditional access policies', () => {
+            let conditionalAccessPolicies: InstanceElement[]
+            beforeEach(async () => {
+              conditionalAccessPolicies = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraConditionalAccessPolicy')
+            })
+
+            it('should create the correct instances for Entra conditional access policies', async () => {
+              expect(conditionalAccessPolicies).toHaveLength(1)
+
+              const conditionalAccessPolicyNames = conditionalAccessPolicies.map(e => e.elemID.name)
+              expect(conditionalAccessPolicyNames).toEqual(expect.arrayContaining(['test_conditional_access_policy@s']))
+            })
+
+            it('should adjust the authenticationStrength object correctly', async () => {
+              const policyWithAuthStrength = conditionalAccessPolicies.find(
+                e => e.elemID.name === 'test_conditional_access_policy@s',
+              )
+              expect(policyWithAuthStrength).toBeDefined()
+              const { grantControls } = (policyWithAuthStrength as InstanceElement).value
+              expect(grantControls).toBeDefined()
+              const { authenticationStrength } = grantControls
+              expect(authenticationStrength).toBeDefined()
+              expect(Object.keys(authenticationStrength)).toEqual(['id'])
+              expect(authenticationStrength.id).toBeInstanceOf(ReferenceExpression)
+              expect(authenticationStrength.id.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraAuthenticationStrengthPolicy.instance.test_authentication_strength_policy@s',
+              )
             })
           })
         })
@@ -1224,6 +1305,7 @@ describe('Microsoft Security adapter', () => {
           'EntraGroupLifeCyclePolicy',
           'EntraGroup__appRoleAssignments',
           'EntraOauth2PermissionGrant',
+          'EntraOauth2PermissionScope',
           'EntraPermissionGrantPolicy',
           'EntraRoleDefinition',
           'EntraServicePrincipal',

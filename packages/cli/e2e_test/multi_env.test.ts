@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,13 +9,15 @@ import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesfo
 // eslint-disable-next-line no-restricted-imports
 import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
 import path from 'path'
-import { Plan, loadLocalWorkspace } from '@salto-io/core'
+import { Plan } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { parser } from '@salto-io/parser'
 import { logger } from '@salto-io/logging'
 import { strings, collections } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
 import { isObjectType, ObjectType, Element, isInstanceElement } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   addElements,
@@ -288,7 +290,7 @@ describe.each([
       let elementsWithHidden: readonly Element[]
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV2_NAME)
-        const workspace = await loadLocalWorkspace({ path: baseDir })
+        const workspace = await loadLocalWorkspace({ path: baseDir, adapterCreators })
         visibleElements = await awu(await (await workspace.elements(false)).getAll()).toArray()
         elementsWithHidden = await awu(await (await workspace.elements(true)).getAll()).toArray()
       })

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -206,9 +206,17 @@ export const isCustomMetadataRecordTypeSync = (elem: Element): elem is ObjectTyp
   return isObjectType(elem) && (elementApiName?.endsWith(CUSTOM_METADATA_SUFFIX) ?? false)
 }
 
+/**
+ * @deprecated use {@link isCustomMetadataRecordInstanceSync} instead.
+ */
 export const isCustomMetadataRecordInstance = async (instance: InstanceElement): Promise<boolean> => {
   const instanceType = await instance.getType()
   return isCustomMetadataRecordType(instanceType)
+}
+
+export const isCustomMetadataRecordInstanceSync = (instance: InstanceElement): boolean => {
+  const instanceType = instance.getTypeSync()
+  return isCustomMetadataRecordTypeSync(instanceType)
 }
 
 export const boolValue = (val: JSONBool): boolean => val === 'true' || val === true

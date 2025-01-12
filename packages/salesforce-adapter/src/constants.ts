@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -446,6 +446,7 @@ export const CUSTOM_APPLICATION_METADATA_TYPE = 'CustomApplication'
 export const APEX_CLASS_METADATA_TYPE = 'ApexClass'
 export const APEX_PAGE_METADATA_TYPE = 'ApexPage'
 export const APEX_TRIGGER_METADATA_TYPE = 'ApexTrigger'
+export const APEX_COMPONENT_METADATA_TYPE = 'ApexComponent'
 export const GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE = 'GlobalValueSetTranslation'
 export const ASSIGNMENT_RULE_METADATA_TYPE = 'AssignmentRule'
 export const AUTO_RESPONSE_RULES_METADATA_TYPE = 'AutoResponseRules'
@@ -459,6 +460,8 @@ export const OPPORTUNITY_METADATA_TYPE = 'Opportunity'
 export const ANIMATION_RULE_METADATA_TYPE = 'AnimationRule'
 export const CANVAS_METADATA_TYPE = 'CanvasMetadata'
 export const STATIC_RESOURCE_METADATA_TYPE = 'StaticResource'
+export const AURA_DEFINITION_BUNDLE_METADATA_TYPE = 'AuraDefinitionBundle'
+export const GEN_AI_FUNCTION_METADATA_TYPE = 'GenAiFunction'
 
 // Wave Metadata Types
 export const WAVE_RECIPE_METADATA_TYPE = 'WaveRecipe'

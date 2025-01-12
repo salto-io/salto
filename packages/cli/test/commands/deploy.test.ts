@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { CompatibleDeployFunc, DeployResult, GroupProperties } from '@salto-io/core'
+import { DeployResult, GroupProperties } from '@salto-io/core'
 import * as saltoCoreModule from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import * as saltoFileModule from '@salto-io/file'
@@ -22,7 +22,7 @@ const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
 
 const mockDeployImpl =
-  (extraProperties?: DeployResult['extraProperties']): CompatibleDeployFunc =>
+  (extraProperties?: DeployResult['extraProperties']): typeof saltoCoreModule.deploy =>
   async (...args) =>
     // Deploy with Nacl files will fail, doing this trick as we cannot reference vars, we get error:
     // "The module factory of `jest.mock()` is not allowed to reference any

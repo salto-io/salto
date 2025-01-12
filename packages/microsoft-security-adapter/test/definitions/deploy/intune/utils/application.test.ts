@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -16,8 +16,12 @@ import { contextMock } from '../../../../mocks'
 
 const { getAdjustedOdataTypeFieldName } = odataType
 
-const { APP_IDENTIFIER_FIELD_NAME, PACKAGE_ID_FIELD_NAME, APP_STORE_URL_FIELD_NAME, APPLICATION_TYPE_NAME } =
-  intuneConstants
+const {
+  APP_IDENTIFIER_FIELD_NAME,
+  PACKAGE_ID_FIELD_NAME,
+  APP_STORE_URL_FIELD_NAME,
+  TOP_LEVEL_TYPES: { APPLICATION_TYPE_NAME },
+} = intuneConstants
 
 const isManagedGooglePlayAppMock = jest.fn()
 

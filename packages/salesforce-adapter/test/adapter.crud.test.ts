@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -179,46 +179,91 @@ describe('SalesforceAdapter CRUD', () => {
           result = await createElement(adapter, instance)
         })
         describe('when the shouldPopulateInternalIdAfterDeploy feature is enabled', () => {
-          beforeEach(async () => {
-            ;({ connection, adapter, client } = mockAdapter({
-              adapterParams: {
-                config: {
-                  fetch: {
-                    optionalFeatures: { shouldPopulateInternalIdAfterDeploy: true },
-                    data: {
-                      includeObjects: ['Test'],
-                      saltoIDSettings: {
-                        defaultIdFields: ['Name'],
+          describe('when the deployed instance has internalId', () => {
+            beforeEach(async () => {
+              ;({ connection, adapter, client } = mockAdapter({
+                adapterParams: {
+                  config: {
+                    fetch: {
+                      optionalFeatures: { shouldPopulateInternalIdAfterDeploy: true },
+                      data: {
+                        includeObjects: ['Test'],
+                        saltoIDSettings: {
+                          defaultIdFields: ['Name'],
+                        },
                       },
                     },
                   },
                 },
-              },
-            }))
-            connection.metadata.deploy.mockReturnValueOnce(
-              mockDeployResult({
-                success: true,
-                componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: NEW_ID }],
-              }),
-            )
-            result = await createElement(adapter, instance)
-          })
-          it('Should add new instance with internal id', async () => {
-            expect(result).toBeInstanceOf(InstanceElement)
-            expect(result.elemID).toEqual(instance.elemID)
-            expect(result.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(instanceName)
-            expect(result.value.token).toBeDefined()
-            expect(result.value.token).toBe('instanceTest')
-            expect(result.value.Token).toBeUndefined()
-
-            expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
-            const { manifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
-            expect(manifest).toBeDefined()
-            expect(manifest?.types).toEqual({
-              name: 'Flow',
-              members: instanceName,
+              }))
+              connection.metadata.deploy.mockReturnValueOnce(
+                mockDeployResult({
+                  success: true,
+                  componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: NEW_ID }],
+                }),
+              )
+              result = await createElement(adapter, instance)
             })
-            expect(result.value[constants.INTERNAL_ID_FIELD]).toBeDefined()
+            it('Should add new instance with internal id', async () => {
+              expect(result).toBeInstanceOf(InstanceElement)
+              expect(result.elemID).toEqual(instance.elemID)
+              expect(result.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(instanceName)
+              expect(result.value.token).toBeDefined()
+              expect(result.value.token).toBe('instanceTest')
+              expect(result.value.Token).toBeUndefined()
+
+              expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+              const { manifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
+              expect(manifest).toBeDefined()
+              expect(manifest?.types).toEqual({
+                name: 'Flow',
+                members: instanceName,
+              })
+              expect(result.value[constants.INTERNAL_ID_FIELD]).toBeDefined()
+            })
+          })
+          describe('when the deployed instance does not have internalId', () => {
+            beforeEach(async () => {
+              ;({ connection, adapter, client } = mockAdapter({
+                adapterParams: {
+                  config: {
+                    fetch: {
+                      optionalFeatures: { shouldPopulateInternalIdAfterDeploy: true },
+                      data: {
+                        includeObjects: ['Test'],
+                        saltoIDSettings: {
+                          defaultIdFields: ['Name'],
+                        },
+                      },
+                    },
+                  },
+                },
+              }))
+              connection.metadata.deploy.mockReturnValueOnce(
+                mockDeployResult({
+                  success: true,
+                  componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: undefined }],
+                }),
+              )
+              result = await createElement(adapter, instance)
+            })
+            it('Should not set the internalId on the deployed instance', async () => {
+              expect(result).toBeInstanceOf(InstanceElement)
+              expect(result.elemID).toEqual(instance.elemID)
+              expect(result.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(instanceName)
+              expect(result.value.token).toBeDefined()
+              expect(result.value.token).toBe('instanceTest')
+              expect(result.value.Token).toBeUndefined()
+
+              expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+              const { manifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
+              expect(manifest).toBeDefined()
+              expect(manifest?.types).toEqual({
+                name: 'Flow',
+                members: instanceName,
+              })
+              expect(result.value[constants.INTERNAL_ID_FIELD]).not.toBeDefined()
+            })
           })
         })
         describe('when the shouldPopulateInternalIdAfterDeploy feature is disabled', () => {
@@ -1483,47 +1528,96 @@ describe('SalesforceAdapter CRUD', () => {
     let result: DeployResult
     describe('for an instance element', () => {
       describe('when the internal ID of the Element changes', () => {
-        beforeEach(async () => {
-          const DEPLOYMENT_ID = 'testDeploymentId'
-          const beforeInstanceNoProfile = createInstanceElement(mockDefaultValues.ApexPage, mockTypes.ApexPage)
-          const afterInstanceNoProfile = createInstanceElement(
-            {
-              ...mockDefaultValues.ApexPage,
-              description: 'Updated ApexPage description',
-            },
-            mockTypes.ApexPage,
-          )
-          connection.metadata.deploy.mockReturnValueOnce(
-            mockDeployResult({
-              id: DEPLOYMENT_ID,
-              success: true,
-              componentSuccess: [
-                {
-                  fullName: mockDefaultValues.ApexPage.fullName,
-                  componentType: constants.APEX_PAGE_METADATA_TYPE,
-                  id: NEW_ID,
-                },
-              ],
-              retrieveResult: await mockRetrieveResult({}),
-            }),
-          )
-          result = await adapter.deploy({
-            changeGroup: {
-              groupID: afterInstanceNoProfile.elemID.getFullName(),
-              changes: [
-                {
-                  action: 'modify',
-                  data: { before: beforeInstanceNoProfile, after: afterInstanceNoProfile },
-                },
-              ],
-            },
-            progressReporter: nullProgressReporter,
+        describe('when new id from salesforce is defined', () => {
+          beforeEach(async () => {
+            const DEPLOYMENT_ID = 'testDeploymentId'
+            const beforeInstanceNoProfile = createInstanceElement(mockDefaultValues.ApexPage, mockTypes.ApexPage)
+            const afterInstanceNoProfile = createInstanceElement(
+              {
+                ...mockDefaultValues.ApexPage,
+                description: 'Updated ApexPage description',
+              },
+              mockTypes.ApexPage,
+            )
+            connection.metadata.deploy.mockReturnValueOnce(
+              mockDeployResult({
+                id: DEPLOYMENT_ID,
+                success: true,
+                componentSuccess: [
+                  {
+                    fullName: mockDefaultValues.ApexPage.fullName,
+                    componentType: constants.APEX_PAGE_METADATA_TYPE,
+                    id: NEW_ID,
+                  },
+                ],
+                retrieveResult: await mockRetrieveResult({}),
+              }),
+            )
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: afterInstanceNoProfile.elemID.getFullName(),
+                changes: [
+                  {
+                    action: 'modify',
+                    data: { before: beforeInstanceNoProfile, after: afterInstanceNoProfile },
+                  },
+                ],
+              },
+              progressReporter: nullProgressReporter,
+            })
+          })
+          it('should update internal id for non profile instances', async () => {
+            const deployedInstance = getChangeData(result.appliedChanges[0]) as InstanceElement
+            expect(deployedInstance).toBeInstanceOf(InstanceElement)
+            expect(deployedInstance.value[constants.INTERNAL_ID_FIELD]).toEqual(NEW_ID)
           })
         })
-        it('should update internal id for non profile instances', async () => {
-          const deployedInstance = getChangeData(result.appliedChanges[0]) as InstanceElement
-          expect(deployedInstance).toBeInstanceOf(InstanceElement)
-          expect(deployedInstance.value[constants.INTERNAL_ID_FIELD]).toEqual(NEW_ID)
+        describe('when new id from salesforce is undefined', () => {
+          let beforeInstanceNoProfile: InstanceElement
+          beforeEach(async () => {
+            const DEPLOYMENT_ID = 'testDeploymentId'
+            beforeInstanceNoProfile = createInstanceElement(mockDefaultValues.ApexPage, mockTypes.ApexPage)
+            const afterInstanceNoProfile = createInstanceElement(
+              {
+                ...mockDefaultValues.ApexPage,
+                description: 'Updated ApexPage description',
+              },
+              mockTypes.ApexPage,
+            )
+            connection.metadata.deploy.mockReturnValueOnce(
+              mockDeployResult({
+                id: DEPLOYMENT_ID,
+                success: true,
+                componentSuccess: [
+                  {
+                    fullName: mockDefaultValues.ApexPage.fullName,
+                    componentType: constants.APEX_PAGE_METADATA_TYPE,
+                    id: undefined,
+                  },
+                ],
+                retrieveResult: await mockRetrieveResult({}),
+              }),
+            )
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: afterInstanceNoProfile.elemID.getFullName(),
+                changes: [
+                  {
+                    action: 'modify',
+                    data: { before: beforeInstanceNoProfile, after: afterInstanceNoProfile },
+                  },
+                ],
+              },
+              progressReporter: nullProgressReporter,
+            })
+          })
+          it('should not update internal id', async () => {
+            const deployedInstance = getChangeData(result.appliedChanges[0]) as InstanceElement
+            expect(deployedInstance).toBeInstanceOf(InstanceElement)
+            expect(deployedInstance.value[constants.INTERNAL_ID_FIELD]).toEqual(
+              beforeInstanceNoProfile.value[constants.INTERNAL_ID_FIELD],
+            )
+          })
         })
       })
       describe('for general instance element', () => {

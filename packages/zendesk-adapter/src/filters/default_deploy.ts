@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -12,11 +12,11 @@ import { deployChange, deployChanges } from '../deployment'
 /**
  * Deploys all the changes that were not deployed by the previous filters
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'defaultDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const deployResult = await deployChanges(changes.filter(isInstanceChange), async change => {
-      await deployChange(change, client, config.apiDefinitions)
+      await deployChange(change, client, oldApiDefinitions)
     })
     return { deployResult, leftoverChanges: [] }
   },

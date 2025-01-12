@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,8 +7,10 @@
  */
 import _ from 'lodash'
 import { EOL } from 'os'
-import { diff, createEnvironmentSource, loadLocalWorkspace } from '@salto-io/core'
+import { diff } from '@salto-io/core'
+import { loadLocalWorkspace, createEnvironmentSource } from '@salto-io/local-workspace'
 import { Workspace, createElementSelectors, remoteMap as rm, EnvironmentSource } from '@salto-io/workspace'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   CommandDefAction,
   createCommandGroupDef,
@@ -331,6 +333,7 @@ export const createAction: CommandDefAction<EnvCreateArgs & ConfigOverrideArg> =
   const workspace = await loadLocalWorkspace({
     path: args.workspacePath,
     configOverrides,
+    adapterCreators,
   })
   args.cliTelemetry.setTags(getWorkspaceTelemetryTags(workspace))
   args.cliTelemetry.start()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -75,15 +75,13 @@ const slimAdapter: Adapter = {
   },
 }
 
+const adapterCreators = { dummy: slimAdapter }
+
 const loadWorkspace = async ({ baseDir, persistent }: { baseDir: string; persistent: boolean }): Promise<Workspace> =>
   loadLocalWorkspace({
     path: baseDir,
     persistent,
-    getConfigTypes: async () => [],
-    getCustomReferences: async elements => getCustomReferences(elements),
-    // we pass slimAdapter as this is only used for getConfigTypes which currently as defined does nothing with it!!
-    // can't import adapterCreators here as we get circular dependency
-    adapterCreators: { dummy: slimAdapter },
+    adapterCreators,
   })
 
 const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir }) => {
@@ -140,7 +138,11 @@ const dumpElementsToFolder: AdapterFormat['dumpElementsToFolder'] = async ({ bas
 const initFolder: AdapterFormat['initFolder'] = async ({ baseDir }) => {
   let workspace: Workspace | undefined
   try {
-    workspace = await initLocalWorkspace(baseDir, 'dummy', [], async () => [])
+    workspace = await initLocalWorkspace({
+      baseDir,
+      envName: 'dummy',
+      adapterCreators,
+    })
     return {
       errors: [],
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -21,7 +21,6 @@ import { deployment } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { addId, addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
-import { API_DEFINITIONS_CONFIG } from '../config'
 import { applyforInstanceChangesOfType } from './utils'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
@@ -32,7 +31,7 @@ export const DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME = 'dynamic_content_item__var
 
 const { makeArray } = collections.array
 
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'dynamicContentFilter',
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     const localeIdToVariant = Object.fromEntries(
@@ -97,11 +96,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       clonedChangeData.value.name = placeholderToName(newPlaceholder)
       log.trace('Creating dynamic content item with placeholder %s', newPlaceholder)
       // addition change
-      const response = await deployChange(clonedAdditionChange, client, config.apiDefinitions)
+      const response = await deployChange(clonedAdditionChange, client, oldApiDefinitions)
       log.trace('Successfully created dynamic content item with placeholder %o', newPlaceholder)
 
       // must add ID before the modification change
-      addId({ response, change: clonedAdditionChange, apiDefinitions: config.apiDefinitions })
+      addId({ response, change: clonedAdditionChange, apiDefinitions: oldApiDefinitions })
       const afterChangeData = getChangeData(change)
       afterChangeData.value.id = getChangeData(clonedAdditionChange).value.id
       try {
@@ -109,14 +108,14 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         const result = await deployChange(
           { action: 'modify', data: { before: clonedChangeData, after: getChangeData(change) } },
           client,
-          config.apiDefinitions,
+          oldApiDefinitions,
         )
         log.trace('Successfully created dynamic content item %o', clonedChangeData.elemID.getFullName())
         return result
       } catch (modificationError) {
         // removal of failed modification
         try {
-          await deployChange({ action: 'remove', data: { before: clonedChangeData } }, client, config.apiDefinitions)
+          await deployChange({ action: 'remove', data: { before: clonedChangeData } }, client, oldApiDefinitions)
           log.warn(
             'Unable to modify dynamic content item %s, but removal was successful: %o',
             clonedChangeData.elemID.getFullName(),
@@ -161,7 +160,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           variantRemovalChanges,
         ] as Change<InstanceElement>[][],
         async change => {
-          await deployChange(change, client, config.apiDefinitions)
+          await deployChange(change, client, oldApiDefinitions)
         },
       )
       return { deployResult, leftoverChanges }
@@ -169,7 +168,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(itemChanges, async change => {
       const response = isAdditionOfAlteredDynamicContentItem(change)
         ? await alterDynamicContentAddition(change)
-        : await deployChange(change, client, config.apiDefinitions)
+        : await deployChange(change, client, oldApiDefinitions)
       if (isSaltoError(response)) {
         throw response
       }
@@ -177,7 +176,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         response,
         parentChange: change,
         childrenChanges: variantChanges,
-        apiDefinitions: config[API_DEFINITIONS_CONFIG],
+        apiDefinitions: oldApiDefinitions,
         childFieldName: VARIANTS_FIELD_NAME,
         childUniqueFieldName: 'locale_id',
       })

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -18,10 +18,10 @@ import {
   StepEmitter,
   PlanItem,
   FetchFromWorkspaceFunc,
-  loadLocalWorkspace,
   fetchFromWorkspace,
   FetchFuncParams,
 } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { Workspace, nacl, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { promises, values } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -84,6 +84,7 @@ const createFetchFromWorkspaceCommand =
       otherWorkspace = await loadLocalWorkspace({
         path: otherWorkspacePath,
         persistent: false,
+        adapterCreators,
       })
     } catch (err) {
       throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
@@ -182,8 +183,6 @@ export const fetchCommand = async ({
   const fetchResult = await fetch({
     workspace,
     progressEmitter: fetchProgress,
-    // remove when there is no need to be backward compatible
-    // @ts-expect-error accounts is getting mixed up with workspace accounts. in here its string[] and not ((env?: string | undefined) => string[]) and we  get an error
     accounts,
     ignoreStateElemIdMapping: regenerateSaltoIds,
     withChangesDetection,

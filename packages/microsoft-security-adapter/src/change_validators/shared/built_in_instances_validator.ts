@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -20,15 +20,15 @@ type BuiltInIndicator = {
   value: Value
 }
 const POTENTIAL_BUILD_IN_TYPES: Record<string, BuiltInIndicator> = {
-  [entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: {
+  [entraConstants.TOP_LEVEL_TYPES.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: {
     fieldName: 'policyType',
     value: 'builtIn',
   },
-  [entraConstants.ROLE_DEFINITION_TYPE_NAME]: {
+  [entraConstants.TOP_LEVEL_TYPES.ROLE_DEFINITION_TYPE_NAME]: {
     fieldName: 'isBuiltIn',
     value: true,
   },
-  [intuneConstants.SCOPE_TAG_TYPE_NAME]: {
+  [intuneConstants.TOP_LEVEL_TYPES.SCOPE_TAG_TYPE_NAME]: {
     fieldName: 'isBuiltIn',
     value: true,
   },

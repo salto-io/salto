@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -11,7 +11,7 @@ import { StaticFile } from '@salto-io/adapter-api'
 import { platformScript } from '../../../../../src/definitions/fetch/intune/utils'
 import { contextMock } from '../../../../mocks'
 import { intuneConstants } from '../../../../../src/constants'
-import { ASSIGNMENT_FIELD_CUSTOMIZATION } from '../../../../../src/definitions/fetch/intune/utils/group_assignments'
+import { ASSIGNMENT_FIELD_CUSTOMIZATION } from '../../../../../src/definitions/fetch/intune/utils/assignments'
 
 const { SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME } = intuneConstants
 

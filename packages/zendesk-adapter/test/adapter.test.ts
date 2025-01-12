@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -222,9 +222,6 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
-          'zendesk.bot_builder_answer',
-          'zendesk.bot_builder_flow',
-          'zendesk.bot_builder_node',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -251,6 +248,9 @@ describe('adapter', () => {
           'zendesk.category_translation.instance.Development_myBrand__myBrand_en_us_ub@uuuuum',
           'zendesk.category_translation.instance.General_myBrand__myBrand_en_us_ub@uuuuum',
           'zendesk.category_translation__translations',
+          'zendesk.conversation_bot',
+          'zendesk.conversation_bot__answer',
+          'zendesk.conversation_bot__answer__node',
           'zendesk.custom_object',
           'zendesk.custom_object_field',
           'zendesk.custom_object_field__custom_field_options',
@@ -458,11 +458,11 @@ describe('adapter', () => {
           'zendesk.ticket_field.instance.credit_card_1_partialcreditcard@ssu',
           'zendesk.ticket_field.instance.zip_code_with_validation_regexp@sssu',
           'zendesk.ticket_field__custom_field_options',
-          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__enterprise@uumuu',
-          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__free@uumuu',
-          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__paying@uumuu',
-          'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect_ssssu__v1@uuuuumuu',
-          'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect_ssssu__v2_modified@uuuuumuuu',
+          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect__enterprise@suuu',
+          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect__free@suuu',
+          'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect__paying@suuu',
+          'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect__v1@ssssuuu',
+          'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect__v2_modified@ssssuuuu',
           'zendesk.ticket_field__system_field_options',
           'zendesk.ticket_fields',
           'zendesk.ticket_form',
@@ -746,21 +746,6 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
-          'zendesk.bot_builder_answer',
-          'zendesk.bot_builder_answer.instance.myBrand_test_bot_us__Testing@uumuu',
-          'zendesk.bot_builder_answer__trainingPhrases',
-          'zendesk.bot_builder_flow',
-          'zendesk.bot_builder_flow.instance.myBrand_test_bot@us',
-          'zendesk.bot_builder_flow__assignedChannelIntegrations',
-          'zendesk.bot_builder_flow__fallback',
-          'zendesk.bot_builder_flow__freeTextQuery',
-          'zendesk.bot_builder_flow__greeting',
-          'zendesk.bot_builder_flow__greeting__suggestedAnswers',
-          'zendesk.bot_builder_flow__helpCenterAutoReplyFeedback',
-          'zendesk.bot_builder_flow__publishedChannelIntegrations',
-          'zendesk.bot_builder_node',
-          'zendesk.bot_builder_node.instance.myBrand_test_bot_us__Testing_uumuu__01J4SRF1HAS4TQFQ99PKFRCQXB@uuuuumuu',
-          'zendesk.bot_builder_node__data',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -823,6 +808,21 @@ describe('adapter', () => {
           'zendesk.channel.instance.Web_form@s',
           'zendesk.channel.instance.Web_service__API_@ssjk',
           'zendesk.channel.instance.WhatsApp',
+          'zendesk.conversation_bot',
+          'zendesk.conversation_bot.instance.myBrand_test_bot@us',
+          'zendesk.conversation_bot__answer',
+          'zendesk.conversation_bot__answer.instance.myBrand_test_bot__Testing@usuu',
+          'zendesk.conversation_bot__answer__node',
+          'zendesk.conversation_bot__answer__node.instance.myBrand_test_bot__Testing__01J4SRF1HAS4TQFQ99PKFRCQXB@usuuuu',
+          'zendesk.conversation_bot__answer__node__data',
+          'zendesk.conversation_bot__answer__trainingPhrases',
+          'zendesk.conversation_bot__assignedChannelIntegrations',
+          'zendesk.conversation_bot__fallback',
+          'zendesk.conversation_bot__freeTextQuery',
+          'zendesk.conversation_bot__greeting',
+          'zendesk.conversation_bot__greeting__suggestedAnswers',
+          'zendesk.conversation_bot__helpCenterAutoReplyFeedback',
+          'zendesk.conversation_bot__publishedChannelIntegrations',
           'zendesk.custom_object',
           'zendesk.custom_object_field',
           'zendesk.custom_object_field__custom_field_options',
@@ -1384,9 +1384,6 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
-          'zendesk.bot_builder_answer',
-          'zendesk.bot_builder_flow',
-          'zendesk.bot_builder_node',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -1449,6 +1446,9 @@ describe('adapter', () => {
           'zendesk.channel.instance.Web_form@s',
           'zendesk.channel.instance.Web_service__API_@ssjk',
           'zendesk.channel.instance.WhatsApp',
+          'zendesk.conversation_bot',
+          'zendesk.conversation_bot__answer',
+          'zendesk.conversation_bot__answer__node',
           'zendesk.custom_object',
           'zendesk.custom_object_field',
           'zendesk.custom_object_field__custom_field_options',
@@ -1945,9 +1945,6 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
-          'zendesk.bot_builder_answer',
-          'zendesk.bot_builder_flow',
-          'zendesk.bot_builder_node',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -2010,6 +2007,9 @@ describe('adapter', () => {
           'zendesk.channel.instance.Web_form@s',
           'zendesk.channel.instance.Web_service__API_@ssjk',
           'zendesk.channel.instance.WhatsApp',
+          'zendesk.conversation_bot',
+          'zendesk.conversation_bot__answer',
+          'zendesk.conversation_bot__answer__node',
           'zendesk.custom_object',
           'zendesk.custom_object_field',
           'zendesk.custom_object_field__custom_field_options',
@@ -2494,15 +2494,11 @@ describe('adapter', () => {
           detailedMessage:
             "Salto could not access the custom_status resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         })
-        expect(errors?.[1].message.split('.')[0]).toEqual(
-          'Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions',
-        )
+        expect(errors?.[1].message.split('.')[0]).toEqual('Some elements were not fetched due to Salto ID collisions')
         expect(errors?.[1].detailedMessage.split('.')[0]).toEqual(
           'Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions',
         )
-        expect(errors?.[2].message.split('.')[0]).toEqual(
-          'Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions',
-        )
+        expect(errors?.[2].message.split('.')[0]).toEqual('Some elements were not fetched due to Salto ID collisions')
         expect(errors?.[2].detailedMessage.split('.')[0]).toEqual(
           'Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions',
         )
@@ -2636,13 +2632,13 @@ describe('adapter', () => {
             'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
         })
         expect(fetchRes.errors?.[1].message.split('.')[0]).toEqual(
-          'Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions',
+          'Some elements were not fetched due to Salto ID collisions',
         )
         expect(fetchRes.errors?.[1].detailedMessage.split('.')[0]).toEqual(
           'Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions',
         )
         expect(fetchRes.errors?.[2].message.split('.')[0]).toEqual(
-          'Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions',
+          'Some elements were not fetched due to Salto ID collisions',
         )
         expect(fetchRes.errors?.[2].detailedMessage.split('.')[0]).toEqual(
           'Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions',
@@ -3003,7 +2999,7 @@ describe('adapter', () => {
         modificationChange,
         toChange({
           after: new InstanceElement('inst', groupType, { id: 1 }, undefined, {
-            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups/1',
           }),
         }),
         toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
@@ -3039,14 +3035,14 @@ describe('adapter', () => {
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [toChange({ after: new InstanceElement('inst', groupType) })],
+          changes: [toChange({ after: new InstanceElement('inst', groupType, { id: 7 }) })],
         },
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({
-          after: new InstanceElement('inst', groupType, undefined, undefined, {
-            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+          after: new InstanceElement('inst', groupType, { id: 7 }, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups/7',
           }),
         }),
       ])
@@ -3091,14 +3087,14 @@ describe('adapter', () => {
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [toChange({ after: new InstanceElement('inst', groupType) })],
+          changes: [toChange({ after: new InstanceElement('inst', groupType, { id: '5' }) })],
         },
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({
-          after: new InstanceElement('inst', groupType, undefined, undefined, {
-            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+          after: new InstanceElement('inst', groupType, { id: '5' }, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups/5',
           }),
         }),
       ])
@@ -3108,14 +3104,14 @@ describe('adapter', () => {
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [toChange({ after: new InstanceElement('inst', groupType) })],
+          changes: [toChange({ after: new InstanceElement('inst', groupType, { id: 9 }) })],
         },
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({
-          after: new InstanceElement('inst', groupType, undefined, undefined, {
-            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+          after: new InstanceElement('inst', groupType, { id: 9 }, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups/9',
           }),
         }),
       ])
@@ -3163,7 +3159,7 @@ describe('adapter', () => {
             }),
             { ...instance.value, id: 1 },
             undefined,
-            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
+            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups/1' },
           ),
         }),
         client: expect.anything(),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -152,6 +152,7 @@ import scriptRunnerEmptyAccountIdsFilter from './filters/script_runner/workflow/
 import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
+import addAliasExtendedFilter from './filters/add_alias_extended'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
@@ -286,8 +287,6 @@ export const DEFAULT_FILTERS = [
   notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
   issueTypeHierarchyFilter,
-  fieldConfigurationFilter,
-  fieldConfigurationSchemeFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
   enhancedSearchNoiseReductionFilter, // Must run before jqlReferencesFilter
@@ -303,6 +302,8 @@ export const DEFAULT_FILTERS = [
   addAliasFilter, // must run before duplicateIdsFilter
   duplicateIdsFilter,
   unresolvedParentsFilter, // must run after duplicateIdsFilter
+  fieldConfigurationFilter, // must run after duplicateIdsFilter
+  fieldConfigurationSchemeFilter,
   contextReferencesFilter, // must run after duplicateIdsFilter
   assetsObjectFieldConfigurationFilter, // must run after contextReferencesFilter
   fieldTypeReferencesFilter,
@@ -337,7 +338,7 @@ export const DEFAULT_FILTERS = [
   userFallbackFilter, // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter, // Must run after accountIdFilter
   deployDcIssueEventsFilter,
-  addAliasFilter, // we need to run addAliasFilter before duplicateIdsFilter but we add jsm instances after it.
+  addAliasExtendedFilter, // we need to run addAliasFilter before duplicateIdsFilter but we add jsm instances after it.
   // So we need to run it again. we should fix it in SALTO-7175.
   scriptRunnerListenersDeployFilter, // must be done before scriptRunnerInstances
   scriptedFragmentsDeployFilter, // must be done before scriptRunnerInstances

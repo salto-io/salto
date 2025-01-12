@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/okta-adapter",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto Okta adapter",
   "repository": {
@@ -30,11 +30,11 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.4.8",
-    "@salto-io/adapter-components": "0.4.8",
-    "@salto-io/adapter-utils": "0.4.8",
-    "@salto-io/logging": "0.4.8",
-    "@salto-io/lowerdash": "0.4.8",
+    "@salto-io/adapter-api": "0.4.9",
+    "@salto-io/adapter-components": "0.4.9",
+    "@salto-io/adapter-utils": "0.4.9",
+    "@salto-io/logging": "0.4.9",
+    "@salto-io/lowerdash": "0.4.9",
     "@types/parse-link-header": "^2.0.0",
     "form-data": "^4.0.0",
     "joi": "^17.4.0",
@@ -43,10 +43,10 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
-    "@salto-io/e2e-credentials-store": "0.4.8",
-    "@salto-io/element-test-utils": "0.4.8",
+    "@salto-io/e2e-credentials-store": "0.4.9",
+    "@salto-io/element-test-utils": "0.4.9",
     "@salto-io/jest-extended": "^4.0.3",
-    "@salto-io/test-utils": "0.4.8",
+    "@salto-io/test-utils": "0.4.9",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "@types/uuid": "^10.0.0",

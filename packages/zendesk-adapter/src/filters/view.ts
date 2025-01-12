@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -18,7 +18,7 @@ const valToString = (val: Value): string | string[] => (_.isArray(val) ? val.map
 /**
  * Deploys views
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'viewFilter',
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(changes, [VIEW_TYPE_NAME], (instance: InstanceElement) => {
@@ -58,7 +58,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === VIEW_TYPE_NAME && !isRemovalChange(change),
     )
     const deployResult = await deployChanges(viewChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions, ['conditions', 'execution'])
+      await deployChange(change, client, oldApiDefinitions, ['conditions', 'execution'])
     })
     return { deployResult, leftoverChanges }
   },

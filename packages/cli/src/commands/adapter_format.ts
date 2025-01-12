@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -10,6 +10,7 @@ import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { calculatePatch, syncWorkspaceToFolder, initFolder, isInitializedFolder } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { adapterCreators } from '@salto-io/adapter-creators'
 import { WorkspaceCommandAction, createWorkspaceCommand, createCommandGroupDef } from '../command_builder'
 import { outputLine, errorOutputLine } from '../outputer'
@@ -168,6 +169,7 @@ type SyncWorkspaceAdapters = (typeof SYNC_WORKSPACE_ADAPTERS)[number]
 
 type SyncWorkspaceToFolderArgs = {
   toDir: string
+  toWorkspaceDir?: string
   accountName: SyncWorkspaceAdapters
   force: boolean
 }
@@ -176,7 +178,7 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
   input,
   output,
 }) => {
-  const { accountName, toDir, force } = input
+  const { accountName, toDir, toWorkspaceDir, force } = input
   const adapterName = workspace.getServiceFromAccountName(accountName)
   const initializedResult = await isInitializedFolder({ adapterName, baseDir: toDir, adapterCreators })
   if (initializedResult.errors.length > 0) {
@@ -198,8 +200,31 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
     }
   }
 
+  let toWorkspace: Workspace | undefined
+  if (toWorkspaceDir) {
+    try {
+      toWorkspace = await loadLocalWorkspace({ path: toWorkspaceDir, adapterCreators })
+    } catch (e) {
+      log.debug('Failed to load target workspace: %o', e)
+      outputLine('Failed to load target workspace, aborting', output)
+      return CliExitCode.UserInputError
+    }
+  }
+
   outputLine(`Synchronizing content of workspace to folder at ${toDir}`, output)
-  const result = await syncWorkspaceToFolder({ workspace, accountName, baseDir: toDir, adapterCreators })
+  if (toWorkspace) {
+    outputLine(
+      `Using workspace at ${toWorkspace} for elements that cannot be represented in the adapter format`,
+      output,
+    )
+  }
+  const result = await syncWorkspaceToFolder({
+    workspace,
+    accountName,
+    baseDir: toDir,
+    toWorkspace,
+    adapterCreators,
+  })
   if (result.errors.length > 0) {
     outputLine(formatSyncToWorkspaceErrors(result.errors), output)
     return CliExitCode.AppError
@@ -219,6 +244,13 @@ const syncToWorkspaceCmd = createWorkspaceCommand({
         alias: 'd',
         description: 'The project folder to update',
         required: true,
+      },
+      {
+        name: 'toWorkspaceDir',
+        type: 'string',
+        alias: 'w',
+        description: 'Workspace for elements which cannot be represented in the adapter format',
+        required: false,
       },
       {
         name: 'accountName',

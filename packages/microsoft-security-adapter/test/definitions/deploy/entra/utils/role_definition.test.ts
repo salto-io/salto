@@ -1,15 +1,16 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { ODATA_TYPE_FIELD } from '../../../../../src/constants'
-import { ROLE_DEFINITION_TYPE_NAME } from '../../../../../src/constants/entra'
+import { ODATA_TYPE_FIELD, entraConstants } from '../../../../../src/constants'
 import { adjustRoleDefinitionForDeployment } from '../../../../../src/definitions/deploy/entra/utils'
 import { contextMock } from '../../../../mocks'
+
+const { ROLE_DEFINITION_TYPE_NAME } = entraConstants.TOP_LEVEL_TYPES
 
 describe(`${adjustRoleDefinitionForDeployment.name}`, () => {
   it('should throw an error if the value is not an object', async () => {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -41,8 +41,8 @@ import {
 import ZendeskClient from '../../client/client'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
-import { CLIENT_CONFIG, ZendeskConfig } from '../../config'
-import { ZendeskApiConfig } from '../../user_config'
+import { CLIENT_CONFIG } from '../../config'
+import { ZendeskApiConfig, ZendeskUserConfig } from '../../user_config'
 import { DOMAIN_REGEX, ELEMENTS_REGEXES, transformReferenceUrls } from '../utils'
 import { lookupFunc } from '../field_references'
 
@@ -193,7 +193,7 @@ export const getArticleAttachments = async ({
   attachmentType: ObjectType
   apiDefinitions: ZendeskApiConfig
   attachments: Attachment[]
-  config: ZendeskConfig
+  config: ZendeskUserConfig
 }): Promise<SaltoElementError[]> => {
   const rateLimit = config[CLIENT_CONFIG]?.rateLimit?.get ?? 100
   log.debug(`there are ${attachments.length} attachments, going to get their content in chunks of ${rateLimit}`)

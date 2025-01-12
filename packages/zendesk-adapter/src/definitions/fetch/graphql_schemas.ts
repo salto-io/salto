@@ -5,13 +5,59 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-export const flowsQuery = `
- query fetchFlows {
-  flows {
-    ...FlowFields
+export const nodeFragment = `
+fragment NodeWithAuxiliaryData on NodeType {
+  id
+  externalId
+  parentId
+  targetType
+  data
+  version
+}
+`
+
+export const subflowFields = `
+fragment SubflowFields on SubflowType {
+  id
+  flowId
+  name
+  updated_at: updatedAt
+  status
+  isFromLegacyFlow
+  campaigns {
+    ...ProactiveCampaignFields
+  }
+  intents {
+    ...IntentFields
+  }
+  trainingPhrases {
+    ...TrainingPhraseFields
+  }
+  nodes {
+    ...NodeWithAuxiliaryData
   }
 }
 
+${nodeFragment}
+
+fragment ProactiveCampaignFields on ProactiveCampaignType {
+  campaignId
+  name
+}
+
+fragment IntentFields on IntentType {
+  subflowIntentId
+  subflowId
+  intentKey
+}
+
+fragment TrainingPhraseFields on TrainingPhraseType {
+  id
+  text
+}
+`
+
+export const flowFields = `
 fragment FlowFields on FlowType {
   id
   name
@@ -52,51 +98,7 @@ fragment FlowFields on FlowType {
   }
 }
 
-fragment SubflowFields on SubflowType {
-  id
-  flowId
-  name
-  updated_at: updatedAt
-  status
-  isFromLegacyFlow
-  campaigns {
-    ...ProactiveCampaignFields
-  }
-  intents {
-    ...IntentFields
-  }
-  trainingPhrases {
-    ...TrainingPhraseFields
-  }
-  nodes {
-    ...NodeWithAuxiliaryData
-  }
-}
-
-fragment NodeWithAuxiliaryData on NodeType {
-  id
-  externalId
-  parentId
-  targetType
-  data
-  version
-}
-
-fragment ProactiveCampaignFields on ProactiveCampaignType {
-  campaignId
-  name
-}
-
-fragment IntentFields on IntentType {
-  subflowIntentId
-  subflowId
-  intentKey
-}
-
-fragment TrainingPhraseFields on TrainingPhraseType {
-  id
-  text
-}
+${subflowFields}
 
 fragment FreeTextQueryFields on FreeTextQueryType {
   id
@@ -157,5 +159,14 @@ fragment IntentAutoReplyStatusFields on IntentAutoReplyStatusType {
   intentKey
   status
 }
+`
 
+export const flowsQuery = `
+ query fetchFlows {
+  flows {
+    ...FlowFields
+  }
+}
+
+${flowFields}
 `

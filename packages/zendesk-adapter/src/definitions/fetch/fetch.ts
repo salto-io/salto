@@ -2115,6 +2115,16 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'brandId', isReference: true }, { fieldName: 'name' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'brandId', isReference: true }, { fieldName: 'name' }] }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: 'brandId',
+              referenceFieldName: '_alias',
+            },
+            { fieldName: 'name' },
+          ],
+        },
+        serviceUrl: { path: '/admin/channels/ai-agents-automation/ai-agents/conversation-bots/{id}/insights' },
         allowEmptyArrays: true,
       },
       fieldCustomizations: {
@@ -2139,6 +2149,12 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         path: {
           pathParts: [{ parts: DEFAULT_ID_PARTS, extendsParent: true }],
         },
+        alias: {
+          aliasComponents: DEFAULT_ID_PARTS,
+        },
+        serviceUrl: {
+          path: '/admin/channels/ai-agents-automation/ai-agents/conversation-bots/{_parent.0.id}/answers/{id}/canvas',
+        },
         allowEmptyArrays: true,
       },
       fieldCustomizations: {
@@ -2160,6 +2176,15 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'id' }], extendsParent: true },
         path: { pathParts: [{ parts: [{ fieldName: 'id' }], extendsParent: true }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+            { fieldName: 'targetType' },
+          ],
+        },
         allowEmptyArrays: true,
       },
       fieldCustomizations: {

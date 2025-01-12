@@ -12,12 +12,15 @@ import { client as clientUtils, config as configUtils, definitions, elements } f
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
+  CONVERSATION_BOT,
   BRAND_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   EVERYONE_USER_TYPE,
   SECTION_ORDER_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
+  BOT_BUILDER_ANSWER,
+  BOT_BUILDER_NODE,
 } from './constants'
 import {
   fixerNames,
@@ -151,19 +154,19 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  bot_builder_flow: {
+  [CONVERSATION_BOT]: {
     transformation: {
       // This is added as the deprecated filter for references (referencedInstanceNamesFilterCreatorDeprecated) looks only in this config for the referenced idFields
       idFields: ['&brandId', 'name'],
     },
   },
-  bot_builder_answer: {
+  [BOT_BUILDER_ANSWER]: {
     transformation: {
       idFields: ['name'],
       extendsParentId: true,
     },
   },
-  bot_builder_node: {
+  [BOT_BUILDER_NODE]: {
     transformation: {
       idFields: ['id'],
       extendsParentId: true,
@@ -2764,7 +2767,7 @@ export const SUPPORTED_TYPES = {
   // tags are included in supportedTypes so that they can be easily omitted, but are fetched separately
   tag: ['tags'],
   custom_object: ['custom_objects'],
-  bot_builder_flow: ['bot_builder_flow'],
+  [CONVERSATION_BOT]: [CONVERSATION_BOT],
 }
 
 // Types in Zendesk Guide which relate to a certain brand

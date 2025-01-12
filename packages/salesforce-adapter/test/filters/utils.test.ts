@@ -58,7 +58,7 @@ import {
   isCustomField,
   isFieldOfTaskOrEvent,
   getProfilesAndPermissionSetsBrokenPaths,
-  getOrgFetchTargets,
+  getAccountFetchTargets,
   getMetadataIncludeFromFetchTargets,
   isOrderedMapTypeOrRefType,
   isCustomMetadataRecordInstanceSync,
@@ -1478,17 +1478,17 @@ describe('filter utils', () => {
       })
     })
   })
-  describe('getOrgFetchTargets', () => {
+  describe('getAccountFetchTargets', () => {
     let elementsSource: ReadOnlyElementsSource
-    describe('when Custom Objects Targets are invalid in the organization settings instance', () => {
+    describe('when FetchTargets instance values are invalid', () => {
       beforeEach(() => {
-        const invalidOrgSettings = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
+        const invalidFetchTargetsInstance = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
           [CUSTOM_OBJECTS_FIELD]: 'Invalid',
         })
-        elementsSource = buildElementsSourceFromElements([invalidOrgSettings])
+        elementsSource = buildElementsSourceFromElements([invalidFetchTargetsInstance])
       })
       it('should return metadata types only', async () => {
-        expect(await getOrgFetchTargets(elementsSource)).toEqual({
+        expect(await getAccountFetchTargets({ elementsSource, accountName: SALESFORCE })).toEqual({
           metadataTypes: SUPPORTED_METADATA_TYPES,
           customObjects: [],
           customObjectsLookups: {},
@@ -1506,7 +1506,7 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([fetchTargets])
       })
       it('should return correct fetch targets', async () => {
-        expect(await getOrgFetchTargets(elementsSource)).toEqual({
+        expect(await getAccountFetchTargets({ elementsSource, accountName: SALESFORCE })).toEqual({
           metadataTypes: SUPPORTED_METADATA_TYPES,
           customObjects: ['Account', 'Contact'],
           customObjectsLookups: { Account: ['Contact'] },

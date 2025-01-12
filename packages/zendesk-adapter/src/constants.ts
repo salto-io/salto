@@ -113,7 +113,6 @@ export const ORDER_TYPE_NAMES = [
 ]
 export const USER_FIELD_CUSTOM_FIELD_OPTIONS = 'user_field__custom_field_options'
 export const ORGANIZATION_FIELD_CUSTOM_FIELD_OPTIONS = 'organization_field__custom_field_options'
-export const BOT_BUILDER = 'bot_builder'
-export const BOT_BUILDER_FLOW = 'bot_builder_flow'
-export const BOT_BUILDER_ANSWER = 'bot_builder_answer'
-export const BOT_BUILDER_NODE = 'bot_builder_node'
+export const CONVERSATION_BOT = 'conversation_bot'
+export const BOT_BUILDER_ANSWER = 'conversation_bot__answer'
+export const BOT_BUILDER_NODE = 'conversation_bot__answer__node'

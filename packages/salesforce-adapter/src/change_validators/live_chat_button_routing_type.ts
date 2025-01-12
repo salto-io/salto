@@ -18,10 +18,13 @@ import {
 import { isInstanceOfTypeSync } from '../filters/utils'
 import { LIVE_CHAT_BUTTON } from '../constants'
 
-const isOmniChannelRoutedLiveChatButton = (element: Element): element is InstanceElement =>
-  isInstanceOfTypeSync(LIVE_CHAT_BUTTON)(element) &&
-  _.isUndefined(_.get(element.value, 'routingType')) &&
-  _.isUndefined(_.get(element.value, 'skills'))
+const isOmniChannelRoutedLiveChatButton = (element: Element): element is InstanceElement => {
+  const bool =
+    isInstanceOfTypeSync(LIVE_CHAT_BUTTON)(element) &&
+    _.isUndefined(_.get(element.value, 'routingType')) &&
+    _.isUndefined(_.get(element.value, 'skills'))
+  return bool
+}
 
 const createChangeError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,

@@ -36,7 +36,6 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import _, { isArray, isPlainObject } from 'lodash'
-import { credsLease } from './adapter'
 import {
   e2eDeploy,
   fetchWorkspace,
@@ -44,7 +43,8 @@ import {
   getDeletionDetailedChangesFromInstances,
   getElementsFromWorkspace,
   initWorkspace,
-} from './e2e_utils'
+} from '@salto-io/e2e-test-utils'
+import { credsLease } from './adapter'
 import {
   getAllInstancesToDeploy,
   HELP_CENTER_BRAND_NAME,
@@ -180,6 +180,7 @@ describe('Zendesk adapter E2E - 2', () => {
         credLease,
         configOverride: FETCH_CONFIG_OVERRIDE,
         adapterCreators,
+        authMethods: adapter.authenticationMethods,
       })
       await fetchWorkspace({ workspace, validationFilter: zendeskValidationFilter, adapterCreators })
       const firstFetchInstances = (await getElementsFromWorkspace(workspace)).filter(isInstanceElement)

@@ -9,7 +9,6 @@ import { ValidationError, Workspace } from '@salto-io/workspace'
 import { addAdapter, deploy, fetch, getDefaultAdapterConfig, preview, updateCredentials } from '@salto-io/core'
 import _ from 'lodash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { adapter, Credentials } from '@salto-io/zendesk-adapter'
 import tmp from 'tmp-promise'
 import { initLocalWorkspace } from '@salto-io/local-workspace'
 import {
@@ -19,6 +18,7 @@ import {
   InstanceElement,
   toChange,
   Adapter as AdapterType,
+  AdapterAuthentication,
 } from '@salto-io/adapter-api'
 import { getDetailedChanges } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -42,23 +42,24 @@ const updateConfig = async ({
     await workspace.updateAccountConfig(adapterName, defaultConfig, adapterName)
   }
 }
-export const initWorkspace = async ({
+export const initWorkspace = async <T extends {}>({
   envName,
   credLease,
   adapterName,
   configOverride,
   adapterCreators,
+  authMethods,
 }: {
   envName: string
-  credLease: CredsLease<Credentials>
+  credLease: CredsLease<T>
   adapterName: string
   configOverride?: Record<string, unknown>
   adapterCreators: Record<string, AdapterType>
+  authMethods: AdapterAuthentication
 }): Promise<Workspace> => {
   const baseDir = (await tmp.dir()).path
   const workspace = await initLocalWorkspace({ baseDir, envName, adapterCreators })
   await workspace.setCurrentEnv(envName, false)
-  const authMethods = adapter.authenticationMethods
   const configType = authMethods.basic
   const { credentialsType } = configType
   const newConfig = new InstanceElement(ElemID.CONFIG_NAME, credentialsType, credLease.value)

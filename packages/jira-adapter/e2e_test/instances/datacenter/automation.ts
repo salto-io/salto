@@ -5,10 +5,11 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { StaticFile, Values } from '@salto-io/adapter-api'
+import { ElemID, ReferenceExpression, StaticFile, Values } from '@salto-io/adapter-api'
 import * as path from 'path'
 import * as fs from 'fs'
 import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
+import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 export const createAutomationValues = (name: string): Values => ({
   name,
@@ -128,7 +129,7 @@ export const createAutomationValues = (name: string): Values => ({
               value: {
                 conditions: [
                   {
-                    field: 'jira.Field.instance.Reporter__user',
+                    field: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Reporter__user')),
                     check: 'USER_IS',
                     criteria: [
                       {
@@ -195,7 +196,7 @@ export const createAutomationValues = (name: string): Values => ({
               value: {
                 conditions: [
                   {
-                    field: 'jira.Field.instance.Assignee__user',
+                    field: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Assignee__user')),
                     check: 'USER_IS',
                     criteria: [
                       {

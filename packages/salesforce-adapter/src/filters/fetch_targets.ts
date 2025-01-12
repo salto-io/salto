@@ -5,10 +5,16 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, ElemID, InstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { apiNameSync, ensureSafeFilterFetch, isCustomObjectSync, referenceFieldTargetTypes } from './utils'
+import {
+  apiNameSync,
+  ensureSafeFilterFetch,
+  isCustomObjectSync,
+  metadataTypeOrUndefined,
+  referenceFieldTargetTypes,
+} from './utils'
 import { FilterCreator } from '../filter'
 import {
   ArtificialTypes,
@@ -20,7 +26,6 @@ import {
   SALESFORCE,
   SETTINGS_PATH,
 } from '../constants'
-import { isMetadataObjectType } from '../transformers/transformer'
 
 const { isDefined } = values
 
@@ -28,8 +33,8 @@ const getCustomObjectLookupTypes = (customObject: ObjectType): string[] =>
   _.uniq(Object.values(customObject.fields).flatMap(referenceFieldTargetTypes))
 
 export type SalesforceFetchTargets = {
-  [METADATA_TYPES_FIELD]: readonly string[]
-  [CUSTOM_OBJECTS_FIELD]: readonly string[]
+  [METADATA_TYPES_FIELD]: ReadonlyArray<string>
+  [CUSTOM_OBJECTS_FIELD]: ReadonlyArray<string>
   [CUSTOM_OBJECTS_LOOKUPS_FIELD]: Record<string, readonly string[]>
 }
 
@@ -49,10 +54,7 @@ const createFetchTargetsValue = (elements: Element[]): SalesforceFetchTargets =>
     }
   })
   return {
-    [METADATA_TYPES_FIELD]: elements
-      .filter(isMetadataObjectType)
-      .map(metadataType => apiNameSync(metadataType))
-      .filter(isDefined),
+    [METADATA_TYPES_FIELD]: _.uniq(elements.filter(isObjectType).map(metadataTypeOrUndefined).filter(isDefined)),
     [CUSTOM_OBJECTS_FIELD]: customObjectNames,
     [CUSTOM_OBJECTS_LOOKUPS_FIELD]: customObjectsLookups,
   }

@@ -155,6 +155,9 @@ export const isInstanceOfTypeChange =
 export const safeApiName = async (elem: Readonly<Element>, relative = false): Promise<string | undefined> =>
   apiName(elem, relative)
 
+/**
+ * @deprecated use {@link metadataTypeOrUndefined} instead.
+ */
 export const metadataTypeSync = (element: Readonly<Element>): string => {
   if (isInstanceElement(element)) {
     return metadataTypeSync(element.getTypeSync())
@@ -165,6 +168,19 @@ export const metadataTypeSync = (element: Readonly<Element>): string => {
   }
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
+
+export const metadataTypeOrUndefined = (element: Readonly<Element>): string | undefined => {
+  if (isInstanceElement(element)) {
+    return metadataTypeSync(element.getTypeSync())
+  }
+  if (isField(element)) {
+    // We expect to reach to this place only with field of CustomObject
+    return CUSTOM_FIELD
+  }
+  const metadataTypeAnnotation = element.annotations[METADATA_TYPE]
+  return _.isString(metadataTypeAnnotation) ? metadataTypeAnnotation : undefined
+}
+
 export const isCustomObjectSync = (element: Readonly<Element>): element is ObjectType => {
   const res =
     isObjectType(element) &&

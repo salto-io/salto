@@ -11,7 +11,8 @@ import { FilterWith } from './mocks'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { Types } from '../../src/transformers/transformer'
-import { ArtificialTypes, FIELD_ANNOTATIONS } from '../../src/constants'
+import { APEX_CLASS_METADATA_TYPE, ArtificialTypes, CUSTOM_OBJECT, FIELD_ANNOTATIONS } from '../../src/constants'
+import { mockTypes } from '../mock_elements'
 
 describe('fetch targets filter', () => {
   let filter: FilterWith<'onFetch'>
@@ -44,7 +45,7 @@ describe('fetch targets filter', () => {
           },
         },
       })
-      elements = [customObjectType, customObjectTypeWithLookup]
+      elements = [customObjectType, customObjectTypeWithLookup, mockTypes.ApexClass]
     })
     describe('when feature is enabled', () => {
       describe('when fetch is full', () => {
@@ -57,13 +58,14 @@ describe('fetch targets filter', () => {
           }) as typeof filter
         })
 
-        it('should create a fetch targets instance with correct custom objects and lookups', async () => {
+        it('should create a fetch targets instance with correct values', async () => {
           await filter.onFetch(elements)
           const fetchTargetsInstance = elements
             .filter(isInstanceElement)
             .find(e => e.getTypeSync() === ArtificialTypes.FetchTargets) as InstanceElement
           expect(fetchTargetsInstance).toBeDefined()
           expect(fetchTargetsInstance.value).toEqual({
+            metadataTypes: [CUSTOM_OBJECT, APEX_CLASS_METADATA_TYPE],
             customObjects: [CUSTOM_OBJECT_NAME, CUSTOM_OBJECT_WITH_LOOKUP_NAME],
             customObjectsLookups: {
               [CUSTOM_OBJECT_WITH_LOOKUP_NAME]: [CUSTOM_OBJECT_NAME, 'Account', 'Contact'],

@@ -42,10 +42,12 @@ import {
   SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
   shortElemIdHash,
+  SUPPORT_ADDRESS_TYPE_NAME,
   ThemeDirectory,
   TRANSLATIONS_FIELD,
   unzipFolderToElements,
   USER_SEGMENT_TYPE_NAME,
+  VIEW_TYPE_NAME,
   ZENDESK,
 } from '@salto-io/zendesk-adapter'
 import _ from 'lodash'
@@ -56,8 +58,15 @@ import * as path from 'path'
 import { parserUtils } from '@salto-io/parser'
 import { mockDefaultValues } from './mock_elements'
 
-const UNIQUE_NAME = 'E2ETestName'
+export const TYPES_NOT_TO_REMOVE = new Set<string>([
+  SUPPORT_ADDRESS_TYPE_NAME, // this is usually the defult of the brand and zendesk does not allow deleting the default
+])
+export const UNIQUE_NAME = 'E2ETestName'
 export const HELP_CENTER_BRAND_NAME = 'e2eHelpCenter'
+export const HIDDEN_PER_TYPE: Record<string, string[]> = {
+  [VIEW_TYPE_NAME]: ['title'],
+  [SECTION_TYPE_NAME]: ['direct_parent_id', 'direct_parent_type'],
+}
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 const createInstanceElement = ({
@@ -145,7 +154,11 @@ export const getAllInstancesToDeploy = async ({
 }: {
   brandInstanceE2eHelpCenter: InstanceElement
   defaultGroup: InstanceElement
-}): Promise<{ instancesToDeploy: InstanceElement[] }> => {
+}): Promise<{
+  instancesToDeploy: InstanceElement[]
+  guideInstances: InstanceElement[]
+  guideThemeInstance: InstanceElement
+}> => {
   const automationInstance = createInstanceElement({
     type: 'automation',
     valuesOverride: {
@@ -889,5 +902,5 @@ export const getAllInstancesToDeploy = async ({
     ...guideInstances,
     guideThemeInstance,
   ]
-  return { instancesToDeploy: instancesToAdd }
+  return { instancesToDeploy: instancesToAdd, guideInstances, guideThemeInstance }
 }

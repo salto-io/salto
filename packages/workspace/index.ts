@@ -72,8 +72,10 @@ import { PathIndex, splitElementByPath, getElementsPathHints, filterByPathHint }
 import { createPathIndexForElement } from './src/path_index_fallbacks'
 import { ReferenceIndexEntry } from './src/workspace/reference_indexes'
 import { getAdapterConfigsPerAccount, getAdaptersConfigTypesMap } from './src/workspace/adapters_config_source'
+import { ValidationError } from './src/validator'
 
 export {
+  ValidationError,
   getAdaptersConfigTypesMap,
   getAdapterConfigsPerAccount,
   errors,

@@ -116,14 +116,16 @@ const isErrorEnabledByValidatorName: Record<ChangeValidatorName, boolean> = {
   layoutDuplicateFields: true,
   customApplications: true,
   flowReferencedElements: true,
+  packageVersion: false,
 }
 
 const wrapChangeValidatorWithIsErrorEnabled = (
   changeValidator: ChangeValidator,
   changeValidatorName: ChangeValidatorName,
 ): ChangeValidator =>
-  !isErrorEnabledByValidatorName[changeValidatorName]
-    ? async (...args) => {
+  isErrorEnabledByValidatorName[changeValidatorName]
+    ? changeValidator
+    : async (...args) => {
         const errors = (await changeValidator(...args)).filter(error => error.severity === 'Error')
         if (errors.length === 0) {
           return errors
@@ -134,7 +136,6 @@ const wrapChangeValidatorWithIsErrorEnabled = (
           severity: 'Warning',
         }))
       }
-    : changeValidator
 
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
   managedPackage: () => packageValidator,

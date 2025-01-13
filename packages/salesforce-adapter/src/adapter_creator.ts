@@ -306,7 +306,7 @@ export const adapter: Adapter = {
     let allElements: Element[] | undefined
 
     const getAllElements = async (): Promise<Element[]> => {
-      if (_.isUndefined(allElements)) {
+      if (allElements === undefined) {
         allElements = await awu(await context.elementsSource.getAll()).toArray()
       }
       return allElements

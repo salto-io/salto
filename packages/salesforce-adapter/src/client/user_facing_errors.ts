@@ -177,7 +177,7 @@ export const DEPLOY_ERROR_MESSAGE_MAPPER: DeployErrorMessageMappers = {
     map: (saltoDeployError: SaltoError) => withSalesforceError(saltoDeployError.message, SCHEDULABLE_CLASS_MESSAGE),
   },
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT]: {
-    test: (problem: string) => problem === SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT,
+    test: (errorMessage: string) => errorMessage === SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT,
     map: (saltoDeployError: SaltoError) =>
       withSalesforceError(saltoDeployError.message, MAX_METADATA_DEPLOY_LIMIT_MESSAGE),
   },
@@ -213,7 +213,7 @@ export const getUserFriendlyDeployErrorMessage = (saltoDeployError: SaltoError):
   }
   const [mapperName, userFriendlyMessage] = Object.entries(userFriendlyMessageByMapperName)[0]
   log.debug(
-    'Replacing error %s message to %s. Original error: %o',
+    'Replacing error %s message to %s. Original error: %s',
     mapperName,
     userFriendlyMessage,
     saltoDeployError.message,
@@ -248,7 +248,7 @@ const createValidationRulesIndex = (elements: Element[]): Map<string, Validation
   )
 }
 
-const getValidationRulesUrl = (validationRules: ValidationRule[]): string[] =>
+const getValidationRulesUrls = (validationRules: ValidationRule[]): string[] =>
   validationRules.map(validationRule => validationRule.annotations[CORE_ANNOTATIONS.SERVICE_URL])
 
 export const enrichSaltoDeployErrors = async (
@@ -269,14 +269,14 @@ export const enrichSaltoDeployErrors = async (
   if (validationRulesIndex.size > 0) {
     return errors.reduce((acc: SaltoError[], error, index) => {
       acc.push(
-        _.isUndefined(indexToValidationRulesMessages[index])
+        indexToValidationRulesMessages[index] === undefined
           ? error
           : {
               ...error,
               detailedMessage: `${indexToValidationRulesMessages[index]
                 .map(
                   validationRuleMessage =>
-                    `${validationRuleMessage}:${getValidationRulesUrl(
+                    `${validationRuleMessage}:${getValidationRulesUrls(
                       validationRulesIndex.get(validationRuleMessage) ?? [],
                     )}`,
                 )

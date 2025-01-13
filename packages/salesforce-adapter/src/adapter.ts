@@ -812,15 +812,12 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     // Check old configuration flag for backwards compatibility (SALTO-2700)
     const checkOnly = this.userConfig?.client?.deploy?.checkOnly ?? false
     const result = await this.deployOrValidate(deployOptions, checkOnly)
-    const enrichedErrors = await enrichSaltoDeployErrors(
-      result.errors,
-      deployOptions.getAllElements ?? (async () => []),
-    )
-    const friendlyErrors = enrichedErrors.map(error => ({
+    result.errors = (
+      await enrichSaltoDeployErrors(result.errors, deployOptions.getAllElements ?? (async () => []))
+    ).map(error => ({
       ...error,
       detailedMessage: getUserFriendlyDeployErrorMessage(error),
     }))
-    result.errors = friendlyErrors
     // If we got here with checkOnly we must not return any applied changes
     // to maintain the old deploy interface (SALTO-2700)
     if (checkOnly) {

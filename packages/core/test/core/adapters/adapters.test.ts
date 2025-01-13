@@ -27,19 +27,17 @@ import {
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { adapter } from '@salto-io/salesforce-adapter'
 import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { expressions } from '@salto-io/workspace'
+import { expressions, getAdaptersConfigTypesMap } from '@salto-io/workspace'
 import {
   initAdapters,
   getAdaptersCredentialsTypes,
   getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
-  adapterCreators,
-  getAdaptersConfigTypesMap,
   createResolvedTypesElementsSource,
 } from '../../../src/core/adapters'
+import { createMockAdapter } from '../../common/helpers'
 
 const { toArrayAsync } = collections.asynciterable
 
@@ -54,22 +52,15 @@ jest.mock('@salto-io/adapter-utils', () => ({
   createDefaultInstanceFromType: jest.fn((...args) => createDefaultInstanceFromTypeMock(...args)),
 }))
 
-jest.mock('../../../src/core/adapters/creators', () => {
-  const actual = jest.requireActual('../../../src/core/adapters/creators')
-  return {
-    ...actual,
-    __esModule: true,
-    default: {
-      ...actual.default,
-      mockAdapter: {
-        configType: undefined,
-        getDefaultConfig: undefined,
-      },
-    },
-  }
-})
 describe('adapters.ts', () => {
-  const { authenticationMethods } = adapter
+  const sfMockAdapterName = 'salesforce'
+  const dummyMockAdapterName = 'dummy'
+
+  const credentialsType = new ObjectType({ elemID: new ElemID(sfMockAdapterName) })
+
+  const authenticationMethods = {
+    basic: { credentialsType },
+  }
   const accounts = ['salesforce']
   const sfConfig = new InstanceElement(ElemID.CONFIG_NAME, authenticationMethods.basic.credentialsType, {
     username: 'nacluser',
@@ -79,9 +70,19 @@ describe('adapters.ts', () => {
   })
 
   let resolveSpy: jest.SpyInstance
+  const mockAdapterCreator: Record<string, Adapter> = {}
+  let sfMockAdapter: ReturnType<typeof createMockAdapter>
+  let otherMockAdapter: ReturnType<typeof createMockAdapter>
+  let dummyMockAdapter: ReturnType<typeof createMockAdapter>
 
   beforeEach(() => {
     resolveSpy = jest.spyOn(expressions, 'resolve')
+    sfMockAdapter = createMockAdapter(sfMockAdapterName)
+    otherMockAdapter = createMockAdapter('mockAdapter')
+    dummyMockAdapter = createMockAdapter(dummyMockAdapterName)
+    mockAdapterCreator[sfMockAdapterName] = sfMockAdapter
+    mockAdapterCreator[dummyMockAdapterName] = dummyMockAdapter
+    mockAdapterCreator.mockAdapter = otherMockAdapter
     jest.clearAllMocks()
   })
 
@@ -89,23 +90,26 @@ describe('adapters.ts', () => {
     let credentials: Record<string, AdapterAuthentication>
 
     it('should return config for defined adapter', () => {
-      credentials = getAdaptersCredentialsTypes(accounts)
+      credentials = getAdaptersCredentialsTypes({ names: accounts, adapterCreators: mockAdapterCreator })
       expect(credentials.salesforce).toEqual(authenticationMethods)
     })
 
     it('should throw error for non defined adapter', () => {
-      expect(() => getAdaptersCredentialsTypes(accounts.concat('fake'))).toThrow()
+      expect(() =>
+        getAdaptersCredentialsTypes({ names: accounts.concat('fake'), adapterCreators: mockAdapterCreator }),
+      ).toThrow()
     })
   })
 
   describe('getDefaultAdapterConfig', () => {
-    const { mockAdapter } = adapterCreators
+    let mockAdapterVal: Adapter
     beforeEach(() => {
+      mockAdapterVal = mockAdapterCreator.mockAdapter
       const mockConfigType = new ObjectType({
         elemID: new ElemID('mockAdapter', ElemID.CONFIG_NAME),
       })
 
-      _.assign(mockAdapter, {
+      _.assign(mockAdapterVal, {
         configType: mockConfigType,
         configCreator: {
           getConfig: mockFunction<NonNullable<Adapter['configCreator']>['getConfig']>().mockResolvedValue(
@@ -117,6 +121,8 @@ describe('adapters.ts', () => {
         },
       })
 
+      mockAdapterCreator.mockAdapter = mockAdapterVal
+
       createDefaultInstanceFromTypeMock.mockResolvedValue(
         new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'aaa' }),
       )
@@ -127,8 +133,12 @@ describe('adapters.ts', () => {
     })
 
     it('should call createDefaultInstanceFromType when configCreator is undefined', async () => {
-      delete mockAdapter.configCreator
-      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
+      delete mockAdapterCreator.mockAdapter.configCreator
+      const defaultConfigs = await getDefaultAdapterConfig({
+        adapterName: 'mockAdapter',
+        accountName: 'mockAdapter',
+        adapterCreators: mockAdapterCreator,
+      })
       expect(createDefaultInstanceFromType).toHaveBeenCalled()
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'aaa' })
@@ -138,8 +148,13 @@ describe('adapters.ts', () => {
         elemID: new ElemID('test'),
       })
       const mockOptions = new InstanceElement('test', mockObjType)
-      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter', mockOptions)
-      expect(mockAdapter.configCreator?.getConfig).toHaveBeenCalledWith(mockOptions)
+      const defaultConfigs = await getDefaultAdapterConfig({
+        adapterName: 'mockAdapter',
+        accountName: 'mockAdapter',
+        adapterCreators: mockAdapterCreator,
+        options: mockOptions,
+      })
+      expect(mockAdapterVal.configCreator?.getConfig).toHaveBeenCalledWith(mockOptions)
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })
     })
@@ -157,14 +172,14 @@ describe('adapters.ts', () => {
     })
 
     beforeEach(() => {
-      const { mockAdapter } = adapterCreators
+      const { mockAdapter } = mockAdapterCreator
       _.assign(mockAdapter, {
         configType: mockConfigType,
       })
     })
 
     it('should return the config type and its sub-types', () => {
-      const types = getAdaptersConfigTypesMap()
+      const types = getAdaptersConfigTypesMap(mockAdapterCreator)
       expect(types.mockAdapter).toContain(mockConfigType)
       expect(types.mockAdapter).toContain(mockConfigSubType)
     })
@@ -184,6 +199,9 @@ describe('adapters.ts', () => {
         async () => undefined,
         buildElementsSourceFromElements([]),
         { [serviceName]: serviceName },
+        undefined,
+        undefined,
+        mockAdapterCreator,
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
@@ -202,6 +220,9 @@ describe('adapters.ts', () => {
         async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
         buildElementsSourceFromElements([]),
         { [serviceName]: serviceName },
+        undefined,
+        undefined,
+        mockAdapterCreator,
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
@@ -222,6 +243,9 @@ describe('adapters.ts', () => {
           async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
           buildElementsSourceFromElements([objectType, d1Type]),
           { [serviceName]: serviceName, d1: 'dummy' },
+          undefined,
+          undefined,
+          mockAdapterCreator,
         )
       })
 
@@ -275,6 +299,7 @@ describe('adapters.ts', () => {
           },
         },
         { salesforce: 'salesforce' },
+        mockAdapterCreator,
       )
       expect(adapters.salesforce).toBeDefined()
     })
@@ -282,23 +307,31 @@ describe('adapters.ts', () => {
     it('should throw an error when no proper config exists', async () => {
       const credentials: InstanceElement | undefined = undefined
       expect(() =>
-        initAdapters({
-          [accounts[0]]: {
-            credentials: credentials as unknown as InstanceElement,
-            elementsSource: utils.buildElementsSourceFromElements([]),
+        initAdapters(
+          {
+            [accounts[0]]: {
+              credentials: credentials as unknown as InstanceElement,
+              elementsSource: utils.buildElementsSourceFromElements([]),
+            },
           },
-        }),
+          {},
+          mockAdapterCreator,
+        ),
       ).toThrow()
     })
 
     it('should throw an error when no proper creator exists', async () => {
       expect(() =>
-        initAdapters({
-          notExist: {
-            credentials: sfConfig,
-            elementsSource: utils.buildElementsSourceFromElements([]),
+        initAdapters(
+          {
+            notExist: {
+              credentials: sfConfig,
+              elementsSource: utils.buildElementsSourceFromElements([]),
+            },
           },
-        }),
+          {},
+          mockAdapterCreator,
+        ),
       ).toThrow()
     })
   })

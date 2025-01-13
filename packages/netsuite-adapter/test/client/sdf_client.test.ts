@@ -24,10 +24,12 @@ import {
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config/constants'
 import {
+  DeployWarning,
   FeaturesDeployError,
   ManifestValidationError,
   MissingManifestFeaturesError,
   ObjectsDeployError,
+  PartialSuccessDeployErrors,
   SettingsDeployError,
 } from '../../src/client/errors'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
@@ -1924,6 +1926,13 @@ Update object -- customrecord_flo_customization.custrecord_flo_description (cust
 Update object -- customrecord_flo_customization.custrecord_sp_personal_data (customrecordcustomfield)
 Update object -- customrecord_flo_customization.custrecord_flo_help (customrecordcustomfield)
 Update object -- customrecord_flo_customization.custrecord_flo_custz_link (customrecordcustomfield)
+Validate for circular dependencies -- Success
+
+WARNING -- One or more potential issues were found during custom object validation. (customrecord_flo_customization)
+File: ~/Objects/customrecord_flo_customization.xml
+
+WARNING -- One or more potential issues were found during custom object validation. (customrecord_flo_customization)
+File: ~/Objects/customrecord_flo_customization.xml
 *** ERROR ***
 
 An error occurred during custom object update.
@@ -2028,6 +2037,120 @@ File: ~/AccountConfiguration/features.xml`,
           )
         }
         expect(isRejected).toBe(true)
+      })
+
+      it('should throw DeployWarning when deploy succeed with warnings', async () => {
+        const dataLines = [
+          'Validating against TSTDRV2257860 - Salto Development - Administrator.',
+          'Validate manifest -- Success',
+          'Validate deploy file -- Success',
+          'Validate configuration -- Success',
+          'Validate objects -- Success',
+          '',
+          'WARNING -- One or more potential issues were found during custom object validation. (customworkflow3)',
+          'Details: The test field is not supported for the workflowaction37 (setfieldvalueaction) subrecord and will be ignored.',
+          'File: ~/Objects/customworkflow3.xml',
+          '',
+          'WARNING -- One or more potential issues were found during custom object validation. (customrole1000)',
+          'Details: The accountingbooksoption field depends on the MULTIBOOK feature. The manifest must define the MULTIBOOK feature as required or optional.',
+          'Details: The custrecord_abc object field is invalid or not supported and will be ignored.',
+          'File: ~/Objects/customrole1000.xml',
+          '',
+          'WARNING -- One or more potential issues were found during custom object validation. (customrecord1000)',
+          'Details: The test field is not supported for the custrecord_123 (customrecordcustomfield) subrecord and will be ignored.',
+          'File: ~/Objects/customrecord1000.xml',
+          'Validate files -- Success',
+          'Validate folders -- Success',
+          'Validate translation imports -- Success',
+          'Validation of referenceability from custom objects to translations collection strings in progress. -- Success',
+          'Validate preferences -- Success',
+          'Validate flags -- Success',
+          'Validate account settings -- Success',
+          'Validate Custom Objects against the Account -- Success',
+          'Validate file cabinet items against the account -- Success',
+          'Validate translation imports against the account -- Success',
+          'Validation of references to translation collection strings against account in progress. -- Success',
+          'Validation COMPLETE',
+        ]
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: dataLines })
+        try {
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+          expect(false).toBeTruthy()
+        } catch (e) {
+          expect(e).toBeInstanceOf(PartialSuccessDeployErrors)
+          expect(e.message).toEqual(dataLines.join('\n'))
+          expect(e.errors).toHaveLength(4)
+          expect(e.errors[0]).toBeInstanceOf(DeployWarning)
+          expect(e.errors[0].message)
+            .toEqual(`WARNING -- One or more potential issues were found during custom object validation. (customworkflow3)
+Details: The test field is not supported for the workflowaction37 (setfieldvalueaction) subrecord and will be ignored.`)
+          expect(e.errors[0].objectId).toEqual('customworkflow3')
+          expect(e.errors[1]).toBeInstanceOf(DeployWarning)
+          expect(e.errors[1].message)
+            .toEqual(`WARNING -- One or more potential issues were found during custom object validation. (customrole1000)
+Details: The custrecord_abc object field is invalid or not supported and will be ignored.`)
+          expect(e.errors[1].objectId).toEqual('customrole1000')
+          expect(e.errors[2]).toBeInstanceOf(DeployWarning)
+          expect(e.errors[2].message)
+            .toEqual(`WARNING -- One or more potential issues were found during custom object validation. (customrecord1000)
+Details: The test field is not supported for the custrecord_123 (customrecordcustomfield) subrecord and will be ignored.`)
+          expect(e.errors[2].objectId).toEqual('customrecord1000')
+          expect(e.errors[3]).toBeInstanceOf(DeployWarning)
+          expect(e.errors[3].message)
+            .toEqual(`WARNING -- One or more potential issues were found during custom object validation. (customrecord1000)
+Details: The test field is not supported for the custrecord_123 (customrecordcustomfield) subrecord and will be ignored.`)
+          expect(e.errors[3].objectId).toEqual('custrecord_123')
+        }
+      })
+
+      it('should throw DeployWarning when deploy succeed with warnings - in other language', async () => {
+        const dataLines = [
+          'Validating against TSTDRV2257860 - Salto Development - Administrateur.',
+          'Valider la présente -- Succès',
+          'Valider le fichier de déploiement -- Succès',
+          'Valider la configuration -- Succès',
+          'Valider des objets -- Succès',
+          '',
+          "WARNING -- Un ou plusieurs problèmes potentiels ont été détectés lors de la validation d'un objet personnalisé. (customworkflow3)",
+          "Détails: Le champ test n'est pas pris en charge pour le sous-enregistrement workflowaction37 (setfieldvalueaction) et sera ignoré.",
+          'Fichier: ~/Objects/customworkflow3.xml',
+          '',
+          "WARNING -- Un ou plusieurs problèmes potentiels ont été détectés lors de la validation d'un objet personnalisé. (customrole1000)",
+          'Détails: Le champ accountingbooksoption dépend de la fonction MULTIBOOK. Le manifeste doit définir la fonction MULTIBOOK comme étant requise ou facultative.',
+          "Détails: L'objet custrecord_abc n'est pas valide ou n'est pas pris en charge et sera ignoré.",
+          'Fichier: ~/Objects/customrole1000.xml',
+          'Valider les fichiers -- Succès',
+          'Valider les dossiers -- Succès',
+          'Validate translation imports -- Succès',
+          'Vérification de la validité des références des objets personnalisés aux chaînes de la collection de traductions en cours. -- Succès',
+          'Validate preferences -- Succès',
+          'Validate flags -- Succès',
+          'Valider les paramètres de compte -- Succès',
+          'Validate Custom Objects against the Account -- Succès',
+          'Validate file cabinet items against the account -- Succès',
+          'Validate translation imports against the account -- Succès',
+          'Validation des références aux chaînes des collections de traductions par rapport au compte en cours. -- Succès',
+          'Validation COMPLETE',
+        ]
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: dataLines })
+        try {
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+          expect(false).toBeTruthy()
+        } catch (e) {
+          expect(e).toBeInstanceOf(PartialSuccessDeployErrors)
+          expect(e.message).toEqual(dataLines.join('\n'))
+          expect(e.errors).toHaveLength(2)
+          expect(e.errors[0]).toBeInstanceOf(DeployWarning)
+          expect(e.errors[0].message)
+            .toEqual(`WARNING -- Un ou plusieurs problèmes potentiels ont été détectés lors de la validation d'un objet personnalisé. (customworkflow3)
+Détails: Le champ test n'est pas pris en charge pour le sous-enregistrement workflowaction37 (setfieldvalueaction) et sera ignoré.`)
+          expect(e.errors[0].objectId).toEqual('customworkflow3')
+          expect(e.errors[1]).toBeInstanceOf(DeployWarning)
+          expect(e.errors[1].message)
+            .toEqual(`WARNING -- Un ou plusieurs problèmes potentiels ont été détectés lors de la validation d'un objet personnalisé. (customrole1000)
+Détails: L'objet custrecord_abc n'est pas valide ou n'est pas pris en charge et sera ignoré.`)
+          expect(e.errors[1].objectId).toEqual('customrole1000')
+        }
       })
     })
 
@@ -2170,9 +2293,17 @@ File: ~/AccountConfiguration/features.xml`,
           } as SDFObjectNode),
         ])
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [errorMessage] })
-        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects.toThrow(
-          new FeaturesDeployError(errorMessage, ['SUITEAPPCONTROLCENTER']),
-        )
+        try {
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+          expect(false).toBeTruthy()
+        } catch (e) {
+          expect(e).toBeInstanceOf(PartialSuccessDeployErrors)
+          expect(e.message).toEqual(errorMessage)
+          expect(e.errors).toHaveLength(1)
+          expect(e.errors[0]).toBeInstanceOf(FeaturesDeployError)
+          expect(e.errors[0].message).toEqual(errorMessage)
+          expect(e.errors[0].ids).toEqual(['SUITEAPPCONTROLCENTER'])
+        }
       })
 
       it('should throw FeaturesDeployError on failed features deploy - in other language', async () => {
@@ -2181,9 +2312,17 @@ File: ~/AccountConfiguration/features.xml`,
           'Configurer la fonction -- La d.sactivation de la fonction SUITEAPPCONTROLCENTER(SuiteApp Control Center) a .chou.',
         ]
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: errorMessages })
-        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects.toThrow(
-          new FeaturesDeployError(errorMessages[1], ['SUITEAPPCONTROLCENTER']),
-        )
+        try {
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+          expect(false).toBeTruthy()
+        } catch (e) {
+          expect(e).toBeInstanceOf(PartialSuccessDeployErrors)
+          expect(e.message).toEqual(errorMessages.join('\n'))
+          expect(e.errors).toHaveLength(1)
+          expect(e.errors[0]).toBeInstanceOf(FeaturesDeployError)
+          expect(e.errors[0].message).toEqual(errorMessages[1])
+          expect(e.errors[0].ids).toEqual(['SUITEAPPCONTROLCENTER'])
+        }
       })
     })
 

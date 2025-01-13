@@ -142,6 +142,7 @@ import flowCoordinatesFilter from './filters/flow_coordinates'
 import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import picklistReferences from './filters/picklist_references'
 import addParentToInstancesWithinFolderFilter from './filters/add_parent_to_instances_within_folder'
+import addParentToRecordTriggeredFlows from './filters/add_parent_to_record_triggered_flows'
 import { getConfigFromConfigChanges } from './config_change'
 import { Filter, FilterContext, FilterCreator, FilterResult } from './filter'
 import {
@@ -226,6 +227,8 @@ export const allFilters: Array<FilterCreator> = [
   // convertMapsFilter should run before profile fieldReferencesFilter
   convertMapsFilter,
   flowFilter,
+  elementsUrlFilter,
+  // customObjectInstanceReferencesFilter should run after elementsUrlFilter
   customObjectInstanceReferencesFilter,
   cpqReferencableFieldReferencesFilter,
   cpqCustomScriptFilter,
@@ -240,7 +243,6 @@ export const allFilters: Array<FilterCreator> = [
   extendTriggersMetadataFilter,
   profilePathsFilter,
   territoryFilter,
-  elementsUrlFilter,
   nestedInstancesAuthorInformation,
   customObjectAuthorFilter,
   dataInstancesAuthorFilter,
@@ -261,6 +263,8 @@ export const allFilters: Array<FilterCreator> = [
   // should run after convertListsFilter
   replaceFieldValuesFilter,
   valueToStaticFileFilter,
+  // addParentToRecordTriggeredFlows should run before fieldReferenceFilter
+  addParentToRecordTriggeredFlows,
   fieldReferencesFilter,
   // should run after customObjectsInstancesFilter for now
   referenceAnnotationsFilter,
@@ -593,9 +597,11 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     const fetchParams = this.userConfig.fetch ?? {}
     this.initializeCustomListFunctions(withChangesDetection)
     const baseQuery = buildMetadataQuery({ fetchParams })
+    const metadataTypeInfosPromise = this.listMetadataTypes(baseQuery)
     const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
       client: this.client,
       metadataQuery: buildFilePropsMetadataQuery(baseQuery),
+      metadataTypeInfos: await metadataTypeInfosPromise,
     })
     const targetedFetchInclude = fetchParams.target
       ? await getMetadataIncludeFromFetchTargets(fetchParams.target, this.elementsSource)
@@ -629,7 +635,6 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
         .filter((namedType): namedType is [string, TypeElement] => namedType[0] !== undefined),
     )
     const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
-    const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
 
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await this.fetchTypes({
@@ -774,6 +779,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
         this.client,
         this.nestedMetadataTypes,
         progressReporter,
+        fetchProfile,
         this.userConfig.client?.deploy?.deleteBeforeUpdate,
         checkOnly,
         this.userConfig.client?.deploy?.quickDeployParams,

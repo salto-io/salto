@@ -1,0 +1,82 @@
+[
+  {
+    "path": "/api/v1/users/userId/roles",
+    "scope": "",
+    "method": "GET",
+    "status": 200,
+    "response": [
+      {
+        "id": "userRoleId2",
+        "label": "Report Administrator",
+        "type": "REPORT_ADMIN",
+        "status": "ACTIVE",
+        "created": "2024-12-28T12:11:10.000Z",
+        "lastUpdated": "2024-12-28T12:11:10.000Z",
+        "assignmentType": "USER"
+      },
+      {
+        "id": "userRoleId1",
+        "label": "test",
+        "type": "CUSTOM",
+        "status": "ACTIVE",
+        "created": "2024-12-28T12:11:10.000Z",
+        "lastUpdated": "2024-12-28T12:11:10.000Z",
+        "assignmentType": "USER",
+        "resource-set": "resourceSetId",
+        "role": "customRoleId"
+      }
+    ],
+    "reqHeaders": {
+      "x-rate-limit-limit": "300",
+      "x-rate-limit-remaining": "297",
+      "x-rate-limit-reset": "1735388340"
+    }
+  },
+  {
+    "path": "/api/v1/users/userId/roles",
+    "scope": "",
+    "method": "POST",
+    "status": 201,
+    "response": {
+      "id": "userRoleId3",
+      "label": "Group Membership Administrator",
+      "type": "GROUP_MEMBERSHIP_ADMIN",
+      "status": "ACTIVE",
+      "created": "2024-12-28T12:18:23.000Z",
+      "lastUpdated": "2024-12-28T12:18:23.000Z",
+      "assignmentType": "USER"
+    },
+    "body": {
+      "type": "GROUP_MEMBERSHIP_ADMIN"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "300",
+      "x-rate-limit-remaining": "296",
+      "x-rate-limit-reset": "1735388340"
+    }
+  },
+  {
+    "path": "/api/v1/users/userId/roles/userRoleId1",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "300",
+      "x-rate-limit-remaining": "295",
+      "x-rate-limit-reset": "1735388340"
+    }
+  },
+  {
+    "path": "/api/v1/users/userId/roles/userRoleId2",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "300",
+      "x-rate-limit-remaining": "294",
+      "x-rate-limit-reset": "1735388340"
+    }
+  }
+]

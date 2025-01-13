@@ -14,6 +14,7 @@ import {
   InstanceElement,
   ObjectType,
   ReferenceExpression,
+  toChange,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import mockClient from '../client'
@@ -33,6 +34,7 @@ describe('elements url filter', () => {
   SalesforceClient.prototype.queryAll = mockQueryAll
 
   beforeEach(() => {
+    jest.restoreAllMocks()
     ;({ connection, client } = mockClient())
     filter = elementsUrlFilter({ client, config: defaultFilterContext })
     standardObject = new ObjectType({
@@ -40,100 +42,26 @@ describe('elements url filter', () => {
       annotations: { apiName: 'Account', metadataType: 'CustomObject' },
     })
   })
-
-  it('should add object type its service url', async () => {
-    connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
-    await filter.onFetch?.([standardObject])
-    expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
-      'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/Details/view',
-    )
-  })
-
-  it('should add a field its service url', async () => {
-    connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
-    const field = new Field(standardObject, 'standardField', BuiltinTypes.NUMBER, { apiName: 'standardField' })
-    standardObject.fields.standardField = field
-    await filter.onFetch?.([standardObject])
-    expect(field.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
-      'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/standardField/view',
-    )
-  })
-
-  it('should add an instance its service url', async () => {
-    connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
-    const instance = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      new ObjectType({
-        elemID: new ElemID('salesforce', 'BusinessHoursSettings'),
-        annotations: { metadataType: 'BusinessHoursSettings' },
-      }),
-    )
-    await filter.onFetch?.([instance])
-    expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
-      'https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home',
-    )
-  })
-
-  it('should add an element with reference expression its service url', async () => {
-    connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
-
-    const instance = new InstanceElement(
-      'testLayout',
-      new ObjectType({
-        elemID: new ElemID('salesforce', 'Layout'),
-        annotations: { metadataType: 'Layout' },
-      }),
-      { internalId: 'someId' },
-      [],
-      {
-        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(standardObject.elemID)],
-      },
-    )
-
-    await filter.onFetch?.([instance, standardObject])
-    expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
-      'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/PageLayouts/someId/view',
-    )
-  })
-
-  it('there is no instance url should not add the service url', async () => {
-    connection.instanceUrl = ''
-    expect(filter.onFetch).toBeDefined()
-    await filter.onFetch?.([standardObject])
-    expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
-  })
-
-  it('when instance url is an invalid salesforce url should not add the service url', async () => {
-    connection.instanceUrl = 'https://google.com'
-    expect(filter.onFetch).toBeDefined()
-    await filter.onFetch?.([standardObject])
-    expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
-  })
-
-  it('should not service url for unknown element', async () => {
-    connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
-    const element = new ObjectType({
-      elemID: new ElemID('salesforce', 'someType'),
-    })
-    expect(filter.onFetch).toBeDefined()
-    await filter.onFetch?.([element])
-    expect(element.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
-  })
-
-  describe('when feature is throwing an error', () => {
-    const elementsUrlRetrieverSpy = jest.spyOn(ElementsUrlRetrieverModule, 'lightningElementsUrlRetriever')
-
-    beforeEach(() => {
-      elementsUrlRetrieverSpy.mockImplementation(() => {
-        throw new Error()
-      })
+  describe('onFetch', () => {
+    it('should add object type its service url', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+      await filter.onFetch?.([standardObject])
+      expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+        'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/Details/view',
+      )
     })
 
-    afterEach(() => {
-      elementsUrlRetrieverSpy.mockReset()
+    it('should add a field its service url', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+      const field = new Field(standardObject, 'standardField', BuiltinTypes.NUMBER, { apiName: 'standardField' })
+      standardObject.fields.standardField = field
+      await filter.onFetch?.([standardObject])
+      expect(field.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+        'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/standardField/view',
+      )
     })
 
-    it('should return a warning', async () => {
+    it('should add an instance its service url', async () => {
       connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
       const instance = new InstanceElement(
         ElemID.CONFIG_NAME,
@@ -142,14 +70,154 @@ describe('elements url filter', () => {
           annotations: { metadataType: 'BusinessHoursSettings' },
         }),
       )
-      const res = (await filter.onFetch?.([instance])) as FilterResult
-      const err = res.errors ?? []
-      expect(res.errors).toHaveLength(1)
-      expect(err[0]).toEqual({
-        severity: 'Warning',
-        message: WARNING_MESSAGE,
-        detailedMessage: WARNING_MESSAGE,
+      await filter.onFetch?.([instance])
+      expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+        'https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home',
+      )
+    })
+
+    it('should add an element with reference expression its service url', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+
+      const instance = new InstanceElement(
+        'testLayout',
+        new ObjectType({
+          elemID: new ElemID('salesforce', 'Layout'),
+          annotations: { metadataType: 'Layout' },
+        }),
+        { internalId: 'someId' },
+        [],
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(standardObject.elemID)],
+        },
+      )
+
+      await filter.onFetch?.([instance, standardObject])
+      expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+        'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/PageLayouts/someId/view',
+      )
+    })
+
+    it('there is no instance url should not add the service url', async () => {
+      connection.instanceUrl = ''
+      expect(filter.onFetch).toBeDefined()
+      await filter.onFetch?.([standardObject])
+      expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    })
+
+    it('when instance url is an invalid salesforce url should not add the service url', async () => {
+      connection.instanceUrl = 'https://google.com'
+      expect(filter.onFetch).toBeDefined()
+      await filter.onFetch?.([standardObject])
+      expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    })
+
+    it('should not service url for unknown element', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+      const element = new ObjectType({
+        elemID: new ElemID('salesforce', 'someType'),
       })
+      expect(filter.onFetch).toBeDefined()
+      await filter.onFetch?.([element])
+      expect(element.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    })
+
+    describe('when feature is throwing an error', () => {
+      beforeEach(() => {
+        jest.spyOn(ElementsUrlRetrieverModule, 'lightningElementsUrlRetriever').mockImplementation(() => {
+          throw new Error()
+        })
+      })
+
+      it('should return a warning', async () => {
+        connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+        const instance = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          new ObjectType({
+            elemID: new ElemID('salesforce', 'BusinessHoursSettings'),
+            annotations: { metadataType: 'BusinessHoursSettings' },
+          }),
+        )
+        const res = (await filter.onFetch?.([instance])) as FilterResult
+        const err = res.errors ?? []
+        expect(res.errors).toHaveLength(1)
+        expect(err[0]).toEqual({
+          severity: 'Warning',
+          message: WARNING_MESSAGE,
+          detailedMessage: WARNING_MESSAGE,
+        })
+      })
+    })
+  })
+  describe('onDeploy', () => {
+    it('should add object type its service url', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+      await filter.onDeploy?.([toChange({ after: standardObject })])
+      expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+        'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/Details/view',
+      )
+    })
+    it('should add a field its service url', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+      const field = new Field(standardObject, 'standardField', BuiltinTypes.NUMBER, { apiName: 'standardField' })
+      standardObject.fields.standardField = field
+      await filter.onDeploy?.([toChange({ after: standardObject })])
+      expect(field.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+        'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/standardField/view',
+      )
+    })
+    it('should add an instance its service url', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+      const instance = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        new ObjectType({
+          elemID: new ElemID('salesforce', 'BusinessHoursSettings'),
+          annotations: { metadataType: 'BusinessHoursSettings' },
+        }),
+      )
+      await filter.onDeploy?.([toChange({ after: instance })])
+      expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+        'https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home',
+      )
+    })
+    it('should add an element with parent its service url', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+
+      const instance = new InstanceElement(
+        'testLayout',
+        new ObjectType({
+          elemID: new ElemID('salesforce', 'Layout'),
+          annotations: { metadataType: 'Layout' },
+        }),
+        { internalId: 'someId' },
+        [],
+        {
+          [CORE_ANNOTATIONS.PARENT]: [standardObject],
+        },
+      )
+
+      await filter.onDeploy?.([toChange({ after: instance })])
+      expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+        'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/PageLayouts/someId/view',
+      )
+    })
+    it('when there is no instance url should not add the service url', async () => {
+      connection.instanceUrl = ''
+      await filter.onDeploy?.([toChange({ after: standardObject })])
+      expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    })
+    it('when instance url is an invalid salesforce url should not add the service url', async () => {
+      connection.instanceUrl = 'https://google.com'
+      await filter.onDeploy?.([toChange({ after: standardObject })])
+      expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    })
+    it('should not add service url for unknown element', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+      const element = new ObjectType({
+        elemID: new ElemID('salesforce', 'someType'),
+      })
+      await filter.onDeploy?.([toChange({ after: element })])
+      expect(element.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
     })
   })
 })

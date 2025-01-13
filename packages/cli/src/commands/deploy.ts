@@ -9,6 +9,7 @@ import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { applyFunctionToChangeDataSync } from '@salto-io/adapter-utils'
 import { Progress } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   PlanItem,
   Plan,
@@ -44,6 +45,7 @@ import {
   formatGroups,
   deployErrorsOutput,
   formatDeploymentSummary,
+  formatActionUpdate,
 } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
@@ -141,21 +143,26 @@ const deployPlan = async (
     }
   }
 
-  const errorAction = (itemName: string, details: string | Progress): void => {
+  const errorAction = (itemName: string, details: string): void => {
     const action = actions[itemName]
     if (action !== undefined) {
-      errorOutputLine(formatItemError(itemName, _.isString(details) ? details : details.message), output)
+      errorOutputLine(formatItemError(itemName, details), output)
       if (action.intervalId) {
         clearInterval(action.intervalId)
       }
     }
   }
 
-  const cancelAction = (itemName: string, details: string | Progress): void => {
-    outputLine(formatCancelAction(itemName, _.isString(details) ? details : details.message), output)
+  const cancelAction = (itemName: string, details: string): void => {
+    outputLine(formatCancelAction(itemName, details), output)
   }
 
-  const startAction = (itemName: string, item: PlanItem): void => {
+  const startAction = (itemName: string, item: PlanItem, details?: string): void => {
+    if (actions[itemName] && details) {
+      outputLine(formatActionUpdate(itemName, details), output)
+      return
+    }
+
     const startTime = new Date()
     const intervalId = setInterval(() => {
       outputLine(formatActionInProgress(itemName, item.action, startTime), output)
@@ -172,14 +179,15 @@ const deployPlan = async (
   const updateAction = (item: PlanItem, status: ItemStatus, details?: string | Progress): void => {
     const itemName = item.groupKey
     if (itemName) {
+      const detailsString = _.isString(details) ? details : details?.message
       if (status === 'started') {
-        startAction(itemName, item)
+        startAction(itemName, item, detailsString)
       } else if (actions[itemName] !== undefined && status === 'finished') {
         endAction(itemName)
-      } else if (actions[itemName] !== undefined && status === 'error' && details !== undefined) {
-        errorAction(itemName, details)
-      } else if (status === 'cancelled' && details) {
-        cancelAction(itemName, details)
+      } else if (actions[itemName] !== undefined && status === 'error' && detailsString !== undefined) {
+        errorAction(itemName, detailsString)
+      } else if (status === 'cancelled' && detailsString) {
+        cancelAction(itemName, detailsString)
       }
     }
   }
@@ -188,13 +196,14 @@ const deployPlan = async (
     .flatMap(item => Array.from(item.changes()))
     .map(change => applyFunctionToChangeDataSync(change, element => element.clone()))
 
-  const result = await deploy(
+  const result = await deploy({
     workspace,
     actionPlan,
-    (item: PlanItem, step: ItemStatus, details?: string | Progress) => updateAction(item, step, details),
+    reportProgress: updateAction,
     accounts,
     checkOnly,
-  )
+    adapterCreators,
+  })
 
   const summary = summarizeDeployChanges(requestedChanges, result.appliedChanges ?? [])
   const nonErroredActions = Object.keys(actions).filter(
@@ -263,7 +272,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     return CliExitCode.AppError
   }
 
-  const actionPlan = await preview(workspace, actualAccounts, checkOnly)
+  const actionPlan = await preview({ workspace, accounts: actualAccounts, checkOnly, adapterCreators })
   await printPlan(actionPlan, output, workspace, detailedPlan)
   const executingDeploy = !dryRun && (force || (await shouldDeploy(actionPlan, checkOnly)))
   if (!dryRun) {

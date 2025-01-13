@@ -23,7 +23,8 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME, ZENDESK } from '../constants'
-import { FETCH_CONFIG, ZendeskConfig } from '../config'
+import { ZendeskUserConfig } from '../user_config'
+import { FETCH_CONFIG } from '../config'
 
 const { awu } = collections.asynciterable
 const { createMissingInstance } = referencesUtils
@@ -119,7 +120,10 @@ const returnDynamicContentsToApiValue = async (
     })) ?? instance.value
 }
 
-export const dynamicContentReferencesOnFetch = async (elements: Element[], config: ZendeskConfig): Promise<void> => {
+export const dynamicContentReferencesOnFetch = async (
+  elements: Element[],
+  config: ZendeskUserConfig,
+): Promise<void> => {
   const instances = elements.filter(isInstanceElement)
   const placeholderToItem = _(instances)
     .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)

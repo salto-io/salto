@@ -312,4 +312,36 @@ describe('createChangesForSubResources', () => {
       expect(subChanges).toHaveLength(0)
     })
   })
+  describe('when change id fields are pointing a reference that is not yet resolved', () => {
+    it('should user reference getFullName as the field value', async () => {
+      const roleType = new ObjectType({ elemID: new ElemID('adapter', 'role') })
+      const role1 = new InstanceElement('role1', roleType, { name: 'role1' })
+      const role2 = new InstanceElement('role2', roleType, { name: 'role2' })
+      const afterInstance = instance.clone()
+      afterInstance.value.items = [
+        { name: 'name', role: new ReferenceExpression(role1.elemID, role1) },
+        { name: 'name', role: new ReferenceExpression(role2.elemID, role2) },
+      ]
+      const change = toChange({ after: afterInstance })
+      const subChanges = await createChangesForSubResources({
+        change,
+        definitions,
+        context: {
+          changeGroup: { groupID: 'testGroup', changes: [change] },
+          elementSource: buildElementsSourceFromElements([]),
+          sharedContext: {},
+        },
+      })
+      expect(subChanges).toHaveLength(2)
+      expect(subChanges.map(c => c.action)).toEqual(['add', 'add'])
+      expect(subChanges.map(c => getChangeData(c).elemID.name)).toEqual([
+        'name_adapter.role.instance.role1',
+        'name_adapter.role.instance.role2',
+      ])
+      expect(subChanges.map(c => getChangeData(c).value)).toEqual([
+        { name: 'name', role: new ReferenceExpression(role1.elemID, role1) },
+        { name: 'name', role: new ReferenceExpression(role2.elemID, role2) },
+      ])
+    })
+  })
 })

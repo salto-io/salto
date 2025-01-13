@@ -9,7 +9,9 @@ import { InstanceElement, toChange, ReferenceExpression, ObjectType, ElemID } fr
 import { references as referencesUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import {
+  GUIDE_THEME_TYPE_NAME,
   MACRO_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
   TRIGGER_CATEGORY_TYPE_NAME,
   TRIGGER_TYPE_NAME,
@@ -424,6 +426,33 @@ describe('modifiedAndDeletedDependencyChanger', () => {
 
       const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
       expect(dependencyChanges.length).toBe(0)
+    })
+  })
+  describe('theme settings and guide theme', () => {
+    const themeSettingsType = new ObjectType({ elemID: new ElemID(ZENDESK, THEME_SETTINGS_TYPE_NAME) })
+    const guideThemeType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_THEME_TYPE_NAME) })
+    const themeSettings = new InstanceElement('themeSettings', themeSettingsType, {
+      liveTheme: new ReferenceExpression(new ElemID(ZENDESK, 'guide_theme')),
+    })
+    const guideTheme1 = new InstanceElement('theme1', guideThemeType, {})
+    const guideTheme2 = new InstanceElement('theme2', guideThemeType, {})
+    it('should add dependency from deleted theme to the theme settings', async () => {
+      const themeSettingsBefore = themeSettings.clone()
+      themeSettingsBefore.value.liveTheme = new ReferenceExpression(guideTheme1.elemID)
+      const themeSettingsAfter = themeSettings.clone()
+      themeSettingsAfter.value.liveTheme = new ReferenceExpression(guideTheme2.elemID)
+      const inputChanges = new Map([
+        [0, toChange({ before: guideTheme1 })],
+        [1, toChange({ before: themeSettingsBefore, after: themeSettingsAfter })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+        [0, new Set()],
+        [1, new Set()],
+      ])
+      const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges.length).toBe(1)
+      expect(dependencyChanges.every(change => change.action === 'add')).toBe(true)
+      expect(dependencyChanges[0].dependency).toMatchObject({ source: 0, target: 1 })
     })
   })
 })

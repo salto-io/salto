@@ -7,6 +7,7 @@
  */
 import { EventEmitter } from 'pietile-eventemitter'
 import { InstanceElement } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   fetch,
   fetchFromWorkspace,
@@ -138,10 +139,9 @@ describe('fetch command', () => {
       })
 
       it('should fetch both accounts', () => {
-        expect((fetch as jest.Mock).mock.calls[0][2]).toEqual(['salesforce', 'netsuite'])
+        expect((fetch as jest.Mock).mock.calls[0][0].accounts).toEqual(['salesforce', 'netsuite'])
       })
     })
-
     describe('when passing regenerate salto ids for selectors', () => {
       const workspace = mocks.mockWorkspace({})
 
@@ -189,9 +189,15 @@ describe('fetch command', () => {
           workspace,
         })
         expect(result).toBe(CliExitCode.Success)
-        expect(fetch).toHaveBeenCalledWith(workspace, expect.anything(), workspace.accounts(), true, undefined, [
-          createElementSelector('salto.type.instance.*'),
-        ])
+        expect(fetch).toHaveBeenCalledWith({
+          workspace,
+          progressEmitter: expect.anything(),
+          accounts: workspace.accounts(),
+          ignoreStateElemIdMapping: true,
+          withChangesDetection: undefined,
+          ignoreStateElemIdMappingForSelectors: [createElementSelector('salto.type.instance.*')],
+          adapterCreators,
+        })
       })
     })
 
@@ -202,13 +208,17 @@ describe('fetch command', () => {
 
       describe('with emitters called', () => {
         const mockFetchWithEmitter: jest.Mock = jest.fn(
-          (_workspace, progressEmitter: EventEmitter<FetchProgressEvents>, _accounts) => {
+          (workspace: {
+            workspace: Workspace
+            progressEmitter: EventEmitter<FetchProgressEvents>
+            accounts?: string[]
+          }) => {
             const getChangesEmitter = new StepEmitter()
-            progressEmitter.emit('changesWillBeFetched', getChangesEmitter, ['adapterName'])
-            progressEmitter.emit('adapterProgress', 'salesforce', 'fetch', { message: 'fetching message' })
+            workspace.progressEmitter.emit('changesWillBeFetched', getChangesEmitter, ['adapterName'])
+            workspace.progressEmitter.emit('adapterProgress', 'salesforce', 'fetch', { message: 'fetching message' })
             getChangesEmitter.emit('completed')
             const calculateDiffEmitter = new StepEmitter()
-            progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
+            workspace.progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
             calculateDiffEmitter.emit('failed')
             return Promise.resolve({ changes: [], mergeErrors: [], success: true })
           },
@@ -772,7 +782,7 @@ describe('fetch command', () => {
             },
             workspace,
           })
-          expect(mockLoadLocalWorkspace).toHaveBeenCalledWith({ path: sourcePath, persistent: false })
+          expect(mockLoadLocalWorkspace).toHaveBeenCalledWith({ path: sourcePath, persistent: false, adapterCreators })
           expect(mockFetchFromWorkspace).toHaveBeenCalled()
           const usedArgs = mockFetchFromWorkspace.mock.calls[0][0]
           expect(usedArgs.workspace).toEqual(workspace)
@@ -804,7 +814,7 @@ describe('fetch command', () => {
             },
             workspace,
           })
-          expect(mockLoadLocalWorkspace).toHaveBeenCalledWith({ path: sourcePath, persistent: false })
+          expect(mockLoadLocalWorkspace).toHaveBeenCalledWith({ path: sourcePath, persistent: false, adapterCreators })
           expect(mockFetchFromWorkspace).toHaveBeenCalled()
           const usedArgs = mockFetchFromWorkspace.mock.calls[0][0]
           expect(usedArgs.workspace).toEqual(workspace)

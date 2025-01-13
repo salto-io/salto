@@ -25,6 +25,8 @@ import {
   TypeElement,
   ChangeDataType,
   FixElementsFunc,
+  SaltoElementError,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -33,7 +35,7 @@ import { filter, logDuration } from '@salto-io/adapter-utils'
 import { combineElementFixers } from '@salto-io/adapter-components'
 import { createElements } from './transformer'
 import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
-import { BUNDLE, CUSTOM_RECORD_TYPE } from './constants'
+import { BUNDLE, CUSTOM_RECORD_TYPE, IS_LOCKED, SCRIPT_ID } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -107,7 +109,7 @@ import { getDataElements } from './data_elements/data_elements'
 import { getSuiteQLTableElements } from './data_elements/suiteql_table_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
-import { CustomizationInfo, FailedTypes, ImportFileCabinetResult } from './client/types'
+import { CustomizationInfo, CustomTypeInfo, FailedTypes, ImportFileCabinetResult } from './client/types'
 import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, ALL_TYPES_REGEX, EXTENSION_REGEX } from './config/constants'
 import {
   FetchByQueryFunc,
@@ -380,9 +382,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return result
     }
 
-    const getLockedCustomRecordTypes = (failedTypes: FailedTypes, instancesIds: ObjectID[]): ObjectType[] => {
+    const getLockedCustomRecordTypesScriptIds = (failedTypes: FailedTypes, instancesIds: ObjectID[]): string[] => {
       const scriptIdsSet = new Set(instancesIds.map(item => item.instanceId))
-      const lockedCustomRecordTypesScriptIds = _.uniq(
+      return _.uniq(
         (failedTypes.lockedError[CUSTOM_RECORD_TYPE] ?? []).concat(
           this.config.fetch.lockedElementsToExclude?.types
             .filter(isIdsQuery)
@@ -391,7 +393,26 @@ export default class NetsuiteAdapter implements AdapterOperations {
             .filter(scriptId => scriptIdsSet.has(scriptId)) ?? [],
         ),
       )
+    }
+
+    const getHiddenLockedCustomRecordTypes = (failedTypes: FailedTypes, instancesIds: ObjectID[]): ObjectType[] => {
+      if (this.config.fetch.visibleLockedCustomRecordTypes) {
+        return []
+      }
+      const lockedCustomRecordTypesScriptIds = getLockedCustomRecordTypesScriptIds(failedTypes, instancesIds)
       return createLockedCustomRecordTypes(lockedCustomRecordTypesScriptIds)
+    }
+
+    const getLockedCustomRecordTypes = (failedTypes: FailedTypes, instancesIds: ObjectID[]): CustomTypeInfo[] => {
+      if (!this.config.fetch.visibleLockedCustomRecordTypes) {
+        return []
+      }
+      const lockedCustomRecordTypesScriptIds = getLockedCustomRecordTypesScriptIds(failedTypes, instancesIds)
+      return lockedCustomRecordTypesScriptIds.map(scriptId => ({
+        typeName: CUSTOM_RECORD_TYPE,
+        values: { [SCRIPT_ID]: scriptId, [IS_LOCKED]: true },
+        scriptId,
+      }))
     }
 
     const getStandardAndCustomElements = async (): Promise<{
@@ -400,6 +421,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       customRecordTypes: ObjectType[]
       lockedCustomRecordTypes: ObjectType[]
       customRecords: InstanceElement[]
+      customRecordErrors: SaltoElementError[]
       instancesIds: ObjectID[]
       failures: Omit<FetchByQueryFailures, 'largeSuiteQLTables'>
     }> => {
@@ -421,16 +443,22 @@ export default class NetsuiteAdapter implements AdapterOperations {
         .concat(customObjects)
         .concat(fileCabinetContent)
         .concat(bundlesCustomInfo)
+        .concat(getLockedCustomRecordTypes(failedTypes, instancesIds))
 
       const elements = await createElements(elementsToCreate, this.getElemIdFunc)
       const [standardInstances, types] = _.partition(elements, isInstanceElement)
       const [objectTypes, otherTypes] = _.partition(types, isObjectType)
       const [customRecordTypes, standardTypes] = _.partition(objectTypes, isCustomRecordType)
-      const lockedCustomRecordTypes = getLockedCustomRecordTypes(failedTypes, instancesIds)
-      const { elements: customRecords, largeTypesError: failedCustomRecords } = await getCustomRecords(
+      const lockedCustomRecordTypes = getHiddenLockedCustomRecordTypes(failedTypes, instancesIds)
+      const {
+        elements: customRecords,
+        errors: customRecordErrors,
+        largeTypesError: failedCustomRecords,
+      } = await getCustomRecords(
         this.client,
         customRecordTypes.concat(lockedCustomRecordTypes),
         fetchQueryWithBundles,
+        this.config.fetch.singletonCustomRecords ?? [],
         this.getElemIdFunc,
       )
       return {
@@ -439,6 +467,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         customRecordTypes,
         lockedCustomRecordTypes,
         customRecords,
+        customRecordErrors,
         instancesIds,
         failures: { failedCustomRecords, failedFilePaths, failedToFetchAllAtOnce, failedTypes },
       }
@@ -451,6 +480,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         customRecordTypes,
         lockedCustomRecordTypes,
         customRecords,
+        customRecordErrors,
         instancesIds,
         failures,
       },
@@ -470,7 +500,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     // we calculate deleted elements only in partial-fetch mode
-    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult = isPartial
+    const { deletedElements = [], errors: deletedElementErrors = [] }: FetchDeletionResult = isPartial
       ? await getDeletedElements({
           client: this.client,
           elementsSource: this.elementsSource,
@@ -500,6 +530,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(serverTimeElements)
       .concat(scriptIdListElements)
 
+    const fetchErrors = ([] as SaltoError[]).concat(customRecordErrors).concat(deletedElementErrors)
+
     await this.createFiltersRunner({
       operation: 'fetch',
       isPartial,
@@ -511,8 +543,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return {
       failures,
       elements,
+      fetchErrors,
       deletedElements,
-      deletedElementErrors,
     }
   }
 
@@ -548,7 +580,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const fetchWithChangesDetection = !isFirstFetch && withChangesDetection
     const isPartial = fetchWithChangesDetection || hasFetchTarget
 
-    const { failures, elements, deletedElements, deletedElementErrors } = await this.fetchByQuery(
+    const { failures, elements, deletedElements, fetchErrors } = await this.fetchByQuery(
       fetchQuery,
       progressReporter,
       fetchWithChangesDetection,
@@ -561,9 +593,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const partialFetchData = setPartialFetchData(isPartial, deletedElements)
 
     if (_.isUndefined(updatedConfig)) {
-      return { elements, errors: deletedElementErrors, partialFetchData }
+      return { elements, errors: fetchErrors, partialFetchData }
     }
-    return { elements, updatedConfig, errors: deletedElementErrors, partialFetchData }
+    return { elements, updatedConfig, errors: fetchErrors, partialFetchData }
   }
 
   private async getChangedObjectsQuery(

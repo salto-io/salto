@@ -8,7 +8,6 @@
 import { references as referenceUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { entraConstants } from '../../constants'
 import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName } from '../types'
-import { SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME } from '../../constants/entra'
 
 const { recursiveNestedTypeName } = fetchUtils.element
 
@@ -38,6 +37,10 @@ const {
   ROLE_DEFINITION_TYPE_NAME,
   SERVICE_PRINCIPAL_TYPE_NAME,
   REQUIRED_RESOURCE_ACCESS_FIELD_NAME,
+  AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME,
+  CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
+  SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+  AUTHENTICATION_STRENGTH_PATH,
 } = entraConstants
 
 const createMicrosoftAuthenticatorReferences = (): referenceUtils.FieldReferenceDefinition<
@@ -236,6 +239,14 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       ],
     },
     target: { typeContext: 'resourceAccessType' },
+    serializationStrategy: 'id',
+  },
+  {
+    src: {
+      field: 'id',
+      parentTypes: [recursiveNestedTypeName(CONDITIONAL_ACCESS_POLICY_TYPE_NAME, ...AUTHENTICATION_STRENGTH_PATH)],
+    },
+    target: { type: AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME },
     serializationStrategy: 'id',
   },
 ]

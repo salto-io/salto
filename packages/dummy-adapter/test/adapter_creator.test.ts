@@ -206,12 +206,11 @@ describe('adapter creator', () => {
         })
       })
       it('should init the local workspace', () => {
-        expect(mockedLocalWorkspace.initLocalWorkspace).toHaveBeenCalledWith(
-          'some_path',
-          'dummy',
-          [],
-          expect.any(Function),
-        )
+        expect(mockedLocalWorkspace.initLocalWorkspace).toHaveBeenCalledWith({
+          baseDir: 'some_path',
+          envName: 'dummy',
+          adapterCreators: expect.anything(),
+        })
       })
       it('should return no errors', () => {
         expect(initFolderResult.errors).toEqual([])

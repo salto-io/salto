@@ -10,6 +10,7 @@ import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { calculatePatch, syncWorkspaceToFolder, initFolder, isInitializedFolder } from '@salto-io/core'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { WorkspaceCommandAction, createWorkspaceCommand, createCommandGroupDef } from '../command_builder'
 import { outputLine, errorOutputLine } from '../outputer'
 import { validateWorkspace, formatWorkspaceErrors } from '../workspace/workspace'
@@ -43,6 +44,7 @@ const applyPatchToWorkspace = async (
     fromDir,
     toDir,
     accountName,
+    adapterCreators,
   })
   if (mergeErrors.length > 0) {
     const mergeErrorsValues = await awu(mergeErrors.values()).flat().toArray()
@@ -176,7 +178,7 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
 }) => {
   const { accountName, toDir, force } = input
   const adapterName = workspace.getServiceFromAccountName(accountName)
-  const initializedResult = await isInitializedFolder({ adapterName, baseDir: toDir })
+  const initializedResult = await isInitializedFolder({ adapterName, baseDir: toDir, adapterCreators })
   if (initializedResult.errors.length > 0) {
     outputLine(formatSyncToWorkspaceErrors(initializedResult.errors), output)
     return CliExitCode.AppError
@@ -185,7 +187,7 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
   if (!initializedResult.result) {
     if (force || (await getUserBooleanInput('The folder is no initialized for the adapter format, initialize?'))) {
       outputLine(`Initializing adapter format folder at ${toDir}`, output)
-      const initResult = await initFolder({ adapterName, baseDir: toDir })
+      const initResult = await initFolder({ adapterName, baseDir: toDir, adapterCreators })
       if (initResult.errors.length > 0) {
         outputLine(formatSyncToWorkspaceErrors(initResult.errors), output)
         return CliExitCode.AppError
@@ -197,7 +199,7 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
   }
 
   outputLine(`Synchronizing content of workspace to folder at ${toDir}`, output)
-  const result = await syncWorkspaceToFolder({ workspace, accountName, baseDir: toDir })
+  const result = await syncWorkspaceToFolder({ workspace, accountName, baseDir: toDir, adapterCreators })
   if (result.errors.length > 0) {
     outputLine(formatSyncToWorkspaceErrors(result.errors), output)
     return CliExitCode.AppError

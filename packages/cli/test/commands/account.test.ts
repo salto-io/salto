@@ -88,8 +88,14 @@ jest.mock('@salto-io/core', () => {
       return loginStatuses
     }),
     installAdapter: jest.fn(),
-    getSupportedServiceAdapterNames: jest.fn().mockReturnValue(['salesforce', 'newAdapter', 'workato', 'netsuite']),
     loadLocalWorkspace: jest.fn().mockImplementation(actual.loadLocalWorkspace),
+  }
+})
+jest.mock('@salto-io/adapter-creators', () => {
+  const actual = jest.requireActual('@salto-io/adapter-creators')
+  return {
+    ...actual,
+    getSupportedServiceAdapterNames: jest.fn().mockReturnValue(['salesforce', 'newAdapter', 'workato', 'netsuite']),
   }
 })
 

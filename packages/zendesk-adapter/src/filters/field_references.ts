@@ -36,12 +36,16 @@ import {
   GUIDE_THEME_TYPE_NAME,
   QUEUE_ORDER_TYPE_NAME,
   QUEUE_TYPE_NAME,
+  BOT_BUILDER_NODE,
+  BOT_BUILDER_ANSWER,
+  BOT_BUILDER_FLOW,
 } from '../constants'
-import { FETCH_CONFIG, ZendeskConfig } from '../config'
+import { FETCH_CONFIG } from '../config'
 import {
   ZendeskMissingReferenceStrategyLookup,
   ZendeskMissingReferenceStrategyName,
 } from './references/missing_references'
+import { ZendeskUserConfig } from '../user_config'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -370,6 +374,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: BRAND_TYPE_NAME },
   },
   {
+    src: { field: 'brandId' },
+    serializationStrategy: 'id',
+    target: { type: BRAND_TYPE_NAME },
+  },
+  {
     src: { field: 'brand_ids' },
     serializationStrategy: 'id',
     target: { type: BRAND_TYPE_NAME },
@@ -565,6 +574,16 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     serializationStrategy: 'id',
     zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: TICKET_FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'parentId', parentTypes: [BOT_BUILDER_NODE] },
+    serializationStrategy: 'id',
+    target: { type: BOT_BUILDER_NODE },
+  },
+  {
+    src: { field: 'flowId', parentTypes: [BOT_BUILDER_ANSWER] },
+    serializationStrategy: 'id',
+    target: { type: BOT_BUILDER_FLOW },
   },
   {
     src: { field: 'custom_field_options', parentTypes: [TICKET_FIELD_TYPE_NAME] },
@@ -1146,7 +1165,7 @@ export const lookupFunc = referenceUtils.generateLookupFunc(
   defs => new ZendeskFieldReferenceResolver(defs),
 )
 
-export const fieldReferencesOnFetch = async (elements: Element[], config: ZendeskConfig): Promise<void> => {
+export const fieldReferencesOnFetch = async (elements: Element[], config: ZendeskUserConfig): Promise<void> => {
   const addReferences = async (refDefs: ZendeskFieldReferenceDefinition[]): Promise<void> => {
     const fixedDefs = refDefs.map(def =>
       config[FETCH_CONFIG].enableMissingReferences ? def : _.omit(def, 'zendeskMissingRefStrategy'),

@@ -16,14 +16,19 @@ Currently, Salto supports the following services:
 
 - [Salesforce](../packages/salesforce-adapter)
 - [NetSuite](../packages/netsuite-adapter)
-- [Workato](../packages/workato-adapter)
-- [Zendesk](../packages/zendesk-adapter)
-- [Zuora Billing](../packages/zuora-billing-adapter)
 - [Jira](../packages/jira-adapter)
-- [Stripe](../packages/stripe-adapter)
+- [Confluence](../packages/confluence-adapter)
+- [Zendesk](../packages/zendesk-adapter)
 - [Okta](../packages/okta-adapter)
+- [Microsoft Security - Entra ID and Intune](../packages/microsoft-security-adapter)
+- [Workato](../packages/workato-adapter)
+- [PagerDuty](../packages/pagerduty-adapter)
+- [Zuora Billing](../packages/zuora-billing-adapter)
+- [Intercom](../packages/intercom-adapter)
+- [Stripe](../packages/stripe-adapter)
 
-Support for other services is in the works.
+
+Support for other SaaS applications is in the works.
 
 ## How should I manage my service credentials?
 
@@ -38,7 +43,7 @@ See [LICENSE file in the repository](https://github.com/salto-io/salto/blob/main
 
 ## How can I contact you?
 
-- Email us at [open-source@salto.io](mailto://open-source@salto.io) 
+- Email us at [info@salto.io](mailto://info@salto.io) 
 - Join our public Slack channel [here](https://invite.playplay.io/invite?team_id=T011W61EVHD)
 - If you're looking to report a bug, file a feature request or contribute, please see [Contributing](contributing.md) .
 

@@ -256,7 +256,7 @@ const getMacroAttachments = async ({
 /**
  * Adds the macro attachments instances
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'macroAttachmentsFilter',
   onFetch: async elements => {
     const macrosWithAttachments = elements
@@ -327,7 +327,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       const response = await addAttachment(client, instance)
       addId({
         change,
-        apiDefinitions: config.apiDefinitions,
+        apiDefinitions: oldApiDefinitions,
         response: response.data,
         dataField: MACRO_ATTACHMENT_DATA_FIELD,
         addAlsoOnModification: true,
@@ -364,7 +364,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         .map(change => resolveChangeElement(change, lookupFunc))
         .toArray()
       const macroDeployResult = await deployChanges(resolvedParentChanges, async change => {
-        await deployChange(change, client, config.apiDefinitions)
+        await deployChange(change, client, oldApiDefinitions)
       })
       return {
         deployResult: {

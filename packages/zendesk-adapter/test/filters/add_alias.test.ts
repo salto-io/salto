@@ -7,7 +7,7 @@
  */
 import { filterUtils } from '@salto-io/adapter-components'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/add_alias'
+import filterCreator, { aliasMap } from '../../src/filters/add_alias'
 import {
   CATEGORY_ORDER_TYPE_NAME,
   CATEGORY_TRANSLATION_TYPE_NAME,
@@ -17,6 +17,7 @@ import {
 import { createFilterCreatorParams } from '../utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
+import { createFetchDefinitions } from '../../src/definitions'
 
 describe('add alias filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>
@@ -184,6 +185,20 @@ describe('add alias filter', () => {
       const elements = [dynamicContentItemInstance]
       await filter.onFetch(elements)
       expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
+    })
+  })
+
+  describe('equality between infra versions', () => {
+    it('should be equal', () => {
+      const defs = createFetchDefinitions({})
+      Object.entries(defs.instances.customizations ?? {}).forEach(([type, inst]) => {
+        if (type in aliasMap) {
+          expect(inst?.element?.topLevel?.alias).toEqual(aliasMap[type])
+        }
+      })
+      Object.entries(aliasMap).forEach(([type, alias]) => {
+        expect((defs.instances.customizations ?? {})[type]?.element?.topLevel?.alias).toEqual(alias)
+      })
     })
   })
 })

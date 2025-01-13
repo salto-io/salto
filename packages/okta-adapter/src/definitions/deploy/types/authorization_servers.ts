@@ -10,3 +10,10 @@ import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 
 // System scopes are built-in default scopes that can't be added or removed.
 export const isSystemScope = (change: Change<InstanceElement>): boolean => getChangeData(change).value.system === true
+
+// "sub" is reserved claim name that can not be used by any other claim.
+export const SUB_CLAIM_NAME = 'sub'
+
+// A default claim that is created when the authorization server is created.
+export const isSubDefaultClaim = (change: Change<InstanceElement>): boolean =>
+  getChangeData(change).value.system === true && getChangeData(change).value.name === SUB_CLAIM_NAME

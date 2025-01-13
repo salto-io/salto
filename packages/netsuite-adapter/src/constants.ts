@@ -60,10 +60,12 @@ export const TAX_SCHEDULE = 'taxSchedule'
 export const PROJECT_EXPENSE_TYPE = 'projectExpenseType'
 export const ALLOCATION_TYPE = 'allocationType'
 export const SUPPORT_CASE_PROFILE = 'supportCaseProfile'
+export const FIELD_TYPE = 'fieldType'
 
 // Type Annotations
 export const SOURCE = 'source'
 export const METADATA_TYPE = 'metadataType'
+export const IS_LOCKED = 'isLocked'
 
 // Fields
 export const SCRIPT_ID = 'scriptid'
@@ -75,7 +77,6 @@ export const PATH = 'path'
 export const PERMITTED_ROLE = 'permittedrole'
 export const RECORD_TYPE = 'recordType'
 export const APPLICATION_ID = 'application_id'
-export const IS_SUB_INSTANCE = 'isSubInstance'
 export const PARENT = 'parent'
 export const CUSTOM_FIELD_PREFIX = 'custom_'
 export const EXCHANGE_RATE = 'exchangeRate'

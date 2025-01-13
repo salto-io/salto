@@ -8,7 +8,7 @@
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { ADAPTER_NAME, entraConstants, ODATA_TYPE_FIELD_NACL_CASE } from '../../../src/constants'
-import { requiredFieldsValidator } from '../../../src/change_validators'
+import { requiredFieldsValidator } from '../../../src/change_validators/shared/required_fields_validator'
 
 describe(`${requiredFieldsValidator.name}`, () => {
   describe.each(['addition', 'modification'])(

@@ -76,7 +76,7 @@ describe('ticket field filter', () => {
     jest.clearAllMocks()
     filter = filterCreator(
       createFilterCreatorParams({
-        elementsSource: elementSource.createInMemoryElementSource([parent.clone()]),
+        elementSource: elementSource.createInMemoryElementSource([parent.clone()]),
       }),
     ) as FilterType
   })

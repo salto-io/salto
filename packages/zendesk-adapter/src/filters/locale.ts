@@ -44,7 +44,7 @@ const getWarningsForLocale = (): SaltoError[] => {
  * in the deploy, this filter adds and deletes locales through the account settings endpoint. zendesk does not support
  * modifications
  */
-const filterCreator: FilterCreator = ({ elementsSource, client }) => ({
+const filterCreator: FilterCreator = ({ elementSource, client }) => ({
   name: 'locale',
   onFetch: async (elements: Element[]) => {
     const defaultLocale = elements
@@ -97,7 +97,7 @@ const filterCreator: FilterCreator = ({ elementsSource, client }) => ({
     }
 
     // we do not need the actual changes as we send the entire list of locales
-    const allLocales = await getInstancesFromElementSource(elementsSource, [LOCALE_TYPE_NAME])
+    const allLocales = await getInstancesFromElementSource(elementSource, [LOCALE_TYPE_NAME])
     const localeIds = allLocales
       .filter(locale => {
         if (locale.value.id === undefined) {

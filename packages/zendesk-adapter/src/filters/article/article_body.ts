@@ -37,9 +37,10 @@ import { collections } from '@salto-io/lowerdash'
 import { parserUtils } from '@salto-io/parser'
 import { FilterCreator } from '../../filter'
 import { ARTICLE_TRANSLATION_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../constants'
-import { FETCH_CONFIG, isGuideEnabled, ZendeskConfig } from '../../config'
+import { FETCH_CONFIG, isGuideEnabled } from '../../config'
 import { getBrandsForGuide, matchBrand } from '../utils'
 import { extractTemplateFromUrl, prepRef, URL_REGEX } from './utils'
+import { ZendeskUserConfig } from '../../user_config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -179,7 +180,7 @@ export const articleBodyOnFetch =
       translationElemID: ElemID,
     ) => StaticFile | TemplateExpression,
   ) =>
-  async (elements: Element[], config: ZendeskConfig): Promise<{ errors: SaltoError[] }> => {
+  async (elements: Element[], config: ZendeskUserConfig): Promise<{ errors: SaltoError[] }> => {
     const instances = elements.filter(isInstanceElement)
     const instancesById = _.keyBy(
       instances.filter(instance => _.isNumber(instance.value.id)),

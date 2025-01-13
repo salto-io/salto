@@ -199,7 +199,14 @@ const buildMockWorkspace = async (
     delete: jest.fn(),
     rename: jest.fn(),
   }
-  return loadWorkspace(mockConfSource, mockAdaptersConf, mockCredentialsSource, elementsSources, mockCreateRemoteMap)
+  return loadWorkspace({
+    config: mockConfSource,
+    adaptersConfig: mockAdaptersConf,
+    credentials: mockCredentialsSource,
+    environmentsSources: elementsSources,
+    remoteMapCreator: mockCreateRemoteMap,
+    adapterCreators: {},
+  })
 }
 
 export const mockWorkspace = async (naclFiles: string[] = [], staticFileNames: string[] = []): Promise<Workspace> =>

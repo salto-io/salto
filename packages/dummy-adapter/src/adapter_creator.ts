@@ -65,12 +65,23 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
+const slimAdapter: Adapter = {
+  operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
+  validateCredentials: async () => ({ accountId: '' }),
+  authenticationMethods: {
+    basic: {
+      credentialsType: new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER) }),
+    },
+  },
+}
+
+const adapterCreators = { dummy: slimAdapter }
+
 const loadWorkspace = async ({ baseDir, persistent }: { baseDir: string; persistent: boolean }): Promise<Workspace> =>
   loadLocalWorkspace({
     path: baseDir,
     persistent,
-    getConfigTypes: async () => [],
-    getCustomReferences: async elements => getCustomReferences(elements),
+    adapterCreators,
   })
 
 const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir }) => {
@@ -127,7 +138,11 @@ const dumpElementsToFolder: AdapterFormat['dumpElementsToFolder'] = async ({ bas
 const initFolder: AdapterFormat['initFolder'] = async ({ baseDir }) => {
   let workspace: Workspace | undefined
   try {
-    workspace = await initLocalWorkspace(baseDir, 'dummy', [], async () => [])
+    workspace = await initLocalWorkspace({
+      baseDir,
+      envName: 'dummy',
+      adapterCreators,
+    })
     return {
       errors: [],
     }

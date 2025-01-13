@@ -33,7 +33,7 @@ describe('locale filter', () => {
       filter = filterCreator(
         createFilterCreatorParams({
           client,
-          elementsSource: buildElementsSourceFromElements([]),
+          elementSource: buildElementsSourceFromElements([]),
         }),
       ) as FilterType
     })
@@ -88,7 +88,7 @@ describe('locale filter', () => {
       filter = filterCreator(
         createFilterCreatorParams({
           client,
-          elementsSource: buildElementsSourceFromElements([enUsLocaleInstance, frLocaleInstance]),
+          elementSource: buildElementsSourceFromElements([enUsLocaleInstance, frLocaleInstance]),
         }),
       ) as FilterType
       mockPut = jest.spyOn(client, 'put')

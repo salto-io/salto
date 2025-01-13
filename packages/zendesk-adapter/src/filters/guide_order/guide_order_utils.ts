@@ -25,7 +25,6 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { elements as elementsUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
-import { API_DEFINITIONS_CONFIG, FilterContext } from '../../config'
 import {
   BRAND_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
@@ -40,6 +39,7 @@ import {
   ARTICLES_FIELD,
 } from '../../constants'
 import { getZendeskError } from '../../errors'
+import { ZendeskApiConfig } from '../../user_config'
 
 const { isDefined } = lowerDashValues
 const { createUrl } = fetchUtils.resource
@@ -120,7 +120,7 @@ export const createOrderInstance = ({
 const updateElementPositions = async (
   change: Change<InstanceElement>,
   orderField: string,
-  config: FilterContext,
+  apiDefinitions: ZendeskApiConfig,
   client: ZendeskClient,
 ): Promise<SaltoElementError[]> => {
   // Removal means nothing because the element is internal
@@ -137,7 +137,7 @@ const updateElementPositions = async (
     .map(async (child, i): Promise<SaltoElementError | undefined> => {
       const resolvedChild = child.value
       const childType = resolvedChild.elemID.typeName
-      const childUpdateApi = config[API_DEFINITIONS_CONFIG].types[childType].deployRequests?.modify
+      const childUpdateApi = apiDefinitions.types[childType].deployRequests?.modify
 
       if (childUpdateApi === undefined) {
         const message = `No endpoint of type modify for ${child.elemID.typeName}`
@@ -177,19 +177,19 @@ const updateElementPositions = async (
 export const deployOrderChanges = async ({
   changes,
   client,
-  config,
+  apiDefinitions,
   orderField,
 }: {
   changes: Change<InstanceElement>[]
   client: ZendeskClient
-  config: FilterContext
+  apiDefinitions: ZendeskApiConfig
   orderField: string
 }): Promise<DeployResult> => {
   const orderChangeErrors: SaltoElementError[] = []
   const appliedChanges: Change[] = []
 
   await awu(changes).forEach(async change => {
-    const changeErrors = await updateElementPositions(change, orderField, config, client)
+    const changeErrors = await updateElementPositions(change, orderField, apiDefinitions, client)
     if (changeErrors.length === 0) {
       appliedChanges.push(change)
     } else {

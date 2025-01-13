@@ -23,7 +23,7 @@ import {
   TypeElement,
   isObjectType,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, getSubtypes, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
   createAdapterReplacedID,
@@ -31,15 +31,41 @@ import {
   merger,
   updateElementsWithAlternativeAccount,
   elementSource as workspaceElementSource,
+  getAdaptersConfigTypesMap as getAdaptersConfigTypesMapImplementation,
 } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import adapterCreators from './creators'
+// for backward comptability
+import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 
 const { awu } = collections.asynciterable
 const { buildContainerType } = workspaceElementSource
 const log = logger(module)
 
-export const getAdaptersCredentialsTypes = (names?: ReadonlyArray<string>): Record<string, AdapterAuthentication> => {
+type getAdaptersCredentialsTypesArgs = { names?: ReadonlyArray<string>; adapterCreators: Record<string, Adapter> }
+
+const getGetAdaptersCredentialsTypes: (
+  namesOrParams?: ReadonlyArray<string> | getAdaptersCredentialsTypesArgs,
+) => getAdaptersCredentialsTypesArgs = namesOrParams => {
+  if (namesOrParams && 'adapterCreators' in namesOrParams) {
+    return namesOrParams
+  }
+  return {
+    names: namesOrParams,
+    adapterCreators: allAdapterCreators,
+  }
+}
+// As a transitionary step, we support both a string array input and an argument object
+export function getAdaptersCredentialsTypes(
+  args: getAdaptersCredentialsTypesArgs,
+): Record<string, AdapterAuthentication>
+// @deprecated
+export function getAdaptersCredentialsTypes(inputNames?: ReadonlyArray<string>): Record<string, AdapterAuthentication>
+
+export function getAdaptersCredentialsTypes(
+  inputNames?: ReadonlyArray<string> | getAdaptersCredentialsTypesArgs,
+): Record<string, AdapterAuthentication> {
+  // for backward compatibility
+  const { names, adapterCreators } = getGetAdaptersCredentialsTypes(inputNames)
   let relevantAdapterCreators: Record<string, Adapter>
   if (names === undefined) {
     relevantAdapterCreators = adapterCreators
@@ -56,15 +82,18 @@ export const getAdaptersCredentialsTypes = (names?: ReadonlyArray<string>): Reco
 export const initAdapters = (
   config: Record<string, AdapterOperationsContext>,
   accountToServiceNameMap: Record<string, string> = {},
+  adapterCreators?: Record<string, Adapter>,
 ): Record<string, AdapterOperations> =>
   _.mapValues(config, (context, account) => {
+    // for backward compatibility
+    const actualAdapterCreator = adapterCreators ?? allAdapterCreators
     if (!context.credentials) {
       throw new Error(`${account} is not logged in.\n\nPlease login and try again.`)
     }
     if (!accountToServiceNameMap[account]) {
       throw new Error(`${account} account does not exist in environment.`)
     }
-    const creator = adapterCreators[accountToServiceNameMap[account]]
+    const creator = actualAdapterCreator[accountToServiceNameMap[account]]
     if (!creator) {
       throw new Error(`${accountToServiceNameMap[account]} adapter is not registered.`)
     }
@@ -76,31 +105,70 @@ export const initAdapters = (
     return creator.operations(context)
   })
 
-const getAdapterConfigFromType = async (adapterName: string): Promise<InstanceElement | undefined> => {
+const getAdapterConfigFromType = async (
+  adapterName: string,
+  adapterCreators: Record<string, Adapter>,
+): Promise<InstanceElement | undefined> => {
   const { configType } = adapterCreators[adapterName]
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
 
-export const getAdaptersConfigTypesMap = (): Record<string, ObjectType[]> =>
-  Object.fromEntries(
-    Object.entries(
-      _.mapValues(adapterCreators, adapterCreator =>
-        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
-      ),
-    ).filter(entry => entry[1].length > 0),
-  )
+export const getAdaptersConfigTypesMap = (adapterCreators?: Record<string, Adapter>): Record<string, ObjectType[]> => {
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
+  return getAdaptersConfigTypesMapImplementation(actualAdapterCreator)
+}
+export const getAdaptersConfigTypes = async (adapterCreators?: Record<string, Adapter>): Promise<ObjectType[]> =>
+  Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat()
 
-export const getAdaptersConfigTypes = async (): Promise<ObjectType[]> =>
-  Object.values(getAdaptersConfigTypesMap()).flat()
+type GetDefaultAdapterConfigParams = {
+  adapterName: string
+  accountName?: string
+  options?: InstanceElement
+  adapterCreators: Record<string, Adapter>
+}
 
-export const getDefaultAdapterConfig = async (
-  adapterName: string,
+const getGetDefaultAdapterConfigArgs: (
+  adapterNameOrParams: string | GetDefaultAdapterConfigParams,
   accountName?: string,
   options?: InstanceElement,
-): Promise<InstanceElement[] | undefined> => {
+) => GetDefaultAdapterConfigParams = (adapterNameOrParams, accountName, options) => {
+  if (!_.isString(adapterNameOrParams)) {
+    return adapterNameOrParams
+  }
+  return {
+    adapterName: adapterNameOrParams,
+    accountName,
+    options,
+    adapterCreators: allAdapterCreators,
+  }
+}
+
+// As a transitionary step, we support both a string input and an argument object
+export function getDefaultAdapterConfig(args: GetDefaultAdapterConfigParams): Promise<InstanceElement[] | undefined>
+// @deprecated
+export function getDefaultAdapterConfig(
+  inputAdapterName: string | GetDefaultAdapterConfigParams,
+  inputAccountName?: string,
+  inputOptions?: InstanceElement,
+): Promise<InstanceElement[] | undefined>
+
+export async function getDefaultAdapterConfig(
+  inputAdapterName: string | GetDefaultAdapterConfigParams,
+  inputAccountName?: string,
+  inputOptions?: InstanceElement,
+): Promise<InstanceElement[] | undefined> {
+  // for backward compatibility
+  const { adapterName, accountName, options, adapterCreators } = getGetDefaultAdapterConfigArgs(
+    inputAdapterName,
+    inputAccountName,
+    inputOptions,
+  )
   const { getConfig } = adapterCreators[adapterName]?.configCreator ?? {}
   const defaultConf = [
-    getConfig !== undefined ? await getConfig(options) : (await getAdapterConfigFromType(adapterName)) ?? [],
+    getConfig !== undefined
+      ? await getConfig(options)
+      : (await getAdapterConfigFromType(adapterName, adapterCreators)) ?? [],
   ].flat()
   if (defaultConf.length === 0) {
     return undefined
@@ -120,8 +188,9 @@ export const getDefaultAdapterConfig = async (
 const getMergedDefaultAdapterConfig = async (
   adapter: string,
   accountName: string,
+  adapterCreators: Record<string, Adapter>,
 ): Promise<InstanceElement | undefined> => {
-  const defaultConfig = await getDefaultAdapterConfig(adapter, accountName)
+  const defaultConfig = await getDefaultAdapterConfig({ adapterName: adapter, accountName, adapterCreators })
   return defaultConfig && merger.mergeSingleElement(defaultConfig)
 }
 
@@ -240,11 +309,18 @@ export const getAdaptersCreatorConfigs = async (
   accountToServiceName: Record<string, string>,
   elemIdGetters: Record<string, ElemIdGetter> = {},
   resolveTypes = false,
-): Promise<Record<string, AdapterOperationsContext>> =>
-  Object.fromEntries(
+  adapterCreators?: Record<string, Adapter>,
+): Promise<Record<string, AdapterOperationsContext>> => {
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
+  return Object.fromEntries(
     await Promise.all(
       accounts.map(async account => {
-        const defaultConfig = await getMergedDefaultAdapterConfig(accountToServiceName[account], account)
+        const defaultConfig = await getMergedDefaultAdapterConfig(
+          accountToServiceName[account],
+          account,
+          actualAdapterCreator,
+        )
         const adapterElementSource = createElemIDReplacedElementsSource(
           filterElementsSource(elementsSource, account),
           account,
@@ -268,6 +344,7 @@ export const getAdaptersCreatorConfigs = async (
       }),
     ),
   )
+}
 
 export const getAdapters = async (
   adapters: ReadonlyArray<string>,
@@ -276,8 +353,11 @@ export const getAdapters = async (
   workspaceElementsSource: ReadOnlyElementsSource,
   accountToServiceName: Record<string, string>,
   elemIdGetters: Record<string, ElemIdGetter> = {},
-): Promise<Record<string, AdapterOperations>> =>
-  initAdapters(
+  adapterCreators?: Record<string, Adapter>,
+): Promise<Record<string, AdapterOperations>> => {
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
+  return initAdapters(
     await getAdaptersCreatorConfigs(
       adapters,
       credentials,
@@ -285,6 +365,10 @@ export const getAdapters = async (
       workspaceElementsSource,
       accountToServiceName,
       elemIdGetters,
+      undefined,
+      actualAdapterCreator,
     ),
     accountToServiceName,
+    actualAdapterCreator,
   )
+}

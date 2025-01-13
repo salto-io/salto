@@ -694,7 +694,7 @@ export const createRemoteMapCreator = (
           await promisify(newDb.close.bind(newDb))()
         } catch (e) {
           if (newDb.status === 'new' && readOnly) {
-            log.info('DB does not exist. Creating on %s', loc)
+            log.info('DB does not exist. Creating on %s. open failed with %o', loc, e)
             try {
               await promisify(newDb.open.bind(newDb, DB_OPTIONS))()
               await promisify(newDb.close.bind(newDb))()

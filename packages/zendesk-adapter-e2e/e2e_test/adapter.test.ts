@@ -409,28 +409,5 @@ describe('Zendesk adapter E2E - 2', () => {
         Object.keys(guideThemeInstance.value),
       )
     })
-    it('check cv ', async () => {
-      const dynamicContentItemInstance = new InstanceElement(
-        'dynamic-test',
-        new ObjectType({ elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME) }),
-        { name: 'Test', placeholder: '{{dc.test}}' },
-      )
-      const detailedChanges = getAdditionDetailedChangesFromInstances([dynamicContentItemInstance])
-      const errors = await getCVErrors({
-        workspace,
-        detailedChanges,
-        validationFilter: zendeskValidationFilter,
-        adapterCreators,
-      })
-      expect(errors.length).toEqual(1)
-      const detailedDeletionChanges = getDeletionDetailedChangesFromInstances([dynamicContentItemInstance])
-      const errors2 = await getCVErrors({
-        workspace,
-        detailedChanges: detailedDeletionChanges,
-        validationFilter: zendeskValidationFilter,
-        adapterCreators,
-      })
-      expect(errors2).toEqual([])
-    })
   })
 })

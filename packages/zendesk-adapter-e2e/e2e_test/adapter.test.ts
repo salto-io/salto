@@ -212,6 +212,7 @@ describe('Zendesk adapter E2E - 2', () => {
 
     afterAll(async () => {
       await zendeskCleanUp(elements.filter(isInstanceElement), workspace)
+      await workspace.close()
       if (credLease.return) {
         await credLease.return()
       }

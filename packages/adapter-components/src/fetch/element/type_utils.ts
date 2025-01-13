@@ -369,6 +369,16 @@ export const addImportantValues = <Options extends FetchApiDefinitionsOptions>({
         ({ value }: ImportantValue) => type.fields[value] !== undefined,
       )
 
+      // Avoid creating unnecessary annotations for types that don't have important values and don't need an override.
+      if (
+        _.isEmpty(importantValues) &&
+        (type.annotations === undefined || type.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] === undefined)
+      ) {
+        return
+      }
+
+      // Generated duck-typed types may contain default important values that are not relevant,
+      // so we want to override them at this point where we know what fields are actually relevant.
       type.annotate({
         [CORE_ANNOTATIONS.IMPORTANT_VALUES]: _.isEmpty(importantValues) ? undefined : importantValues,
       })

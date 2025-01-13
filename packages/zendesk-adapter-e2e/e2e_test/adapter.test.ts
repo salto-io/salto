@@ -19,11 +19,13 @@ import {
   GUIDE_SUPPORTED_TYPES,
   GUIDE_THEME_TYPE_NAME,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
+  SUPPORT_ADDRESS_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from '@salto-io/zendesk-adapter'
 import { ValidationError, Workspace } from '@salto-io/workspace'
 import {
+  ChangeError,
   Element,
   ElemID,
   InstanceElement,
@@ -42,6 +44,7 @@ import {
   e2eDeploy,
   fetchWorkspace,
   getAdditionDetailedChangesFromInstances,
+  getCVErrors,
   getDeletionDetailedChangesFromInstances,
   getElementsFromWorkspace,
   initWorkspace,
@@ -77,6 +80,10 @@ const adapterCreators = {
   zendesk: adapter,
 }
 
+// we cannot remove support address as it is the default, therefore when we remove the brand the support address gets validation error
+const zendeskChangeErrorFilter = (error: ChangeError): boolean =>
+  error.severity === 'Error' && !(error.elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
+
 // we remove elements and we don't modify the order that point at them
 // we cannot remove support address as it is the default, therefore when we remove the brand the support address gets validation error
 const zendeskValidationFilter = (error: ValidationError): boolean =>
@@ -94,6 +101,7 @@ const zendeskCleanUp = async (instances: InstanceElement[], workspace: Workspace
       detailedChanges: detailedChangesToClean,
       validationFilter: zendeskValidationFilter,
       adapterCreators,
+      changeErrorFilter: zendeskChangeErrorFilter,
     })
   }
   // consider adding another fetch
@@ -205,7 +213,12 @@ describe('Zendesk adapter E2E - 2', () => {
       // we remove hidden fields as they cannot be deployed
       const noHiddenInstancesToDeploy = filterHiddenFields(instancesToDeploy)
       const detailedChanges = getAdditionDetailedChangesFromInstances(noHiddenInstancesToDeploy)
-      await e2eDeploy({ workspace, detailedChanges, validationFilter: zendeskValidationFilter, adapterCreators })
+      await e2eDeploy({
+        workspace,
+        detailedChanges,
+        validationFilter: zendeskValidationFilter,
+        adapterCreators,
+      })
       await fetchWorkspace({ workspace, validationFilter: zendeskValidationFilter, adapterCreators })
       elements = await getElementsFromWorkspace(workspace)
     })
@@ -395,15 +408,28 @@ describe('Zendesk adapter E2E - 2', () => {
         Object.keys(guideThemeInstance.value),
       )
     })
-    // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('check cv ', async () => {
+    it('check cv ', async () => {
       const dynamicContentItemInstance = new InstanceElement(
         'dynamic-test',
         new ObjectType({ elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME) }),
         { name: 'Test', placeholder: '{{dc.test}}' },
       )
       const detailedChanges = getAdditionDetailedChangesFromInstances([dynamicContentItemInstance])
-      await e2eDeploy({ workspace, detailedChanges, validationFilter: zendeskValidationFilter, adapterCreators })
+      const errors = await getCVErrors({
+        workspace,
+        detailedChanges,
+        validationFilter: zendeskValidationFilter,
+        adapterCreators,
+      })
+      expect(errors.length).toEqual(1)
+      const detailedDeletionChanges = getDeletionDetailedChangesFromInstances([dynamicContentItemInstance])
+      const errors2 = await getCVErrors({
+        workspace,
+        detailedChanges: detailedDeletionChanges,
+        validationFilter: zendeskValidationFilter,
+        adapterCreators,
+      })
+      expect(errors2).toEqual([])
     })
   })
 })

@@ -230,7 +230,7 @@ export const getAllInstancesToDeploy = async ({
     },
     undefined,
     {
-      [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(ticketFieldInstance.elemID, ticketFieldInstance),
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(ticketFieldInstance.elemID, ticketFieldInstance)],
     },
   )
   const ticketFieldOption2Name = `ticketFieldOption2${testSuffix}`
@@ -244,7 +244,7 @@ export const getAllInstancesToDeploy = async ({
     },
     undefined,
     {
-      [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(ticketFieldInstance.elemID, ticketFieldInstance),
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(ticketFieldInstance.elemID, ticketFieldInstance)],
     },
   )
   ticketFieldInstance.value.custom_field_options = [
@@ -274,7 +274,7 @@ export const getAllInstancesToDeploy = async ({
     },
     undefined,
     {
-      [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(userFieldInstance.elemID, userFieldInstance),
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(userFieldInstance.elemID, userFieldInstance)],
     },
   )
   const userFieldOption2Name = `userFieldOption2${testSuffix}`
@@ -288,7 +288,7 @@ export const getAllInstancesToDeploy = async ({
     },
     undefined,
     {
-      [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(userFieldInstance.elemID, userFieldInstance),
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(userFieldInstance.elemID, userFieldInstance)],
     },
   )
   userFieldInstance.value.custom_field_options = [

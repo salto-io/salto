@@ -19,6 +19,7 @@ import {
   toChange,
   Adapter as AdapterType,
   AdapterAuthentication,
+  ChangeError,
 } from '@salto-io/adapter-api'
 import { getDetailedChanges } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -85,9 +86,9 @@ const updateWorkspace = async (
 ): Promise<void> => {
   await workspace.updateNaclFiles(changes)
   const err = await workspace.errors()
-  expect(err.parse.length > 0).toBeFalsy()
-  expect(err.merge.length > 0).toBeFalsy()
-  expect(err.validation.filter(error => validationFilter(error)).length > 0).toBeFalsy()
+  expect(err.parse).toEqual([])
+  expect(err.merge).toEqual([])
+  expect(err.validation.filter(error => validationFilter(error))).toEqual([])
   await workspace.flush()
 }
 export const fetchWorkspace = async ({
@@ -119,7 +120,8 @@ export const getDeletionDetailedChangesFromInstances = (
   const changes = instances.map(inst => toChange({ before: inst }))
   return changes.flatMap(change => getDetailedChanges(change))
 }
-export const e2eDeploy = async ({
+
+export const getCVErrors = async ({
   workspace,
   detailedChanges,
   validationFilter,
@@ -129,17 +131,35 @@ export const e2eDeploy = async ({
   detailedChanges: DetailedChangeWithBaseChange[]
   validationFilter?: (error: ValidationError) => boolean
   adapterCreators: Record<string, AdapterType>
-}): Promise<void> => {
+}): Promise<readonly ChangeError[]> => {
   await updateWorkspace(workspace, detailedChanges, validationFilter)
   const actionPlan = await preview({ workspace, adapterCreators })
-  // need to check here for cv! todoe
+  return actionPlan.changeErrors
+}
+export const e2eDeploy = async ({
+  workspace,
+  detailedChanges,
+  validationFilter,
+  adapterCreators,
+  changeErrorFilter = e => e.severity === 'Error',
+}: {
+  workspace: Workspace
+  detailedChanges: DetailedChangeWithBaseChange[]
+  validationFilter?: (error: ValidationError) => boolean
+  adapterCreators: Record<string, AdapterType>
+  changeErrorFilter?: (error: ChangeError) => boolean
+}): Promise<void | ChangeError[]> => {
+  await updateWorkspace(workspace, detailedChanges, validationFilter)
+  const actionPlan = await preview({ workspace, adapterCreators })
+  const errors = actionPlan.changeErrors.filter(changeErrorFilter)
+  expect(errors).toEqual([])
   const result = await deploy({
     workspace,
     actionPlan,
     reportProgress: () => {},
     adapterCreators,
   })
-  expect(result.errors.length).toEqual(0)
+  expect(result.errors).toEqual([])
   expect(result.changes).toBeDefined()
   await updateWorkspace(
     workspace,

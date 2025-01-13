@@ -9,7 +9,7 @@ import _ from 'lodash'
 import nock from 'nock'
 import { Bulk, FileProperties, Metadata, RetrieveResult } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
-import { Values } from '@salto-io/adapter-api'
+import { SaltoError, SeverityLevel, Values } from '@salto-io/adapter-api'
 import { collections, types, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -514,28 +514,41 @@ describe('salesforce client', () => {
 
   describe('when deploy error message is mappable', () => {
     type TestInput = {
-      errorMessage: string
+      saltoDeployError: SaltoError
       expectedMapper: DeployErrorMessageMapper
     }
+
+    const createSaltoDeployError = (
+      message: string,
+      detailedMessage?: string,
+      severity?: SeverityLevel,
+    ): SaltoError => ({
+      message,
+      detailedMessage: detailedMessage || '',
+      severity: severity || 'Error',
+    })
 
     const mappableDeployErrorMessageToTestInputs: Record<
       keyof DeployErrorMessageMappers,
       types.NonEmptyArray<TestInput> | TestInput
     > = {
       [SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS]: {
-        errorMessage: SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS,
+        saltoDeployError: createSaltoDeployError(SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS),
         expectedMapper: DEPLOY_ERROR_MESSAGE_MAPPER[SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS],
       },
       [SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT]: {
-        errorMessage: SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT,
+        saltoDeployError: createSaltoDeployError(SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT),
         expectedMapper: DEPLOY_ERROR_MESSAGE_MAPPER[SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT],
       },
       [SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME]: {
-        errorMessage: SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME,
+        saltoDeployError: createSaltoDeployError(SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME),
         expectedMapper: DEPLOY_ERROR_MESSAGE_MAPPER[SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME],
       },
       [SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION]: {
-        errorMessage: SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION,
+        saltoDeployError: createSaltoDeployError(
+          SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION,
+          SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION,
+        ),
         expectedMapper: DEPLOY_ERROR_MESSAGE_MAPPER[SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION],
       },
     }
@@ -544,14 +557,14 @@ describe('salesforce client', () => {
       const testInputs =
         mappableDeployErrorMessageToTestInputs[mappableDeployErrorMessage as keyof DeployErrorMessageMappers]
       const withTestName = (testInput: TestInput): TestInput & { name: string } => ({
-        name: isDefined(testInput.errorMessage)
-          ? safeJsonStringify(testInput.errorMessage)
+        name: isDefined(testInput.saltoDeployError.message)
+          ? safeJsonStringify(testInput.saltoDeployError.message)
           : 'should replace problem message',
         ...testInput,
       })
 
-      it.each(makeArray(testInputs).map(withTestName))('$name', ({ expectedMapper, errorMessage }) => {
-        expect(getUserFriendlyDeployErrorMessage(errorMessage)).toEqual(expectedMapper.map(errorMessage))
+      it.each(makeArray(testInputs).map(withTestName))('$name', ({ expectedMapper, saltoDeployError }) => {
+        expect(getUserFriendlyDeployErrorMessage(saltoDeployError)).toEqual(expectedMapper.map(saltoDeployError))
       })
     })
   })

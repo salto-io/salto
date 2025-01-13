@@ -818,7 +818,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     )
     const friendlyErrors = enrichedErrors.map(error => ({
       ...error,
-      detailedMessage: `${getUserFriendlyDeployErrorMessage(error.message)}\n${error.detailedMessage}`,
+      detailedMessage: getUserFriendlyDeployErrorMessage(error),
     }))
     result.errors = friendlyErrors
     // If we got here with checkOnly we must not return any applied changes

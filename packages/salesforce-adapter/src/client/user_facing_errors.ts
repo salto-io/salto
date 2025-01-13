@@ -144,7 +144,7 @@ export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(async or
 
 export type DeployErrorMessageMapper = {
   test: (errorMessage: string) => boolean
-  map: (errorMessage: string) => string
+  map: (saltoDeployError: SaltoError) => string
 }
 
 export type DeployErrorMessageMappers = {
@@ -174,43 +174,50 @@ export const FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE =
 export const DEPLOY_ERROR_MESSAGE_MAPPER: DeployErrorMessageMappers = {
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS]: {
     test: (errorMessage: string) => errorMessage === SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS,
-    map: (errorMessage: string) => withSalesforceError(errorMessage, SCHEDULABLE_CLASS_MESSAGE),
+    map: (saltoDeployError: SaltoError) => withSalesforceError(saltoDeployError.message, SCHEDULABLE_CLASS_MESSAGE),
   },
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT]: {
     test: (problem: string) => problem === SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT,
-    map: (errorMessage: string) => withSalesforceError(errorMessage, MAX_METADATA_DEPLOY_LIMIT_MESSAGE),
+    map: (saltoDeployError: SaltoError) =>
+      withSalesforceError(saltoDeployError.message, MAX_METADATA_DEPLOY_LIMIT_MESSAGE),
   },
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME]: {
     test: (errorMessage: string) =>
       errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME),
-    map: (errorMessage: string) => `${errorMessage}\n${INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE}`,
+    map: (saltoDeployError: SaltoError) => `${saltoDeployError.message}\n${INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE}`,
   },
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION]: {
     test: (errorMessage: string) =>
       errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION),
-    map: () => FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE,
+    map: (saltoDeployError: SaltoError) =>
+      `${FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE}\n${saltoDeployError.detailedMessage}`,
   },
 }
 
-export const getUserFriendlyDeployErrorMessage = (errorMessage: string): string => {
+export const getUserFriendlyDeployErrorMessage = (saltoDeployError: SaltoError): string => {
   const userFriendlyMessageByMapperName = _.mapValues(
-    _.pickBy(DEPLOY_ERROR_MESSAGE_MAPPER, mapper => mapper.test(errorMessage)),
-    mapper => mapper.map(errorMessage),
+    _.pickBy(DEPLOY_ERROR_MESSAGE_MAPPER, mapper => mapper.test(saltoDeployError.message)),
+    mapper => mapper.map(saltoDeployError),
   )
   const matchedMapperNames = Object.keys(userFriendlyMessageByMapperName)
   if (_.isEmpty(matchedMapperNames)) {
-    return errorMessage
+    return saltoDeployError.message
   }
   if (matchedMapperNames.length > 1) {
     log.error(
       'The error %s matched on more than one mapper. Matcher mappers: %s',
-      errorMessage,
+      saltoDeployError.message,
       inspectValue(matchedMapperNames),
     )
-    return errorMessage
+    return saltoDeployError.message
   }
   const [mapperName, userFriendlyMessage] = Object.entries(userFriendlyMessageByMapperName)[0]
-  log.debug('Replacing error %s message to %s. Original error: %o', mapperName, userFriendlyMessage, errorMessage)
+  log.debug(
+    'Replacing error %s message to %s. Original error: %o',
+    mapperName,
+    userFriendlyMessage,
+    saltoDeployError.message,
+  )
   return userFriendlyMessage
 }
 

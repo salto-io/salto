@@ -140,7 +140,7 @@ const calculateMergedChanges = async (
         sieve.add(fullname)
         const before = await currentElements.get(id)
         const relevantMergeError = await newMergedElementsResult.errors.get(fullname)
-        if (relevantMergeError) {
+        if (relevantMergeError !== undefined) {
           mergeErrors.push({ value: relevantMergeError, key: fullname })
         } else {
           noErrorMergeIds.push(fullname)

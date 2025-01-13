@@ -28,7 +28,7 @@ import { CPQ_NAMESPACE, CUSTOM_OBJECT_ID_FIELD } from './constants'
 
 const log = logger(module)
 
-export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType, {
+export const CONFIG_WITH_CPQ = new InstanceElement(ElemID.CONFIG_NAME, configType, {
   fetch: {
     metadata: {
       include: [
@@ -169,13 +169,13 @@ export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType,
   maxItemsInRetrieveRequest: 2500,
 })
 
-const excludeProfiles = [
+const EXCLUDE_PROFILES = [
   {
     metadataType: constants.PROFILE_METADATA_TYPE,
   },
 ]
 
-const excludePermissionSets = [
+const EXCLUDE_PERMISSION_SETS = [
   {
     metadataType: constants.PERMISSION_SET_METADATA_TYPE,
   },
@@ -240,30 +240,25 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
   if (options === undefined || !createOptionsTypeGuard<SalesforceConfigOptionsType>(optionsElemId)(options)) {
     const excludeSection = config.value?.fetch?.metadata?.exclude
     if (Array.isArray(excludeSection)) {
-      config.value.fetch.metadata.exclude = [...excludeSection, ...excludeProfiles, ...excludePermissionSets]
+      config.value.fetch.metadata.exclude = [...excludeSection, ...EXCLUDE_PROFILES, ...EXCLUDE_PERMISSION_SETS]
     }
     return config
   }
   if (options.value.cpq === true || options.value.managedPackages?.includes(CPQ_MANAGED_PACKAGE)) {
-    config = configWithCPQ.clone()
+    config = CONFIG_WITH_CPQ
   }
-  const shouldExcludeProfiles = !(options.value.manageProfiles ?? true)
-  const shouldExcludePermissionSets = !(options.value.managePermissionSets ?? true)
-  if (shouldExcludePermissionSets || shouldExcludeProfiles) {
-    const excludeSection = config.value?.fetch?.metadata?.exclude
-    if (Array.isArray(excludeSection)) {
-      config.value.fetch.metadata.exclude = [
-        ...excludeSection,
-        ...(shouldExcludeProfiles ? excludeProfiles : []),
-        ...(shouldExcludePermissionSets ? excludePermissionSets : []),
-      ]
-    } else {
-      log.error(
-        'Failed to exclude Profiles, PermissionSets, PermissionSetGroups and MutingPermissionSets due to invalid exclude section in config instance: %s',
-        inspectValue(config.value),
-      )
-    }
+  const shouldExcludeProfiles = options.value.manageProfiles ? [] : EXCLUDE_PROFILES
+  const shouldExcludePermissionSets = options.value.managePermissionSets ? [] : EXCLUDE_PERMISSION_SETS
+  const excludeSection = config.value?.fetch?.metadata?.exclude
+  if (Array.isArray(excludeSection)) {
+    config.value.fetch.metadata.exclude = [...excludeSection, ...shouldExcludeProfiles, ...shouldExcludePermissionSets]
+  } else {
+    log.error(
+      'Failed to add extra exclusions due to invalid exclude section in config instance: %s',
+      inspectValue(config.value),
+    )
   }
+
   return config
 }
 

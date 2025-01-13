@@ -53,7 +53,7 @@ const filter: FilterCreator = ({ config }) => ({
 
     const getServiceUrl = (instance: InstanceElement): string =>
       instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined
-        ? `. View in the service - ${instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]}`
+        ? `. View in the service - ${instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]} `
         : ''
     const prettifiesName = (instance: InstanceElement): string =>
       instance.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined

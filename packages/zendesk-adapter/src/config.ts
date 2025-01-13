@@ -2984,7 +2984,7 @@ const OmitInactiveType = createMatchingObjectType<OmitInactiveConfig>({
 
 export type ChangeValidatorName =
   | 'deployTypesNotSupported'
-  | 'createCheckDeploymentBasedOnConfig'
+  | 'createCheckDeploymentBasedOnDefinitions'
   | 'accountSettings'
   | 'emptyCustomFieldOptions'
   | 'emptyVariants'
@@ -3065,7 +3065,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   elemID: new ElemID(ZENDESK, 'changeValidatorConfig'),
   fields: {
     deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
-    createCheckDeploymentBasedOnConfig: { refType: BuiltinTypes.BOOLEAN },
+    createCheckDeploymentBasedOnDefinitions: { refType: BuiltinTypes.BOOLEAN },
     accountSettings: { refType: BuiltinTypes.BOOLEAN },
     emptyCustomFieldOptions: { refType: BuiltinTypes.BOOLEAN },
     emptyVariants: { refType: BuiltinTypes.BOOLEAN },

@@ -6,8 +6,11 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-export { transform as transformGuideItem } from './guide_adjuster'
-export { transform as transformSectionItem } from './section_adjuster'
-export { transform as transformQueueItem } from './queue_adjuster'
-export { transform as transformTriggerItem } from './trigger_adjuster'
-export { transform as transformGraphQLItem } from '../../shared/transforms/graphql_adjuster'
+export {
+  transformRequest as transformReqGraphQLItem,
+  transformResponse as transformResGraphQLItem,
+} from './graphql_adjuster'
+export {
+  transformRequest as transformNodeRequest,
+  transformResponse as transformNodeResponse,
+} from './bot_builder_node_adjuster'

@@ -5,9 +5,11 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ElemID, TemplateExpression, Values, Element } from '@salto-io/adapter-api'
+import { ElemID, TemplateExpression, Values, Element, StaticFile } from '@salto-io/adapter-api'
+import * as path from 'path'
+import * as fs from 'fs'
 import { createReference } from '../../utils'
-import { JIRA, PRIORITY_TYPE_NAME, PROJECT_TYPE } from '../../../src/constants'
+import { AUTOMATION_TYPE, JIRA, PRIORITY_TYPE_NAME, PROJECT_TYPE } from '../../../src/constants'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 export const createAutomationValues = (name: string, allElements: Element[]): Values => ({
@@ -205,6 +207,114 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
         id: '_customsmartvalue_id_166080756221912123',
       },
       children: [],
+      conditions: [],
+    },
+    {
+      component: 'CONDITION',
+      type: 'jira.condition.container.block',
+      children: [
+        {
+          component: 'CONDITION_BLOCK',
+          type: 'jira.condition.if.block',
+          value: {
+            conditionMatchType: 'ALL',
+          },
+          children: [
+            {
+              component: 'ACTION',
+              type: 'jira.issue.outgoing.email',
+              value: {
+                fromName: '',
+                replyTo: '',
+                to: [
+                  {
+                    type: 'COPY',
+                    value: 'assignee',
+                  },
+                ],
+                cc: [],
+                bcc: [],
+                subject: 'Test',
+                body: new StaticFile({
+                  filepath: `${JIRA}/${AUTOMATION_TYPE}/${name}.components.3.children.0.children.0.value.html`,
+                  content: fs.readFileSync(
+                    path.resolve(`${__dirname}/../../../e2e_test/stringStaticFiles/testRule1.html`),
+                  ),
+                  encoding: 'utf8',
+                }),
+                mimeType: 'text/html',
+                convertLineBreaks: true,
+              },
+              children: [],
+              conditions: [],
+            },
+          ],
+          conditions: [
+            {
+              component: 'CONDITION',
+              type: 'jira.user.condition',
+              value: {
+                conditions: [
+                  {
+                    field: 'reporter',
+                    check: 'USER_IS',
+                    criteria: [
+                      {
+                        type: 'ID',
+                        value: {
+                          id: '61d44bf59ee70a00685fa6b6',
+                          displayName: 'Testing salto',
+                        },
+                      },
+                    ],
+                  },
+                ],
+                operator: 'OR',
+              },
+              children: [],
+              conditions: [],
+            },
+          ],
+        },
+        {
+          component: 'CONDITION_BLOCK',
+          type: 'jira.condition.if.block',
+          value: {
+            conditionMatchType: 'ALL',
+          },
+          children: [
+            {
+              component: 'ACTION',
+              type: 'jira.issue.outgoing.email',
+              value: {
+                fromName: '',
+                replyTo: '',
+                to: [
+                  {
+                    type: 'COPY',
+                    value: 'reporter',
+                  },
+                ],
+                cc: [],
+                bcc: [],
+                subject: 'Test1',
+                body: new StaticFile({
+                  filepath: `${JIRA}/${AUTOMATION_TYPE}/${name}.components.3.children.1.children.0.value.html`,
+                  content: fs.readFileSync(
+                    path.resolve(`${__dirname}/../../../e2e_test/stringStaticFiles/testRule2.html`),
+                  ),
+                  encoding: 'utf8',
+                }),
+                mimeType: 'text/html',
+                convertLineBreaks: true,
+              },
+              children: [],
+              conditions: [],
+            },
+          ],
+          conditions: [],
+        },
+      ],
       conditions: [],
     },
   ],

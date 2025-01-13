@@ -174,9 +174,9 @@ describe('element', () => {
                     ],
                   },
                   importantValues: [
-                    {value: 'str', indexed: true, highlighted: false},
-                    {value: 'nonExistentField', indexed: true, highlighted: false},
-                  ]
+                    { value: 'str', indexed: true, highlighted: false },
+                    { value: 'nonExistentField', indexed: true, highlighted: false },
+                  ],
                 },
               },
             },

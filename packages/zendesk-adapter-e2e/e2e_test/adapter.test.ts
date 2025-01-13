@@ -14,6 +14,7 @@ import {
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
+  DYNAMIC_CONTENT_ITEM_TYPE_NAME,
   GROUP_TYPE_NAME,
   GUIDE_SUPPORTED_TYPES,
   GUIDE_THEME_TYPE_NAME,
@@ -31,6 +32,7 @@ import {
   isReferenceExpression,
   isStaticFile,
   isTemplateExpression,
+  ObjectType,
   ReferenceExpression,
   StaticFile,
   Value,
@@ -127,8 +129,8 @@ const verifyInstanceValues = (
   orgInstance: InstanceElement,
   fieldsToCheck: string[],
 ): void => {
-  expect(fetchInstance).toBeDefined()
-  if (fetchInstance === undefined) {
+  expect(fetchInstance == null).toBeFalsy()
+  if (fetchInstance == null) {
     return
   }
   const orgInstanceValues = orgInstance.value
@@ -190,6 +192,7 @@ describe('Zendesk adapter E2E - 2', () => {
       )
       expect(defaultGroup).toBeDefined()
       expect(brandInstanceE2eHelpCenter).toBeDefined()
+      expect(brandInstanceE2eHelpCenter == null || defaultGroup == null).toBeFalsy()
       if (brandInstanceE2eHelpCenter == null || defaultGroup == null) {
         return
       }
@@ -390,6 +393,16 @@ describe('Zendesk adapter E2E - 2', () => {
         guideThemeInstance,
         Object.keys(guideThemeInstance.value),
       )
+    })
+    // eslint-disable-next-line jest/no-disabled-tests
+    it.skip('check cv ', async () => {
+      const dynamicContentItemInstance = new InstanceElement(
+        'dynamic-test',
+        new ObjectType({ elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME) }),
+        { name: 'Test', placeholder: '{{dc.test}}' },
+      )
+      const detailedChanges = getAdditionDetailedChangesFromInstances([dynamicContentItemInstance])
+      await e2eDeploy({ workspace, detailedChanges, validationFilter: zendeskValidationFilter, adapterCreators })
     })
   })
 })

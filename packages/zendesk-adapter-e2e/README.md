@@ -1,6 +1,5 @@
 # Zendesk adapter e2e
 
-
 ## E2E tests
 
 E2E tests need real Zendesk credentials to run.

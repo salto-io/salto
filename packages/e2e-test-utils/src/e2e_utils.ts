@@ -132,6 +132,7 @@ export const e2eDeploy = async ({
 }): Promise<void> => {
   await updateWorkspace(workspace, detailedChanges, validationFilter)
   const actionPlan = await preview({ workspace, adapterCreators })
+  // need to check here for cv! todoe
   const result = await deploy({
     workspace,
     actionPlan,

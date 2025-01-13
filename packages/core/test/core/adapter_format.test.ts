@@ -21,7 +21,7 @@ import {
   getChangeData,
 } from '@salto-io/adapter-api'
 import { getDetailedChanges } from '@salto-io/adapter-utils'
-import { Workspace } from '@salto-io/workspace'
+import { Workspace, pathIndex, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockWorkspace } from '../common/workspace'
 import { createMockAdapter } from '../common/helpers'
@@ -569,7 +569,7 @@ describe('syncWorkspaceToFolder', () => {
 
     let workspace: Workspace
     let toWorkspace: Workspace
-    beforeEach(() => {
+    beforeEach(async () => {
       const type = new ObjectType({ elemID: new ElemID(mockAdapterName, 'type') })
       separateInstanceInFolder = new InstanceElement('folderInst', type, { value: 'folder' })
       separateInstanceInWorkspace = new InstanceElement('workspaceInst', type, { value: 'ws' })
@@ -582,9 +582,14 @@ describe('syncWorkspaceToFolder', () => {
       const unsupportedType = new ObjectType({ elemID: new ElemID(mockAdapterName, 'unsupportedType') })
       unsupportedElementInFromWorkspace = new InstanceElement('unsupportedInst', unsupportedType, { value: 'from' })
       unsupportedElementInToWorkspace = new InstanceElement('unsupportedInst', unsupportedType, { value: 'to' })
-      unsupportedElementInFromWorkspaceOnly = new InstanceElement('unsupportedInstFromOnly', unsupportedType, {
-        value: 'test',
-      })
+      unsupportedElementInFromWorkspaceOnly = new InstanceElement(
+        'unsupportedInstFromOnly',
+        unsupportedType,
+        {
+          value: 'test',
+        },
+        ['salto', 'test'],
+      )
       unsupportedElementInToWorkspaceOnly = new InstanceElement('unsupportedInstToOnly', unsupportedType, {
         value: 'test',
       })
@@ -599,10 +604,16 @@ describe('syncWorkspaceToFolder', () => {
       ]
       const folderElements = [type, separateInstanceInFolder, sameInstanceInFolder]
 
+      const pi = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
+      await pathIndex.updatePathIndex({
+        pathIndex: pi,
+        unmergedElements: workspaceElements,
+      })
       workspace = mockWorkspace({
         elements: workspaceElements,
         name: 'workspace',
         accounts: [mockAdapterName],
+        index: await awu(pi.entries()).toArray(),
         accountToServiceName: { [mockAdapterName]: mockAdapterName },
       })
       mockAdapter.adapterFormat.loadElementsFromFolder.mockResolvedValue({ elements: folderElements })
@@ -695,8 +706,17 @@ describe('syncWorkspaceToFolder', () => {
       })
       it('should apply addition changes for unsupported elements that exist in the workspace and not the to workspace', () => {
         expect(toWorkspace.updateNaclFiles).toHaveBeenCalledWith(
-          expect.arrayContaining(toTestDetailedChanges([toChange({ after: unsupportedElementInFromWorkspaceOnly })])),
+          expect.arrayContaining(getDetailedChanges(toChange({ after: unsupportedElementInFromWorkspaceOnly }))),
         )
+      })
+      it('should apply all addition changes with a correct path', () => {
+        const mockUpdateNaclFiles = toWorkspace.updateNaclFiles as jest.MockedFunction<
+          typeof toWorkspace.updateNaclFiles
+        >
+        const additionChanges = mockUpdateNaclFiles.mock.calls[0][0]
+          .filter(change => change.action === 'add')
+          .flatMap(change => getChangeData(change).path)
+        expect(additionChanges).toEqual(['salto', 'test'])
       })
     })
 
@@ -823,12 +843,13 @@ describe('updateElementFolder', () => {
   let toWorkspace: Workspace
   let allChanges: ReadonlyArray<Change>
   let visibleChanges: ReadonlyArray<Change>
-  let unsupportedChanges: ReadonlyArray<Change>
+  let unsupportedChange: Change
+  let unsupportedChangeWithPath: Change
 
   const unresolved = (instance: InstanceElement): InstanceElement =>
     new InstanceElement(instance.elemID.name, new TypeReference(instance.getTypeSync().elemID), instance.value)
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockAdapter = createMockAdapter(mockAdapterName)
     mockAdapterCreator[mockAdapterName] = mockAdapter
 
@@ -848,6 +869,12 @@ describe('updateElementFolder', () => {
     })
     const unsupportedType = new ObjectType({ elemID: new ElemID(mockAdapterName, 'unsupportedType') })
     const unsupportedInstance = new InstanceElement('unsupportedInst', unsupportedType, { value: 'unsupported' })
+    const unsupportedInstanceWithPath = new InstanceElement(
+      'unsupportedInst',
+      unsupportedType,
+      { value: 'unsupported' },
+      ['salto', 'test'],
+    )
 
     const unresolvedVisibleChanges = [
       toChange({ after: unresolved(instance1) }),
@@ -865,19 +892,28 @@ describe('updateElementFolder', () => {
       toChange({ after: unsupportedInstance }),
     ]
 
-    unsupportedChanges = [toChange({ after: unsupportedInstance })]
+    unsupportedChange = toChange({ after: unsupportedInstance })
+    unsupportedChangeWithPath = toChange({ after: unsupportedInstanceWithPath })
 
     allChanges = unresolvedVisibleChanges.concat([toChange({ after: hiddenInstance })])
 
+    const workspaceElements = [instance1, instance2, type, unsupportedInstance, unsupportedInstanceWithPath]
+
+    const pi = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
+    await pathIndex.updatePathIndex({
+      pathIndex: pi,
+      unmergedElements: workspaceElements,
+    })
     workspace = mockWorkspace({
       name: 'workspace',
-      elements: [instance1, instance2, type, unsupportedInstance, unsupportedType],
+      elements: workspaceElements,
+      index: await awu(pi.entries()).toArray(),
       accountToServiceName: { [mockAdapterName]: mockAdapterName },
     })
 
     toWorkspace = mockWorkspace({
-      elements: [],
       name: 'workspace',
+      elements: [],
       accounts: [mockAdapterName],
       accountToServiceName: { [mockAdapterName]: mockAdapterName },
     })
@@ -916,7 +952,7 @@ describe('updateElementFolder', () => {
     })
 
     it('should return the unapplied changes', () => {
-      expect(result.unappliedChanges).toEqual(unsupportedChanges)
+      expect(result.unappliedChanges).toEqual([unsupportedChange])
     })
   })
   describe('when called with valid parameters and toWorkspace is provided', () => {
@@ -945,9 +981,14 @@ describe('updateElementFolder', () => {
     })
 
     it('should call updateNaclFiles with the correct parameters', async () => {
-      expect(toWorkspace.updateNaclFiles).toHaveBeenCalledWith(
-        expect.arrayContaining(unsupportedChanges.flatMap(change => getDetailedChanges(change))),
-      )
+      expect(toWorkspace.updateNaclFiles).toHaveBeenCalledWith(getDetailedChanges(unsupportedChangeWithPath))
+    })
+    it('should apply all addition changes with a correct path', () => {
+      const mockUpdateNaclFiles = toWorkspace.updateNaclFiles as jest.MockedFunction<typeof toWorkspace.updateNaclFiles>
+      const additionChanges = mockUpdateNaclFiles.mock.calls[0][0]
+        .filter(change => change.action === 'add')
+        .flatMap(change => getChangeData(change).path)
+      expect(additionChanges).toEqual(['salto', 'test'])
     })
 
     it('should return no errors', () => {

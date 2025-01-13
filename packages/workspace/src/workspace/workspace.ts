@@ -1279,7 +1279,11 @@ export async function loadWorkspace(params: LoadWorkspaceParams): Promise<Worksp
       if (workspaceState !== undefined) {
         // in case that `workspaceState` is currently being built, we'd like to wait until it finishes.
         log.debug('waiting for workspaceState to finish building before closing the workspace')
-        await workspaceState
+        try {
+          await workspaceState
+        } catch (error) {
+          log.warn('failed waiting for workspaceState to finish building with error: %o', error)
+        }
       }
       log.debug('closing the workspace')
       await remoteMapCreator.close()

@@ -20,8 +20,8 @@ import { LIVE_CHAT_BUTTON } from '../constants'
 
 const isOmniChannelRoutedLiveChatButton = (element: Element): element is InstanceElement =>
   isInstanceOfTypeSync(LIVE_CHAT_BUTTON)(element) &&
-  _.isUndefined(_.get(element.value, 'routingType')) &&
-  _.isUndefined(_.get(element.value, 'skills'))
+  _.get(element.value, 'routingType') === undefined &&
+  _.get(element.value, 'skills') === undefined
 
 const createChangeError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,

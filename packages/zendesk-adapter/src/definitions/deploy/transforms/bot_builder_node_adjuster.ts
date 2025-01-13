@@ -7,11 +7,11 @@
  */
 import { getChangeData } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { getParents, safeJsonStringify } from '@salto-io/adapter-utils'
+import { getParents, inspectValue } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { get, omit } from 'lodash'
 import { nodeMutation } from '../graphql_schemas'
-import { transform as transformMulti } from '../../fetch/transforms/graphql_adjuster'
+import { transform as transformMulti } from '../../shared/transforms/graphql_adjuster'
 
 const NODE_OPERATION_NAME = 'applyNodeListTransactionByFlowId'
 
@@ -33,14 +33,15 @@ export const transformRequest: (
   const changeData = getChangeData(change)
   const answer = getParents(changeData)[0]
   const subFlowId = answer?.id?.toString()
-  const flowId = answer?.flowId?.value.value.id?.toString()
+  const flowId = answer?.flowId?.value?.value?.id?.toString()
   const id = get(value, 'id')?.toString()
   if (subFlowId === undefined || flowId === undefined || id === undefined) {
     throw new Error(
       `Missing required fields for conversation bot node item.
-      Received subFlowId: ${subFlowId}, flowId: ${flowId} and node id: ${id}, not transforming: ${safeJsonStringify(value)}`,
+      Received subFlowId: ${subFlowId}, flowId: ${flowId} and node id: ${id}, not transforming: ${inspectValue(value)}`,
     )
   }
+  // Events do not accept the id field, so we omit it
   const events = ['Added', 'Changed'].includes(action)
     ? [
         {

@@ -9,7 +9,7 @@ import { definitions } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { get } from 'lodash'
-import { transform as transformMulti } from '../../fetch/transforms/graphql_adjuster'
+import { transform as transformMulti } from '../../shared/transforms/graphql_adjuster'
 
 // this transformer creates a graphql request from a mutation/query, operation name and variable names
 // the variable names are used to extract the values from the item's value

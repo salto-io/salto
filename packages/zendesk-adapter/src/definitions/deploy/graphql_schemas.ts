@@ -6,8 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { flowFields, nodeFragment, subflowFields } from '../fetch/graphql_schemas'
+import { flowFields, nodeFragment, subflowFields } from '../shared/graphql_schemas'
 
+// generativeAiEnabled is always false for now,
+// the Flow creation is partial, this should change with SALTO-7257
 export const createFlowMutation = `
   mutation createFlow(
     $name: String!,
@@ -51,6 +53,8 @@ export const deleteFlowMutation = `
   ${flowFields}
 `
 
+// The fields trainingPhrases and intentKeys are not used in the mutation, but are required by the schema
+// This is because of a problem with allowEmptyArrays, this should change with SALTO-6584
 export const createSubFlowMutation = `
   mutation createSubflow($flowId: String!, $name: String!, $removeIntentsFromOtherSubflows: Boolean) {
     createSubflow(

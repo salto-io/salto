@@ -90,11 +90,10 @@ const zendeskValidationFilter = (error: ValidationError): boolean =>
   !(error.elemID.typeName.includes('order') || error.elemID.typeName.includes('support_address'))
 
 const zendeskCleanUp = async (instances: InstanceElement[], workspace: Workspace): Promise<void> => {
-  const detailedChangesToClean = getDeletionDetailedChangesFromInstances(
-    instances
-      .filter(instance => !TYPES_NOT_TO_REMOVE.has(instance.elemID.typeName))
-      .filter(instance => instance.elemID.name.includes(UNIQUE_NAME)),
-  )
+  const instancesToClean = instances
+    .filter(instance => !TYPES_NOT_TO_REMOVE.has(instance.elemID.typeName))
+    .filter(instance => instance.elemID.name.includes(UNIQUE_NAME))
+  const detailedChangesToClean = getDeletionDetailedChangesFromInstances(instancesToClean)
   if (detailedChangesToClean.length > 0) {
     await e2eDeploy({
       workspace,
@@ -102,6 +101,7 @@ const zendeskCleanUp = async (instances: InstanceElement[], workspace: Workspace
       validationFilter: zendeskValidationFilter,
       adapterCreators,
       changeErrorFilter: zendeskChangeErrorFilter,
+      selectorsForFixers: instancesToClean.map(inst => inst.elemID.getFullName()),
     })
   }
   // consider adding another fetch
@@ -218,6 +218,7 @@ describe('Zendesk adapter E2E - 2', () => {
         detailedChanges,
         validationFilter: zendeskValidationFilter,
         adapterCreators,
+        selectorsForFixers: instancesToDeploy.map(inst => inst.elemID.getFullName()),
       })
       await fetchWorkspace({ workspace, validationFilter: zendeskValidationFilter, adapterCreators })
       elements = await getElementsFromWorkspace(workspace)

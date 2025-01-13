@@ -5,8 +5,16 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ValidationError, Workspace } from '@salto-io/workspace'
-import { addAdapter, deploy, fetch, getDefaultAdapterConfig, preview, updateCredentials } from '@salto-io/core'
+import { createElementSelectors, ValidationError, Workspace } from '@salto-io/workspace'
+import {
+  addAdapter,
+  deploy,
+  fetch,
+  fixElements,
+  getDefaultAdapterConfig,
+  preview,
+  updateCredentials,
+} from '@salto-io/core'
 import _ from 'lodash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import tmp from 'tmp-promise'
@@ -121,6 +129,22 @@ export const getDeletionDetailedChangesFromInstances = (
   return changes.flatMap(change => getDetailedChanges(change))
 }
 
+const runFixers = async ({
+  workspace,
+  adapterCreators,
+  selectors,
+}: {
+  workspace: Workspace
+  adapterCreators: Record<string, AdapterType>
+  selectors: string[]
+}): Promise<void> => {
+  const { validSelectors, invalidSelectors } = createElementSelectors(selectors)
+  expect(invalidSelectors).toEqual([])
+  const { changes, errors } = await fixElements(workspace, validSelectors, adapterCreators)
+  expect(errors).toEqual([])
+  expect(changes).toEqual([])
+}
+
 export const getCVErrors = async ({
   workspace,
   detailedChanges,
@@ -142,14 +166,17 @@ export const e2eDeploy = async ({
   validationFilter,
   adapterCreators,
   changeErrorFilter = e => e.severity === 'Error',
+  selectorsForFixers,
 }: {
   workspace: Workspace
   detailedChanges: DetailedChangeWithBaseChange[]
   validationFilter?: (error: ValidationError) => boolean
   adapterCreators: Record<string, AdapterType>
   changeErrorFilter?: (error: ChangeError) => boolean
+  selectorsForFixers: string[]
 }): Promise<void | ChangeError[]> => {
   await updateWorkspace(workspace, detailedChanges, validationFilter)
+  await runFixers({ workspace, adapterCreators, selectors: selectorsForFixers })
   const actionPlan = await preview({ workspace, adapterCreators })
   const errors = actionPlan.changeErrors.filter(changeErrorFilter)
   expect(errors).toEqual([])

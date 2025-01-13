@@ -263,13 +263,36 @@ describe('fieldContextDeployment', () => {
       expect(leftoverChanges).toHaveLength(changes.length)
     })
     it('should mark options of deleted contexts as applied', async () => {
+      const secondOptionInstance = new InstanceElement('option2', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, _.cloneDeep(contextInstance)),
+      })
+      const secondCascadeInstance = new InstanceElement('cascade2', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          secondOptionInstance.elemID,
+          _.cloneDeep(secondOptionInstance),
+        ),
+      })
+      const thirdCascadeInstance = new InstanceElement('cascade3', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          secondOptionInstance.elemID,
+          _.cloneDeep(secondOptionInstance),
+        ),
+      })
+      const thirdOptionInstance = new InstanceElement('option3', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, _.cloneDeep(contextInstance)),
+      })
+
       changes = [
         toChange({ before: optionInstance }),
         toChange({ before: cascadeInstance }),
         toChange({ before: contextInstance }),
+        toChange({ before: secondOptionInstance }),
+        toChange({ before: secondCascadeInstance }),
+        toChange({ before: thirdOptionInstance }),
+        toChange({ before: thirdCascadeInstance }),
       ]
       const { deployResult, leftoverChanges } = await filter.deploy(changes)
-      expect(deployResult.appliedChanges).toHaveLength(2)
+      expect(deployResult.appliedChanges).toHaveLength(changes.length - 1)
       expect(
         every(
           deployResult.appliedChanges,

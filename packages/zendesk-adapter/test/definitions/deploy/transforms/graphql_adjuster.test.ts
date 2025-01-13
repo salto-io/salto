@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { definitions } from '@salto-io/adapter-components'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { transformRequest, transformResponse } from '../../../../src/definitions/deploy/transforms/graphql_adjuster'
 
 describe('graphql_adjuster', () => {
@@ -67,7 +67,7 @@ describe('graphql_adjuster', () => {
           typeName: 'test',
           context: {} as definitions.deploy.ChangeAndExtendedContext,
         }),
-      ).rejects.toThrow(`graphql response contained errors: ${safeJsonStringify(value)}`)
+      ).rejects.toThrow(`graphql response contained errors: ${inspectValue(value)}`)
     })
 
     it('should throw an error if the graphql response has more than one element', async () => {

@@ -14,7 +14,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { BOT_BUILDER_ANSWER, BOT_BUILDER_NODE, CONVERSATION_BOT, ZENDESK } from '../../../../src/constants'
 import {
   transformRequest,
@@ -186,7 +186,7 @@ describe('bot_builder_node_adjuster', () => {
           typeName: 'test',
           context: {} as definitions.deploy.ChangeAndExtendedContext,
         }),
-      ).rejects.toThrow(`graphql response contained errors: ${safeJsonStringify(value)}`)
+      ).rejects.toThrow(`graphql response contained errors: ${inspectValue(value)}`)
     })
 
     it('should throw an error if the response is missing the node by id', async () => {
@@ -229,7 +229,7 @@ describe('bot_builder_node_adjuster', () => {
             typeName: 'test',
             context: { change: toChange({ after: nodeInstance }) } as definitions.deploy.ChangeAndExtendedContext,
           }),
-        ).rejects.toThrow('{"errors":[{"message":"SOME_OTHER_ERROR"}]}')
+        ).rejects.toThrow("graphql response contained errors: { errors: [ { message: 'SOME_OTHER_ERROR' } ] }")
       })
     })
   })

@@ -1071,7 +1071,10 @@ const createCustomizations = ({
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'language' }], extendsParent: true },
         serviceUrl: { path: '/admin/customizations/brands/{_parent.0.brandId}/emails/{_parent.0.name}' },
-        importantValues: [{ value: 'language', indexed: true, highlighted: true }, { value: 'subject', indexed: false, highlighted: true }],
+        importantValues: [
+          { value: 'language', indexed: true, highlighted: true },
+          { value: 'subject', indexed: false, highlighted: true },
+        ],
       },
       fieldCustomizations: {
         id: { hide: true },
@@ -1812,13 +1815,11 @@ export const createFetchDefinitions = ({
           topLevel: {
             elemID: { parts: DEFAULT_ID_PARTS, useOldFormat: true },
             serviceUrl: { baseUrl },
-            /*
             importantValues: [
               { value: 'status', indexed: true, highlighted: true },
               { value: 'type', indexed: true, highlighted: true },
               { value: 'name', indexed: false, highlighted: true },
             ],
-            */
           },
           fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
         },

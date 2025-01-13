@@ -27,7 +27,7 @@ type OBJECT_TYPE_ATTRIBUTE_FILED_NAMES =
 
 type assetObjectFieldConfiguration = {
   objectSchemaId: ReferenceExpression
-  attributesIncludedInAutoCompleteSearch?: (string | ReferenceExpression)[] // maybe need to add reference expression
+  attributesIncludedInAutoCompleteSearch?: (string | ReferenceExpression)[]
   attributesDisplayedOnIssue?: (string | ReferenceExpression)[]
 }
 

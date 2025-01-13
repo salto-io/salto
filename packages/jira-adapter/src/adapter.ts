@@ -128,6 +128,7 @@ import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
 import assetsObjectFieldConfigurationFilter from './filters/assets/assets_object_field_configuration'
+import assetsObjectFieldConfigurationReferencesFilter from './filters/assets/assets_object_field_configuration_references'
 import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
 import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
@@ -312,6 +313,7 @@ export const DEFAULT_FILTERS = [
   avatarsFilter, // This must run after contextDeploymentFilter
   jqlReferencesFilter, // must run after assetsObjectFieldConfigurationFilter
   fieldReferencesFilter,
+  assetsObjectFieldConfigurationReferencesFilter, // This filter creates references, it must run after fieldReferencesFilter and assetsObjectFieldConfigurationFilter
   addJsmTypesAsFieldsFilter, // Must run after fieldReferencesFilter
   issueLayoutFilter,
   fetchJsmTypesFilter,

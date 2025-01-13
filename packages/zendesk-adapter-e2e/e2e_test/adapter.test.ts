@@ -161,7 +161,7 @@ const verifyInstanceValues = (
 describe('Zendesk adapter E2E - 2', () => {
   describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
-    let elements: Element[]
+    let elements: Element[] = []
     let instancesToDeploy: InstanceElement[]
     let guideInstances: InstanceElement[]
     let guideThemeInstance: InstanceElement

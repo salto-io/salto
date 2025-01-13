@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -10,13 +10,18 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { APP_IDENTIFIER_FIELD_NAME, APPLICATION_TYPE_NAME, PACKAGE_ID_FIELD_NAME } from '../../../../constants/intune'
+import { intuneConstants } from '../../../../constants'
 import { NAME_ID_FIELD } from '../../shared/defaults'
 import { odataType } from '../../../../utils/shared'
 import { AdjustFunctionSingle } from '../../shared/types'
 import { ExtractScriptParams, extractStaticFileFromBinaryScript } from './script_content'
 
 const log = logger(module)
+const {
+  TOP_LEVEL_TYPES: { APPLICATION_TYPE_NAME },
+  APP_IDENTIFIER_FIELD_NAME,
+  PACKAGE_ID_FIELD_NAME,
+} = intuneConstants
 
 export const APPLICATION_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
   uploadState: { omit: true },

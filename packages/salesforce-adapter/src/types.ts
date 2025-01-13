@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -105,6 +105,9 @@ const OPTIONAL_FEATURES = [
   'networkReferences',
   'extendFetchTargets',
   'addParentToInstancesWithinFolder',
+  'shouldPopulateInternalIdAfterDeploy',
+  'packageVersionReference',
+  'omitTotalTrustedRequestsUsageField',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',
@@ -150,6 +153,7 @@ const CHANGE_VALIDATORS = [
   'standardFieldLabel',
   'mapKeys',
   'defaultRules',
+  'packageVersion',
   'picklistPromote',
   'cpqValidator',
   'recordTypeDeletion',
@@ -182,6 +186,7 @@ const CHANGE_VALIDATORS = [
   'orderedMaps',
   'layoutDuplicateFields',
   'customApplications',
+  'flowReferencedElements',
 ] as const
 const DEPRECATED_CHANGE_VALIDATORS = ['multipleDefaults'] as const
 export type ChangeValidatorName = (typeof CHANGE_VALIDATORS)[number]
@@ -219,7 +224,12 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesHandlersNames = ['profilesAndPermissionSets', 'managedElements', 'formulaRefs'] as const
+const customReferencesHandlersNames = [
+  'profilesAndPermissionSets',
+  'managedElements',
+  'formulaRefs',
+  'omitNonExistingFields',
+] as const
 export type CustomReferencesHandlers = (typeof customReferencesHandlersNames)[number]
 
 export type CustomReferencesSettings = Partial<Record<CustomReferencesHandlers, boolean>>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -15,7 +15,7 @@ import { FETCH_CONFIG, isGuideEnabled } from '../../config'
 /**
  * Handles the section orders inside category
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config, oldApiDefinitions }) => ({
   name: 'sectionOrderFilter',
   /** Create an InstanceElement of the sections order inside the categories */
   onFetch: async (elements: Element[]) => {
@@ -68,7 +68,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       changes: sectionOrderChanges,
       orderField: SECTIONS_FIELD,
       client,
-      config,
+      apiDefinitions: oldApiDefinitions,
     })
 
     return {

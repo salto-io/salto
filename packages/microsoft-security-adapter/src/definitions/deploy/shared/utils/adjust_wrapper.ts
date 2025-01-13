@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -57,5 +57,5 @@ export const defaultAdjust = concatAdjustFunctions(adjustRemovedValuesToNull, om
 /*
  * Adjust the value of the object using default adjust function, and then apply the provided adjust function
  */
-export const adjustWrapper: (...adjust: AdjustFunctionSingle[]) => AdjustFunctionSingle = adjust =>
-  concatAdjustFunctions(defaultAdjust, adjust)
+export const adjustWrapper: (...adjust: AdjustFunctionSingle[]) => AdjustFunctionSingle = (...adjust) =>
+  concatAdjustFunctions(defaultAdjust, ...adjust)

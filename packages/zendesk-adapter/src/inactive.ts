@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,8 +7,9 @@
  */
 import { InstanceElement } from '@salto-io/adapter-api'
 import { definitions, fetch } from '@salto-io/adapter-components'
-import { ZendeskConfig, FETCH_CONFIG, OMIT_INACTIVE_DEFAULT } from './config'
+import { FETCH_CONFIG, OMIT_INACTIVE_DEFAULT } from './config'
 import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME, WORKSPACE_TYPE_NAME } from './constants'
+import { ZendeskUserConfig } from './user_config'
 
 /**
  * Helper for omitting inactive instances during the initial fetch, in order to avoid creating their standalone
@@ -16,7 +17,7 @@ import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME, WORKSPACE_TYPE_NAME } from '.
  * Note: We assume all instances are of the same type.
  */
 export const filterOutInactiveInstancesForType = (
-  config: ZendeskConfig,
+  config: ZendeskUserConfig,
 ): ((instances: InstanceElement[]) => InstanceElement[]) => {
   const omitInactiveConfig = config[FETCH_CONFIG]?.omitInactive
   const omitInactiveQuery = omitInactiveConfig ? definitions.queryWithDefault(omitInactiveConfig) : undefined
@@ -47,7 +48,9 @@ export const filterOutInactiveInstancesForType = (
  * Same as above, but for the new infra. The above function is removable after the migration to the new
  * infra is complete (SALTO-5760)
  */
-export const filterOutInactiveItemForType = (config: ZendeskConfig): ((item: fetch.ValueGeneratedItem) => boolean) => {
+export const filterOutInactiveItemForType = (
+  config: ZendeskUserConfig,
+): ((item: fetch.ValueGeneratedItem) => boolean) => {
   const omitInactiveConfig = config[FETCH_CONFIG]?.omitInactive
   const omitInactiveQuery = omitInactiveConfig ? definitions.queryWithDefault(omitInactiveConfig) : undefined
   return item => {

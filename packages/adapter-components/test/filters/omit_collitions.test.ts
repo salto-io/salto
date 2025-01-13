@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -52,10 +52,10 @@ describe('omitCollisionsFilter', () => {
       errors: [
         {
           severity: 'Warning',
-          detailedMessage: expect.any(String),
-          message: expect.stringContaining(
+          detailedMessage: expect.stringContaining(
             'Omitted 2 instances and all their child instances of t1 due to Salto ID collisions.\nCurrent Salto ID configuration for t1 is defined as [name, status].',
           ),
+          message: 'Some elements were not fetched due to Salto ID collisions',
         },
       ],
     })
@@ -74,10 +74,10 @@ describe('omitCollisionsFilter', () => {
       errors: [
         {
           severity: 'Warning',
-          detailedMessage: expect.any(String),
-          message: expect.stringContaining(
+          detailedMessage: expect.stringContaining(
             'Omitted 2 instances and all their child instances of t1 due to Salto ID collisions.\nCurrent Salto ID configuration for t1 is defined as [name, status].',
           ),
+          message: expect.stringContaining('Some elements were not fetched due to Salto ID collisions'),
         },
       ],
     })

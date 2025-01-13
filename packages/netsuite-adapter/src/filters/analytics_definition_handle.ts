@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -29,7 +29,7 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import he from 'he'
 import { collections, strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { DATASET, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
+import { DATASET, FIELD_TYPE, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import { CDATA_TAG_NAME } from '../client/constants'
 import { parsedWorkbookType, workbookDefinitionFields } from '../type_parsers/analytics_parsers/parsed_workbook'
@@ -46,7 +46,6 @@ import {
   EXPRESSION_VALUE_VALUE_REGEX,
   FALSE,
   FIELD_DEFINITION,
-  FIELD_TYPE,
   fieldsToOmitFromDefinition,
   fieldsToOmitFromOriginal,
   FieldWithType,

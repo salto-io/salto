@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -8,36 +8,44 @@
 import { references as referenceUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { entraConstants } from '../../constants'
 import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName } from '../types'
-import { SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME } from '../../constants/entra'
 
 const { recursiveNestedTypeName } = fetchUtils.element
 
 const {
+  TOP_LEVEL_TYPES: {
+    APPLICATION_TYPE_NAME,
+    APP_ROLE_TYPE_NAME,
+    CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
+    CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME,
+    CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME,
+    DIRECTORY_ROLE_TEMPLATE_TYPE_NAME,
+    DIRECTORY_ROLE_TYPE_NAME,
+    DOMAIN_TYPE_NAME,
+    GROUP_TYPE_NAME,
+    LIFE_CYCLE_POLICY_TYPE_NAME,
+    OAUTH2_PERMISSION_GRANT_TYPE_NAME,
+    ROLE_DEFINITION_TYPE_NAME,
+    SERVICE_PRINCIPAL_TYPE_NAME,
+    AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME,
+    CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
+    OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
+    PERMISSION_GRANT_POLICY_TYPE_NAME,
+  },
   ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME,
   APPLICATION_API_TYPE_NAME,
-  APPLICATION_TYPE_NAME,
-  APP_ROLE_TYPE_NAME,
   AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME,
   CONDITIONAL_ACCESS_POLICY_CONDITION_APPLICATIONS_TYPE_NAME,
   CONDITIONAL_ACCESS_POLICY_CONDITION_LOCATIONS_TYPE_NAME,
   CONDITIONAL_ACCESS_POLICY_CONDITION_USERS_TYPE_NAME,
-  CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
-  CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME,
-  CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME,
   DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
-  DIRECTORY_ROLE_TEMPLATE_TYPE_NAME,
-  DIRECTORY_ROLE_TYPE_NAME,
   DOMAIN_NAME_REFERENCES_FIELD_NAME,
-  DOMAIN_TYPE_NAME,
   GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   GROUP_LIFE_CYCLE_POLICY_FIELD_NAME,
-  GROUP_TYPE_NAME,
-  LIFE_CYCLE_POLICY_TYPE_NAME,
-  OAUTH2_PERMISSION_GRANT_TYPE_NAME,
   PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME,
-  ROLE_DEFINITION_TYPE_NAME,
-  SERVICE_PRINCIPAL_TYPE_NAME,
   REQUIRED_RESOURCE_ACCESS_FIELD_NAME,
+  AUTHENTICATION_STRENGTH_PATH,
+  SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+  DELEGATED_PERMISSION_IDS_FIELD_NAME,
 } = entraConstants
 
 const createMicrosoftAuthenticatorReferences = (): referenceUtils.FieldReferenceDefinition<
@@ -236,6 +244,33 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       ],
     },
     target: { typeContext: 'resourceAccessType' },
+    serializationStrategy: 'id',
+  },
+  {
+    src: {
+      field: 'id',
+      parentTypes: [recursiveNestedTypeName(CONDITIONAL_ACCESS_POLICY_TYPE_NAME, ...AUTHENTICATION_STRENGTH_PATH)],
+    },
+    target: { type: AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: {
+      field: DELEGATED_PERMISSION_IDS_FIELD_NAME,
+      parentTypes: [recursiveNestedTypeName(APPLICATION_API_TYPE_NAME, PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME)],
+    },
+    target: { type: OAUTH2_PERMISSION_SCOPE_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: {
+      field: 'permissions',
+      parentTypes: [
+        recursiveNestedTypeName(PERMISSION_GRANT_POLICY_TYPE_NAME, 'includes'),
+        recursiveNestedTypeName(PERMISSION_GRANT_POLICY_TYPE_NAME, 'excludes'),
+      ],
+    },
+    target: { type: OAUTH2_PERMISSION_SCOPE_TYPE_NAME },
     serializationStrategy: 'id',
   },
 ]

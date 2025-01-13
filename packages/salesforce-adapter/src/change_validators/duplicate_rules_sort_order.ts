@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -59,8 +59,9 @@ const createSortOrderError = (instance: DuplicateRuleInstance, objectName: strin
 /**
  * Validates the values in the array are in sequential order starting from 1.
  */
+
 const isInvalidSortOrder = (sortOrders: number[]): boolean =>
-  sortOrders.sort().some((sortOrder, index) => sortOrder !== index + 1)
+  sortOrders.sort((a: number, b: number): number => a - b).some((sortOrder, index) => sortOrder !== index + 1)
 
 const changeValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
@@ -93,7 +94,7 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
 
   const invalidSortOrderByObjectName = _.pickBy(
     _.mapValues(relevantDuplicateRuleInstancesByObjectName, instances =>
-      instances.map(instance => instance.value.sortOrder).sort(),
+      instances.map(instance => instance.value.sortOrder),
     ),
     isInvalidSortOrder,
   )

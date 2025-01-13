@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,17 +7,18 @@
  */
 import wu from 'wu'
 import { EOL } from 'os'
-import { FetchChange, Tags, StepEmitter } from '@salto-io/core'
+import { FetchChange, StepEmitter } from '@salto-io/core'
+import { Tags } from '@salto-io/local-workspace'
 import { SaltoError, DetailedChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Workspace, nacl, validator as wsValidator } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
-  formatWorkspaceError,
   formatWorkspaceLoadFailed,
   formatDetailedChanges,
   formatFinishedLoading,
   formatWorkspaceAbort,
+  formatWorkspaceErrorDetailedMessage,
 } from '../formatter'
 import { CliOutput, SpinnerCreator, CliTelemetry } from '../types'
 import { shouldContinueInCaseOfWarnings, shouldAbortWorkspaceInCaseOfValidationError } from '../callbacks'
@@ -96,7 +97,7 @@ export const formatWorkspaceErrors = async (workspace: Workspace, errors: Iterab
       wu(errors)
         .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
         .map(err => workspace.transformError(err))
-        .map(async err => formatWorkspaceError(await err)),
+        .map(async err => formatWorkspaceErrorDetailedMessage(await err)),
     )
   ).join(EOL)
 

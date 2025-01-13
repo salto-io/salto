@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,18 +7,19 @@
  */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { builtInInstancesValidator, readOnlyFieldsValidator, requiredFieldsValidator } from './change_validators'
 import { createDeployDefinitions } from './definitions'
 import { entraConstants } from './constants'
 import { Options } from './definitions/types'
+import changeValidators from './change_validators'
 
 export default (): Record<string, ChangeValidator> => ({
   createCheckDeploymentBasedOnDefinitions:
     deployment.changeValidators.createCheckDeploymentBasedOnDefinitionsValidator<Options>({
       deployDefinitions: createDeployDefinitions(),
-      typesDeployedViaParent: [entraConstants.APP_ROLE_TYPE_NAME],
+      typesDeployedViaParent: [
+        entraConstants.TOP_LEVEL_TYPES.APP_ROLE_TYPE_NAME,
+        entraConstants.TOP_LEVEL_TYPES.OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
+      ],
     }),
-  builtInInstances: builtInInstancesValidator,
-  requiredFields: requiredFieldsValidator,
-  readOnlyFields: readOnlyFieldsValidator,
+  ...changeValidators(),
 })

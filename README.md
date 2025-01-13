@@ -7,7 +7,7 @@
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 ---
 
-Salto allows you to manage your business applications' configuration in code. By doing so, it enables modern devops style methodologies for development, testing and deployment for these business applications.
+Salto allows you to manage your SaaS applications' configuration in code. By doing so, it enables modern devops style methodologies for development, testing and deployment for these business applications.
 
 Salto consists of 3 main components:
 

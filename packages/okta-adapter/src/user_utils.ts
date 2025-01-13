@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -20,6 +20,7 @@ import {
   MFA_RULE_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
   SIGN_ON_RULE_TYPE_NAME,
+  USER_ROLES_TYPE_NAME,
   USER_TYPE_NAME,
 } from './constants'
 import { DEFAULT_CONVERT_USERS_IDS_VALUE, OktaUserConfig } from './user_config'
@@ -74,6 +75,7 @@ export const USER_MAPPING: Record<string, string[][]> = {
   [MFA_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
   [AUTHORIZATION_POLICY_RULE]: [INCLUDE_USERS_PATH],
   [GROUP_MEMBERSHIP_TYPE_NAME]: [['members']],
+  [USER_ROLES_TYPE_NAME]: [['user']],
   EndUserSupport: [['technicalContactId']],
 }
 

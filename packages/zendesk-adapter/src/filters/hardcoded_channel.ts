@@ -1,20 +1,12 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import Joi from 'joi'
-import {
-  BuiltinTypes,
-  CORE_ANNOTATIONS,
-  ElemID,
-  InstanceElement,
-  isInstanceElement,
-  ObjectType,
-  Values,
-} from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, isObjectType, Values } from '@salto-io/adapter-api'
 import { naclCase, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -23,7 +15,7 @@ import { ZENDESK } from '../constants'
 
 const log = logger(module)
 
-const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
+const { RECORDS_PATH } = elementsUtils
 
 export const CHANNEL_TYPE_NAME = 'channel'
 export const TRIGGER_DEFINITION_TYPE_NAME = 'trigger_definition'
@@ -67,23 +59,17 @@ const filterCreator: FilterCreator = () => ({
       log.warn(`Failed to find ${TRIGGER_DEFINITION_TYPE_NAME} instance. Not adding channel instances`)
       return
     }
+    const channelType = elements.filter(isObjectType).find(e => e.elemID.name === CHANNEL_TYPE_NAME)
+    if (channelType === undefined) {
+      log.error(`Failed to find ${CHANNEL_TYPE_NAME} type. Not adding channel instances`)
+      return
+    }
     const channels = (triggerDefinitionInstance.value.conditions_all ?? [])
       // Both via_id and current_via_id should includes the same channels and both should appear
       .find((condition: Values) => ['via_id', 'current_via_id'].includes(condition?.subject))?.values
     if (!isChannels(channels)) {
       return
     }
-    const channelType = new ObjectType({
-      elemID: new ElemID(ZENDESK, CHANNEL_TYPE_NAME),
-      fields: {
-        id: {
-          refType: BuiltinTypes.SERVICE_ID,
-          annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-        },
-        name: { refType: BuiltinTypes.STRING },
-      },
-      path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, CHANNEL_TYPE_NAME],
-    })
     if (channels.length !== new Set(channels.map(c => c.value)).size) {
       log.warn(`Found duplicate ids in the channels - Not adding channel instances. ${inspectValue(channels)}`)
       return
@@ -97,7 +83,7 @@ const filterCreator: FilterCreator = () => ({
         instanceName,
       ])
     })
-    elements.push(channelType, ...instances)
+    elements.push(...instances)
   },
 })
 

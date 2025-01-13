@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -274,7 +274,7 @@ export const createDeployProgressReporter = async (
       suffix = args.suffix
       if (!wasDeploymentIdReported && deployResult.id) {
         wasDeploymentIdReported = true
-        const message = `Deployment with ID ${deployResult.id}  was created in Salesforce.`
+        const message = `Deployment with ID ${deployResult.id} was created in Salesforce.`
         log.debug(message)
         progressReporter.reportProgress({
           message,

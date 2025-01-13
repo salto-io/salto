@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,10 +7,22 @@
  */
 import _ from 'lodash'
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
-import { ZendeskConfig } from '../../config'
-import { ZendeskFetchOptions } from '../types'
-import { BUSINESS_HOUR_SCHEDULE_HOLIDAY, EVERYONE_USER_TYPE } from '../../constants'
-import { transformGuideItem, transformQueueItem, transformSectionItem, transformTriggerItem } from './transforms'
+import { Options } from '../types'
+import {
+  BOT_BUILDER_ANSWER,
+  CONVERSATION_BOT,
+  BOT_BUILDER_NODE,
+  BUSINESS_HOUR_SCHEDULE_HOLIDAY,
+  EVERYONE_USER_TYPE,
+} from '../../constants'
+import {
+  transformGraphQLItem,
+  transformGuideItem,
+  transformQueueItem,
+  transformSectionItem,
+  transformTriggerItem,
+} from './transforms'
+import { flowsQuery } from './graphql_schemas'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -31,10 +43,7 @@ const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFiel
   extended_input_schema: { omit: true },
 }
 
-const createCustomizations = (): Record<
-  string,
-  definitions.fetch.InstanceFetchApiDefinitions<ZendeskFetchOptions>
-> => ({
+const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
   group: {
     requests: [
       {
@@ -48,6 +57,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/people/team/groups/{id}' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -69,6 +79,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/people/team/roles/{id}' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -117,6 +128,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/workspaces/agent-workspace/views/{id}' },
         elemID: { parts: [{ fieldName: 'title' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -153,6 +165,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/objects-rules/rules/triggers/{id}' },
         elemID: { parts: [{ fieldName: 'title' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -191,6 +204,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/objects-rules/rules/triggers' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'string', hide: true },
@@ -241,6 +255,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/objects-rules/rules/automations/{id}' },
         elemID: { parts: [{ fieldName: 'title' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -265,6 +280,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/apps-integrations/targets/targets' },
         elemID: { parts: [{ fieldName: 'title' }, { fieldName: 'type' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'title' }, { fieldName: 'type' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -286,6 +302,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/objects-rules/rules/slas' },
         elemID: { parts: [{ fieldName: 'title' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
       },
       fieldCustomizations: { id: { fieldType: 'number', hide: true } },
     },
@@ -335,6 +352,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/workspaces/agent-workspace/macros/{id}' },
         elemID: { parts: [{ fieldName: 'title' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -349,6 +367,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'fileName' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'fileName' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'filename' }] },
       },
       fieldCustomizations: { id: { fieldType: 'number', hide: true } },
     },
@@ -393,6 +412,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/objects-rules/tickets/ticket-forms/edit/{id}' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         name: { hide: true },
@@ -421,6 +441,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/objects-rules/tickets/ticket_statuses/edit/{id}' },
         elemID: { parts: [{ fieldName: 'status_category' }, { fieldName: 'raw_agent_label' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'status_category' }, { fieldName: 'raw_agent_label' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'agent_label' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -449,6 +470,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/objects-rules/tickets/ticket-fields/{id}' },
         elemID: { parts: [{ fieldName: 'raw_title' }, { fieldName: 'type' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'raw_title' }, { fieldName: 'type' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -476,6 +498,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
         path: { pathParts: [{ parts: [{ fieldName: 'value' }], extendsParent: true }] },
+        alias: { aliasComponents: [{ fieldName: 'value' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -509,6 +532,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/agent/admin/user_fields/{id}' },
         elemID: { parts: [{ fieldName: 'key', mapping: 'lowercase' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'key', mapping: 'lowercase' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -533,6 +557,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
         path: { pathParts: [{ parts: [{ fieldName: 'value' }], extendsParent: true }] },
+        alias: { aliasComponents: [{ fieldName: 'value' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -561,6 +586,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/agent/admin/organization_fields/{id}' },
         elemID: { parts: [{ fieldName: 'key' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'key' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -585,6 +611,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
         path: { pathParts: [{ parts: [{ fieldName: 'value' }], extendsParent: true }] },
+        alias: { aliasComponents: [{ fieldName: 'value' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -611,6 +638,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/account/brand_management/brands' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         ticket_form_ids: { omit: true },
@@ -623,6 +651,21 @@ const createCustomizations = (): Record<
           },
         },
         categories: { fieldType: 'list<category>' },
+      },
+    },
+  },
+
+  brand_logo: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        alias: { aliasComponents: [{ fieldName: 'filename' }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        filename: { fieldType: 'string' },
+        contentType: { fieldType: 'string' },
+        content: { fieldType: 'string' },
       },
     },
   },
@@ -642,6 +685,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'locale' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'locale' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'presentation_name' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number' },
@@ -666,6 +710,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/apps-integrations/apps/support-apps' },
         elemID: { parts: [{ fieldName: 'settings.name' }, { fieldName: 'product' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'settings.name' }, { fieldName: 'product' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'settings.name' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -688,6 +733,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -720,6 +766,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/apps-integrations/apis/zendesk-api/oauth_clients' },
         elemID: { parts: [{ fieldName: 'identifier' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -796,8 +843,9 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'email', isReference: true }] },
-        path: { pathParts: [{ parts: [{ fieldName: 'name' }, { fieldName: 'email', isReference: true }] }] },
+        elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'email', isReference: true }], useOldFormat: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -939,6 +987,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
+        alias: { aliasComponents: [{ fieldName: 'id' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'string' },
@@ -962,6 +1011,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/workspaces/agent-workspace/dynamic_content' },
         elemID: { parts: [{ fieldName: 'name', mapping: 'lowercase' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'name', mapping: 'lowercase' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -985,8 +1035,22 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'locale_id', isReference: true }], extendsParent: true },
+        elemID: { parts: [{ fieldName: 'locale_id', isReference: true }], extendsParent: true, useOldFormat: true },
         path: { pathParts: [{ parts: [{ fieldName: 'locale_id', isReference: true }], extendsParent: true }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+            {
+              fieldName: 'locale_id',
+              referenceFieldName: 'locale',
+              useFieldValueAsFallback: true,
+            },
+          ],
+          separator: ' - ',
+        },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -1010,6 +1074,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/apps-integrations/webhooks/webhooks/{id}/details' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         meta: { omit: true },
@@ -1092,6 +1157,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'key' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'key' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'key' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number' },
@@ -1125,6 +1191,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { extendsParent: true, parts: [{ fieldName: 'key' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'key' }], extendsParent: true }] },
+        alias: { aliasComponents: [{ fieldName: 'key' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -1150,6 +1217,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
         path: { pathParts: [{ parts: [{ fieldName: 'value' }], extendsParent: true }] },
+        alias: { aliasComponents: [{ fieldName: 'value' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -1188,6 +1256,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/objects-rules/rules/routing' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'string' },
@@ -1216,6 +1285,7 @@ const createCustomizations = (): Record<
         elemID: { parts: DEFAULT_ID_PARTS, extendsParent: true },
         serviceUrl: { path: '/admin/objects-rules/rules/routing' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: { id: { hide: true, fieldType: 'string' } },
     },
@@ -1237,6 +1307,7 @@ const createCustomizations = (): Record<
         elemID: { parts: [{ fieldName: 'title' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
         serviceUrl: { path: '/admin/workspaces/agent-workspace/contextual-workspaces' },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
       },
       fieldCustomizations: { id: { hide: true, fieldType: 'number' } },
     },
@@ -1294,6 +1365,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/knowledge/permissions/{id}' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: { id: { hide: true, fieldType: 'number' } },
     },
@@ -1312,6 +1384,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/knowledge/user_segments/edit/{id}' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -1351,6 +1424,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/objects-rules/rules/schedules' },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -1376,7 +1450,9 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: DEFAULT_ID_PARTS, extendsParent: true },
+        elemID: { parts: DEFAULT_ID_PARTS, extendsParent: true, useOldFormat: true },
+        path: { pathParts: [{ parts: DEFAULT_ID_PARTS }] },
+        alias: { aliasComponents: DEFAULT_ID_PARTS },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -1416,8 +1492,9 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'brand', isReference: true }] },
+        elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'brand', isReference: true }], useOldFormat: true },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }, { fieldName: 'brand', isReference: true }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {
@@ -1441,8 +1518,22 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true, useOldFormat: true },
         path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }] }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: 'locale',
+              referenceFieldName: 'locale',
+              useFieldValueAsFallback: true,
+            },
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+          ],
+          separator: ' - ',
+        },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {
@@ -1457,12 +1548,59 @@ const createCustomizations = (): Record<
     },
   },
 
+  category_order: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { useOldFormat: true, extendsParent: true },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+            {
+              constant: 'Category Order',
+            },
+          ],
+        },
+      },
+    },
+  },
+
+  channel: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true }, // id is a string
+        name: { fieldType: 'string' },
+      },
+    },
+  },
+
   section_translation: {
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true, useOldFormat: true },
         path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: 'locale',
+              referenceFieldName: 'locale',
+              useFieldValueAsFallback: true,
+            },
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+          ],
+          separator: ' - ',
+        },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {
@@ -1473,6 +1611,26 @@ const createCustomizations = (): Record<
         html_url: { omit: true },
         source_id: { omit: true },
         source_type: { omit: true },
+      },
+    },
+  },
+
+  section_order: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { useOldFormat: true, extendsParent: true },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+            {
+              constant: 'Section Order',
+            },
+          ],
+        },
       },
     },
   },
@@ -1507,8 +1665,12 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'direct_parent_id', isReference: true }] },
+        elemID: {
+          parts: [{ fieldName: 'name' }, { fieldName: 'direct_parent_id', isReference: true }],
+          useOldFormat: true,
+        },
         path: { pathParts: [{ parts: [{ fieldName: 'name' }, { fieldName: 'direct_parent_id', isReference: true }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {
@@ -1572,8 +1734,10 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: {
           parts: [{ fieldName: 'title' }, { fieldName: 'section_id', isReference: true }],
+          useOldFormat: true,
         },
         path: { pathParts: [{ parts: [{ fieldName: 'title' }, { fieldName: 'section_id', isReference: true }] }] },
+        alias: { aliasComponents: [{ fieldName: 'title' }] },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {
@@ -1628,8 +1792,21 @@ const createCustomizations = (): Record<
         elemID: {
           parts: [{ fieldName: 'file_name' }, { fieldName: 'inline' }],
           extendsParent: true,
+          useOldFormat: true,
         },
         path: { pathParts: [{ parts: [{ fieldName: 'file_name' }, { fieldName: 'inline' }], extendsParent: true }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: 'file_name',
+            },
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+          ],
+          separator: ' - ',
+        },
         // serviceUrl is created in help_center_service_url filter
       },
       ignoreDefaultFieldCustomizations: true,
@@ -1654,8 +1831,22 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true, useOldFormat: true },
         path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: 'locale',
+              referenceFieldName: 'locale',
+              useFieldValueAsFallback: true,
+            },
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+          ],
+          separator: ' - ',
+        },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {
@@ -1666,6 +1857,26 @@ const createCustomizations = (): Record<
         html_url: { omit: true },
         source_id: { omit: true },
         source_type: { omit: true },
+      },
+    },
+  },
+
+  article_order: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { useOldFormat: true, extendsParent: true },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+            {
+              constant: 'Article Order',
+            },
+          ],
+        },
       },
     },
   },
@@ -1687,8 +1898,10 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: {
           parts: [{ fieldName: 'brand_id', isReference: true }, { fieldName: 'name' }],
+          useOldFormat: true,
         },
         path: { pathParts: [{ parts: [{ fieldName: 'brand_id', isReference: true }, { fieldName: 'name' }] }] },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {
@@ -1725,6 +1938,20 @@ const createCustomizations = (): Record<
         brand: { fieldType: 'number' },
         liveTheme: { fieldType: 'string' },
       },
+      topLevel: {
+        isTopLevel: true,
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: 'brand',
+              referenceFieldName: '_alias',
+            },
+            {
+              constant: 'Theme settings',
+            },
+          ],
+        },
+      },
     },
   },
 
@@ -1758,10 +1985,22 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'brand', isReference: true }, { fieldName: 'locale' }] },
+        elemID: { parts: [{ fieldName: 'brand', isReference: true }, { fieldName: 'locale' }], useOldFormat: true },
         path: {
-          pathParts: [
-            { parts: [{ fieldName: 'brand', isReference: true }, { fieldName: 'locale' }, { fieldName: 'locale' }] },
+          pathParts: [{ parts: [{ fieldName: 'brand', isReference: true }, { fieldName: 'locale' }] }],
+        },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: 'brand',
+              referenceFieldName: '_alias',
+            },
+            {
+              fieldName: 'locale',
+            },
+            {
+              constant: 'language settings',
+            },
           ],
         },
         // serviceUrl is created in help_center_service_url filter
@@ -1799,8 +2038,19 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'brand', isReference: true }] },
+        elemID: { parts: [{ fieldName: 'brand', isReference: true }], useOldFormat: true },
         path: { pathParts: [{ parts: [{ fieldName: 'brand', isReference: true }] }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: 'brand',
+              referenceFieldName: '_alias',
+            },
+            {
+              constant: 'Settings',
+            },
+          ],
+        },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {
@@ -1842,18 +2092,117 @@ const createCustomizations = (): Record<
       },
     },
   },
+
+  [CONVERSATION_BOT]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/admin/private/answer_bot/graphql',
+          method: 'post',
+          data: {
+            operationName: 'fetchFlows',
+            query: flowsQuery,
+          },
+        },
+        transformation: { root: '.', adjust: transformGraphQLItem('flows') },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'brandId', isReference: true }, { fieldName: 'name' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'brandId', isReference: true }, { fieldName: 'name' }] }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: 'brandId',
+              referenceFieldName: '_alias',
+            },
+            { fieldName: 'name' },
+          ],
+        },
+        serviceUrl: { path: '/admin/channels/ai-agents-automation/ai-agents/conversation-bots/{id}/insights' },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: {
+        id: { hide: true },
+        brandId: { fieldType: 'string' },
+        subflows: {
+          standalone: {
+            typeName: BOT_BUILDER_ANSWER,
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+  [BOT_BUILDER_ANSWER]: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: DEFAULT_ID_PARTS, extendsParent: true },
+        path: {
+          pathParts: [{ parts: DEFAULT_ID_PARTS, extendsParent: true }],
+        },
+        alias: {
+          aliasComponents: DEFAULT_ID_PARTS,
+        },
+        serviceUrl: {
+          path: '/admin/channels/ai-agents-automation/ai-agents/conversation-bots/{_parent.0.id}/answers/{id}/canvas',
+        },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: {
+        id: { hide: true },
+        nodes: {
+          standalone: {
+            typeName: BOT_BUILDER_NODE,
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+  [BOT_BUILDER_NODE]: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'id' }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'id' }], extendsParent: true }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+            { fieldName: 'targetType' },
+          ],
+        },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: {
+        externalId: { fieldType: 'string', hide: true },
+      },
+    },
+  },
 })
 
-export const createFetchDefinitions = (
-  _fetchConfig: ZendeskConfig,
-  {
-    typesToOmit,
-    typesToPick,
-  }: {
-    typesToOmit?: string[]
-    typesToPick?: string[]
-  },
-): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => {
+export const createFetchDefinitions = ({
+  typesToOmit,
+  typesToPick,
+  baseUrl,
+}: {
+  typesToOmit?: string[]
+  typesToPick?: string[]
+  baseUrl?: string
+}): definitions.fetch.FetchApiDefinitions<Options> => {
   const initialCustomizations = createCustomizations()
   const withoutOmitted = typesToOmit !== undefined ? _.omit(initialCustomizations, typesToOmit) : initialCustomizations
   const finalCustomizations = typesToPick !== undefined ? _.pick(withoutOmitted, typesToPick) : withoutOmitted
@@ -1866,7 +2215,7 @@ export const createFetchDefinitions = (
           onError: fetchUtils.errors.createGetInsufficientPermissionsErrorFunction([403]),
         },
         element: {
-          topLevel: { elemID: { parts: DEFAULT_ID_PARTS } },
+          topLevel: { elemID: { parts: DEFAULT_ID_PARTS }, serviceUrl: { baseUrl } },
           fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
         },
       },

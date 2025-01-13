@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -113,7 +113,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
     change => getChangeData(change).elemID,
   )
 
-  const graph = createDependencyGraph({
+  const graph = await createDependencyGraph({
     defQuery,
     dependencies,
     changes: changes.concat(Object.values(subResourceChangesByChangeID).flat()),

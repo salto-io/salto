@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -844,10 +844,7 @@ export default class SalesforceClient implements ISalesforceClient {
         // This seems to happen with actions that relate to sending emails - these are disabled in
         // some way on sandboxes and for some reason this causes the SF API to fail reading
         (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid') ||
-        error.name === 'sf:INSUFFICIENT_ACCESS' ||
-        // Seems that reading TopicsForObjects for Problem, Incident and ChangeRequest fails.
-        // Unclear why this happens, might be a SF API bug, suppressing as this seems unimportant
-        (type === 'TopicsForObjects' && error.name === 'sf:INVALID_TYPE_FOR_OPERATION'),
+        error.name === 'sf:INSUFFICIENT_ACCESS',
       isUnhandledError,
     })
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -46,7 +46,7 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
       serialize: ({ ref }) => {
         const { appId } = ref.value.value
         if (isReferenceExpression(appId)) {
-          if (appId.elemID.typeName !== entraConstants.APPLICATION_TYPE_NAME) {
+          if (appId.elemID.typeName !== entraConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME) {
             log.error('Unexpected reference type %s for appId', appId.elemID.typeName)
           }
           return appId.value.value.appId
@@ -79,8 +79,17 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
     resourceAccessType: referenceUtils.neighborContextGetter({
       contextFieldName: 'type',
       getLookUpName: async ({ ref }) => ref.elemID.name,
-      // TODO SALTO-6933: Cover 'Scope' type
-      contextValueMapper: typeFieldValue => (typeFieldValue === 'Role' ? entraConstants.APP_ROLE_TYPE_NAME : undefined),
+      contextValueMapper: typeFieldValue => {
+        switch (typeFieldValue) {
+          case 'Role':
+            return entraConstants.TOP_LEVEL_TYPES.APP_ROLE_TYPE_NAME
+          case 'Scope':
+            return entraConstants.TOP_LEVEL_TYPES.OAUTH2_PERMISSION_SCOPE_TYPE_NAME
+          default:
+            log.error('Unexpected resource access type %s', typeFieldValue)
+            return undefined
+        }
+      },
     }),
   },
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -10,6 +10,7 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, SaltoError } from '@salto-io
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from './utils'
+import { ERROR_MESSAGES } from './error_messages'
 
 const { groupByAsync } = collections.asynciterable
 const log = logger(module)
@@ -175,7 +176,7 @@ export const getCollisionWarnings = ({
   })
   return warningMessages.map(warningMessage =>
     createWarningFromMsg({
-      message: 'Some elements were not fetched due to Salto ID collisions',
+      message: ERROR_MESSAGES.ID_COLLISION,
       detailedMessage: warningMessage,
     }),
   )
@@ -236,7 +237,7 @@ Alternatively, you can exclude ${type} from the ${configurationName} configurati
           ? ['', `And ${elemIDCount - maxBreakdownElements} more colliding Salto IDs`]
           : []
       const linkToDocsMsg = docsUrl ? ['', `Learn more at: ${docsUrl}`] : []
-      const message = [
+      const detailedMessage = [
         header,
         '',
         collisionsHeader,
@@ -248,8 +249,8 @@ Alternatively, you can exclude ${type} from the ${configurationName} configurati
       ].join('\n')
 
       return createWarningFromMsg({
-        message,
-        detailedMessage: message,
+        message: ERROR_MESSAGES.ID_COLLISION,
+        detailedMessage,
       })
     }),
   )

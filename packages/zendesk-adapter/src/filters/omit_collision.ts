@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -11,12 +11,11 @@ import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '@sa
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { ZENDESK } from '../constants'
-import { API_DEFINITIONS_CONFIG } from '../config'
 
 /**
  * Adds collision warnings and remove colliding elements and their children
  */
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions }) => ({
   name: 'omitCollisionsFilter',
   onFetch: async (elements: Element[]) => {
     const collidingElements = getInstancesWithCollidingElemID(elements.filter(isInstanceElement))
@@ -30,8 +29,8 @@ const filterCreator: FilterCreator = ({ config }) => ({
       getInstanceName: async instance => instance.elemID.name,
       getIdFieldsByType: typeName =>
         configUtils.getConfigWithDefault(
-          config[API_DEFINITIONS_CONFIG].types[typeName]?.transformation,
-          config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
+          oldApiDefinitions.types[typeName]?.transformation,
+          oldApiDefinitions.typeDefaults.transformation,
         ).idFields,
       idFieldsName: 'idFields',
       docsUrl: 'https://help.salto.io/en/articles/6927157-salto-id-collisions',

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -16,7 +16,7 @@ import { getBrandsForGuide } from '../utils'
 /**
  * Handle the order of categories in brand
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config, oldApiDefinitions }) => ({
   name: 'categoryOrderFilter',
   /** Create an InstanceElement of the categories order inside the brands */
   onFetch: async (elements: Element[]) => {
@@ -54,7 +54,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       changes: categoryOrderChange,
       orderField: CATEGORIES_FIELD,
       client,
-      config,
+      apiDefinitions: oldApiDefinitions,
     })
 
     return {

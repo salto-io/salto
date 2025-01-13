@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -32,6 +32,8 @@ import {
   DEFAULT_SOURCE_SCOPE,
   isAdditionOrModificationChange,
   DetailedChangeWithBaseChange,
+  Adapter,
+  GLOBAL_ADAPTER,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -504,17 +506,65 @@ const logValidationErrors = (errors: ReadonlyArray<ValidationError>, source: str
     })
 }
 
-export const loadWorkspace = async (
-  config: WorkspaceConfigSource,
-  adaptersConfig: AdaptersConfigSource,
-  credentials: ConfigSource,
-  environmentsSources: EnvironmentsSources,
-  remoteMapCreator: RemoteMapCreator,
-  ignoreFileChanges = false,
-  persistent = true,
-  mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
-  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
-): Promise<Workspace> => {
+export const getCustomReferencesImplementation = (
+  adapterCreators: Record<string, Adapter>,
+): WorkspaceGetCustomReferencesFunc | undefined => {
+  if (_.isEmpty(Object.keys(adapterCreators))) {
+    return undefined
+  }
+  return async function getCustomReferences(
+    elements: Element[],
+    accountToServiceName: Record<string, string>,
+    adaptersConfig: AdaptersConfigSource,
+  ): Promise<ReferenceInfo[]> {
+    const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
+      const serviceName = accountToServiceName[account] ?? account
+      try {
+        const refFunc = adapterCreators[serviceName]?.getCustomReferences
+        if (refFunc !== undefined) {
+          return await refFunc(accountElements, await adaptersConfig.getAdapter(account))
+        }
+      } catch (err) {
+        log.error('failed to get custom references for %s: %o', account, err)
+      }
+      return []
+    }
+
+    const accountToElements = _.groupBy(
+      elements.filter(e => e.elemID.adapter !== GLOBAL_ADAPTER),
+      e => e.elemID.adapter,
+    )
+    return (await Promise.all(Object.entries(accountToElements).map(accountElementsToRefs))).flat()
+  }
+}
+
+type LoadWorkspaceParams = {
+  config: WorkspaceConfigSource
+  adaptersConfig: AdaptersConfigSource
+  credentials: ConfigSource
+  environmentsSources: EnvironmentsSources
+  remoteMapCreator: RemoteMapCreator
+  ignoreFileChanges?: boolean
+  persistent?: boolean
+  mergedRecoveryMode?: MergedRecoveryMode
+  adapterCreators: Record<string, Adapter>
+}
+
+export async function loadWorkspace(params: LoadWorkspaceParams): Promise<Workspace> {
+  const {
+    config,
+    adaptersConfig,
+    credentials,
+    environmentsSources,
+    remoteMapCreator,
+    ignoreFileChanges = false,
+    persistent = true,
+    mergedRecoveryMode = 'rebuild',
+    adapterCreators,
+  } = params
+
+  const getCustomReferences = getCustomReferencesImplementation(adapterCreators) ?? (async () => [])
+
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
 
@@ -1229,7 +1279,11 @@ export const loadWorkspace = async (
       if (workspaceState !== undefined) {
         // in case that `workspaceState` is currently being built, we'd like to wait until it finishes.
         log.debug('waiting for workspaceState to finish building before closing the workspace')
-        await workspaceState
+        try {
+          await workspaceState
+        } catch (error) {
+          log.warn('failed waiting for workspaceState to finish building with error: %o', error)
+        }
       }
       log.debug('closing the workspace')
       await remoteMapCreator.close()
@@ -1383,17 +1437,17 @@ export const loadWorkspace = async (
         state: source.state,
       }))
       const envSources = { commonSourceName: environmentsSources.commonSourceName, sources }
-      return loadWorkspace(
+      return loadWorkspace({
         config,
         adaptersConfig,
         credentials,
-        envSources,
+        environmentsSources: envSources,
         remoteMapCreator,
         ignoreFileChanges,
         persistent,
         mergedRecoveryMode,
-        getCustomReferences,
-      )
+        adapterCreators,
+      })
     },
     clear: async (args: ClearFlags) => {
       const currentWSState = await getWorkspaceState()
@@ -1606,31 +1660,39 @@ export const loadWorkspace = async (
   return workspace
 }
 
-export const initWorkspace = async (
-  uid: string,
-  defaultEnvName: string,
-  config: WorkspaceConfigSource,
-  adaptersConfig: AdaptersConfigSource,
-  credentials: ConfigSource,
-  envs: EnvironmentsSources,
-  remoteMapCreator: RemoteMapCreator,
-  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
-): Promise<Workspace> => {
+type InitWorkspaceParams = {
+  uid: string
+  defaultEnvName: string
+  config: WorkspaceConfigSource
+  adaptersConfig: AdaptersConfigSource
+  credentials: ConfigSource
+  environmentSources: EnvironmentsSources
+  remoteMapCreator: RemoteMapCreator
+  adapterCreators: Record<string, Adapter>
+}
+
+export async function initWorkspace({
+  uid,
+  defaultEnvName,
+  config,
+  adaptersConfig,
+  credentials,
+  environmentSources,
+  remoteMapCreator,
+  adapterCreators,
+}: InitWorkspaceParams): Promise<Workspace> {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
     uid,
     envs: [{ name: defaultEnvName, accountToServiceName: {} }],
     currentEnv: defaultEnvName,
   })
-  return loadWorkspace(
+  return loadWorkspace({
     config,
     adaptersConfig,
     credentials,
-    envs,
+    environmentsSources: environmentSources,
     remoteMapCreator,
-    undefined,
-    undefined,
-    undefined,
-    getCustomReferences,
-  )
+    adapterCreators,
+  })
 }

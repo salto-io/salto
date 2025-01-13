@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -31,7 +31,6 @@ import reportTypesMoveEnvironment from './change_validators/report_types_move_en
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
 import uniqueFieldsValidator from './change_validators/unique_fields'
-import subInstancesValidator from './change_validators/subinstances'
 import standardTypesInvalidValuesValidator from './change_validators/standard_types_invalid_values'
 import safeDeployValidator from './change_validators/safe_deploy'
 import mappedListsIndexesValidator from './change_validators/mapped_lists_indexes'
@@ -54,6 +53,7 @@ import unreferencedDatasetsValidator from './change_validators/check_referenced_
 import analyticsSilentFailureValidator from './change_validators/analytics_post_deploy_notification'
 import bundleChangesValidator from './change_validators/bundle_changes'
 import customRecordEmptyPermissionListValidator from './change_validators/custom_record_empty_permission_list'
+import lockedCustomRecordTypesValidator from './change_validators/locked_custom_record_types'
 import NetsuiteClient from './client/client'
 import {
   AdditionalDependencies,
@@ -88,7 +88,6 @@ const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeVali
   removeListItemWithoutScriptID: removeListItemWithoutScriptIDValidator,
   file: fileValidator,
   uniqueFields: uniqueFieldsValidator,
-  subInstances: subInstancesValidator,
   standardTypesInvalidValues: standardTypesInvalidValuesValidator,
   mappedListsIndexes: mappedListsIndexesValidator,
   notYetSupportedValues: notYetSupportedValuesValidator,
@@ -104,6 +103,7 @@ const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeVali
   analyticsSilentFailure: analyticsSilentFailureValidator,
   undeployableBundleChanges: bundleChangesValidator,
   customRecordEmptyPermissionList: customRecordEmptyPermissionListValidator,
+  lockedCustomRecordTypes: lockedCustomRecordTypesValidator,
 }
 
 const nonSuiteAppValidators: Record<NonSuiteAppValidatorName, NetsuiteChangeValidator> = {

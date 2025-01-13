@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
+import { Adapter, DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import {
   Workspace,
@@ -25,11 +25,10 @@ import {
   COMMON_ENV_PREFIX,
   isValidEnvName,
   EnvironmentSource,
-  EnvConfig,
   buildStaticFilesCache,
   getBaseDirFromEnvName,
   getStaticFileCacheName,
-  WorkspaceGetCustomReferencesFunc,
+  getAdaptersConfigTypesMap,
 } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
@@ -229,8 +228,7 @@ type LoadLocalWorkspaceArgs = {
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   credentialSource?: cs.ConfigSource
   ignoreFileChanges?: boolean
-  getConfigTypes: (envs: EnvConfig[]) => Promise<ObjectType[]>
-  getCustomReferences: WorkspaceGetCustomReferencesFunc
+  adapterCreators: Record<string, Adapter>
 }
 
 export async function loadLocalWorkspace({
@@ -240,8 +238,7 @@ export async function loadLocalWorkspace({
   credentialSource,
   stateStaticFilesSource,
   ignoreFileChanges = false,
-  getConfigTypes,
-  getCustomReferences,
+  adapterCreators,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
@@ -253,13 +250,14 @@ export async function loadLocalWorkspace({
   const cacheDirName = path.join(workspaceConfigSrc.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
   try {
-    const adaptersConfig = await buildLocalAdaptersConfigSource(
+    const adaptersConfig = await buildLocalAdaptersConfigSource({
       baseDir,
       remoteMapCreator,
       persistent,
-      await getConfigTypes(workspaceConfig.envs),
+      envs: workspaceConfig.envs,
+      adapterCreators,
       configOverrides,
-    )
+    })
     const envNames = workspaceConfig.envs.map(e => e.name)
     const credentials = credentialSource ?? credentialsSource(workspaceConfigSrc.localStorage)
 
@@ -271,17 +269,17 @@ export async function loadLocalWorkspace({
       persistent,
       workspaceConfig,
     })
-    const ws = await loadWorkspace(
-      workspaceConfigSrc,
+    const ws = await loadWorkspace({
+      config: workspaceConfigSrc,
       adaptersConfig,
       credentials,
-      elemSources,
+      environmentsSources: elemSources,
       remoteMapCreator,
       ignoreFileChanges,
       persistent,
-      undefined,
-      getCustomReferences,
-    )
+      mergedRecoveryMode: undefined,
+      adapterCreators,
+    })
 
     return {
       ...ws,
@@ -317,13 +315,21 @@ export async function loadLocalWorkspace({
   }
 }
 
-export const initLocalWorkspace = async (
-  baseDir: string,
+type InitLocalWorkspaceParams = {
+  baseDir: string
+  envName?: string
+  configTypes?: ObjectType[]
+  stateStaticFilesSource?: staticFiles.StateStaticFilesSource
+  adapterCreators: Record<string, Adapter>
+}
+
+export async function initLocalWorkspace({
+  baseDir,
   envName = 'default',
-  configTypes: ObjectType[],
-  getCustomReferences: WorkspaceGetCustomReferencesFunc,
-  stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-): Promise<Workspace> => {
+  adapterCreators,
+  configTypes = Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
+  stateStaticFilesSource,
+}: InitLocalWorkspaceParams): Promise<Workspace> {
   const uid = uuidv4()
   const localStorage = getLocalStoragePath(uid)
   if (await locateWorkspaceRoot(path.resolve(baseDir))) {
@@ -341,7 +347,14 @@ export const initLocalWorkspace = async (
   try {
     const persistentMode = true
 
-    const adaptersConfig = await buildLocalAdaptersConfigSource(baseDir, remoteMapCreator, persistentMode, configTypes)
+    const adaptersConfig = await buildLocalAdaptersConfigSource({
+      baseDir,
+      remoteMapCreator,
+      persistent: persistentMode,
+      configTypes,
+      adapterCreators,
+      envs: [],
+    })
     const credentials = credentialsSource(localStorage)
 
     const elemSources = await loadLocalElementsSources({
@@ -353,16 +366,16 @@ export const initLocalWorkspace = async (
       workspaceConfig: { uid },
     })
 
-    const workspace = await initWorkspace(
+    const workspace = await initWorkspace({
       uid,
-      envName,
-      workspaceConfigSrc,
+      defaultEnvName: envName,
+      config: workspaceConfigSrc,
       adaptersConfig,
       credentials,
-      elemSources,
+      environmentSources: elemSources,
       remoteMapCreator,
-      getCustomReferences,
-    )
+      adapterCreators,
+    })
     return workspace
   } catch (e) {
     try {

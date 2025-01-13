@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -19,12 +19,12 @@ import {
   addAdapter,
   getAdaptersCredentialsTypes,
   getLoginStatuses,
-  getSupportedServiceAdapterNames,
   installAdapter,
   verifyCredentials,
   updateCredentials,
 } from '@salto-io/core'
 import { Workspace, errors, isValidAccountName } from '@salto-io/workspace'
+import { adapterCreators, getSupportedServiceAdapterNames } from '@salto-io/adapter-creators'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getConfigWithHeader } from '../callbacks'
@@ -172,7 +172,7 @@ const getLoginInputFlow = async (
     : // In this login option we ask the user to enter his credentials
       (credentialsType: ObjectType): Promise<InstanceElement> => getConfigWithHeader(credentialsType, output)
   const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
-  const result = await verifyCredentials(newConfig)
+  const result = await verifyCredentials(newConfig, adapterCreators)
   if (!result.success) {
     throw result.error
   }
@@ -230,9 +230,9 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  await installAdapter(serviceType)
+  await installAdapter(serviceType, adapterCreators)
   if (login) {
-    const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceType])[serviceType]
+    const adapterCredentialsTypes = getAdaptersCredentialsTypes({ names: [serviceType], adapterCreators })[serviceType]
     try {
       await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType, theAccountName, loginParameters)
     } catch (e) {
@@ -241,7 +241,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
     }
   }
 
-  await addAdapter(workspace, serviceType, theAccountName)
+  await addAdapter({ workspace, adapterName: serviceType, accountName: theAccountName, adapterCreators })
   await workspace.flush()
   outputLine(formatAccountAdded(serviceType), output)
   return CliExitCode.Success
@@ -333,7 +333,7 @@ export const loginAction: WorkspaceCommandAction<AccountLoginArgs> = async ({
     errorOutputLine(formatAccountNotConfigured(accountName), output)
     return CliExitCode.AppError
   }
-  const accountLoginStatus = (await getLoginStatuses(workspace, [accountName]))[accountName]
+  const accountLoginStatus = (await getLoginStatuses(workspace, [accountName], adapterCreators))[accountName]
   if (accountLoginStatus.isLoggedIn) {
     outputLine(formatLoginOverride, output)
   }

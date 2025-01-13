@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -64,6 +64,8 @@ import {
   CPQ_QUOTE,
   CPQ_CONSTRAINT_FIELD,
   CUSTOM_LABEL_METADATA_TYPE,
+  FLOW_FIELD_TYPE_NAMES,
+  ASSIGN_TO_REFERENCE,
 } from '../constants'
 import { instanceInternalId } from '../filters/utils'
 import { FetchProfile } from '../types'
@@ -104,6 +106,7 @@ type ReferenceSerializationStrategyName =
   | 'customLabel'
   | 'fromDataInstance'
   | 'recordField'
+  | 'assignToReferenceField'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategy
@@ -166,6 +169,16 @@ export const ReferenceSerializationStrategyLookup: Record<
       return val
     },
   },
+  assignToReferenceField: {
+    serialize: async ({ ref, path }) =>
+      `$Record${API_NAME_SEPARATOR}${await safeApiName({ ref, path, relative: true })}`,
+    lookup: (val, context) => {
+      if (context !== undefined && _.isString(val) && val.startsWith('$Record.')) {
+        return [context, val.split(API_NAME_SEPARATOR)[1]].join(API_NAME_SEPARATOR)
+      }
+      return val
+    },
+  },
 }
 
 export type ReferenceContextStrategyName =
@@ -221,6 +234,13 @@ const GEN_AI_REFERENCES_DEF: FieldReferenceDefinition[] = [
   {
     src: { field: 'functionName', parentTypes: ['GenAiPluginFunctionDef'] },
     target: { type: 'GenAiFunction' },
+  },
+]
+
+const PACKAGE_VERSION_REFERENCE_DEF: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'namespace', parentTypes: ['PackageVersion'] },
+    target: { type: 'InstalledPackage' },
   },
 ]
 
@@ -971,6 +991,14 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'recordField',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
+  {
+    src: {
+      field: ASSIGN_TO_REFERENCE,
+      parentTypes: Object.values(FLOW_FIELD_TYPE_NAMES),
+    },
+    serializationStrategy: 'assignToReferenceField',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>
@@ -1118,6 +1146,7 @@ export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldRefere
   fieldNameToTypeMappingDefs
     .concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('networkReferences') ? NETWORK_REFERENCES_DEF : [])
+    .concat(fetchProfile.isFeatureEnabled('packageVersionReference') ? PACKAGE_VERSION_REFERENCE_DEF : [])
 
 /**
  * Translate a reference expression back to its original value before deploy.

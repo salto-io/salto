@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,7 +7,6 @@
  */
 import { createAdapter, credentials as credentialsUtils, filters } from '@salto-io/adapter-components'
 import createChangeValidator from './change_validator'
-import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
 import { ADAPTER_NAME } from './constants'
 import { createClientDefinitions, createDeployDefinitions, createFetchDefinitions } from './definitions'
@@ -15,9 +14,15 @@ import { PAGINATION } from './definitions/requests/pagination'
 import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references/references'
 import { createFromOauthResponse, createOAuthRequest } from './client/oauth'
-import { appRolesFilter, deployAdministrativeUnitMembersFilter, deployDirectoryRoleMembersFilter } from './filters'
+import {
+  entraApplicationStandaloneFieldsFilter,
+  deployAdministrativeUnitMembersFilter,
+  deployDirectoryRoleMembersFilter,
+} from './filters'
 import { customConvertError } from './error_utils'
 import { Credentials, credentialsType, oauthRequestParameters } from './auth'
+import { createFixElementFunctions } from './fix_elements'
+import { additionalDeployConfigFieldsType, DEFAULT_CONFIG, UserConfig } from './config'
 
 const { defaultCredentialsFromConfig } = credentialsUtils
 
@@ -49,12 +54,14 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     customizeFilterCreators: args => ({
       deployAdministrativeUnitMembersFilter,
       deployDirectoryRoleMembersFilter,
-      appRolesFilter,
+      entraApplicationStandaloneFieldsFilter,
       ...filters.createCommonFilters<Options, UserConfig>(args),
     }),
+    customizeFixElements: createFixElementFunctions,
   },
   customConvertError,
   initialClients: {
     main: undefined,
   },
+  additionalConfigFields: { deploy: additionalDeployConfigFieldsType },
 })

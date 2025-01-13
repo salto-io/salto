@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -182,7 +182,8 @@ describe('Salto parser', () => {
         expect(errors).toHaveLength(1)
         const error = errors[0]
         expect(error.summary).toEqual('Unknown primitive type')
-        expect(error.message).toEqual("Unknown primitive type 'invalid'.")
+        expect(error.detailedMessage).toEqual("Unknown primitive type 'invalid'.")
+        expect(error.message).toEqual('Element has invalid NaCl content')
       })
     })
 
@@ -1669,7 +1670,8 @@ multiline
         })
         const result = await parse(Buffer.from(body), 'filename', throwingFunctions)
         expect(result.errors).toHaveLength(1)
-        expect(result.errors[0].message).toEqual('unexpected')
+        expect(result.errors[0].detailedMessage).toEqual('unexpected')
+        expect(result.errors[0].message).toEqual('Element has invalid NaCl content')
         expect(result.errors[0].context).toEqual({
           filename: 'filename',
           start: { byte: 1, col: 1, line: 1 },
@@ -1691,7 +1693,8 @@ multiline
         })
         const result = await parse(Buffer.from(body), 'filename', throwingFunctions)
         expect(result.errors).toHaveLength(1)
-        expect(result.errors[0].message).toEqual('Invalid syntax')
+        expect(result.errors[0].detailedMessage).toEqual('Invalid syntax')
+        expect(result.errors[0].message).toEqual('Element has invalid NaCl content')
         expect(result.errors[0].context).toEqual({
           filename: 'filename',
           start: { byte: 5, col: 6, line: 3 },

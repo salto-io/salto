@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -60,6 +60,14 @@ describe('automationFetchFilter', () => {
             ],
           },
           ruleHome: 'some value', // should always omit this field
+          tags: [
+            // should always omit this field
+            {
+              ruleIdUuid: '018ea865-3a9c-7c73-95fc-0ecb6aa14456',
+              tagType: 'CREATION_TYPE',
+              tagValue: 'USER',
+            },
+          ],
         },
       ],
     },

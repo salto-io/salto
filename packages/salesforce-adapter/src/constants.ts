@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -75,6 +75,30 @@ export enum FIELD_TYPE_NAMES {
   INDIRECT_LOOKUP = 'IndirectLookup',
   FILE = 'File',
 }
+
+// Flow constants
+export const FLOW_NODE = 'FlowNode'
+export const TARGET_REFERENCE = 'targetReference'
+export const ASSIGN_TO_REFERENCE = 'assignToReference'
+export enum FLOW_NODE_FIELD_NAMES {
+  NAME = 'name',
+  LOCATION_X = 'locationX',
+  LOCATION_Y = 'locationY',
+}
+
+export const FLOW_FIELD_TYPE_NAMES = {
+  FLOW_ASSIGNMENT_ITEM: 'FlowAssignmentItem',
+  FLOW_STAGE_STEP_OUTPUT_PARAMETER: 'FlowStageStepOutputParameter',
+  FLOW_SUBFLOW_OUTPUT_ASSIGNMENT: 'FlowSubflowOutputAssignment',
+  FLOW_TRANSFORM_VALUE_ACTION: 'FlowTransformValueAction',
+  FLOW_SCREEN_FIELD_OUTPUT_PARAMETER: 'FlowScreenFieldOutputParameter',
+  FLOW_WAIT_EVENT_OUTPUT_PARAMETER: 'FlowWaitEventOutputParameter',
+  FLOW_STAGE_STEP_EXIT_ACTION_OUTPUT_PARAMETER: 'FlowStageStepExitActionOutputParameter',
+  FLOW_APEX_PLUGIN_CALL_OUTPUT_PARAMETER: 'FlowApexPluginCallOutputParameter',
+  FLOW_ACTION_CALL_OUTPUT_PARAMETER: 'FlowActionCallOutputParameter',
+  FLOW_OUTPUT_FIELD_ASSIGNMENT: 'FlowOutputFieldAssignment',
+  FLOW_STAGE_STEP_ENTRY_ACTION_OUTPUT_PARAMETER: 'FlowStageStepEntryActionOutputParameter',
+} as const
 
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
@@ -422,6 +446,7 @@ export const CUSTOM_APPLICATION_METADATA_TYPE = 'CustomApplication'
 export const APEX_CLASS_METADATA_TYPE = 'ApexClass'
 export const APEX_PAGE_METADATA_TYPE = 'ApexPage'
 export const APEX_TRIGGER_METADATA_TYPE = 'ApexTrigger'
+export const APEX_COMPONENT_METADATA_TYPE = 'ApexComponent'
 export const GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE = 'GlobalValueSetTranslation'
 export const ASSIGNMENT_RULE_METADATA_TYPE = 'AssignmentRule'
 export const AUTO_RESPONSE_RULES_METADATA_TYPE = 'AutoResponseRules'
@@ -435,6 +460,8 @@ export const OPPORTUNITY_METADATA_TYPE = 'Opportunity'
 export const ANIMATION_RULE_METADATA_TYPE = 'AnimationRule'
 export const CANVAS_METADATA_TYPE = 'CanvasMetadata'
 export const STATIC_RESOURCE_METADATA_TYPE = 'StaticResource'
+export const AURA_DEFINITION_BUNDLE_METADATA_TYPE = 'AuraDefinitionBundle'
+export const GEN_AI_FUNCTION_METADATA_TYPE = 'GenAiFunction'
 
 // Wave Metadata Types
 export const WAVE_RECIPE_METADATA_TYPE = 'WaveRecipe'
@@ -743,6 +770,13 @@ export const isSalesforceError = (error: Error): error is SalesforceError => {
   const errorCode = _.get(error, ERROR_PROPERTIES.ERROR_CODE)
   return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
 }
+
+// Salesforce Deploy Problems
+export const SALESFORCE_DEPLOY_PROBLEMS = {
+  SCHEDULABLE_CLASS: 'This schedulable class has jobs pending or in progress',
+  MAX_METADATA_DEPLOY_LIMIT: 'Maximum size of request reached. Maximum size of request is 52428800 bytes.',
+  INVALID_DASHBOARD_UNIQUE_NAME: 'Invalid dashboard Unique Name',
+} as const
 
 // Artifacts
 export const SalesforceArtifacts = {

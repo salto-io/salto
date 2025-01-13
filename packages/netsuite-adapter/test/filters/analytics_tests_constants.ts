@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -17,7 +17,6 @@ import {
   DATA_VIEWS,
   DATA_VIEW_IDS,
   FIELD_DEFINITION,
-  FIELD_TYPE,
   PIVOTS,
   PIVOT_IDS,
 } from '../../src/type_parsers/analytics_parsers/analytics_constants'
@@ -209,7 +208,7 @@ export const parsedUnknownDatasetValue = {
     isPublic: true,
   },
   strangeAttribute: {
-    [FIELD_TYPE]: 'type',
+    [constants.FIELD_TYPE]: 'type',
     num: '0.5',
   },
 }
@@ -218,12 +217,12 @@ export const parsedUnknownDatasetValueForFetch = {
   name: unknownDatasetValue.name,
   scriptid: unknownDatasetValue.scriptid,
   audience: {
-    [FIELD_TYPE]: 'audience',
+    [constants.FIELD_TYPE]: 'audience',
     Stam_Field: true,
     isPublic: true,
   },
   strangeAttribute: {
-    [FIELD_TYPE]: 'type',
+    [constants.FIELD_TYPE]: 'type',
     num: '0.5',
   },
 }

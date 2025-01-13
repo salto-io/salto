@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -53,7 +53,6 @@ describe('createElementsSourceIndex', () => {
     getAllMock.mockImplementation(
       buildElementsSourceFromElements([
         new InstanceElement('name', type, { internalId: '4' }),
-        new InstanceElement('name2', type, { internalId: '5', isSubInstance: true }),
         type,
         new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
@@ -86,7 +85,6 @@ describe('createElementsSourceIndex', () => {
     getAllMock.mockImplementation(
       buildElementsSourceFromElements([
         toBeDeleted,
-        new InstanceElement('name2', type, { internalId: '5', isSubInstance: true }),
         type,
         new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
@@ -118,7 +116,6 @@ describe('createElementsSourceIndex', () => {
     getAllMock.mockImplementation(
       buildElementsSourceFromElements([
         new InstanceElement('name', type, { internalId: '4' }),
-        new InstanceElement('name2', type, { internalId: '5', isSubInstance: true }),
         type,
         new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -49,6 +49,7 @@ import {
   METADATA_TYPE,
   CUSTOM_RECORD_TYPE,
   CUSTOM_RECORDS_PATH,
+  IS_LOCKED,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { LocalFilterCreator } from '../src/filter'
@@ -775,82 +776,73 @@ describe('Adapter', () => {
       })
     })
 
-    it('should create locked custom record type elements', async () => {
-      const adapter = new NetsuiteAdapter({
-        client: new NetsuiteClient(client),
-        elementsSource: buildElementsSourceFromElements([]),
-        filtersCreators: [firstDummyFilter, secondDummyFilter],
-        config: {
-          ...config,
-          fetch: {
-            ...config.fetch,
-            lockedElementsToExclude: {
-              types: [
-                {
-                  name: 'customrecordtype',
-                  ids: ['customrecord_locked2', 'customrecord_locked3'],
-                },
-              ],
-              fileCabinet: [],
+    describe.each([false, true])('visibleLockedCustomRecordTypes %s', visibleLockedCustomRecordTypes => {
+      it('should create locked custom record type elements', async () => {
+        const adapter = new NetsuiteAdapter({
+          client: new NetsuiteClient(client),
+          elementsSource: buildElementsSourceFromElements([]),
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: {
+            ...config,
+            fetch: {
+              ...config.fetch,
+              lockedElementsToExclude: {
+                types: [
+                  {
+                    name: 'customrecordtype',
+                    ids: ['customrecord_locked2', 'customrecord_locked3'],
+                  },
+                ],
+                fileCabinet: [],
+              },
+              visibleLockedCustomRecordTypes,
             },
           },
-        },
-        originalConfig: config,
-        getElemIdFunc: mockGetElemIdFunc,
+          originalConfig: config,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+        client.getCustomObjects = mockFunction<SdfClient['getCustomObjects']>().mockResolvedValue({
+          elements: [],
+          instancesIds: [
+            { type: 'customrecordtype', instanceId: 'customrecord_locked1' },
+            { type: 'customrecordtype', instanceId: 'customrecord_locked2' },
+          ],
+          failedToFetchAllAtOnce: true,
+          failedTypes: {
+            lockedError: { customrecordtype: ['customrecord_locked1'] },
+            unexpectedError: {},
+            excludedTypes: [],
+          },
+        })
+        const fetchResult = await adapter.fetch(mockFetchOpts)
+        const lockedCustomRecordTypes = fetchResult.elements
+          .filter(isObjectType)
+          .filter(isCustomRecordType)
+          .filter(e =>
+            visibleLockedCustomRecordTypes ? e.annotations[IS_LOCKED] : e.annotations[CORE_ANNOTATIONS.HIDDEN],
+          )
+        expect(lockedCustomRecordTypes).toHaveLength(2)
+        const lockedCustomRecordType1 = lockedCustomRecordTypes.find(
+          type => type.elemID.name === 'customrecord_locked1',
+        ) as ObjectType
+        expect(lockedCustomRecordType1.annotations).toEqual({
+          scriptid: 'customrecord_locked1',
+          source: 'soap',
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          ...(visibleLockedCustomRecordTypes ? { [IS_LOCKED]: true } : { [CORE_ANNOTATIONS.HIDDEN]: true }),
+        })
+        expect(lockedCustomRecordType1.path).toEqual([NETSUITE, CUSTOM_RECORDS_PATH, 'customrecord_locked1'])
+        const lockedCustomRecordType2 = lockedCustomRecordTypes.find(
+          type => type.elemID.name === 'customrecord_locked2',
+        ) as ObjectType
+        expect(lockedCustomRecordType2.annotations).toEqual({
+          scriptid: 'customrecord_locked2',
+          source: 'soap',
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          ...(visibleLockedCustomRecordTypes ? { [IS_LOCKED]: true } : { [CORE_ANNOTATIONS.HIDDEN]: true }),
+        })
+        expect(lockedCustomRecordType2.path).toEqual([NETSUITE, CUSTOM_RECORDS_PATH, 'customrecord_locked2'])
       })
-      client.getCustomObjects = mockFunction<SdfClient['getCustomObjects']>().mockResolvedValue({
-        elements: [],
-        instancesIds: [
-          { type: 'customrecordtype', instanceId: 'customrecord_locked1' },
-          { type: 'customrecordtype', instanceId: 'customrecord_locked2' },
-        ],
-        failedToFetchAllAtOnce: true,
-        failedTypes: {
-          lockedError: { customrecordtype: ['customrecord_locked1'] },
-          unexpectedError: {},
-          excludedTypes: [],
-        },
-      })
-      const fetchResult = await adapter.fetch(mockFetchOpts)
-      const lockedCustomRecordTypes = fetchResult.elements
-        .filter(isObjectType)
-        .filter(isCustomRecordType)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.HIDDEN])
-      expect(lockedCustomRecordTypes).toHaveLength(2)
-      expect(lockedCustomRecordTypes).toEqual(
-        expect.arrayContaining([
-          new ObjectType({
-            elemID: new ElemID(NETSUITE, 'customrecord_locked1'),
-            fields: {
-              scriptid: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.REQUIRED]: true } },
-              internalId: { refType: BuiltinTypes.SERVICE_ID, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
-            },
-            annotationRefsOrTypes: { source: BuiltinTypes.HIDDEN_STRING, internalId: BuiltinTypes.HIDDEN_STRING },
-            annotations: {
-              scriptid: 'customrecord_locked1',
-              source: 'soap',
-              [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
-              [CORE_ANNOTATIONS.HIDDEN]: true,
-            },
-            path: [NETSUITE, CUSTOM_RECORDS_PATH, 'customrecord_locked1'],
-          }),
-          new ObjectType({
-            elemID: new ElemID(NETSUITE, 'customrecord_locked2'),
-            fields: {
-              scriptid: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.REQUIRED]: true } },
-              internalId: { refType: BuiltinTypes.SERVICE_ID, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
-            },
-            annotationRefsOrTypes: { source: BuiltinTypes.HIDDEN_STRING, internalId: BuiltinTypes.HIDDEN_STRING },
-            annotations: {
-              scriptid: 'customrecord_locked2',
-              source: 'soap',
-              [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
-              [CORE_ANNOTATIONS.HIDDEN]: true,
-            },
-            path: [NETSUITE, CUSTOM_RECORDS_PATH, 'customrecord_locked2'],
-          }),
-        ]),
-      )
     })
   })
 

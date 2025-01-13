@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -442,7 +442,7 @@ describe('deploy command', () => {
     })
   })
   describe('when there are deploy actions', () => {
-    const testDeployActionsVisability = async (userBooleanInput: boolean): Promise<void> => {
+    const testDeployActionsVisibility = async (userBooleanInput: boolean): Promise<void> => {
       mockGetUserBooleanInput.mockResolvedValueOnce(userBooleanInput)
       await action({
         ...cliCommandArgs,
@@ -482,10 +482,10 @@ describe('deploy command', () => {
       expect(mockedDeploy.shouldDeploy).toHaveBeenCalled()
     }
     it('should print deploy actions when deploy is done', async () => {
-      await testDeployActionsVisability(true)
+      await testDeployActionsVisibility(true)
     })
     it('should print deploy actions when deploy is canceled', async () => {
-      await testDeployActionsVisability(false)
+      await testDeployActionsVisibility(false)
     })
   })
   describe('Using environment variable', () => {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -30,7 +30,8 @@ const realAdapter = ({ adapterParams, credentials }: Opts, config?: SalesforceCo
   const client = (adapterParams && adapterParams.client) || new SalesforceClient({ credentials, config: clientConfig })
   const adapter = new SalesforceAdapter({
     client,
-    config: config ?? {},
+    // to be changed at https://salto-io.atlassian.net/browse/SALTO-7121
+    config: _.merge({}, config, { fetch: { optionalFeatures: { shouldPopulateInternalIdAfterDeploy: false } } }),
     elementsSource: buildElementsSourceFromElements([]),
     ...(adapterParams || { getElemIdFunc: mockGetElemIdFunc }),
   })

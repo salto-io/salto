@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -114,6 +114,7 @@ describe('duplicateIdsFilter', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.ALIAS]: ['instance alias'],
+        [CORE_ANNOTATIONS.SERVICE_URL]: ['https://dup_1_someurl.com'],
       },
     )
     const instanceWithAliasDuplicatedName = new InstanceElement(
@@ -126,6 +127,7 @@ describe('duplicateIdsFilter', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.ALIAS]: ['another instance alias'],
+        [CORE_ANNOTATIONS.SERVICE_URL]: ['https://dup_2_someurl.com'],
       },
     )
     const instanceWithAliasDuplicatedNameDuplicateAlias = new InstanceElement(
@@ -157,13 +159,15 @@ describe('duplicateIdsFilter', () => {
           message: `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
 If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
 dup (jira.Status.instance.dup),
-instance alias (jira.Status.instance.dup),
-another instance alias (jira.Status.instance.dup)`,
+instance alias (jira.Status.instance.dup). View in the service - https://dup_1_someurl.com,
+another instance alias (jira.Status.instance.dup). View in the service - https://dup_2_someurl.com,
+instance alias (jira.Status.instance.dup)`,
           detailedMessage: `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
 If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
 dup (jira.Status.instance.dup),
-instance alias (jira.Status.instance.dup),
-another instance alias (jira.Status.instance.dup)`,
+instance alias (jira.Status.instance.dup). View in the service - https://dup_1_someurl.com,
+another instance alias (jira.Status.instance.dup). View in the service - https://dup_2_someurl.com,
+instance alias (jira.Status.instance.dup)`,
           severity: 'Warning',
         },
       ],

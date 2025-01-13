@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -41,11 +41,13 @@ import {
   DetailedChangeWithBaseChange,
   isElement,
   toChange,
+  Adapter,
+  GetCustomReferencesFunc,
 } from '@salto-io/adapter-api'
 import { ReferenceIndexEntry } from 'index'
 import { applyDetailedChanges, safeJsonStringify, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import { makeResolvablePromise, MockInterface, Resolvable } from '@salto-io/test-utils'
+import { makeResolvablePromise, mockFunction, MockInterface, Resolvable } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
 import { InvalidValueValidationError, ValidationError } from '../../src/validator'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
@@ -68,7 +70,9 @@ import {
   COMMON_ENV_PREFIX,
   serializeReferenceSourcesEntries,
   deserializeReferenceSourcesEntries,
+  getCustomReferencesImplementation,
 } from '../../src/workspace/workspace'
+import * as workspaceToMock from '../../src/workspace/workspace'
 import {
   DeleteCurrentEnvError,
   UnknownEnvError,
@@ -174,6 +178,97 @@ const addBaseChangeToDetailedChanges = async (
 }
 
 describe('workspace', () => {
+  describe('getCustomReferences', () => {
+    let instance: InstanceElement
+    const mockAdapterCreator: Record<string, Adapter> = {}
+    const adaptersConfigSource = mockAdaptersConfigSource()
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      const type = new ObjectType({
+        elemID: new ElemID('test2', 'type'),
+      })
+      instance = new InstanceElement('instance', type, {
+        field: 'val',
+      })
+
+      const mockTestAdapter = {
+        getCustomReferences: mockFunction<GetCustomReferencesFunc>().mockResolvedValue([
+          {
+            source: new ElemID('test2', 'type', 'instance', 'inst1'),
+            target: new ElemID('test2', 'type', 'instance', 'inst2'),
+            type: 'strong',
+          },
+        ]),
+      }
+
+      const mockTest2Adapter = {
+        getCustomReferences: mockFunction<GetCustomReferencesFunc>().mockResolvedValue([
+          {
+            source: new ElemID('test2', 'type', 'instance', 'inst3'),
+            target: new ElemID('test2', 'type', 'instance', 'inst4'),
+            type: 'strong',
+          },
+        ]),
+      }
+
+      mockAdapterCreator.test = mockTestAdapter as unknown as Adapter
+      mockAdapterCreator.test2 = mockTest2Adapter as unknown as Adapter
+    })
+    it('Should call the right adapter getCustomReferences', async () => {
+      const AdapterConfigType = new ObjectType({
+        elemID: new ElemID('adapter'),
+        isSettings: true,
+      })
+      const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
+      await adaptersConfigSource.setAdapter('test2', 'test', adapterConfig)
+      const getCustomReferences = getCustomReferencesImplementation(mockAdapterCreator)
+      const references = await getCustomReferences?.([instance], { test2: 'test' }, adaptersConfigSource)
+      expect(references).toEqual([
+        {
+          source: new ElemID('test2', 'type', 'instance', 'inst1'),
+          target: new ElemID('test2', 'type', 'instance', 'inst2'),
+          type: 'strong',
+        },
+      ])
+    })
+
+    it('Should use the adapter name when it is not present in the account to service name mapping', async () => {
+      const getCustomReferences = getCustomReferencesImplementation(mockAdapterCreator)
+      const references = await getCustomReferences?.([instance], {}, adaptersConfigSource)
+      expect(references).toEqual([
+        {
+          source: new ElemID('test2', 'type', 'instance', 'inst3'),
+          target: new ElemID('test2', 'type', 'instance', 'inst4'),
+          type: 'strong',
+        },
+      ])
+    })
+
+    it('Should return empty array if adapter does not have getCustomReferences func', async () => {
+      mockAdapterCreator.test = {} as unknown as Adapter
+      const getCustomReferences = getCustomReferencesImplementation(mockAdapterCreator)
+      const references = await getCustomReferences?.([instance], { test2: 'test' }, adaptersConfigSource)
+      expect(references).toEqual([])
+    })
+
+    it('Should not access the adapter config if adapter does not have getCustomReferences func', async () => {
+      mockAdapterCreator.test = {} as unknown as Adapter
+      const getCustomReferences = getCustomReferencesImplementation(mockAdapterCreator)
+      const references = await getCustomReferences?.([instance], { test2: 'test' }, adaptersConfigSource)
+      expect(adaptersConfigSource.getAdapter).not.toHaveBeenCalled()
+      expect(references).toEqual([])
+    })
+
+    it('Should return empty array if adapter getCustomReferences throws an error', async () => {
+      mockAdapterCreator.test = {
+        getCustomReferences: mockFunction<GetCustomReferencesFunc>().mockRejectedValue(new Error('aaa')),
+      } as unknown as Adapter
+      const getCustomReferences = getCustomReferencesImplementation(mockAdapterCreator)
+      const references = await getCustomReferences?.([instance], { test2: 'test' }, adaptersConfigSource)
+      expect(references).toEqual([])
+    })
+  })
   describe('loadWorkspace', () => {
     it('should fail if envs is empty', async () => {
       const noWorkspaceConfig = {
@@ -588,7 +683,8 @@ describe('workspace', () => {
       expect(errors.hasErrors()).toBeTruthy()
       const err = 'Expected block labels, found { instead.'
       expect(errors.strings()[0]).toMatch(err)
-      expect(errors.parse[0].message).toMatch(err)
+      expect(errors.parse[0].message).toMatch('Element has invalid NaCl content')
+      expect(errors.parse[0].detailedMessage).toMatch(err)
 
       expect(await erroredWorkspace.hasErrors()).toBeTruthy()
       const workspaceErrors = await Promise.all(wu(errors.all()).map(error => erroredWorkspace.transformError(error)))
@@ -601,7 +697,8 @@ describe('workspace', () => {
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
       expect(errors.strings()).toEqual(['unresolved reference some.type.instance.notExists'])
-      expect(errors.validation[0].message).toBe(
+      expect(errors.validation[0].message).toBe('Element has unresolved references')
+      expect(errors.validation[0].detailedMessage).toBe(
         'Error validating "some.type.instance.instance.a": unresolved reference some.type.instance.notExists',
       )
 
@@ -624,7 +721,7 @@ describe('workspace', () => {
       expect(workspaceErrors).toHaveLength(1)
       const wsErrors = workspaceErrors[0]
       expect(wsErrors.sourceLocations).toHaveLength(2)
-      expect(wsErrors.message).toMatch(mergeError)
+      expect(wsErrors.message).toMatch('Element has invalid NaCl content')
       expect(wsErrors.detailedMessage).toMatch(mergeError)
       expect(wsErrors.severity).toBe('Error')
       const firstSourceLocation = wsErrors.sourceLocations[0]
@@ -967,7 +1064,8 @@ describe('workspace', () => {
         ])
 
         expect((await ws.errors()).merge).toHaveLength(1)
-        expect((await ws.errors()).merge[0].message).toContain('duplicate annotation key x')
+        expect((await ws.errors()).merge[0].message).toContain('Element has invalid NaCl content')
+        expect((await ws.errors()).merge[0].detailedMessage).toContain('duplicate annotation key x')
         await ws.setNaclFiles([
           {
             filename: 'mergeIssue.nacl',
@@ -2322,17 +2420,18 @@ salesforce.staticFile staticFileInstance {
 
   describe('init', () => {
     const workspaceConf = mockWorkspaceConfigSource({ uid: 'uid' })
+    const mockAdapterCreators: Record<string, Adapter> = {}
     afterEach(async () => {
       delete process.env.SALTO_HOME
     })
     it('should init workspace configuration', async () => {
-      const workspace = await initWorkspace(
-        'uid',
-        'default',
-        workspaceConf,
-        mockAdaptersConfigSource(),
-        mockCredentialsSource(),
-        {
+      const workspace = await initWorkspace({
+        uid: 'uid',
+        defaultEnvName: 'default',
+        config: workspaceConf,
+        adaptersConfig: mockAdaptersConfigSource(),
+        credentials: mockCredentialsSource(),
+        environmentSources: {
           commonSourceName: '',
           sources: {
             default: {
@@ -2349,9 +2448,9 @@ salesforce.staticFile staticFileInstance {
             },
           },
         },
-        inMemRemoteMapCreator(),
-        async () => [],
-      )
+        remoteMapCreator: inMemRemoteMapCreator(),
+        adapterCreators: mockAdapterCreators,
+      })
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual({
         uid: 'uid',
         envs: [{ name: 'default', accountToServiceName: {} }],
@@ -3176,6 +3275,16 @@ salesforce.staticFile staticFileInstance {
 
           await elementsPromise
         })
+
+        it('should close remoteMapCreator even if workspaceState throws', async () => {
+          mockCreate.mockRejectedValue(new Error('error in workspaceState'))
+          await expect(workspace.elements()).rejects.toThrow('error in workspaceState')
+
+          mockCreate.mockClear()
+          await workspace.close()
+          expect(mockCreate).not.toHaveBeenCalled()
+          expect(mockClose).toHaveBeenCalled()
+        })
       })
     })
   })
@@ -3508,6 +3617,11 @@ salesforce.staticFile staticFileInstance {
         // Case where the target is baseId
         { source: anotherSourceInstance.elemID, target: targetElementId, type: 'weak', sourceScope: 'value' },
       ]
+      jest.spyOn(workspaceToMock, 'getCustomReferencesImplementation').mockImplementation(
+        () =>
+          async (..._args) =>
+            customRefs,
+      )
       workspace = await createWorkspace(
         undefined,
         undefined,
@@ -3517,7 +3631,6 @@ salesforce.staticFile staticFileInstance {
         undefined,
         elementSources,
         undefined,
-        async (..._args) => customRefs,
       )
     })
 
@@ -3597,6 +3710,11 @@ salesforce.staticFile staticFileInstance {
           type: 'strong',
         },
       ]
+      jest.spyOn(workspaceToMock, 'getCustomReferencesImplementation').mockImplementation(
+        () =>
+          async (..._args) =>
+            customRefs,
+      )
       workspace = await createWorkspace(
         undefined,
         undefined,
@@ -3606,7 +3724,6 @@ salesforce.staticFile staticFileInstance {
         undefined,
         elementSources,
         undefined,
-        async (..._args) => customRefs,
       )
     })
 
@@ -4005,7 +4122,8 @@ salesforce.staticFile staticFileInstance {
       )
 
       expect(objInstToUpdateErr).toBeDefined()
-      expect(objInstToUpdateErr?.message).toContain('Invalid value type for string')
+      expect(objInstToUpdateErr?.message).toContain('Element has invalid NaCl content')
+      expect(objInstToUpdateErr?.detailedMessage).toContain('Invalid value type for string')
     })
     it('create validation errors where the updated elements are used as value type', () => {
       const usedAsTypeErr = validationErrs.find(
@@ -4013,7 +4131,8 @@ salesforce.staticFile staticFileInstance {
       )
 
       expect(usedAsTypeErr).toBeDefined()
-      expect(usedAsTypeErr?.message).toContain('Invalid value type for salto.prim')
+      expect(usedAsTypeErr?.message).toMatch('Element has invalid NaCl content')
+      expect(usedAsTypeErr?.detailedMessage).toContain('Invalid value type for salto.prim')
     })
     it('create validation errors where the updated elements are used as references', () => {
       const usedAsReference = validationErrs.find(

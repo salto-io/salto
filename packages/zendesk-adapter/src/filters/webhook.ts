@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -29,7 +29,7 @@ export const AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA: Record<string, unknown> = {
  * onFetch: On relevant webhooks, replace installation_id field with appInstallation reference
  * onDeploy: Removes the authentication data from webhook if it wasn't changed
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'webhookFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [webhookModificationChanges, leftoverChanges] = _.partition(
@@ -73,7 +73,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         instance.value.authentication.data = placeholder
       }
       // Ignore external_source because it is impossible to deploy, the user was warned at externalSourceWebhook.ts
-      await deployChange(clonedChange, client, config.apiDefinitions, ['external_source'])
+      await deployChange(clonedChange, client, oldApiDefinitions, ['external_source'])
       getChangeData(change).value.id = getChangeData(clonedChange).value.id
     })
     return { deployResult, leftoverChanges }

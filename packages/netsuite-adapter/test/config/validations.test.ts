@@ -1,14 +1,15 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Values } from '@salto-io/adapter-api'
+import { ElemID, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { fetchDefault } from '../../src/config/types'
 import { validateConfig } from '../../src/config/validations'
 import { getDefaultAdapterConfig } from '../utils'
+import { NETSUITE } from '../../src/constants'
 
 describe('netsuite config validations', () => {
   let config: Values
@@ -360,6 +361,26 @@ describe('netsuite config validations', () => {
         expect(() => validateConfig(config)).toThrow('The following regular expressions are invalid')
 
         config.fetch.fieldsToOmit = [{ type: 'aaa.*', subtype: 'cc(c.*', fields: ['bbb.*'] }]
+        expect(() => validateConfig(config)).toThrow('The following regular expressions are invalid')
+      })
+    })
+
+    describe('singletonCustomRecords', () => {
+      it('should not throw', () => {
+        config.fetch.singletonCustomRecords = ['customrecord_singleton']
+        expect(() => validateConfig(config)).not.toThrow()
+      })
+
+      it('should throw an error when it is not a list of strings', () => {
+        config.fetch.singletonCustomRecords = 'customrecord_singleton'
+        expect(() => validateConfig(config)).toThrow('fetch.singletonCustomRecords should be a list of strings')
+
+        config.fetch.singletonCustomRecords = [new ReferenceExpression(new ElemID(NETSUITE, 'customrecord_singleton'))]
+        expect(() => validateConfig(config)).toThrow('fetch.singletonCustomRecords should be a list of strings')
+      })
+
+      it('should throw an error when there is an invalid regex', () => {
+        config.fetch.singletonCustomRecords = ['customrecord_.*', 'customrecord[0-9]*', 'custom_record(.*']
         expect(() => validateConfig(config)).toThrow('The following regular expressions are invalid')
       })
     })

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -25,7 +25,7 @@ import {
   formatExecutionPlan,
   formatChange,
   formatFetchChangeForApproval,
-  formatWorkspaceError,
+  formatWorkspaceErrorDetailedMessage,
   formatChangeErrors,
   formatConfigChangeNeeded,
   formatShouldChangeFetchModeToAlign,
@@ -577,7 +577,7 @@ describe('formatter', () => {
   describe('workspace error format with source fragments', () => {
     let formattedErrors: string
     beforeEach(() => {
-      formattedErrors = formatWorkspaceError(workspaceErrorWithSourceLocations)
+      formattedErrors = formatWorkspaceErrorDetailedMessage(workspaceErrorWithSourceLocations)
     })
     it('should print the start line', () => {
       expect(formattedErrors).toContain('2')
@@ -589,7 +589,7 @@ describe('formatter', () => {
   describe('workspace error format without source fragments', () => {
     let formattedErrors: string
     beforeEach(() => {
-      formattedErrors = formatWorkspaceError(workspaceErrorWithoutSourceFragments)
+      formattedErrors = formatWorkspaceErrorDetailedMessage(workspaceErrorWithoutSourceFragments)
     })
     it('should print the error', () => {
       expect(formattedErrors).toContain('This is my error')

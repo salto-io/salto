@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -361,7 +361,12 @@ const validateAdditionalDependencies = ({
   }
 }
 
-const validateFetchConfig = ({ include, exclude, fieldsToOmit }: Record<keyof FetchParams, unknown>): void => {
+const validateFetchConfig = ({
+  include,
+  exclude,
+  fieldsToOmit,
+  singletonCustomRecords,
+}: Record<keyof FetchParams, unknown>): void => {
   validateDefined(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validateFetchParameters(include)
@@ -377,6 +382,11 @@ const validateFetchConfig = ({ include, exclude, fieldsToOmit }: Record<keyof Fe
 
   if (fieldsToOmit !== undefined) {
     validateFieldsToOmitConfig(fieldsToOmit)
+  }
+
+  if (singletonCustomRecords !== undefined) {
+    validateArrayOfStrings(singletonCustomRecords, [CONFIG.fetch, FETCH_PARAMS.singletonCustomRecords])
+    validateRegularExpressions(singletonCustomRecords, [CONFIG.fetch, FETCH_PARAMS.singletonCustomRecords])
   }
 }
 

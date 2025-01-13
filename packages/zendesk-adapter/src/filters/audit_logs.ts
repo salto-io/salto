@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -386,10 +386,10 @@ const addNewChangedBy = async ({
 /**
  * this filter adds changed_at and changed_by annotations
  */
-const filterCreator: FilterCreator = ({ elementsSource, client, paginator, config }) => ({
+const filterCreator: FilterCreator = ({ elementSource, client, paginator, config }) => ({
   name: 'changeByAndChangedAt',
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (elementsSource === undefined) {
+    if (elementSource === undefined) {
       log.error('Failed to run changeByAndChangedAt filter because no element source was provided')
       return
     }
@@ -414,14 +414,14 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
     }
 
     // if this is a second fetch the elementSource should have the time instance already
-    const auditTimeInstance = await elementsSource.get(AUDIT_TIME_INSTANCE_ID)
+    const auditTimeInstance = await elementSource.get(AUDIT_TIME_INSTANCE_ID)
     if (auditTimeInstance === undefined) {
       log.debug(
         'could not find audit time instance in elementSource so this is likely a first fetch, not populating changed-by information',
       )
       return
     }
-    await addPrevChangedBy(elementsSource, idByInstance)
+    await addPrevChangedBy(elementSource, idByInstance)
 
     const idToName = await getIdByName(paginator, config[FETCH_CONFIG].resolveUserIDs)
     await addNewChangedBy({ instances, idToName, newLastAuditTime, auditTimeInstance, client })

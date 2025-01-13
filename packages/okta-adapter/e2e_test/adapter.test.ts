@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -8,10 +8,12 @@
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import {
+  BuiltinTypes,
   Change,
   CORE_ANNOTATIONS,
   DeployResult,
   Element,
+  ElemID,
   getChangeData,
   InstanceElement,
   isAdditionChange,
@@ -62,6 +64,7 @@ import {
   IDENTITY_PROVIDER_TYPE_NAME,
   INACTIVE_STATUS,
   NETWORK_ZONE_TYPE_NAME,
+  OKTA,
   ORG_SETTING_TYPE_NAME,
   PASSWORD_POLICY_PRIORITY_TYPE_NAME,
   PASSWORD_POLICY_TYPE_NAME,
@@ -413,8 +416,103 @@ const createChangesForDeploy = async (
     types,
     valuesOverride: {
       label: createName('SAMLApp'),
+      settings: {
+        signOn: {
+          ssoAcsUrl: 'https://sso.test.io',
+          // eslint-disable-next-line no-template-curly-in-string
+          idpIssuer: 'http://www.okta.com/${org.externalKey}',
+          audience: 'https://sso.test.io',
+          recipient: 'https://sso.test.io',
+          destination: 'https://sso.test.io',
+          // eslint-disable-next-line no-template-curly-in-string
+          subjectNameIdTemplate: '${user.userName}',
+          subjectNameIdFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
+          responseSigned: true,
+          assertionSigned: true,
+          signatureAlgorithm: 'RSA_SHA256',
+          digestAlgorithm: 'SHA256',
+          honorForceAuthn: true,
+          authnContextClassRef: 'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport',
+          requestCompressed: false,
+          attributeStatements: [],
+          inlineHooks: [],
+          acsEndpoints: [],
+          allowMultipleAcsEndpoints: false,
+          samlSignedRequestEnabled: false,
+          slo: {
+            enabled: false,
+          },
+          assertionEncryption: {
+            enabled: false,
+          },
+        },
+      },
       accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
       profileEnrollment: new ReferenceExpression(profileEnrollment.elemID, profileEnrollment),
+    },
+  })
+  const appWithOIDC = createInstance({
+    typeName: APPLICATION_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: 'oidc_client',
+      label: createName('OpenIdApp'),
+      status: 'ACTIVE',
+      accessibility: {
+        selfService: false,
+      },
+      visibility: {
+        autoLaunch: false,
+        autoSubmitToolbar: false,
+        hide: {
+          iOS: true,
+          web: true,
+        },
+      },
+      signOnMode: 'OPENID_CONNECT',
+      credentials: {
+        // eslint-disable-next-line no-template-curly-in-string
+        userNameTemplate: { template: '${source.login}', type: 'BUILT_IN' },
+        oauthClient: {
+          autoKeyRotation: true,
+          client_id: '0oamcn4zb7oZWodVU5d7',
+          token_endpoint_auth_method: 'client_secret_basic',
+          pkce_required: false,
+        },
+      },
+      settings: {
+        notifications: {
+          vpn: {
+            network: {
+              connection: 'DISABLED',
+            },
+          },
+        },
+        manualProvisioning: false,
+        implicitAssignment: true,
+        oauthClient: {
+          redirect_uris: ['http://localhost:8080/authorization-code/callback'],
+          post_logout_redirect_uris: ['http://localhost:8080'],
+          response_types: ['code'],
+          grant_types: ['authorization_code'],
+          application_type: 'web',
+          consent_method: 'REQUIRED',
+          issuer_mode: 'DYNAMIC',
+          idp_initiated_login: {
+            mode: 'DISABLED',
+            default_scope: [],
+          },
+          wildcard_redirect: 'DISABLED',
+          dpop_bound_access_tokens: false,
+        },
+      },
+      accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
+      profileEnrollment: new ReferenceExpression(profileEnrollment.elemID, profileEnrollment),
+      apiScopes: [
+        {
+          scopeId: 'okta.apps.read',
+        },
+      ],
     },
   })
   const appGroupAssignment = createInstance({
@@ -545,6 +643,7 @@ const createChangesForDeploy = async (
     toChange({ after: profileEnrollment }),
     toChange({ after: profileEnrollmentRule }),
     toChange({ after: app }),
+    toChange({ after: appWithOIDC }),
     toChange({ after: appGroupAssignment }),
     toChange({ after: brand }),
     toChange({ after: role }),
@@ -658,6 +757,10 @@ const getHiddenFieldsToOmit = (
       .filter(fieldName => !['id', CUSTOM_NAME_FIELD].includes(fieldName))
   )
 }
+const getDomain = (url: string): string => {
+  const match = url.match(/^https?:\/\/([^/]+)/)
+  return match ? match[1] : ''
+}
 
 describe('Okta adapter E2E', () => {
   describe('fetch and deploy', () => {
@@ -668,6 +771,15 @@ describe('Okta adapter E2E', () => {
     let deployResults: DeployResult[]
     let fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaOptions>
     let defaultAuthServerInstance: InstanceElement | undefined
+    let defaultDomain: InstanceElement
+    const domainType = new ObjectType({
+      elemID: new ElemID(OKTA, DOMAIN_TYPE_NAME),
+      fields: {
+        id: {
+          refType: BuiltinTypes.SERVICE_ID,
+        },
+      },
+    })
 
     const deployAndFetch = async (changes: Change[]): Promise<void> => {
       deployResults = await deployChanges(adapterAttr, changes)
@@ -693,8 +805,13 @@ describe('Okta adapter E2E', () => {
     beforeAll(async () => {
       log.resetLogCount()
       credLease = await credsLease()
+      const domain = getDomain(credLease.value.baseUrl)
+      defaultDomain = new InstanceElement('emailDomain', domainType, {
+        domain,
+        id: 'default',
+      })
       adapterAttr = realAdapter(
-        { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },
+        { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([defaultDomain]) },
         DEFAULT_CONFIG,
       )
       const fetchBeforeCleanupResult = await adapterAttr.adapter.fetch({

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -33,7 +33,6 @@ import {
   FILE,
   FILE_CABINET_PATH_SEPARATOR,
   FOLDER,
-  IS_SUB_INSTANCE,
   PATH,
   TRANSLATION_COLLECTION,
 } from '../constants'
@@ -329,20 +328,16 @@ const splitInstancesToGroups = async (
 ): Promise<{
   fileCabinetInstances: InstanceElement[]
   customRecordInstances: InstanceElement[]
-  subInstances: InstanceElement[]
   otherInstances: InstanceElement[]
 }> => {
   const fileCabinetInstances: InstanceElement[] = []
   const customRecordInstances: InstanceElement[] = []
-  const subInstances: InstanceElement[] = []
   const otherInstances: InstanceElement[] = []
   await awu(instances).forEach(async instance => {
     if (isFileCabinetType(instance.refType)) {
       fileCabinetInstances.push(instance)
     } else if (isCustomRecordType(await instance.getType())) {
       customRecordInstances.push(instance)
-    } else if (instance.value[IS_SUB_INSTANCE]) {
-      subInstances.push(instance)
     } else {
       otherInstances.push(instance)
     }
@@ -350,7 +345,6 @@ const splitInstancesToGroups = async (
   return {
     fileCabinetInstances,
     customRecordInstances,
-    subInstances,
     otherInstances,
   }
 }
@@ -447,8 +441,7 @@ const filterCreator: LocalFilterCreator = ({ elementsSource, isPartial }) => ({
   name: 'addAlias',
   onFetch: async (elements: Element[]): Promise<void> => {
     const instances = elements.filter(isInstanceElement)
-    const { fileCabinetInstances, customRecordInstances, subInstances, otherInstances } =
-      await splitInstancesToGroups(instances)
+    const { fileCabinetInstances, customRecordInstances, otherInstances } = await splitInstancesToGroups(instances)
 
     const { definitionTypes, customRecordTypes, customRecordTypesWithSegment } = splitTypesToGroups(
       elements.filter(isObjectType),
@@ -467,7 +460,6 @@ const filterCreator: LocalFilterCreator = ({ elementsSource, isPartial }) => ({
     const otherInstancesMap = _.groupBy(otherInstances, instance => instance.elemID.typeName)
     const instancesMap: ElementsMap = {
       ...otherInstancesMap,
-      [IS_SUB_INSTANCE]: subInstances,
       [CUSTOM_RECORD_TYPE]: customRecordTypes,
       [CUSTOM_RECORD_INSTANCES]: customRecordInstances,
     }
@@ -479,7 +471,6 @@ const filterCreator: LocalFilterCreator = ({ elementsSource, isPartial }) => ({
         ...dataInstancesAliasMap,
         ...settingsAliasMap,
         [BUNDLE]: nameAlias,
-        [IS_SUB_INSTANCE]: nameAlias,
         [CUSTOM_RECORD_INSTANCES]: nameAlias,
       },
     })
@@ -496,7 +487,6 @@ const filterCreator: LocalFilterCreator = ({ elementsSource, isPartial }) => ({
       aliasMap: {
         ...entityIdFallbackAliasMap,
         ...itemInstancesFallbackAliasMap,
-        [IS_SUB_INSTANCE]: labelAlias,
       },
     })
 

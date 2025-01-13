@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -113,3 +113,6 @@ export const ORDER_TYPE_NAMES = [
 ]
 export const USER_FIELD_CUSTOM_FIELD_OPTIONS = 'user_field__custom_field_options'
 export const ORGANIZATION_FIELD_CUSTOM_FIELD_OPTIONS = 'organization_field__custom_field_options'
+export const CONVERSATION_BOT = 'conversation_bot'
+export const BOT_BUILDER_ANSWER = 'conversation_bot__answer'
+export const BOT_BUILDER_NODE = 'conversation_bot__answer__node'

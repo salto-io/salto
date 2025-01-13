@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,6 +9,7 @@ import FormData from 'form-data'
 import {
   ObjectType,
   ElemID,
+  Element,
   InstanceElement,
   isInstanceElement,
   StaticFile,
@@ -16,9 +17,10 @@ import {
   CORE_ANNOTATIONS,
   getChangeData,
   createSaltoElementError,
+  BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import filterCreator, { BRAND_LOGO_TYPE, LOGO_FIELD } from '../../src/filters/brand_logo'
+import filterCreator, { LOGO_FIELD } from '../../src/filters/brand_logo'
 import ZendeskClient from '../../src/client/client'
 import { BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
@@ -32,10 +34,18 @@ describe('brand logo filter', () => {
   let mockGet: jest.SpyInstance
   let mockBrandGet: jest.SpyInstance
   let mockPut: jest.SpyInstance
+  const brandLogoType = new ObjectType({
+    elemID: new ElemID(ZENDESK, BRAND_LOGO_TYPE_NAME),
+    fields: {
+      filename: { refType: BuiltinTypes.STRING },
+      contentType: { refType: BuiltinTypes.STRING },
+      content: { refType: BuiltinTypes.STRING },
+    },
+  })
   const brandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
     fields: {
-      [LOGO_FIELD]: { refType: new ObjectType(BRAND_LOGO_TYPE) },
+      [LOGO_FIELD]: { refType: brandLogoType },
     },
   })
   const brandId = 11
@@ -55,6 +65,7 @@ describe('brand logo filter', () => {
 
   describe('onFetch', () => {
     let brandInstance: InstanceElement
+    let elements: Element[]
     beforeEach(() => {
       brandInstance = new InstanceElement('brand', brandType, {
         id: brandId,
@@ -77,9 +88,9 @@ describe('brand logo filter', () => {
         }
         throw new Error('Err')
       })
+      elements = [brandType, brandInstance, brandLogoType].map(e => e.clone())
     })
     it('should create brand logos instances', async () => {
-      const elements = [brandType, brandInstance].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
         'zendesk.brand',
@@ -89,7 +100,6 @@ describe('brand logo filter', () => {
       ])
     })
     it('should create a new logo instance', async () => {
-      const elements = [brandType, brandInstance].map(e => e.clone())
       await filter.onFetch(elements)
 
       const instances = elements.filter(isInstanceElement)
@@ -106,7 +116,6 @@ describe('brand logo filter', () => {
       })
     })
     it('should update the brand instance', async () => {
-      const elements = [brandType, brandInstance].map(e => e.clone())
       await filter.onFetch(elements)
 
       const instances = elements.filter(isInstanceElement)
@@ -121,7 +130,6 @@ describe('brand logo filter', () => {
       mockGet.mockImplementation(_params => {
         throw new clientUtils.HTTPError('err', { data: 'err' as unknown as clientUtils.ResponseValue, status: 403 })
       })
-      const elements = [brandType, brandInstance].map(e => e.clone())
       const res = (await filter.onFetch(elements)) as unknown as filterUtils.FilterResult
       expect(res.errors).toHaveLength(1)
       expect(res.errors).toEqual([
@@ -140,8 +148,12 @@ describe('brand logo filter', () => {
       mockGet.mockImplementation(_params => {
         throw new Error('err')
       })
-      const elements = [brandType, brandInstance].map(e => e.clone())
       await expect(filter.onFetch(elements)).rejects.toThrow()
+    })
+    it('should not create instances if brand logo type is not found', async () => {
+      elements = [brandType, brandInstance].map(e => e.clone())
+      const res = await filter.onFetch(elements)
+      expect(res).toEqual({ errors: [] })
     })
   })
 

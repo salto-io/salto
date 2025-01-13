@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -15,7 +15,7 @@ import { SLA_POLICY_TYPE_NAME } from '../constants'
 /**
  * Deploys sla policy
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'slaPolicyFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [slaPoliciesChanges, leftoverChanges] = _.partition(
@@ -27,7 +27,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       const clonedChange = await applyFunctionToChangeData(change, inst => inst.clone())
       const instance = getChangeData(clonedChange)
       instance.value.filter = instance.value.filter ?? { all: [], any: [] }
-      await deployChange(clonedChange, client, config.apiDefinitions)
+      await deployChange(clonedChange, client, oldApiDefinitions)
       getChangeData(change).value.id = instance.value.id
     })
     return { deployResult, leftoverChanges }

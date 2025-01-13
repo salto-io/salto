@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -50,6 +50,7 @@ import {
   Value,
   Values,
   isRemovalChange,
+  Adapter,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults,
@@ -102,7 +103,11 @@ const MAX_SPLIT_CONCURRENCY = 2000
 // these core annotations are generated from other values of the element and are non-deployable.
 // having conflicts on them have no real meaning so it's better to omit them.
 // more context can be found in https://salto-io.atlassian.net/browse/SALTO-4888
-const NO_CONFLICT_CORE_ANNOTATIONS = [CORE_ANNOTATIONS.ALIAS, CORE_ANNOTATIONS.PARENT]
+const NO_CONFLICT_CORE_ANNOTATIONS = [
+  CORE_ANNOTATIONS.ALIAS,
+  CORE_ANNOTATIONS.PARENT,
+  CORE_ANNOTATIONS.GENERATED_DEPENDENCIES,
+]
 
 const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChangeMetadata =>
   getAuthorInformation(changedElement)
@@ -1450,6 +1455,7 @@ export const getFetchAdapterAndServicesSetup = async ({
   elementsSource,
   ignoreStateElemIdMapping = false,
   ignoreStateElemIdMappingForSelectors = [],
+  adapterCreators,
 }: {
   workspace: Workspace
   fetchAccounts: string[]
@@ -1457,6 +1463,7 @@ export const getFetchAdapterAndServicesSetup = async ({
   elementsSource: ReadOnlyElementsSource
   ignoreStateElemIdMapping?: boolean
   ignoreStateElemIdMappingForSelectors?: ElementSelector[]
+  adapterCreators: Record<string, Adapter>
 }): Promise<{
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
@@ -1477,6 +1484,7 @@ export const getFetchAdapterAndServicesSetup = async ({
     accountToServiceNameMap,
     elemIDGetters,
     resolveTypes,
+    adapterCreators,
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)

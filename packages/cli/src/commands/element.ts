@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -15,6 +15,7 @@ import {
   isModificationChange,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   Workspace,
   ElementSelector,
@@ -814,7 +815,7 @@ export const fixElementsAction: WorkspaceCommandAction<FixElementsArgs> = async 
   await validateAndSetEnv(workspace, input, output)
 
   try {
-    const { changes, errors } = await fixElements(workspace, validSelectors)
+    const { changes, errors } = await fixElements(workspace, validSelectors, adapterCreators)
 
     if (changes.length === 0) {
       outputLine(Prompts.EMPTY_PLAN, output)

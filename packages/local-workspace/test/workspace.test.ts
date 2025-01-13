@@ -1,26 +1,26 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import path from 'path'
-import { Value } from '@salto-io/adapter-api'
+import { Adapter, AdapterOperations, ElemID, ObjectType, Value } from '@salto-io/adapter-api'
 import * as ws from '@salto-io/workspace'
 import * as file from '@salto-io/file'
 import { remoteMap, EnvironmentsSources, configSource as cs, errors } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import {
-  initLocalWorkspace,
+  CREDENTIALS_CONFIG_PATH,
   ExistingWorkspaceError,
+  initLocalWorkspace,
+  loadLocalElementsSources,
+  loadLocalWorkspace,
+  locateWorkspaceRoot,
   NotAnEmptyWorkspaceError,
   NotAWorkspaceError,
-  loadLocalWorkspace,
-  CREDENTIALS_CONFIG_PATH,
-  loadLocalElementsSources,
-  locateWorkspaceRoot,
 } from '../src/workspace'
 import { getSaltoHome } from '../src/app_config'
 import * as mockDirStore from '../src/dir_store'
@@ -63,6 +63,22 @@ jest.mock('../src/remote_map', () => ({
   createRemoteMapCreator: () => ({ create: mockRemoteMapCreator.create, close: mockClose }),
 }))
 describe('local workspace', () => {
+  const sfMockAdapterName = 'salesforce'
+  const mockAdapterCreator: Record<string, Adapter> = {}
+  const configType = new ObjectType({ elemID: new ElemID(sfMockAdapterName) })
+  const credentialsType = new ObjectType({ elemID: new ElemID(sfMockAdapterName) })
+  mockAdapterCreator[sfMockAdapterName] = {
+    operations: mockFunction<Adapter['operations']>().mockReturnValue({
+      fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+      deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
+    }),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: 'accountID' }),
+    authenticationMethods: {
+      basic: { credentialsType },
+    },
+    configType,
+  }
+
   const mockExists = file.exists as jest.Mock
   const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
   const mockDirStoreInstance = (): ws.dirStore.DirectoryStore<string> =>
@@ -133,38 +149,52 @@ describe('local workspace', () => {
 
   describe('initLocalWorkspace', () => {
     const mockInit = ws.initWorkspace as jest.Mock
+    const mockAdapterCreators: Record<string, Adapter> = {}
 
     it('should throw error if already inside a workspace', async () => {
       mockExists.mockImplementation(filename => filename === '/fake/salto.config')
-      await expect(initLocalWorkspace('/fake/tmp/', undefined, [], async () => [])).rejects.toThrow(
-        ExistingWorkspaceError,
-      )
+      await expect(
+        initLocalWorkspace({
+          baseDir: '/fake/tmp/',
+          configTypes: [],
+          adapterCreators: mockAdapterCreators,
+        }),
+      ).rejects.toThrow(ExistingWorkspaceError)
     })
 
     it('should throw error if local storage exists', async () => {
       mockExists.mockImplementation((filename: string) => filename.startsWith(getSaltoHome()))
-      await expect(initLocalWorkspace('/fake/tmp/', undefined, [], async () => [])).rejects.toThrow(
-        NotAnEmptyWorkspaceError,
-      )
+      await expect(
+        initLocalWorkspace({
+          baseDir: '/fake/tmp/',
+          configTypes: [],
+          adapterCreators: mockAdapterCreator,
+        }),
+      ).rejects.toThrow(NotAnEmptyWorkspaceError)
     })
 
     it('should throw error for invalid name', async () => {
       mockExists.mockResolvedValue(false)
-      await expect(initLocalWorkspace('/fake/tmp/', 'long'.repeat(100), [], async () => [])).rejects.toThrow(
-        errors.InvalidEnvNameError,
-      )
+      await expect(
+        initLocalWorkspace({
+          baseDir: '/fake/tmp/',
+          envName: 'long'.repeat(100),
+          configTypes: [],
+          adapterCreators: mockAdapterCreator,
+        }),
+      ).rejects.toThrow(errors.InvalidEnvNameError)
     })
     it('should call initWorkspace with correct input', async () => {
       const envName = 'env-name'
       mockExists.mockResolvedValue(false)
-      await initLocalWorkspace('.', envName, [], async () => [])
-      expect(mockInit.mock.calls[0][1]).toBe(envName)
-      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][5]
+      await initLocalWorkspace({ baseDir: '.', envName, configTypes: [], adapterCreators: mockAdapterCreator })
+      expect(mockInit.mock.calls[0][0].defaultEnvName).toBe(envName)
+      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][0].environmentSources
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(envSources.commonSourceName).toBe(COMMON_ENV_PREFIX)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0]).map(params => toWorkspaceRelative(params))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, envName))
-      const uuid = mockInit.mock.calls[0][0]
+      const uuid = mockInit.mock.calls[0][0].uid
       expect(dirStoresBaseDirs).toContain(uuid)
       expect(dirStoresBaseDirs).toContain(path.join(uuid, CREDENTIALS_CONFIG_PATH))
     })
@@ -173,14 +203,18 @@ describe('local workspace', () => {
       it('should call close', async () => {
         mockExists.mockResolvedValue(false)
         mockInit.mockRejectedValue(new Error('oh no!'))
-        await expect(initLocalWorkspace('.', envName, [], async () => [])).rejects.toThrow(new Error('oh no!'))
+        await expect(
+          initLocalWorkspace({ baseDir: '.', envName, configTypes: [], adapterCreators: mockAdapterCreator }),
+        ).rejects.toThrow(new Error('oh no!'))
         expect(mockClose).toHaveBeenCalledTimes(1)
       })
       it('should call close, and throw the original error, if close throws as well', async () => {
         mockExists.mockResolvedValue(false)
         mockInit.mockRejectedValue(new Error('oh no!'))
         mockClose.mockRejectedValue('close error!')
-        await expect(initLocalWorkspace('.', envName, [], async () => [])).rejects.toThrow(new Error('oh no!'))
+        await expect(
+          initLocalWorkspace({ baseDir: '.', envName, configTypes: [], adapterCreators: mockAdapterCreator }),
+        ).rejects.toThrow(new Error('oh no!'))
         expect(mockClose).toHaveBeenCalledTimes(1)
       })
     })
@@ -191,7 +225,10 @@ describe('local workspace', () => {
     it('should throw error if not a workspace', async () => {
       mockExists.mockImplementation((filename: string) => !filename.endsWith('salto.config'))
       await expect(
-        loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] }),
+        loadLocalWorkspace({
+          path: '.',
+          adapterCreators: mockAdapterCreator,
+        }),
       ).rejects.toThrow(NotAWorkspaceError)
     })
 
@@ -218,10 +255,13 @@ describe('local workspace', () => {
         })
       })
       it('should call loadWorkspace with correct input', async () => {
-        await loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] })
+        await loadLocalWorkspace({
+          path: '.',
+          adapterCreators: mockAdapterCreator,
+        })
 
         expect(mockLoad).toHaveBeenCalledTimes(1)
-        const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
+        const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][0].environmentsSources
         expect(Object.keys(envSources.sources)).toHaveLength(3)
         expect(mockCreateDirStore).toHaveBeenCalledTimes(13)
         const dirStoresBaseDirs = mockCreateDirStore.mock.calls
@@ -237,21 +277,14 @@ describe('local workspace', () => {
           await loadLocalWorkspace({
             path: '.',
             credentialSource,
-            getConfigTypes: async () => [],
-            getCustomReferences: async () => [],
+            adapterCreators: mockAdapterCreator,
           })
         })
         it('should use the credentials source that was passed as a paramter', async () => {
           expect(mockLoad).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.anything(),
-            credentialSource,
-            expect.anything(),
-            expect.anything(),
-            expect.anything(),
-            expect.anything(),
-            undefined,
-            expect.anything(),
+            expect.objectContaining({
+              credentials: credentialSource,
+            }),
           )
         })
       })
@@ -259,7 +292,10 @@ describe('local workspace', () => {
         it('should call close', async () => {
           mockLoad.mockRejectedValue(new Error('oh no!'))
           await expect(
-            loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] }),
+            loadLocalWorkspace({
+              path: '.',
+              adapterCreators: mockAdapterCreator,
+            }),
           ).rejects.toThrow(new Error('oh no!'))
           expect(mockClose).toHaveBeenCalledTimes(1)
         })
@@ -267,7 +303,10 @@ describe('local workspace', () => {
           mockLoad.mockRejectedValue(new Error('oh no!'))
           mockClose.mockRejectedValue(new Error('Close Failed!'))
           await expect(
-            loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] }),
+            loadLocalWorkspace({
+              path: '.',
+              adapterCreators: mockAdapterCreator,
+            }),
           ).rejects.toThrow(new Error('oh no!'))
           expect(mockClose).toHaveBeenCalledTimes(1)
         })
@@ -305,8 +344,7 @@ describe('local workspace', () => {
     it('should invoke the rename command on the dir stores after adding the local prefix to the env name', async () => {
       const workspace = await loadLocalWorkspace({
         path: '.',
-        getConfigTypes: async () => [],
-        getCustomReferences: async () => [],
+        adapterCreators: mockAdapterCreator,
       })
       await workspace.renameEnvironment('default', 'newEnvName')
       expect(mockRenameEnvironment).toHaveBeenCalledWith('default', 'newEnvName', 'envs/newEnvName')
@@ -318,8 +356,8 @@ describe('local workspace', () => {
     beforeAll(() => {
       mockExists.mockResolvedValue(true)
       const mockLoad = ws.loadWorkspace as jest.Mock
-      mockLoad.mockImplementation(async (_config, _adaptersConfig, _credentials, elemSource: EnvironmentsSources) => {
-        wsElemSrcs = elemSource
+      mockLoad.mockImplementation(async config => {
+        wsElemSrcs = config.environmentsSources
         return {
           demoteAll: jest.fn(),
           currentEnv: () => 'default',
@@ -349,8 +387,7 @@ describe('local workspace', () => {
       it('should successfully demote all without crashing', async () => {
         const workspace = await loadLocalWorkspace({
           path: '/west',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
+          adapterCreators: mockAdapterCreator,
         })
         await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
         await workspace.demoteAll()
@@ -384,8 +421,7 @@ describe('local workspace', () => {
         envIsEmpty.mockResolvedValueOnce(true)
         const workspace = await loadLocalWorkspace({
           path: '.',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
+          adapterCreators: mockAdapterCreator,
         })
         await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
         await workspace.demoteAll()
@@ -399,8 +435,7 @@ describe('local workspace', () => {
         envIsEmpty.mockResolvedValueOnce(false)
         const workspace = await loadLocalWorkspace({
           path: '/west',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
+          adapterCreators: mockAdapterCreator,
         })
         await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
@@ -437,8 +472,7 @@ describe('local workspace', () => {
         envIsEmpty.mockResolvedValueOnce(true)
         const workspace = await loadLocalWorkspace({
           path: '.',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
+          adapterCreators: mockAdapterCreator,
         })
         await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
@@ -451,8 +485,7 @@ describe('local workspace', () => {
         envIsEmpty.mockResolvedValueOnce(false)
         const workspace = await loadLocalWorkspace({
           path: '/west',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
+          adapterCreators: mockAdapterCreator,
         })
         await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
@@ -490,9 +523,12 @@ describe('local workspace', () => {
       const envIsEmpty = envDirStore.isEmpty as jest.Mock
       envIsEmpty.mockResolvedValueOnce(false)
       const mockLoad = ws.loadWorkspace as jest.Mock
-      await loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] })
+      await loadLocalWorkspace({
+        path: '.',
+        adapterCreators: mockAdapterCreator,
+      })
       expect(mockLoad).toHaveBeenCalledTimes(1)
-      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
+      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][0].environmentsSources
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(mockCreateDirStore).toHaveBeenCalledTimes(10)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0]).map(params => toWorkspaceRelative(params))
@@ -513,8 +549,7 @@ describe('local workspace', () => {
     it('calls workspace clear with the specified parameters and removes the empty envs folder', async () => {
       const workspace = await loadLocalWorkspace({
         path: '/west',
-        getConfigTypes: async () => [],
-        getCustomReferences: async () => [],
+        adapterCreators: mockAdapterCreator,
       })
       const args = {
         nacl: true,
@@ -535,8 +570,7 @@ describe('local workspace', () => {
       jest.spyOn(file.isEmptyDir, 'notFoundAsUndefined').mockReturnValueOnce(Promise.resolve(false))
       const workspace = await loadLocalWorkspace({
         path: '/west',
-        getConfigTypes: async () => [],
-        getCustomReferences: async () => [],
+        adapterCreators: mockAdapterCreator,
       })
       const args = {
         nacl: true,

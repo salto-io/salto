@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -14,14 +14,13 @@ import { createAdditionalParentChanges, getCustomFieldOptionsFromChanges } from 
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../constants'
 import { prepRef } from '../handle_template_expressions'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../../deployment'
-import { API_DEFINITIONS_CONFIG } from '../../config'
 import { CustomFieldOptionsFilterCreatorParams } from './creator'
 
 const log = logger(module)
 
 export const createDeployOptionsWithParentCreator =
   ({ filterName, parentTypeName, childTypeName, onFetch }: CustomFieldOptionsFilterCreatorParams): FilterCreator =>
-  ({ config, client }) => ({
+  ({ oldApiDefinitions, client }) => ({
     name: filterName,
     onFetch,
     preDeploy: async changes => {
@@ -81,12 +80,12 @@ export const createDeployOptionsWithParentCreator =
       })
 
       const deployResult = await deployChanges([...parentChanges, ...additionalParentChanges], async change => {
-        const response = await deployChange(change, client, config.apiDefinitions)
+        const response = await deployChange(change, client, oldApiDefinitions)
         return addIdsToChildrenUponAddition({
           response,
           parentChange: change,
           childrenChanges,
-          apiDefinitions: config[API_DEFINITIONS_CONFIG],
+          apiDefinitions: oldApiDefinitions,
           childFieldName: CUSTOM_FIELD_OPTIONS_FIELD_NAME,
           childUniqueFieldName: 'value',
         })

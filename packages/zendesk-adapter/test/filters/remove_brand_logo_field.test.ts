@@ -1,15 +1,15 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { BRAND_TYPE_NAME, ZENDESK, CATEGORIES_FIELD } from '../../src/constants'
+import { BRAND_TYPE_NAME, ZENDESK, CATEGORIES_FIELD, BRAND_LOGO_TYPE_NAME } from '../../src/constants'
 import filterCreator from '../../src/filters/remove_brand_logo_field'
-import { LOGO_FIELD, BRAND_LOGO_TYPE } from '../../src/filters/brand_logo'
+import { LOGO_FIELD } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
 
 const mockDeployChange = jest.fn()
@@ -27,10 +27,18 @@ jest.mock('@salto-io/adapter-components', () => {
 describe('remove brand logo field filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
+  const brandLogoType = new ObjectType({
+    elemID: new ElemID(ZENDESK, BRAND_LOGO_TYPE_NAME),
+    fields: {
+      filename: { refType: BuiltinTypes.STRING },
+      contentType: { refType: BuiltinTypes.STRING },
+      content: { refType: BuiltinTypes.STRING },
+    },
+  })
   const brandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
     fields: {
-      [LOGO_FIELD]: { refType: new ObjectType(BRAND_LOGO_TYPE) },
+      [LOGO_FIELD]: { refType: brandLogoType },
     },
   })
   const brandId = 11

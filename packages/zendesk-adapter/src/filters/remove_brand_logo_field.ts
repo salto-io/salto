@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -16,7 +16,7 @@ import { LOGO_FIELD } from './brand_logo'
  * Ignores the logo field from brand instances when deploying,
  * for they are covered as brand_logo instances
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'removeBrandLogoFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [brandChanges, leftoverChanges] = _.partition(
@@ -24,7 +24,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_TYPE_NAME,
     )
     const deployResult = await deployChanges(brandChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
+      await deployChange(change, client, oldApiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
     })
     return { deployResult, leftoverChanges }
   },

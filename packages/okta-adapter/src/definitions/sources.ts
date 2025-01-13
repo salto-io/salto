@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -21,6 +21,8 @@ export const OPEN_API_DEFINITIONS: definitions.sources.OpenAPIDefinition<ClientO
     // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type.
     IdentityProviderPolicyRule: { originalTypeName: 'PolicyRule', rename: false },
     MultifactorEnrollmentPolicyRule: { originalTypeName: 'PolicyRule', rename: false },
+    ApplicationUserProvisioning: { originalTypeName: 'ApplicationFeature', rename: false },
+    ApplicationInboundProvisioning: { originalTypeName: 'ApplicationFeature', rename: false },
     Group__source: { originalTypeName: 'AppAndInstanceConditionEvaluatorAppOrInstance', rename: false },
     DeviceCondition: { originalTypeName: 'PolicyNetworkCondition', rename: false },
     // Automation type is not documented in swagger

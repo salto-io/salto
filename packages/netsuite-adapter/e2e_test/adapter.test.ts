@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -68,7 +68,6 @@ import {
   WORKFLOW,
   NETSUITE,
   APPLICATION_ID,
-  IS_SUB_INSTANCE,
   BUNDLE,
 } from '../src/constants'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
@@ -685,8 +684,6 @@ describe('Netsuite adapter E2E with real account', () => {
 
         const elementsWithoutAlias = relevantElements
           .filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
-          // some sub-instances don't have alias
-          .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
           .filter(element => !isInstanceElement(element) || !ignoreCustomRecordInstanceAlias(element.getTypeSync()))
           .filter(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] !== true)
 

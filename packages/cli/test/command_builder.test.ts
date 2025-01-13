@@ -1,13 +1,14 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { logger, LogLevel } from '@salto-io/logging'
-import { loadLocalWorkspace } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { mockFunction } from '@salto-io/test-utils'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import * as mocks from './mocks'
 import {
   createPublicCommandDef,
@@ -24,8 +25,8 @@ import {
 } from '../src/commands/common/config_override'
 import { buildEventName } from '../src/telemetry'
 
-jest.mock('@salto-io/core', () => {
-  const actual = jest.requireActual('@salto-io/core')
+jest.mock('@salto-io/local-workspace', () => {
+  const actual = jest.requireActual('@salto-io/local-workspace')
   return {
     ...actual,
     loadLocalWorkspace: jest.fn().mockImplementation(actual.loadLocalWorkspace),
@@ -250,7 +251,11 @@ describe('Command builder', () => {
         })
         it('should pass workspace path and config overrides to the workspace', () => {
           const expectedChanges = getConfigOverrideChanges(configOverrides)
-          expect(loadLocalWorkspace).toHaveBeenCalledWith({ path: 'test_path', configOverrides: expectedChanges })
+          expect(loadLocalWorkspace).toHaveBeenCalledWith({
+            path: 'test_path',
+            configOverrides: expectedChanges,
+            adapterCreators,
+          })
         })
       })
       describe('when action is successful', () => {

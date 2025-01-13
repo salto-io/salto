@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -15,7 +15,7 @@ import { TARGET_TYPE_NAME } from '../constants'
 /**
  * Removes the authentication data from target if it wasn't changed
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'targetFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [targetModificationChanges, leftoverChanges] = _.partition(
@@ -31,7 +31,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       if (instance.value.password) {
         delete instance.value.password
       }
-      await deployChange(clonedChange, client, config.apiDefinitions)
+      await deployChange(clonedChange, client, oldApiDefinitions)
       getChangeData(change).value.id = getChangeData(clonedChange).value.id
     })
     return { deployResult, leftoverChanges }

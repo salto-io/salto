@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -10,7 +10,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { addBundleFieldToType } from '../../src/transformer'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { getDefaultAdapterConfig } from '../utils'
-import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, IS_LOCKED, METADATA_TYPE, NETSUITE } from '../../src/constants'
 import filterCreator from '../../src/filters/add_important_values'
 import { LocalFilterOpts } from '../../src/filter'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
@@ -26,6 +26,7 @@ describe('add important values filter', () => {
   let formType: ObjectType
   let standardCustomRecordType: ObjectType
   let userCustomRecordType: ObjectType
+  let lockedCustomRecordType: ObjectType
   let types: ObjectType[]
 
   let defaultOpts: LocalFilterOpts
@@ -44,8 +45,18 @@ describe('add important values filter', () => {
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
     })
+    lockedCustomRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1_locked'),
+      fields: {
+        scriptid: { refType: BuiltinTypes.SERVICE_ID },
+      },
+      annotations: {
+        [IS_LOCKED]: true,
+        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+      },
+    })
 
-    types = [workflow, formType, standardCustomRecordType, userCustomRecordType, innerType]
+    types = [workflow, formType, standardCustomRecordType, userCustomRecordType, lockedCustomRecordType, innerType]
 
     types.forEach(type => addBundleFieldToType(type, bundleType().type))
 
@@ -183,6 +194,60 @@ describe('add important values filter', () => {
           indexed: true,
         },
       ],
+      [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+    })
+
+    expect(lockedCustomRecordType.annotations).toEqual({
+      _important_values: [
+        {
+          value: 'name',
+          highlighted: true,
+          indexed: false,
+        },
+        {
+          value: 'scriptid',
+          highlighted: true,
+          indexed: false,
+        },
+        {
+          value: 'isInactive',
+          highlighted: true,
+          indexed: true,
+        },
+        {
+          value: 'bundle',
+          highlighted: true,
+          indexed: true,
+        },
+      ],
+      _self_important_values: [
+        {
+          value: 'description',
+          highlighted: true,
+          indexed: false,
+        },
+        {
+          value: 'scriptid',
+          highlighted: true,
+          indexed: false,
+        },
+        {
+          value: 'isinactive',
+          highlighted: true,
+          indexed: true,
+        },
+        {
+          value: 'bundle',
+          highlighted: true,
+          indexed: true,
+        },
+        {
+          value: 'isLocked',
+          highlighted: true,
+          indexed: true,
+        },
+      ],
+      [IS_LOCKED]: true,
       [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
     })
 

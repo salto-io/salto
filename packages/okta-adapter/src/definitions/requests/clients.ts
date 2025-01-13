@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -106,6 +106,16 @@ export const createClientDefinitions = (
           '/api/v1/brands/{brandId}/pages/error/customized': {
             get: {
               additionalValidStatuses: [404],
+            },
+          },
+          '/api/v1/apps/{parent_id}/connections/default/lifecycle/deactivate': {
+            post: {
+              omitBody: true,
+            },
+          },
+          '/api/v1/apps/{parent_id}/connections/default/lifecycle/activate': {
+            post: {
+              omitBody: true,
             },
           },
         },

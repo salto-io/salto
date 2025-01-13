@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,7 +9,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
-import { Value, Values } from '@salto-io/adapter-api'
+import { Change, InstanceElement, isEqualValues, isModificationChange, Value, Values } from '@salto-io/adapter-api'
 import { extractIdFromUrl } from '../../../utils'
 import { LINKS_FIELD, SAML_2_0_APP } from '../../../constants'
 
@@ -95,3 +95,19 @@ export const isCustomApp = (value: Values, subdomain?: string): boolean => {
 
 // Okta Dashboard is a special app that can only have one instance. We need to ensure its element ID is identical across all environments.
 export const isOktaDashboard = (value: Values): boolean => value?.name === 'okta_enduser'
+
+export const isApplicationProvisioningUsersModified =
+  () =>
+  ({ change }: { change: Change<InstanceElement> }) =>
+    isModificationChange(change) &&
+    change.data.after.value.applicationProvisioningUsers !== undefined &&
+    !isEqualValues(
+      change.data.before.value.applicationProvisioningUsers,
+      change.data.after.value.applicationProvisioningUsers,
+    )
+
+export const generateExcludeRegex = (names: string[]): string[] => {
+  const escapedNames = names.map(name => name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'))
+  const regexPattern = `^(?!${escapedNames.join('$|')}$).*$`
+  return [regexPattern]
+}

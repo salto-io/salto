@@ -95,8 +95,8 @@ salesforce {
     }
     data = {
       includeObjects = [
-        ".*SBQQ__CustomAction__c.*",
-        ".*PricebookEntry.*",
+        "SBQQ__CustomAction__c",
+        "PricebookEntry",
       ]
       saltoManagementFieldSettings = {
         defaultFieldName = "ManagedBySalto__c"
@@ -117,14 +117,14 @@ salesforce {
         ]
         overrides = [
           {
-            objectsRegex = ".*pricebookEntryName.*"
+            objectsRegex = "PricebookEntry"
             idFields = [
               "Pricebook2Id",
               "Name",
             ]
           },
           {
-            objectsRegex = ".*SBQQCustomActionName.*"
+            objectsRegex = "SBQQ__CustomAction__c"
             idFields = [
               "SBQQ__Location__c",
               "SBQQ__DisplayOrder__c",
@@ -338,6 +338,7 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | standardFieldLabel           | true                   | Disallow changing a label of a standard field                                              |
 | mapKeys                      | true                   | Ensure proper structure of profiles before deploying                                       |
 | defaults_rules               | true                   | Check for default rules violations such as multiple defaults, no default etc.              |
+| package_version              | true                   | Check if the deployed instance's package-version is the same as the target environment     |
 | picklistPromote              | true                   | Disallow promoting picklist value-set to global since it cannot be done with the API       |
 | dataCategoryGroup            | true                   | Warn when deploying additions or changes to DataCategoryGroup elements                     |
 | installedPackages            | true                   | Disallow any changes on metadata instances of type InstalledPackage.                       |
@@ -380,3 +381,4 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | lastLayoutRemoval            | true                   | Disallow deletion of the last layout for custom objects.                                   |
 | accountSettings              | true                   | Cannot set a value for enableAccountOwnerReport without proper org setting.                |
 | unknownPicklistValues        | true                   | Disallow any usage of unknown pickList values.                                             |
+| flowReferencedElements       | true                   | Check that the referenced elements in Flow exist.                                          |

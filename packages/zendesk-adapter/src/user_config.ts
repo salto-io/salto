@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -40,7 +40,6 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
 }> & {
   enableMissingReferences?: boolean
   includeAuditDetails?: boolean
-  addAlias?: boolean
   handleIdenticalAttachmentConflicts?: boolean
   greedyAppReferences?: boolean
   appReferenceLocators?: IdLocator[]
@@ -54,6 +53,7 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
   useNewInfra?: boolean
   useGuideNewInfra?: boolean
   translationBodyAsStaticFile?: boolean
+  fetchBotBuilder?: boolean
 }
 
 export type ZendeskClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }

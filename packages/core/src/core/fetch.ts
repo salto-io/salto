@@ -911,6 +911,10 @@ export const calcFetchChanges = async ({
           [
             accountFetchFilter,
             partialFetchFilter,
+            // Computing a plan for fetch operations results in reference expressions being resolved, which doesn't
+            // allow us to use service-state diff to calculate workspace-service diff (as resolved values would be
+            // wrong), so we can't limit the diff to pending changes here if the flag is turned on.
+            // TODO: Remove when the new plan computation is stable in production.
             getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) ? serviceChangeIdsFilter : pendingChangeIdsFilter,
           ],
           'service',

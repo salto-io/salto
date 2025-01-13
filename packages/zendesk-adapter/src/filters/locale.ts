@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -13,28 +13,28 @@ import {
   InstanceElement,
   Change,
   isAdditionOrRemovalChange,
-  createSaltoElementErrorFromError,
   SeverityLevel,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
+import {
+  createSaltoElementErrorFromError,
+  ERROR_MESSAGES,
+  getInstancesFromElementSource,
+} from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { LOCALE_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
-const getWarningsForLocale = (): SaltoError[] => {
-  const message =
-    "Please be aware that your Zendesk account's default locale is not set to English (en-US), which may impact your ability to compare environments with different default locales"
-  return [
-    {
-      message,
-      detailedMessage: message,
-      severity: 'Warning',
-    },
-  ]
-}
+const getWarningsForLocale = (): SaltoError[] => [
+  {
+    message: ERROR_MESSAGES.OTHER_ISSUES,
+    detailedMessage:
+      "Please be aware that your Zendesk account's default locale is not set to English (en-US), which may impact your ability to compare environments with different default locales",
+    severity: 'Warning',
+  },
+]
 
 /**
  * This filter checks that the default locale is set to en-US, if not it will raise a warning. We have seen that the
@@ -44,7 +44,7 @@ const getWarningsForLocale = (): SaltoError[] => {
  * in the deploy, this filter adds and deletes locales through the account settings endpoint. zendesk does not support
  * modifications
  */
-const filterCreator: FilterCreator = ({ elementsSource, client }) => ({
+const filterCreator: FilterCreator = ({ elementSource, client }) => ({
   name: 'locale',
   onFetch: async (elements: Element[]) => {
     const defaultLocale = elements
@@ -97,7 +97,7 @@ const filterCreator: FilterCreator = ({ elementsSource, client }) => ({
     }
 
     // we do not need the actual changes as we send the entire list of locales
-    const allLocales = await getInstancesFromElementSource(elementsSource, [LOCALE_TYPE_NAME])
+    const allLocales = await getInstancesFromElementSource(elementSource, [LOCALE_TYPE_NAME])
     const localeIds = allLocales
       .filter(locale => {
         if (locale.value.id === undefined) {

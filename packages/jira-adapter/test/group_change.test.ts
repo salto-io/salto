@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -29,7 +29,11 @@ import {
   SLA_TYPE_NAME,
   WORKFLOW_TYPE_NAME,
 } from '../src/constants'
-import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from '../src/filters/fields/constants'
+import {
+  FIELD_CONTEXT_OPTION_TYPE_NAME,
+  FIELD_CONTEXT_TYPE_NAME,
+  OPTIONS_ORDER_TYPE_NAME,
+} from '../src/filters/fields/constants'
 import { createEmptyType } from './utils'
 
 describe('group change', () => {
@@ -56,6 +60,7 @@ describe('group change', () => {
   let fieldContextOptionInstance1: InstanceElement
   let fieldContextOptionInstance2: InstanceElement
   let fieldContextOptionInstance3: InstanceElement
+  let fieldContextOptionOrderInstance: InstanceElement
   let fieldContextInstance1: InstanceElement
   let fieldContextInstance2: InstanceElement
 
@@ -154,6 +159,16 @@ describe('group change', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(fieldContextInstance2.elemID, fieldContextInstance2)],
+      },
+    )
+
+    fieldContextOptionOrderInstance = new InstanceElement(
+      'fieldContextOptionOrderInstance',
+      createEmptyType(OPTIONS_ORDER_TYPE_NAME),
+      {},
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(fieldContextInstance1.elemID, fieldContextInstance1)],
       },
     )
 
@@ -343,7 +358,7 @@ describe('group change', () => {
       ),
     ).rejects.toThrow()
   })
-  it('should group field context options', async () => {
+  it('should group field context options but not orders', async () => {
     const changeGroupIds = (
       await getChangeGroupIds(
         new Map<string, Change>([
@@ -365,6 +380,12 @@ describe('group change', () => {
               after: fieldContextOptionInstance3,
             }),
           ],
+          [
+            fieldContextOptionOrderInstance.elemID.getFullName(),
+            toChange({
+              after: fieldContextOptionOrderInstance,
+            }),
+          ],
         ]),
       )
     ).changeGroupIdMap
@@ -377,6 +398,26 @@ describe('group change', () => {
     )
     expect(changeGroupIds.get(fieldContextOptionInstance3.elemID.getFullName())).toEqual(
       'jira.CustomFieldContext.instance.parent2',
+    )
+    expect(changeGroupIds.get(fieldContextOptionOrderInstance.elemID.getFullName())).toEqual(
+      fieldContextOptionOrderInstance.elemID.getFullName(),
+    )
+  })
+  it('should group field context options and orders on removal', async () => {
+    const changeGroupIds = (
+      await getChangeGroupIds(
+        new Map<string, Change>([
+          [
+            fieldContextOptionOrderInstance.elemID.getFullName(),
+            toChange({
+              before: fieldContextOptionOrderInstance,
+            }),
+          ],
+        ]),
+      )
+    ).changeGroupIdMap
+    expect(changeGroupIds.get(fieldContextOptionOrderInstance.elemID.getFullName())).toEqual(
+      'jira.CustomFieldContext.instance.parent1',
     )
   })
   it('should group queue type additions', async () => {

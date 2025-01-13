@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -122,7 +122,7 @@ describe('brand files filter', () => {
       const res = (await filter.onFetch(elements)) as FilterResult
       expect(res.errors).toHaveLength(1)
       expect(res.errors?.[0]).toEqual({
-        message: 'Failed to fetch brandTheme file. Failed to fetch attachment content from Okta API',
+        message: 'Other issues',
         detailedMessage: 'Failed to fetch brandTheme file. Failed to fetch attachment content from Okta API',
         severity: 'Warning',
       })

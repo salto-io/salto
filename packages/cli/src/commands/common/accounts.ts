@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,7 +7,8 @@
  */
 import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
-import { Tags, getSupportedServiceAdapterNames } from '@salto-io/core'
+import { Tags } from '@salto-io/local-workspace'
+import { getSupportedServiceAdapterNames } from '@salto-io/adapter-creators'
 import { KeyedOption } from '../../types'
 import { EnvArg } from './env'
 

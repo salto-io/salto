@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -11,7 +11,7 @@ import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { ODATA_TYPE_FIELD, entraConstants } from '../../../../constants'
 import { AdjustFunctionSingle } from '../../shared/types'
 
-const { ROLE_DEFINITION_TYPE_NAME } = entraConstants
+const { ROLE_DEFINITION_TYPE_NAME } = entraConstants.TOP_LEVEL_TYPES
 
 // For some reason the fetch result doesn't return proper structure according to the docs
 // https://learn.microsoft.com/en-us/graph/api/intune-rbac-roledefinition-list?view=graph-rest-1.0&tabs=http

@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { FileProperties } from '@salto-io/jsforce'
+import { FileProperties, MetadataObject } from '@salto-io/jsforce'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
 import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../src/constants'
@@ -16,6 +16,7 @@ import { mockFileProperties } from './connection'
 import { getLastChangeDateOfTypesWithNestedInstances } from '../src/last_change_date_of_types_with_nested_instances'
 import { buildFilePropsMetadataQuery, buildMetadataQuery } from '../src/fetch_profile/metadata_query'
 import { LastChangeDateOfTypesWithNestedInstances, MetadataQuery } from '../src/types'
+import { CUSTOM_OBJECT_FIELDS } from '../src/fetch_profile/metadata_types'
 
 const { makeArray } = collections.array
 
@@ -29,10 +30,12 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
   let connection: MockInterface<Connection>
   let listedTypes: string[]
   let metadataQuery: MetadataQuery<FileProperties>
+  let metadataTypeInfos: MetadataObject[]
+  let filePropByRelatedType: Record<string, FileProperties[]>
   beforeEach(() => {
     ;({ client, connection } = mockClient())
     listedTypes = []
-    const filePropByRelatedType: Record<string, FileProperties[]> = {
+    filePropByRelatedType = {
       // CustomObject props
       BusinessProcess: [
         // Latest related property for Updated__c
@@ -150,6 +153,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
     let excludedRelatedTypes: string[]
     beforeEach(() => {
       excludedRelatedTypes = ['Index']
+      metadataTypeInfos = Object.keys(filePropByRelatedType).map(type => ({ xmlName: type }))
       metadataQuery = buildFilePropsMetadataQuery(
         buildMetadataQuery({
           fetchParams: {
@@ -172,6 +176,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
       const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
         client,
         metadataQuery,
+        metadataTypeInfos,
       })
       const expected: LastChangeDateOfTypesWithNestedInstances = {
         AssignmentRules: {},
@@ -186,6 +191,53 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         Workflow: {},
       }
       expect(lastChangeDateOfTypesWithNestedInstances).toEqual(expected)
+    })
+  })
+  describe('when types are not managed in the environment', () => {
+    beforeEach(() => {
+      metadataTypeInfos = [{ xmlName: CUSTOM_OBJECT }]
+      metadataQuery = buildFilePropsMetadataQuery(
+        buildMetadataQuery({
+          fetchParams: {
+            metadata: {
+              include: [
+                {
+                  metadataType: '.*',
+                  namespace: '',
+                },
+              ],
+            },
+          },
+        }),
+      )
+    })
+    it('should not consider the unmanaged types', async () => {
+      const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
+        client,
+        metadataQuery,
+        metadataTypeInfos,
+      })
+      const expected: LastChangeDateOfTypesWithNestedInstances = {
+        AssignmentRules: {},
+        AutoResponseRules: {},
+        CustomLabels: undefined,
+        CustomObject: {
+          Test1__c: '2023-11-01T00:00:00.000Z',
+          Test2__c: '2023-11-01T00:00:00.000Z',
+        },
+        EscalationRules: {},
+        SharingRules: {},
+        Workflow: {},
+      }
+      expect(lastChangeDateOfTypesWithNestedInstances).toEqual(expected)
+    })
+    it('should list children types', async () => {
+      await getLastChangeDateOfTypesWithNestedInstances({
+        client,
+        metadataQuery,
+        metadataTypeInfos: [{ xmlName: CUSTOM_OBJECT, childXmlNames: [...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD] }],
+      })
+      expect(listedTypes).toContainValues([CUSTOM_OBJECT, ...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD])
     })
   })
 })

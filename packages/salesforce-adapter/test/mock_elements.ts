@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -12,6 +12,7 @@ import {
   ElemID,
   InstanceElement,
   ListType,
+  MapType,
   ObjectType,
   toChange,
   TypeElement,
@@ -58,6 +59,10 @@ import {
   CPQ_TERM_CONDITION,
   CPQ_INDEX_FIELD,
   OPPORTUNITY_METADATA_TYPE,
+  FLOW_FIELD_TYPE_NAMES,
+  ASSIGN_TO_REFERENCE,
+  LIVE_CHAT_BUTTON,
+  APPROVAL_PROCESS_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -268,7 +273,7 @@ export const mockTypes = {
         refType: createMetadataObjectType({
           annotations: { metadataType: 'LwcResources' },
           fields: {
-            lwcResource: { refType: new ListType(BuiltinTypes.STRING) },
+            lwcResource: { refType: new MapType(BuiltinTypes.STRING) },
           },
         }),
       },
@@ -473,6 +478,18 @@ export const mockTypes = {
     fields: {
       status: { refType: BuiltinTypes.STRING },
       actionType: { refType: BuiltinTypes.STRING },
+      assignments: {
+        refType: new ListType(
+          createMetadataObjectType({
+            annotations: { metadataType: FLOW_FIELD_TYPE_NAMES.FLOW_ASSIGNMENT_ITEM },
+            fields: {
+              [ASSIGN_TO_REFERENCE]: {
+                refType: BuiltinTypes.STRING,
+              },
+            },
+          }),
+        ),
+      },
     },
   }),
   FlowDefinition: createMetadataObjectType({
@@ -850,12 +867,32 @@ export const mockTypes = {
       fieldItem: { refType: BuiltinTypes.STRING },
     },
   }),
+  [LIVE_CHAT_BUTTON]: createMetadataObjectType({
+    annotations: {
+      metadataType: LIVE_CHAT_BUTTON,
+    },
+    fields: {
+      skills: {
+        refType: BuiltinTypes.STRING,
+      },
+      routingType: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
+  }),
+  [APPROVAL_PROCESS_METADATA_TYPE]: createMetadataObjectType({
+    annotations: {
+      metadataType: APPROVAL_PROCESS_METADATA_TYPE,
+    },
+  }),
 }
 
-export const lwcJsResourceContent =
-  "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"
-export const lwcHtmlResourceContent =
-  '<template>\n    <div>\n        <div>Name: {name}</div>\n        <div>Description: {description}</div>\n        <lightning-badge label={material}></lightning-badge>\n        <lightning-badge label={category}></lightning-badge>\n        <div>Price: {price}</div>\n        <div><img src={pictureUrl}/></div>\n    </div>\n</template>'
+export const lwcJsResourceContent = Buffer.from(
+  "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }",
+)
+export const lwcHtmlResourceContent = Buffer.from(
+  '<template>\n    <div>\n        <div>Name: {name}</div>\n        <div>Description: {description}</div>\n        <lightning-badge label={material}></lightning-badge>\n        <lightning-badge label={category}></lightning-badge>\n        <div>Price: {price}</div>\n        <div><img src={pictureUrl}/></div>\n    </div>\n</template>',
+)
 
 export const mockDefaultValues = {
   ApexClass: {
@@ -869,6 +906,7 @@ export const mockDefaultValues = {
     apiVersion: API_VERSION,
     content: '<apex:page>Created by e2e test for profile test!</apex:page>',
     label: 'ApexPageForProfile',
+    internalId: 'ApexPageId',
   },
   AuraDefinitionBundle: {
     [INSTANCE_FULL_NAME_FIELD]: 'TestAuraDefinitionBundle',
@@ -891,16 +929,16 @@ export const mockDefaultValues = {
     apiVersion: 49,
     isExposed: true,
     lwcResources: {
-      lwcResource: [
-        {
+      lwcResource: {
+        'testLightningComponentBundle_js@v': {
           source: lwcJsResourceContent,
           filePath: 'lwc/testLightningComponentBundle/testLightningComponentBundle.js',
         },
-        {
+        'testLightningComponentBundle_html@v': {
           source: lwcHtmlResourceContent,
           filePath: 'lwc/testLightningComponentBundle/testLightningComponentBundle.html',
         },
-      ],
+      },
     },
     targetConfigs: {
       targetConfig: [

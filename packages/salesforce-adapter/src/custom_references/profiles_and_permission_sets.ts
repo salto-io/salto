@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -20,12 +20,10 @@ import {
   SALESFORCE,
   FLOW_METADATA_TYPE,
   LAYOUT_TYPE_ID_METADATA_TYPE,
-  PROFILE_METADATA_TYPE,
   RECORD_TYPE_METADATA_TYPE,
-  PERMISSION_SET_METADATA_TYPE,
-  MUTING_PERMISSION_SET_METADATA_TYPE,
   DEFAULT_NAMESPACE,
   CUSTOM_OBJECT,
+  PERMISSIONS_TYPES,
 } from '../constants'
 import { Types } from '../transformers/transformer'
 import {
@@ -44,11 +42,7 @@ const log = logger(module)
 
 const FIELD_NO_ACCESS = 'NoAccess'
 
-export const isProfileOrPermissionSetInstance = isInstanceOfTypeSync(
-  PROFILE_METADATA_TYPE,
-  PERMISSION_SET_METADATA_TYPE,
-  MUTING_PERMISSION_SET_METADATA_TYPE,
-)
+export const isProfileOrPermissionSetInstance = isInstanceOfTypeSync(...PERMISSIONS_TYPES)
 
 const getMetadataElementName = (fullName: string): string =>
   Types.getElemId(fullName.replace(API_NAME_SEPARATOR, '_'), true).name

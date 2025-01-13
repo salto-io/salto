@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -27,6 +27,7 @@ import {
 import {
   applyFunctionToChangeData,
   createTemplateExpression,
+  ERROR_MESSAGES,
   extractTemplate,
   getParent,
   normalizeFilePathPart,
@@ -37,9 +38,10 @@ import { collections } from '@salto-io/lowerdash'
 import { parserUtils } from '@salto-io/parser'
 import { FilterCreator } from '../../filter'
 import { ARTICLE_TRANSLATION_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../constants'
-import { FETCH_CONFIG, isGuideEnabled, ZendeskConfig } from '../../config'
+import { FETCH_CONFIG, isGuideEnabled } from '../../config'
 import { getBrandsForGuide, matchBrand } from '../utils'
 import { extractTemplateFromUrl, prepRef, URL_REGEX } from './utils'
+import { ZendeskUserConfig } from '../../user_config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -149,14 +151,11 @@ const getWarningsForMissingBrands = (missingBrandsForWarning: missingBrandInfo[]
     brandSubdomain: warningObjects[0].brandSubdomain,
     articles: _.uniq(warningObjects.map(obj => obj.articleName)),
   }))
-  return missingBrandsToArticleNames.map(missingBrandInfo => {
-    const message = `Brand ${missingBrandInfo.brandName} (subdomain ${missingBrandInfo.brandSubdomain}) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): ${missingBrandInfo.articles.slice(0, 10).join(', ')}`
-    return {
-      message,
-      detailedMessage: message,
-      severity: 'Warning',
-    }
-  })
+  return missingBrandsToArticleNames.map(missingBrandInfo => ({
+    message: ERROR_MESSAGES.OTHER_ISSUES,
+    detailedMessage: `Brand ${missingBrandInfo.brandName} (subdomain ${missingBrandInfo.brandSubdomain}) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): ${missingBrandInfo.articles.slice(0, 10).join(', ')}`,
+    severity: 'Warning',
+  }))
 }
 
 const templateExpressionToStaticFile = (translationBody: TemplateExpression, translationElemID: ElemID): StaticFile => {
@@ -179,7 +178,7 @@ export const articleBodyOnFetch =
       translationElemID: ElemID,
     ) => StaticFile | TemplateExpression,
   ) =>
-  async (elements: Element[], config: ZendeskConfig): Promise<{ errors: SaltoError[] }> => {
+  async (elements: Element[], config: ZendeskUserConfig): Promise<{ errors: SaltoError[] }> => {
     const instances = elements.filter(isInstanceElement)
     const instancesById = _.keyBy(
       instances.filter(instance => _.isNumber(instance.value.id)),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -50,7 +50,7 @@ export const mockErrors = (errors: SaltoError[], parseErrors: parser.ParseError[
   merge: [],
   parse: parseErrors,
   validation: errors.map(err => ({ elemID: new ElemID('test'), error: '', ...err })),
-  strings: () => errors.map(err => err.message),
+  strings: () => errors.map(err => err.detailedMessage),
 })
 
 const mockDirStore = <T extends dirStore.ContentType>(files: Record<string, T> = {}): dirStore.DirectoryStore<T> => {
@@ -199,7 +199,14 @@ const buildMockWorkspace = async (
     delete: jest.fn(),
     rename: jest.fn(),
   }
-  return loadWorkspace(mockConfSource, mockAdaptersConf, mockCredentialsSource, elementsSources, mockCreateRemoteMap)
+  return loadWorkspace({
+    config: mockConfSource,
+    adaptersConfig: mockAdaptersConf,
+    credentials: mockCredentialsSource,
+    environmentsSources: elementsSources,
+    remoteMapCreator: mockCreateRemoteMap,
+    adapterCreators: {},
+  })
 }
 
 export const mockWorkspace = async (naclFiles: string[] = [], staticFileNames: string[] = []): Promise<Workspace> =>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -10,7 +10,6 @@ import Joi from 'joi'
 import {
   Change,
   Element,
-  createSaltoElementError,
   getChangeData,
   InstanceElement,
   isAdditionChange,
@@ -18,7 +17,7 @@ import {
   isInstanceElement,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { createSaltoElementError, inspectValue } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -107,7 +106,7 @@ const connectAppOwnedToInstallation = (instances: InstanceElement[]): void => {
 /**
  * Edits app_installation value on fetch, Deploys app_installation on deploy
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'appInstallationsFilter',
   onFetch: async (elements: Element[]) => {
     elements
@@ -126,7 +125,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         isAdditionOrModificationChange(change) && getChangeData(change).elemID.typeName === APP_INSTALLATION_TYPE_NAME,
     )
     const deployResult = await deployChanges(relevantChanges, async change => {
-      const response = await deployChange(change, client, config.apiDefinitions, [
+      const response = await deployChange(change, client, oldApiDefinitions, [
         'app',
         'settings.title',
         'settings_objects',

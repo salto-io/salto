@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -132,7 +132,7 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
                     issueTypeScreenSchemesToiIssueTypeMappings[
                       project.value.issueTypeScreenScheme.issueTypeScreenScheme.id
                     ].length,
-                    issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id].length,
+                    issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme?.issueTypeScheme.id]?.length ?? 0,
                   ),
                 )
                 .map(

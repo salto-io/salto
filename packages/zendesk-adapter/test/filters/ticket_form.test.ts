@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -115,7 +115,7 @@ describe('ticket form filter', () => {
     it('should not remove the generic custom ticket on fetch when flag is off', async () => {
       const elements = [elementSourceForm, otherField, genericCustomTicketStatusField]
       filter = filterCreator(
-        createFilterCreatorParams({ elementsSource: buildElementsSourceFromElements(elements) }),
+        createFilterCreatorParams({ elementSource: buildElementsSourceFromElements(elements) }),
       ) as FilterType
 
       await filter.onFetch(elements)
@@ -126,7 +126,7 @@ describe('ticket form filter', () => {
       const config = { ...DEFAULT_CONFIG }
       config[FETCH_CONFIG].omitTicketStatusTicketField = true
       filter = filterCreator(
-        createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements(elements) }),
+        createFilterCreatorParams({ config, elementSource: buildElementsSourceFromElements(elements) }),
       ) as FilterType
 
       await filter.onFetch(elements)
@@ -142,7 +142,7 @@ describe('ticket form filter', () => {
       const config = { ...DEFAULT_CONFIG }
       config[FETCH_CONFIG].omitTicketStatusTicketField = true
       filter = filterCreator(
-        createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements(elements) }),
+        createFilterCreatorParams({ config, elementSource: buildElementsSourceFromElements(elements) }),
       ) as FilterType
 
       await filter.onFetch(elements)
@@ -154,7 +154,7 @@ describe('ticket form filter', () => {
   describe('deploy of removal of field and its condition', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
-      filter = filterCreator(createFilterCreatorParams({ elementsSource: createElementSource(true) })) as FilterType
+      filter = filterCreator(createFilterCreatorParams({ elementSource: createElementSource(true) })) as FilterType
     })
     it('should deploy modification change with removal of conditions and field', async () => {
       const missing = createMissingInstance(ZENDESK, TICKET_FIELD_TYPE_NAME, 'test')
@@ -218,7 +218,7 @@ describe('ticket form filter', () => {
   describe('deploy with custom_statuses enabled', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
-      filter = filterCreator(createFilterCreatorParams({ elementsSource: createElementSource(true) })) as FilterType
+      filter = filterCreator(createFilterCreatorParams({ elementSource: createElementSource(true) })) as FilterType
     })
 
     it('should deploy removal changes', async () => {
@@ -317,7 +317,7 @@ describe('ticket form filter', () => {
   describe('deploy with custom_statuses disabled', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
-      filter = filterCreator(createFilterCreatorParams({ elementsSource: createElementSource(false) })) as FilterType
+      filter = filterCreator(createFilterCreatorParams({ elementSource: createElementSource(false) })) as FilterType
     })
     describe('onDeploy', () => {
       const ticketStatusField = new InstanceElement(
@@ -348,7 +348,7 @@ describe('ticket form filter', () => {
         jest.clearAllMocks()
         filter = filterCreator(
           createFilterCreatorParams({
-            elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField, ticketStatusField]),
+            elementSource: buildElementsSourceFromElements([elementSourceForm, otherField, ticketStatusField]),
           }),
         ) as FilterType
       })
@@ -362,7 +362,7 @@ describe('ticket form filter', () => {
       it('should do nothing if ticket status field does not exist in element source', async () => {
         filter = filterCreator(
           createFilterCreatorParams({
-            elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField]),
+            elementSource: buildElementsSourceFromElements([elementSourceForm, otherField]),
           }),
         ) as FilterType
         const clonedForm = formToDeploy.clone()
@@ -378,7 +378,7 @@ describe('ticket form filter', () => {
         clonedCustomStatusField.value.id = 1
         filter = filterCreator(
           createFilterCreatorParams({
-            elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField, clonedCustomStatusField]),
+            elementSource: buildElementsSourceFromElements([elementSourceForm, otherField, clonedCustomStatusField]),
           }),
         ) as FilterType
         expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
@@ -387,7 +387,7 @@ describe('ticket form filter', () => {
       it('should do nothing if deployed form is not in the element source', async () => {
         filter = filterCreator(
           createFilterCreatorParams({
-            elementsSource: buildElementsSourceFromElements([otherField, ticketStatusField]),
+            elementSource: buildElementsSourceFromElements([otherField, ticketStatusField]),
           }),
         ) as FilterType
         const clonedForm = formToDeploy.clone()
@@ -400,7 +400,7 @@ describe('ticket form filter', () => {
         clonedElementSourceForm.value.ticket_field_ids = undefined
         filter = filterCreator(
           createFilterCreatorParams({
-            elementsSource: buildElementsSourceFromElements([clonedElementSourceForm, otherField, ticketStatusField]),
+            elementSource: buildElementsSourceFromElements([clonedElementSourceForm, otherField, ticketStatusField]),
           }),
         ) as FilterType
         const clonedForm = formToDeploy.clone()

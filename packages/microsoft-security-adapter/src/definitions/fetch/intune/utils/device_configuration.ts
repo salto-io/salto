@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,9 +9,11 @@
 import _ from 'lodash'
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../../shared/types'
-import { DEVICE_CONFIGURATION_TYPE_NAME } from '../../../../constants/intune'
+import { intuneConstants } from '../../../../constants'
 import { createStaticFileFromBase64Blob } from '../../shared/utils'
 import { NAME_ID_FIELD } from '../../shared/defaults'
+
+const { DEVICE_CONFIGURATION_TYPE_NAME } = intuneConstants.TOP_LEVEL_TYPES
 
 /**
  * Extracts the payload from the device configuration and creates a static file from it, if exists

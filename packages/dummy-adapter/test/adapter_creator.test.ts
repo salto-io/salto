@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -206,12 +206,11 @@ describe('adapter creator', () => {
         })
       })
       it('should init the local workspace', () => {
-        expect(mockedLocalWorkspace.initLocalWorkspace).toHaveBeenCalledWith(
-          'some_path',
-          'dummy',
-          [],
-          expect.any(Function),
-        )
+        expect(mockedLocalWorkspace.initLocalWorkspace).toHaveBeenCalledWith({
+          baseDir: 'some_path',
+          envName: 'dummy',
+          adapterCreators: expect.anything(),
+        })
       })
       it('should return no errors', () => {
         expect(initFolderResult.errors).toEqual([])

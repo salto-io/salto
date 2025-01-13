@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -8,7 +8,6 @@
 import {
   BuiltinTypes,
   Change,
-  createSaltoElementErrorFromError,
   DeployResult,
   Element,
   ElemID,
@@ -18,6 +17,7 @@ import {
   isInstanceElement,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { createSaltoElementErrorFromError } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -48,7 +48,7 @@ const alignNonRawWithRaw = (change: Change<InstanceElement>): void => {
   value.end_user_description = value.raw_end_user_description
 }
 
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
   name: 'customStatus',
   onFetch: async (elements: Element[]): Promise<void> => {
     const defaultCustomStatuses = elements
@@ -103,7 +103,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       change => CUSTOM_STATUS_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
     const customStatusesDeployResult = await deployChanges(customStatusChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions)
+      await deployChange(change, client, oldApiDefinitions)
     })
     const [defaultCustomStatusChanges, leftoverChanges] = _.partition(
       firstLeftoverChanges,

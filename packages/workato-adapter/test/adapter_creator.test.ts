@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -29,7 +29,7 @@ describe('adapter creator', () => {
     const config = adapter.configType as ObjectType
     expect(Object.keys(config?.fields)).toEqual(Object.keys(configType.fields))
   })
-  it('should use username+token as the basic auth method', () => {
+  it('should use username+token+baseUrl as the basic auth method', () => {
     expect(Object.keys(adapter.authenticationMethods.basic.credentialsType.fields)).toEqual(
       Object.keys(usernameTokenCredentialsType.fields),
     )

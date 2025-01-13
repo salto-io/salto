@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -92,16 +92,24 @@ const validateRequiredFieldsForLocation = (instance: InstanceElement): ChangeErr
 }
 
 const TYPE_TO_VALIDATION_RULES_ON_ADDITION: RequiredFieldsMap = {
-  [entraConstants.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME]: { custom: validateRequiredFieldsForLocation },
+  [entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME]: {
+    custom: validateRequiredFieldsForLocation,
+  },
   [entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME]: { fieldNames: [ODATA_TYPE_FIELD_NACL_CASE] },
-  [entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: { fieldNames: ['allowedCombinations'] },
-  [entraConstants.DIRECTORY_ROLE_TYPE_NAME]: { fieldNames: ['roleTemplateId'] },
-  [entraConstants.ROLE_DEFINITION_TYPE_NAME]: { fieldNames: ['displayName', 'rolePermissions', 'isBuiltIn'] },
-  [intuneConstants.DEVICE_COMPLIANCE_TYPE_NAME]: { fieldNames: [intuneConstants.SCHEDULED_ACTIONS_FIELD_NAME] },
+  [entraConstants.TOP_LEVEL_TYPES.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: { fieldNames: ['allowedCombinations'] },
+  [entraConstants.TOP_LEVEL_TYPES.DIRECTORY_ROLE_TYPE_NAME]: { fieldNames: ['roleTemplateId'] },
+  [entraConstants.TOP_LEVEL_TYPES.ROLE_DEFINITION_TYPE_NAME]: {
+    fieldNames: ['displayName', 'rolePermissions', 'isBuiltIn'],
+  },
+  [intuneConstants.TOP_LEVEL_TYPES.DEVICE_COMPLIANCE_TYPE_NAME]: {
+    fieldNames: [intuneConstants.SCHEDULED_ACTIONS_FIELD_NAME],
+  },
 }
 
 const TYPE_TO_VALIDATION_RULES_ON_MODIFICATION: RequiredFieldsMap = {
-  [entraConstants.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME]: { custom: validateRequiredFieldsForLocation },
+  [entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME]: {
+    custom: validateRequiredFieldsForLocation,
+  },
   [entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME]: { fieldNames: [ODATA_TYPE_FIELD_NACL_CASE] },
 }
 

@@ -1,16 +1,15 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
-import { createTemplateExpression } from '@salto-io/adapter-utils'
+import { PotentialReference, createTemplateExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { CallExpression, parse, SourceLocation, VariableDeclaration } from 'acorn'
 import { simple as walkSimple } from 'acorn-walk'
-import { PotentialReference } from './types'
 import { extractIdIfElementExists, findLineStartIndexes, sourceLocationToIndexRange } from './utils'
 
 const log = logger(module)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -38,14 +38,13 @@ import {
   TypeMap,
   TypeReference,
   Value,
-  Values,
 } from '@salto-io/adapter-api'
 import {
   buildElementsSourceFromElements,
   createSchemeGuard,
   detailedCompare,
+  ERROR_MESSAGES,
   getParents,
-  inspectValue,
   setAdditionalPropertiesAnnotation,
 } from '@salto-io/adapter-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
@@ -76,6 +75,7 @@ import {
   DEFAULT_VALUE_FORMULA,
   DefaultSoqlQueryLimits,
   EVENT_CUSTOM_OBJECT,
+  FETCH_TARGETS,
   FIELD_ANNOTATIONS,
   FIELD_DEPENDENCY_FIELDS,
   FLOW_METADATA_TYPE,
@@ -89,6 +89,7 @@ import {
   LAST_MODIFIED_DATE,
   LAYOUT_TYPE_ID_METADATA_TYPE,
   METADATA_TYPE,
+  METADATA_TYPES_FIELD,
   NAMESPACE_SEPARATOR,
   ORDERED_MAP_PREFIX,
   PATHS_FIELD,
@@ -119,7 +120,7 @@ import {
 import { Filter, FilterContext } from '../filter'
 import { createListMetadataObjectsConfigChange } from '../config_change'
 import { getFetchTargetsWithDependencies, SUPPORTED_METADATA_TYPES } from '../fetch_profile/metadata_types'
-import { FETCH_TARGETS_INSTANCE_ELEM_ID } from './fetch_targets'
+import { SalesforceFetchTargets } from './fetch_targets'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
@@ -154,6 +155,9 @@ export const isInstanceOfTypeChange =
 export const safeApiName = async (elem: Readonly<Element>, relative = false): Promise<string | undefined> =>
   apiName(elem, relative)
 
+/**
+ * @deprecated use {@link metadataTypeOrUndefined} instead.
+ */
 export const metadataTypeSync = (element: Readonly<Element>): string => {
   if (isInstanceElement(element)) {
     return metadataTypeSync(element.getTypeSync())
@@ -164,6 +168,19 @@ export const metadataTypeSync = (element: Readonly<Element>): string => {
   }
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
+
+export const metadataTypeOrUndefined = (element: Readonly<Element>): string | undefined => {
+  if (isInstanceElement(element)) {
+    return metadataTypeSync(element.getTypeSync())
+  }
+  if (isField(element)) {
+    // We expect to reach to this place only with field of CustomObject
+    return CUSTOM_FIELD
+  }
+  const metadataTypeAnnotation = element.annotations[METADATA_TYPE]
+  return _.isString(metadataTypeAnnotation) ? metadataTypeAnnotation : undefined
+}
+
 export const isCustomObjectSync = (element: Readonly<Element>): element is ObjectType => {
   const res =
     isObjectType(element) &&
@@ -206,9 +223,17 @@ export const isCustomMetadataRecordTypeSync = (elem: Element): elem is ObjectTyp
   return isObjectType(elem) && (elementApiName?.endsWith(CUSTOM_METADATA_SUFFIX) ?? false)
 }
 
+/**
+ * @deprecated use {@link isCustomMetadataRecordInstanceSync} instead.
+ */
 export const isCustomMetadataRecordInstance = async (instance: InstanceElement): Promise<boolean> => {
   const instanceType = await instance.getType()
   return isCustomMetadataRecordType(instanceType)
+}
+
+export const isCustomMetadataRecordInstanceSync = (instance: InstanceElement): boolean => {
+  const instanceType = instance.getTypeSync()
+  return isCustomMetadataRecordTypeSync(instanceType)
 }
 
 export const boolValue = (val: JSONBool): boolean => val === 'true' || val === true
@@ -449,6 +474,9 @@ export const getInternalId = (elem: Element): string =>
   isInstanceElement(elem) ? elem.value[INTERNAL_ID_FIELD] : elem.annotations[INTERNAL_ID_ANNOTATION]
 
 export const setInternalId = (elem: Element, val: string): void => {
+  if (val.length === 0) {
+    return
+  }
   if (isInstanceElement(elem)) {
     elem.value[INTERNAL_ID_FIELD] = val
   } else {
@@ -668,7 +696,7 @@ export const ensureSafeFilterFetch =
       return {
         errors: [
           {
-            message: warningMessage,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
             detailedMessage: warningMessage,
             severity: 'Warning',
           },
@@ -978,48 +1006,39 @@ export const getProfilesAndPermissionSetsBrokenPaths = async (
   return instance.value[PATHS_FIELD] ?? []
 }
 
-type CustomObjectsTargets = {
-  customObjects: readonly string[]
-  customObjectsLookups: Record<string, readonly string[]>
+type FetchTargetsInstance = InstanceElement & {
+  value: SalesforceFetchTargets
 }
-type SalesforceFetchTargets = {
-  metadataTypes: readonly string[]
-} & CustomObjectsTargets
 
 const isStringArray = (val: unknown): val is string[] => _.isArray(val) && val.every(_.isString)
 
-const isCustomObjectsTargets = (val: Values): val is CustomObjectsTargets =>
-  isStringArray(val[CUSTOM_OBJECTS_FIELD]) &&
-  _.isPlainObject(val[CUSTOM_OBJECTS_LOOKUPS_FIELD]) &&
-  Object.values(val[CUSTOM_OBJECTS_LOOKUPS_FIELD]).every(isStringArray)
+const isFetchTargetsInstance = (instance: InstanceElement): instance is FetchTargetsInstance =>
+  isStringArray(instance.value[METADATA_TYPES_FIELD]) &&
+  isStringArray(instance.value[CUSTOM_OBJECTS_FIELD]) &&
+  _.isPlainObject(instance.value[CUSTOM_OBJECTS_LOOKUPS_FIELD]) &&
+  Object.values(instance.value[CUSTOM_OBJECTS_LOOKUPS_FIELD]).every(isStringArray)
 
-export const getOrgFetchTargets = async (elementsSource: ReadOnlyElementsSource): Promise<SalesforceFetchTargets> => {
-  const orgSettings = await elementsSource.get(FETCH_TARGETS_INSTANCE_ELEM_ID)
-  if (!isInstanceElement(orgSettings)) {
-    log.warn('Expected org settings Instance to be in elements source. Fetch targets will only include metadata types')
-    return {
-      metadataTypes: SUPPORTED_METADATA_TYPES,
-      customObjects: [],
-      customObjectsLookups: {},
-    }
-  }
-  const orgSettingsValues = orgSettings.value
-  if (!isCustomObjectsTargets(orgSettingsValues)) {
+export const getAccountFetchTargets = async ({
+  elementsSource,
+  accountName,
+}: {
+  elementsSource: ReadOnlyElementsSource
+  accountName: string
+}): Promise<SalesforceFetchTargets> => {
+  const fetchTargetsElemID = new ElemID(accountName, FETCH_TARGETS, 'instance', ElemID.CONFIG_NAME)
+  const fetchTargetsInstance = await elementsSource.get(fetchTargetsElemID)
+  if (!isInstanceElement(fetchTargetsInstance) || !isFetchTargetsInstance(fetchTargetsInstance)) {
     log.warn(
-      'Failed to extract customObject fetch settings from OrganizationSettings instance. Fetch targets will only include Metadata types',
+      'FetchTargets instance %s is invalid or does not exist. Fetch targets will include a constant list of metadata types',
+      fetchTargetsElemID.getFullName(),
     )
-    log.trace('Singleton values are: %s', inspectValue(orgSettingsValues))
     return {
       metadataTypes: SUPPORTED_METADATA_TYPES,
       customObjects: [],
       customObjectsLookups: {},
     }
   }
-  return {
-    metadataTypes: SUPPORTED_METADATA_TYPES,
-    customObjects: orgSettingsValues[CUSTOM_OBJECTS_FIELD],
-    customObjectsLookups: orgSettingsValues[CUSTOM_OBJECTS_LOOKUPS_FIELD],
-  }
+  return fetchTargetsInstance.value
 }
 
 const getCustomObjectDependenciesRecursively = (
@@ -1046,15 +1065,15 @@ export const getMetadataIncludeFromFetchTargets = async (
 ): Promise<MetadataQueryParams[]> => {
   const targetsWithDependencies = getFetchTargetsWithDependencies(targets)
   const includeParams: MetadataQueryParams[] = []
-  const orgFetchTargets = await getOrgFetchTargets(elementsSource)
-  const orgCustomObjects = new Set(orgFetchTargets.customObjects)
+  const fetchTargets = await getAccountFetchTargets({ elementsSource, accountName: SALESFORCE })
+  const customObjects = new Set(fetchTargets.customObjects)
   const [customObjectTargets, metadataTypeTargets] = _.partition(targetsWithDependencies, target =>
-    orgCustomObjects.has(target),
+    customObjects.has(target),
   )
   const handledTypes = new Set<string>()
   const customObjectTargetsWithDependencies = _.uniq(
     customObjectTargets.flatMap(target =>
-      getCustomObjectDependenciesRecursively(target, orgFetchTargets.customObjectsLookups, handledTypes),
+      getCustomObjectDependenciesRecursively(target, fetchTargets.customObjectsLookups, handledTypes),
     ),
   )
   metadataTypeTargets.forEach(typeName => {

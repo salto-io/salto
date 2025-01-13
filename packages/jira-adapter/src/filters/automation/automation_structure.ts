@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -15,6 +15,7 @@ import {
   getChangeData,
   Change,
   isInstanceChange,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import {
   transformElement,
@@ -22,6 +23,7 @@ import {
   safeJsonStringify,
   createSchemeGuard,
   TransformFuncSync,
+  TransformFuncArgs,
 } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -35,9 +37,11 @@ import {
   AUTOMATION_COMPONENT_TYPE,
   AUTOMATION_COMPONENT_VALUE_TYPE,
   AUTOMATION_OPERATION,
+  JIRA,
 } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { getLookUpName } from '../../reference_mapping'
+import { getHTMLStaticFileName } from '../../utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -245,6 +249,30 @@ const createTransformHasAttachmentValueFunc =
     return value
   }
 
+const isHTMLBodyContentAutomationValue = ({ value }: TransformFuncArgs): boolean =>
+  _.isPlainObject(value) && value.mimeType === 'text/html'
+
+const extractHTMLContentToStaticFile =
+  (): TransformFuncSync =>
+  async ({ value, path }) => {
+    if (path !== undefined && isHTMLBodyContentAutomationValue({ value })) {
+      value.body = new StaticFile({
+        filepath: `${JIRA}/${AUTOMATION_TYPE}/${getHTMLStaticFileName(path)}.html`,
+        content: value.body,
+      })
+    }
+    return value
+  }
+
+const transformStaticFileBufferToHTML =
+  (): TransformFuncSync =>
+  async ({ value }) => {
+    if (isHTMLBodyContentAutomationValue({ value })) {
+      value.body = value.body.toString()
+    }
+    return value
+  }
+
 const revertCompareFieldValueStructure: TransformFuncSync = ({ value, field }) => {
   if (isCompareFieldValueObject(value) && field?.getTypeSync()?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE) {
     const { compareFieldValue } = value
@@ -366,6 +394,7 @@ const filter: FilterCreator = ({ client }) => {
             convertToCompareFieldValue,
             createTransformDeleteLinkTypesFunc(),
             createTransformHasAttachmentValueFunc(),
+            extractHTMLContentToStaticFile(),
           ])
           instance.value = (
             await transformElement({
@@ -402,6 +431,7 @@ const filter: FilterCreator = ({ client }) => {
               revertCompareFieldValueStructure,
               createTransformDeleteLinkTypesFunc(true),
               createTransformHasAttachmentValueFunc(true),
+              transformStaticFileBufferToHTML(),
             ])
             instance.value = (
               await transformElement({

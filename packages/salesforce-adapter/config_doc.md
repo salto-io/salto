@@ -95,8 +95,8 @@ salesforce {
     }
     data = {
       includeObjects = [
-        ".*SBQQ__CustomAction__c.*",
-        ".*PricebookEntry.*",
+        "SBQQ__CustomAction__c",
+        "PricebookEntry",
       ]
       saltoManagementFieldSettings = {
         defaultFieldName = "ManagedBySalto__c"
@@ -117,14 +117,14 @@ salesforce {
         ]
         overrides = [
           {
-            objectsRegex = ".*pricebookEntryName.*"
+            objectsRegex = "PricebookEntry"
             idFields = [
               "Pricebook2Id",
               "Name",
             ]
           },
           {
-            objectsRegex = ".*SBQQCustomActionName.*"
+            objectsRegex = "SBQQ__CustomAction__c"
             idFields = [
               "SBQQ__Location__c",
               "SBQQ__DisplayOrder__c",
@@ -141,13 +141,12 @@ salesforce {
 
 ## Configuration options
 
-| Name                                           | Default when undefined | Description                                                                       |
-| ---------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------- |
-| maxItemsInRetrieveRequest                      | 2500                   | Limits the max number of requested items a single retrieve request                |
-| [fetch](#fetch-configuration-options)          |                        | Fetch configuration                                                               |
-| [client](#client-configuration-options)        | {} (no overrides)      | Configuration relating to the client used to interact with salesforce             |
-| [validators](#validator-configuration-options) | {} (all enabled)       | Configuration for choosing which validators will be applied to deploy plans       |
-| enumFieldPermissions                           | true                   | Change the FieldPermission values to be enum instead of an Object with references |
+| Name                                           | Default when undefined | Description                                                                 |
+| ---------------------------------------------- | ---------------------- | --------------------------------------------------------------------------- |
+| maxItemsInRetrieveRequest                      | 2500                   | Limits the max number of requested items a single retrieve request          |
+| [fetch](#fetch-configuration-options)          |                        | Fetch configuration                                                         |
+| [client](#client-configuration-options)        | {} (no overrides)      | Configuration relating to the client used to interact with salesforce       |
+| [validators](#validator-configuration-options) | {} (all enabled)       | Configuration for choosing which validators will be applied to deploy plans |
 
 ## Fetch configuration options
 
@@ -329,54 +328,57 @@ For more details see the DeployOptions section in the [salesforce documentation 
 
 ## Validator Configuration Options
 
-| Name                         | Default when undefined | Description                                                                                |
-| ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
-| managedPackage               | true                   | Disallow changes to objects and fields that are part of a managed package                  |
-| picklistStandardField        | true                   | It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed |
-| customObjectInstances        | true                   | Validate permissions of creating / update data records                                     |
-| customFieldType              | true                   | Ensure the type given to a custom field is a valid type for custom fields                  |
-| standardFieldLabel           | true                   | Disallow changing a label of a standard field                                              |
-| mapKeys                      | true                   | Ensure proper structure of profiles before deploying                                       |
-| defaults_rules               | true                   | Check for default rules violations such as multiple defaults, no default etc.              |
-| picklistPromote              | true                   | Disallow promoting picklist value-set to global since it cannot be done with the API       |
-| dataCategoryGroup            | true                   | Warn when deploying additions or changes to DataCategoryGroup elements                     |
-| installedPackages            | true                   | Disallow any changes on metadata instances of type InstalledPackage.                       |
-| recordTypeDeletion           | true                   | Disallow deletion of recordType.                                                           |
-| flowsValidator               | true                   | Better flows versions management, mostly regarding the work with active flows.             |
-| cpqValidator                 | true                   | Disallow any CPQ changes before disabling CPQ trigger on SF org.                           |
-| fullNameChangedValidator     | true                   | Disallow any fullName property changes.                                                    |
-| invalidListViewFilterScope   | true                   | Disallow usage of some scopes as the 'filterScope' property of a ListView element.         |
-| caseAssignmentRulesValidator | true                   | Disallow deployment of case assignment rules with case teams.                              |
-| unknownUser                  | true                   | Disallow any changes with reference to non existing users in the target org.               |
-| animationRuleRecordType      | true                   | Disallow deployment of AnimationRule with invalid RecordType.                              |
-| currencyIsoCodes             | true                   | Disallow any changes that includes unsupported org currency.                               |
-| duplicateRulesSortOrder      | true                   | Disallow deployment of duplicate rule instances that are not in sequential order.          |
-| lastLayoutRemoval            | true                   | Disallow deletion of the last layout for custom objects.                                   |
-| accountSettings              | true                   | Cannot set a value for enableAccountOwnerReport without proper org setting.                |
-| unknownPicklistValues        | true                   | Disallow any usage of unknown pickList values.                                             |
-| customApplications           | true                   | Check for multiple action overrides for the same action in customApplications instances.   |
-| Name                         | Default when undefined | Description                                                                                |
-| ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
-| managedPackage               | true                   | Disallow changes to objects and fields that are part of a managed package                  |
-| picklistStandardField        | true                   | It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed |
-| customObjectInstances        | true                   | Validate permissions of creating / update data records                                     |
-| customFieldType              | true                   | Ensure the type given to a custom field is a valid type for custom fields                  |
-| standardFieldLabel           | true                   | Disallow changing a label of a standard field                                              |
-| mapKeys                      | true                   | Ensure proper structure of profiles before deploying                                       |
-| defaultsRules                | true                   | Check for default rules violations such as multiple defaults, no default etc.              |
-| picklistPromote              | true                   | Disallow promoting picklist value-set to global since it cannot be done with the API       |
-| dataCategoryGroup            | true                   | Warn when deploying additions or changes to DataCategoryGroup elements                     |
-| installedPackages            | true                   | Disallow any changes on metadata instances of type InstalledPackage.                       |
-| recordTypeDeletion           | true                   | Disallow deletion of recordType.                                                           |
-| flowsValidator               | true                   | Better flows versions management, mostly regarding the work with active flows.             |
-| cpqValidator                 | true                   | Disallow any CPQ changes before disabling CPQ trigger on SF org.                           |
-| fullNameChangedValidator     | true                   | Disallow any fullName property changes.                                                    |
-| invalidListViewFilterScope   | true                   | Disallow usage of some scopes as the 'filterScope' property of a ListView element.         |
-| caseAssignmentRulesValidator | true                   | Disallow deployment of case assignment rules with case teams.                              |
-| unknownUser                  | true                   | Disallow any changes with reference to non existing users in the target org.               |
-| animationRuleRecordType      | true                   | Disallow deployment of AnimationRule with invalid RecordType.                              |
-| currencyIsoCodes             | true                   | Disallow any changes that includes unsupported org currency.                               |
-| duplicateRulesSortOrder      | true                   | Disallow deployment of duplicate rule instances that are not in sequential order.          |
-| lastLayoutRemoval            | true                   | Disallow deletion of the last layout for custom objects.                                   |
-| accountSettings              | true                   | Cannot set a value for enableAccountOwnerReport without proper org setting.                |
-| unknownPicklistValues        | true                   | Disallow any usage of unknown pickList values.                                             |
+| Name                           | Default when undefined | Description                                                                                |
+| ------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
+| managedPackage                 | true                   | Disallow changes to objects and fields that are part of a managed package                  |
+| picklistStandardField          | true                   | It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed |
+| customObjectInstances          | true                   | Validate permissions of creating / update data records                                     |
+| customFieldType                | true                   | Ensure the type given to a custom field is a valid type for custom fields                  |
+| standardFieldLabel             | true                   | Disallow changing a label of a standard field                                              |
+| mapKeys                        | true                   | Ensure proper structure of profiles before deploying                                       |
+| defaults_rules                 | true                   | Check for default rules violations such as multiple defaults, no default etc.              |
+| package_version                | true                   | Check if the deployed instance's package-version is the same as the target environment     |
+| picklistPromote                | true                   | Disallow promoting picklist value-set to global since it cannot be done with the API       |
+| dataCategoryGroup              | true                   | Warn when deploying additions or changes to DataCategoryGroup elements                     |
+| installedPackages              | true                   | Disallow any changes on metadata instances of type InstalledPackage.                       |
+| recordTypeDeletion             | true                   | Disallow deletion of recordType.                                                           |
+| flowsValidator                 | true                   | Better flows versions management, mostly regarding the work with active flows.             |
+| cpqValidator                   | true                   | Disallow any CPQ changes before disabling CPQ trigger on SF org.                           |
+| fullNameChangedValidator       | true                   | Disallow any fullName property changes.                                                    |
+| invalidListViewFilterScope     | true                   | Disallow usage of some scopes as the 'filterScope' property of a ListView element.         |
+| caseAssignmentRulesValidator   | true                   | Disallow deployment of case assignment rules with case teams.                              |
+| unknownUser                    | true                   | Disallow any changes with reference to non existing users in the target org.               |
+| animationRuleRecordType        | true                   | Disallow deployment of AnimationRule with invalid RecordType.                              |
+| currencyIsoCodes               | true                   | Disallow any changes that includes unsupported org currency.                               |
+| duplicateRulesSortOrder        | true                   | Disallow deployment of duplicate rule instances that are not in sequential order.          |
+| lastLayoutRemoval              | true                   | Disallow deletion of the last layout for custom objects.                                   |
+| accountSettings                | true                   | Cannot set a value for enableAccountOwnerReport without proper org setting.                |
+| unknownPicklistValues          | true                   | Disallow any usage of unknown pickList values.                                             |
+| customApplications             | true                   | Check for multiple action overrides for the same action in customApplications instances.   |
+| Name                           | Default when undefined | Description                                                                                |
+| ----------------------------   | ---------------------- | ------------------------------------------------------------------------------------------ |
+| managedPackage                 | true                   | Disallow changes to objects and fields that are part of a managed package                  |
+| picklistStandardField          | true                   | It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed |
+| customObjectInstances          | true                   | Validate permissions of creating / update data records                                     |
+| customFieldType                | true                   | Ensure the type given to a custom field is a valid type for custom fields                  |
+| standardFieldLabel             | true                   | Disallow changing a label of a standard field                                              |
+| mapKeys                        | true                   | Ensure proper structure of profiles before deploying                                       |
+| defaultsRules                  | true                   | Check for default rules violations such as multiple defaults, no default etc.              |
+| picklistPromote                | true                   | Disallow promoting picklist value-set to global since it cannot be done with the API       |
+| dataCategoryGroup              | true                   | Warn when deploying additions or changes to DataCategoryGroup elements                     |
+| installedPackages              | true                   | Disallow any changes on metadata instances of type InstalledPackage.                       |
+| recordTypeDeletion             | true                   | Disallow deletion of recordType.                                                           |
+| flowsValidator                 | true                   | Better flows versions management, mostly regarding the work with active flows.             |
+| cpqValidator                   | true                   | Disallow any CPQ changes before disabling CPQ trigger on SF org.                           |
+| fullNameChangedValidator       | true                   | Disallow any fullName property changes.                                                    |
+| invalidListViewFilterScope     | true                   | Disallow usage of some scopes as the 'filterScope' property of a ListView element.         |
+| caseAssignmentRulesValidator   | true                   | Disallow deployment of case assignment rules with case teams.                              |
+| unknownUser                    | true                   | Disallow any changes with reference to non existing users in the target org.               |
+| animationRuleRecordType        | true                   | Disallow deployment of AnimationRule with invalid RecordType.                              |
+| currencyIsoCodes               | true                   | Disallow any changes that includes unsupported org currency.                               |
+| duplicateRulesSortOrder        | true                   | Disallow deployment of duplicate rule instances that are not in sequential order.          |
+| lastLayoutRemoval              | true                   | Disallow deletion of the last layout for custom objects.                                   |
+| accountSettings                | true                   | Cannot set a value for enableAccountOwnerReport without proper org setting.                |
+| unknownPicklistValues          | true                   | Disallow any usage of unknown pickList values.                                             |
+| flowReferencedElements         | true                   | Check that the referenced elements in Flow exist.                                          |
+| flexiPageUnusedOrMissingFacets | true                   | Check that all facets are referenced, and referenced facets exist, in FlexiPage .          |

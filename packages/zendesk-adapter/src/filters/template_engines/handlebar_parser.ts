@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -15,10 +15,9 @@ import {
   SubExpression,
 } from '@handlebars/parser/types/ast'
 import { InstanceElement, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
-import { createTemplateExpression } from '@salto-io/adapter-utils'
+import { PotentialReference, createTemplateExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
-import { PotentialReference } from './types'
 import { findLineStartIndexes, sourceLocationToIndexRange } from './utils'
 
 const log = logger(module)

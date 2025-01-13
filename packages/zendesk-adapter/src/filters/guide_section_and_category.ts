@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -110,7 +110,7 @@ export const addRemovalChangesId = (changes: Change<InstanceElement>[]): void =>
  * discards the 'name' and 'description' fields from the section again.
  * Additionally, this filter sends a separate request when `source_locale` is modified
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
   name: 'guideSectionCategoryFilter',
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
@@ -135,7 +135,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
       }
 
-      await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
+      await deployChange(change, client, oldApiDefinitions, fieldsToIgnore)
     })
     return { deployResult, leftoverChanges }
   },

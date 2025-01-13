@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -14,6 +14,7 @@ import {
   isInstanceElement,
   isObjectType,
 } from '@salto-io/adapter-api'
+import { ERROR_MESSAGES } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -282,6 +283,6 @@ export const getDeletedElements = async ({
   } catch (e) {
     const errorMessage = 'Failed calculating deleted elements'
     log.error(`${errorMessage}: %o`, e)
-    return { errors: [{ message: errorMessage, detailedMessage: errorMessage, severity: 'Error' }] }
+    return { errors: [{ message: ERROR_MESSAGES.OTHER_ISSUES, detailedMessage: errorMessage, severity: 'Error' }] }
   }
 }

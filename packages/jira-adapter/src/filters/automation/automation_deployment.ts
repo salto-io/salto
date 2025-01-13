@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -151,14 +151,13 @@ const generateRuleScopesResources = (instance: InstanceElement, cloudId: string)
   })
 }
 
-const generateRuleScopes = (
-  instance: InstanceElement,
-  cloudId: string | undefined,
-): {
+type RuleScope = {
   ruleScope?: {
     resources: string[]
   }
-} =>
+}
+
+const generateRuleScopes = (instance: InstanceElement, cloudId: string | undefined): RuleScope =>
   cloudId !== undefined
     ? {
         ruleScope: {
@@ -166,6 +165,12 @@ const generateRuleScopes = (
         },
       }
     : {}
+
+const updateTriggerEventFilters = (instance: InstanceElement, cloudId: string | undefined): void => {
+  if (cloudId !== undefined && instance.value.trigger?.value !== undefined) {
+    instance.value.trigger.value.eventFilters = generateRuleScopesResources(instance, cloudId)
+  }
+}
 
 const getUrlPrefix = (cloudId: string | undefined): string =>
   cloudId === undefined
@@ -212,15 +217,24 @@ const awaitSuccessfulImport = async ({
   })
 }
 
+const createAutomationDeploymentInstances = async (
+  instance: InstanceElement,
+  cloudId: string | undefined,
+): Promise<{ resolvedInstance: InstanceElement; ruleScopes: RuleScope }> => {
+  const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
+  // we are currently doing this for all triggers, even though some do not require it. We know create issue and modify issue do, and delete issue does not.
+  updateTriggerEventFilters(resolvedInstance, cloudId)
+  const ruleScopes = generateRuleScopes(resolvedInstance, cloudId)
+  return { resolvedInstance, ruleScopes }
+}
+
 const importAutomation = async (
   instance: InstanceElement,
   client: JiraClient,
   cloudId: string | undefined,
   config: JiraConfig,
 ): Promise<boolean> => {
-  const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
-
-  const ruleScopes = generateRuleScopes(resolvedInstance, cloudId)
+  const { resolvedInstance, ruleScopes } = await createAutomationDeploymentInstances(instance, cloudId)
 
   const data = {
     rules: [
@@ -425,9 +439,7 @@ const updateAutomation = async (
   client: JiraClient,
   cloudId: string | undefined,
 ): Promise<void> => {
-  const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
-
-  const ruleScopes = generateRuleScopes(resolvedInstance, cloudId)
+  const { resolvedInstance, ruleScopes } = await createAutomationDeploymentInstances(instance, cloudId)
 
   const data = !client.isDataCenter
     ? {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -18,7 +18,12 @@ import {
   AdapterFormat,
   Change,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, inspectValue, getDetailedChanges } from '@salto-io/adapter-utils'
+import {
+  createDefaultInstanceFromType,
+  inspectValue,
+  getDetailedChanges,
+  ERROR_MESSAGES,
+} from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { initLocalWorkspace, loadLocalWorkspace } from '@salto-io/local-workspace'
 import { logger } from '@salto-io/logging'
@@ -65,12 +70,23 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
+const slimAdapter: Adapter = {
+  operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
+  validateCredentials: async () => ({ accountId: '' }),
+  authenticationMethods: {
+    basic: {
+      credentialsType: new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER) }),
+    },
+  },
+}
+
+const adapterCreators = { dummy: slimAdapter }
+
 const loadWorkspace = async ({ baseDir, persistent }: { baseDir: string; persistent: boolean }): Promise<Workspace> =>
   loadLocalWorkspace({
     path: baseDir,
     persistent,
-    getConfigTypes: async () => [],
-    getCustomReferences: async elements => getCustomReferences(elements),
+    adapterCreators,
   })
 
 const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir }) => {
@@ -85,7 +101,7 @@ const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({
       errors: [
         {
           severity: 'Error',
-          message: 'Failed loadElementsFromFolder in Dummy project',
+          message: ERROR_MESSAGES.OTHER_ISSUES,
           detailedMessage: inspectValue(error),
         },
       ],
@@ -127,7 +143,11 @@ const dumpElementsToFolder: AdapterFormat['dumpElementsToFolder'] = async ({ bas
 const initFolder: AdapterFormat['initFolder'] = async ({ baseDir }) => {
   let workspace: Workspace | undefined
   try {
-    workspace = await initLocalWorkspace(baseDir, 'dummy', [], async () => [])
+    workspace = await initLocalWorkspace({
+      baseDir,
+      envName: 'dummy',
+      adapterCreators,
+    })
     return {
       errors: [],
     }

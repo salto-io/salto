@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -12,7 +12,6 @@ import {
   BuiltinTypes,
   Change,
   CORE_ANNOTATIONS,
-  createSaltoElementError,
   ElemID,
   getChangeData,
   InstanceElement,
@@ -32,6 +31,8 @@ import {
   pathNaclCase,
   references,
   inspectValue,
+  createSaltoElementError,
+  ERROR_MESSAGES,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils, fetch as fetchUtils, resolveChangeElement } from '@salto-io/adapter-components'
@@ -176,15 +177,12 @@ const createAttachmentType = (): ObjectType =>
     path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, MACRO_ATTACHMENT_TYPE_NAME],
   })
 
-const getAttachmentError = (attachment: Attachment, attachmentInstance: InstanceElement): SaltoElementError => {
-  const message = `could not add content to attachment ${attachment.filename} with id ${attachment.id}`
-  return {
-    message,
-    detailedMessage: message,
-    severity: 'Warning',
-    elemID: attachmentInstance.elemID,
-  }
-}
+const getAttachmentError = (attachment: Attachment, attachmentInstance: InstanceElement): SaltoElementError => ({
+  message: ERROR_MESSAGES.OTHER_ISSUES,
+  detailedMessage: `could not add content to attachment ${attachment.filename} with id ${attachment.id}`,
+  severity: 'Warning',
+  elemID: attachmentInstance.elemID,
+})
 
 const getAttachmentContent = async ({
   client,
@@ -256,7 +254,7 @@ const getMacroAttachments = async ({
 /**
  * Adds the macro attachments instances
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'macroAttachmentsFilter',
   onFetch: async elements => {
     const macrosWithAttachments = elements
@@ -327,7 +325,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       const response = await addAttachment(client, instance)
       addId({
         change,
-        apiDefinitions: config.apiDefinitions,
+        apiDefinitions: oldApiDefinitions,
         response: response.data,
         dataField: MACRO_ATTACHMENT_DATA_FIELD,
         addAlsoOnModification: true,
@@ -364,7 +362,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         .map(change => resolveChangeElement(change, lookupFunc))
         .toArray()
       const macroDeployResult = await deployChanges(resolvedParentChanges, async change => {
-        await deployChange(change, client, config.apiDefinitions)
+        await deployChange(change, client, oldApiDefinitions)
       })
       return {
         deployResult: {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -10,6 +10,7 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, SaltoError } from '@salto-io
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from './utils'
+import { ERROR_MESSAGES } from './errors'
 
 const { groupByAsync } = collections.asynciterable
 const log = logger(module)
@@ -119,18 +120,25 @@ ${getInstancesDetailsMsg(instanceDetails, baseUrl, maxBreakdownDetailsElements)}
   return collisionMessages
 }
 
-const createMarkdownLinkOrText = ({ text, url }: { text: string; url?: string }): string =>
-  url !== undefined ? `[${text}](${url})` : text
+const getTextWithLinkToService = ({
+  instanceName,
+  adapterName,
+  url,
+}: {
+  instanceName: string
+  adapterName: string
+  url?: string
+}): string => (url !== undefined ? `${instanceName} - open in ${adapterName}: ${url}` : instanceName)
 
-const getInstancesMarkdownLinks = (instances: InstanceElement[]): string =>
-  instances
-    .map(instance =>
-      createMarkdownLinkOrText({
-        text: instance.annotations[CORE_ANNOTATIONS.ALIAS] ?? instance.elemID.name,
-        url: instance.annotations[CORE_ANNOTATIONS.SERVICE_URL],
-      }),
-    )
-    .join(', ')
+const getInstancesWithLinksToService = (instances: InstanceElement[], adapterName: string): string =>
+  instances.map(instance =>
+    getTextWithLinkToService({
+      instanceName: instance.annotations[CORE_ANNOTATIONS.ALIAS] ?? instance.elemID.name,
+      adapterName,
+      url: instance.annotations[CORE_ANNOTATIONS.SERVICE_URL],
+    }),
+  ).join(`,
+`)
 
 const createWarningMessages = ({
   elemIDtoInstances,
@@ -146,24 +154,25 @@ const createWarningMessages = ({
       elemId,
       collideInstances,
     ]) => `${collideInstances.length} ${adapterName} elements ${addChildrenMessage ? 'and their child elements ' : ''}were not fetched, as they were mapped to a single ID ${elemId}:
-${getInstancesMarkdownLinks(collideInstances)}
+${getInstancesWithLinksToService(collideInstances, adapterName)}.
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-${createMarkdownLinkOrText({ text: 'Learn about additional ways to resolve this issue', url: 'https://help.salto.io/en/articles/6927157-salto-id-collisions' })}`,
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`,
   )
 
 // after SALTO-7088 is done, this function will replace getAndLogCollisionWarnings
 export const getCollisionWarnings = ({
   instances,
+  adapterName,
   addChildrenMessage,
 }: {
   instances: InstanceElement[]
+  adapterName: string
   addChildrenMessage?: boolean
 }): SaltoError[] => {
   if (instances.length === 0) {
     return []
   }
-  const adapterName = instances[0].elemID.adapter
   const elemIDtoInstances = _.pickBy(
     _.groupBy(instances, instance => instance.elemID.getFullName()),
     collideInstances => collideInstances.length > 1,
@@ -175,7 +184,7 @@ export const getCollisionWarnings = ({
   })
   return warningMessages.map(warningMessage =>
     createWarningFromMsg({
-      message: 'Some elements were not fetched due to Salto ID collisions',
+      message: ERROR_MESSAGES.ID_COLLISION,
       detailedMessage: warningMessage,
     }),
   )
@@ -236,7 +245,7 @@ Alternatively, you can exclude ${type} from the ${configurationName} configurati
           ? ['', `And ${elemIDCount - maxBreakdownElements} more colliding Salto IDs`]
           : []
       const linkToDocsMsg = docsUrl ? ['', `Learn more at: ${docsUrl}`] : []
-      const message = [
+      const detailedMessage = [
         header,
         '',
         collisionsHeader,
@@ -248,8 +257,8 @@ Alternatively, you can exclude ${type} from the ${configurationName} configurati
       ].join('\n')
 
       return createWarningFromMsg({
-        message,
-        detailedMessage: message,
+        message: ERROR_MESSAGES.ID_COLLISION,
+        detailedMessage,
       })
     }),
   )

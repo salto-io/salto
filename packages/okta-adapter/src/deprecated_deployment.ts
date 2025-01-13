@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -18,7 +18,6 @@ import {
   isEqualValues,
   AdditionChange,
   ElemID,
-  createSaltoElementError,
   isSaltoError,
   SaltoError,
   isRemovalChange,
@@ -30,7 +29,7 @@ import {
   client as clientUtils,
   fetch as fetchUtils,
 } from '@salto-io/adapter-components'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, createSaltoElementError } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { promises } from '@salto-io/lowerdash'
 import { ACTIVE_STATUS, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME } from './constants'

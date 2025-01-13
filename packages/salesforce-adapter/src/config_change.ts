@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -64,6 +64,12 @@ export const createManyInstancesExcludeConfigChange = ({
     value: typeName,
     reason,
   }
+}
+
+export const bigObjectExcludeConfigChange: ConfigChangeSuggestion = {
+  type: 'dataObjectsExclude',
+  value: `.*${constants.SALESFORCE_BIG_OBJECT_SUFFIX}`,
+  reason: `Cannot manage instances of Big Objects (ending with ${constants.SALESFORCE_BIG_OBJECT_SUFFIX})`,
 }
 
 export const createInvalidIdFieldConfigChange = (

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -19,6 +19,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import { isCustomRecordType, isStandardType, hasInternalId } from '../types'
 import { NetsuiteChangeValidator } from './types'
 import { isSupportedInstance } from '../filters/internal_ids/sdf_internal_ids'
+import { IS_LOCKED } from '../constants'
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
@@ -44,7 +45,7 @@ const validateRemovableChange = async (
         detailedMessage: `Can't remove this ${element.elemID.typeName}. Try fetching and deploying again, or remove it in Netsuite UI`,
       }
     }
-  } else if (isObjectType(element) && isCustomRecordType(element)) {
+  } else if (isObjectType(element) && isCustomRecordType(element) && !element.annotations[IS_LOCKED]) {
     if (!hasInternalId(element)) {
       return {
         elemID: element.elemID,

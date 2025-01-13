@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -78,7 +78,7 @@ import {
 } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
-import { FIELD_TYPE_NAME } from './filters/fields/constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_TYPE_NAME } from './filters/fields/constants'
 import {
   gadgetValuesContextFunc,
   gadgetValueSerialize,
@@ -1306,6 +1306,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: FIELD_TYPE_NAME },
   },
   {
+    src: { field: 'value', parentTypes: ['CIds'] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_CONTEXT_OPTION_TYPE_NAME },
+  },
+  {
     src: { field: 'parentObjectTypeId', parentTypes: [OBJECT_TYPE_TYPE] },
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',
@@ -1347,6 +1352,16 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     missingRefStrategy: 'typeAndValue',
     target: { type: OBJECT_TYPE_TYPE },
   },
+  // target is empty because this rule is only for resolving
+  {
+    src: { field: 'attributesIncludedInAutoCompleteSearch', parentTypes: ['AssetsObjectFieldConfiguration'] },
+    serializationStrategy: 'name',
+  },
+  // target is empty because this rule is only for resolving
+  {
+    src: { field: 'attributesDisplayedOnIssue', parentTypes: ['AssetsObjectFieldConfiguration'] },
+    serializationStrategy: 'name',
+  },
   {
     src: { field: 'schemaId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
@@ -1358,17 +1373,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',
     target: { type: OBJECT_SCHEMA_TYPE },
-  },
-  {
-    src: { field: 'attributesIncludedInAutoCompleteSearch', parentTypes: ['AssetsObjectFieldConfiguration'] },
-    serializationStrategy: 'name',
-    target: { type: OBJECT_TYPE_ATTRIBUTE_TYPE },
-  },
-  {
-    src: { field: 'attributesDisplayedOnIssue', parentTypes: ['AssetsObjectFieldConfiguration'] },
-    serializationStrategy: 'name',
-    missingRefStrategy: 'typeAndValue',
-    target: { type: OBJECT_TYPE_ATTRIBUTE_TYPE },
   },
   {
     src: { field: 'requestType', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
@@ -1426,8 +1430,19 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
 ]
 
+/* Due to changes in the form structure during preDeploy and the resolution of references occurring during deploy,
+ * the resolved reference definitions are unavailable. As a result, we need to explicitly specify the serialization strategy.
+ */
+export const getConditionsLookUpName: GetLookupNameFunc = ({ ref, path }) => {
+  if (path !== undefined && path.typeName === 'Form' && path.getFullName().includes('cIds')) {
+    return ref.value.value.id
+  }
+  return ref
+}
+
 const lookupNameFuncs: GetLookupNameFunc[] = [
   getFieldsLookUpName,
+  getConditionsLookUpName,
   // The second param is needed to resolve references by serializationStrategy
   referenceUtils.generateLookupFunc(referencesRules, defs => new JiraFieldReferenceResolver(defs)),
 ]

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -27,12 +27,13 @@ import { listValuesMissingReferencesOnFetch } from '../filters/references/list_v
 import { handleTemplateExpressionsOnFetch } from '../filters/handle_template_expressions'
 import { dynamicContentReferencesOnFetch } from '../filters/dynamic_content_references'
 import { articleBodyOnFetch, templateExpressionIdentity } from '../filters/article/article_body'
-import { FETCH_CONFIG, ZendeskConfig } from '../config'
+import { FETCH_CONFIG } from '../config'
+import { ZendeskUserConfig } from '../user_config'
 
 const { isDefined } = lowerDashValues
 const { awu } = collections.asynciterable
 
-const MISSING_REFERENCE_FETCH_FILTERS: ((elements: Element[], config: ZendeskConfig) => void)[] = [
+const MISSING_REFERENCE_FETCH_FILTERS: ((elements: Element[], config: ZendeskUserConfig) => void)[] = [
   sideConversationsOnFetch,
   fieldReferencesOnFetch,
   listValuesMissingReferencesOnFetch,
@@ -54,7 +55,7 @@ const createMissingRefString = (path: ElemID, value: ReferenceExpression): strin
  * If enableMissingReferences is false, check for potential missing references in the changes and warn about them
  */
 export const notEnabledMissingReferencesValidator =
-  (config: ZendeskConfig): ChangeValidator =>
+  (config: ZendeskUserConfig): ChangeValidator =>
   async changes => {
     if (config[FETCH_CONFIG].enableMissingReferences) {
       return []

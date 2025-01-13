@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -125,6 +125,9 @@ const createNewInstance = async (
     element: currentInstance,
     transformFunc: createReferencesTransformFunc(currentInstance.elemID, newElemId),
     strict: false,
+    // We don't want to update the element, so we are permissive with the allowEmptyArrays and allowEmptyObjects
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
   })
   return new InstanceElement(
     newElemId.name,

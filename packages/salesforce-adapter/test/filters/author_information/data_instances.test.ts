@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -13,7 +13,7 @@ import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
 import SalesforceClient from '../../../src/client/client'
 import { Filter, FilterResult } from '../../../src/filter'
-import dataInstances, { WARNING_MESSAGE } from '../../../src/filters/author_information/data_instances'
+import dataInstances from '../../../src/filters/author_information/data_instances'
 import { defaultFilterContext } from '../../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE } from '../../../src/constants'
 
@@ -82,8 +82,9 @@ describe('data instances author information test', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: WARNING_MESSAGE,
-        detailedMessage: WARNING_MESSAGE,
+        message: 'Other issues',
+        detailedMessage:
+          'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.',
       })
     })
   })

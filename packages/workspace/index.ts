@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -71,8 +71,13 @@ import { State } from './src/workspace/state'
 import { PathIndex, splitElementByPath, getElementsPathHints, filterByPathHint } from './src/workspace/path_index'
 import { createPathIndexForElement } from './src/path_index_fallbacks'
 import { ReferenceIndexEntry } from './src/workspace/reference_indexes'
+import { getAdapterConfigsPerAccount, getAdaptersConfigTypesMap } from './src/workspace/adapters_config_source'
+import { ValidationError } from './src/validator'
 
 export {
+  ValidationError,
+  getAdaptersConfigTypesMap,
+  getAdapterConfigsPerAccount,
   errors,
   hiddenValues,
   serialization,

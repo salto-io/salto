@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -277,7 +277,7 @@ describe('article filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    const elementsSource = buildElementsSourceFromElements([
+    const elementSource = buildElementsSourceFromElements([
       userSegmentType,
       everyoneUserSegmentInstance,
       notInlineArticleAttachmentInstance,
@@ -286,7 +286,7 @@ describe('article filter', () => {
     filter = filterCreator(
       createFilterCreatorParams({
         client,
-        elementsSource,
+        elementSource,
         brandIdToClient,
         config: {
           ...DEFAULT_CONFIG,
@@ -410,7 +410,8 @@ describe('article filter', () => {
       expect(errors).toMatchObject({
         errors: [
           {
-            message: `could not add attachment ${clonedAttachment.elemID.getFullName()}, as could not find article for article_id ${clonedAttachment.value.article_id}`,
+            message: 'Other issues',
+            detailedMessage: `could not add attachment ${clonedAttachment.elemID.getFullName()}, as could not find article for article_id ${clonedAttachment.value.article_id}`,
             severity: 'Warning',
             elemID: clonedAttachment.elemID,
           },
@@ -427,7 +428,8 @@ describe('article filter', () => {
       expect(errors).toMatchObject({
         errors: [
           {
-            message: `Failed to get attachment content for attachment ${clonedAttachment.elemID.getFullName()}`,
+            message: 'Other issues',
+            detailedMessage: `Failed to get attachment content for attachment ${clonedAttachment.elemID.getFullName()}`,
             severity: 'Warning',
             elemID: clonedAttachment.elemID,
           },
@@ -442,7 +444,8 @@ describe('article filter', () => {
       expect(errors).toMatchObject({
         errors: [
           {
-            message: `Received invalid content response from Zendesk API for attachment ${clonedAttachment.elemID.getFullName()}`,
+            message: 'Other issues',
+            detailedMessage: `Received invalid content response from Zendesk API for attachment ${clonedAttachment.elemID.getFullName()}`,
             severity: 'Warning',
             elemID: clonedAttachment.elemID,
           },

@@ -1,23 +1,20 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import {
-  Change,
-  ElemID,
-  getChangeData,
-  isInstanceChange,
-  isInstanceElement,
-  isModificationChange,
-} from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { Change, ElemID, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { CONFIG_FEATURES, SCRIPT_ID } from '../constants'
+import { DeployResult, getElementValueOrAnnotations } from '../types'
 import { DeployableChange } from './types'
-import { getGroupItemFromRegex } from './utils'
+import { getGroupItemFromRegex, toElementError } from './utils'
 import { OBJECT_ID } from './language_utils'
+
+const log = logger(module)
 
 type Message = {
   message: string
@@ -26,12 +23,30 @@ type Message = {
 type MessageAndElemID = Message & { elemID: ElemID }
 type MessageAndScriptId = Message & { scriptId: string }
 
+export class PartialSuccessDeployErrors extends Error {
+  errors: Error[]
+  constructor(message: string, errors: Error[]) {
+    super(message)
+    this.errors = errors
+    this.name = 'PartialSuccessDeployErrors'
+  }
+}
+
 export class FeaturesDeployError extends Error {
   ids: string[]
   constructor(message: string, ids: string[]) {
     super(message)
     this.ids = ids
     this.name = 'FeaturesDeployError'
+  }
+}
+
+export class DeployWarning extends Error {
+  objectId: string
+  constructor(objectId: string, message: string) {
+    super(message)
+    this.objectId = objectId
+    this.name = 'DeployWarning'
   }
 }
 
@@ -79,7 +94,7 @@ export const getFailedObjects = (messages: string[], ...regexes: RegExp[]): Mess
 export const getFailedObjectsMap = (messages: string[], ...regexes: RegExp[]): Map<string, MessageAndScriptId[]> =>
   new Map(Object.entries(_.groupBy(getFailedObjects(messages, ...regexes), obj => obj.scriptId)))
 
-export const toFeaturesDeployPartialSuccessResult = (error: FeaturesDeployError, changes: Change[]): Change[] => {
+const toFeaturesDeployPartialSuccessResult = (error: FeaturesDeployError, changes: Change[]): Change[] => {
   // this case happens when all changes where deployed successfully,
   // except of some features in config_features
   const [[featuresChange], successfullyDeployedChanges] = _.partition(
@@ -108,6 +123,48 @@ export const toFeaturesDeployPartialSuccessResult = (error: FeaturesDeployError,
   return successfullyDeployedChanges
 }
 
+export const toPartialSuccessDeployResult = (
+  partialSuccessDeployError: PartialSuccessDeployErrors,
+  baseDeployResult: DeployResult,
+): DeployResult =>
+  partialSuccessDeployError.errors.reduce((deployResult, error) => {
+    const { errors, appliedChanges } = deployResult
+    const { message } = error
+    if (error instanceof FeaturesDeployError) {
+      const featuresError = appliedChanges
+        .filter(isInstanceChange)
+        .map(getChangeData)
+        .filter(inst => inst.elemID.typeName === CONFIG_FEATURES)
+        .map(({ elemID }) => toElementError({ elemID, message, detailedMessage: message }))
+
+      return {
+        errors: errors.concat(featuresError),
+        appliedChanges: toFeaturesDeployPartialSuccessResult(error, appliedChanges),
+        failedFeaturesIds: error.ids,
+      }
+    }
+    if (error instanceof DeployWarning) {
+      const element = appliedChanges
+        .map(getChangeData)
+        .find(elem => getElementValueOrAnnotations(elem)[SCRIPT_ID] === error.objectId)
+      if (element === undefined) {
+        log.warn('missing objectId %s in appliedChanges - ignoring error: %s', error.objectId, error.message)
+        return deployResult
+      }
+      return {
+        ...deployResult,
+        errors: errors.concat({
+          elemID: element.elemID,
+          message,
+          detailedMessage: message,
+          severity: 'Warning',
+        }),
+      }
+    }
+    log.error('unknown partial deploy error: %o', error)
+    return deployResult
+  }, baseDeployResult)
+
 const getFailedManifestErrorElemIds = (
   error: ManifestValidationError,
   dependencyMap: Map<string, Set<string>>,
@@ -122,9 +179,7 @@ const getFailedManifestErrorElemIds = (
 
 const getFailedSdfDeployChangesElemIDs = (error: ObjectsDeployError, changes: DeployableChange[]): MessageAndElemID[] =>
   changes.map(getChangeData).flatMap(elem => {
-    const failedObjectErrors = isInstanceElement(elem)
-      ? error.failedObjects.get(elem.value[SCRIPT_ID])
-      : error.failedObjects.get(elem.annotations[SCRIPT_ID])
+    const failedObjectErrors = error.failedObjects.get(getElementValueOrAnnotations(elem)[SCRIPT_ID])
     return failedObjectErrors?.map(({ message }) => ({ elemID: elem.elemID, message })) ?? []
   })
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,6 +9,7 @@ import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
 import { getChangeData, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   fetch as apiFetch,
   FetchFunc,
@@ -17,9 +18,10 @@ import {
   StepEmitter,
   PlanItem,
   FetchFromWorkspaceFunc,
-  loadLocalWorkspace,
   fetchFromWorkspace,
+  FetchFuncParams,
 } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { Workspace, nacl, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { promises, values } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -76,23 +78,26 @@ const createFetchFromWorkspaceCommand =
     env: string,
     fromState: boolean,
   ): FetchFunc =>
-  async (workspace, progressEmitter, accounts) => {
+  async (args: FetchFuncParams) => {
     let otherWorkspace: Workspace
     try {
       otherWorkspace = await loadLocalWorkspace({
         path: otherWorkspacePath,
         persistent: false,
+        adapterCreators,
       })
     } catch (err) {
       throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
     }
+
     return fetchFromWorkspaceFunc({
-      workspace,
+      workspace: args.workspace,
       otherWorkspace,
-      progressEmitter,
-      accounts,
+      progressEmitter: args.progressEmitter,
+      accounts: args.accounts,
       env,
       fromState,
+      adapterCreators,
     })
   }
 
@@ -175,14 +180,15 @@ export const fetchCommand = async ({
     throw new Error('The state only flag can only be used in default mode')
   }
 
-  const fetchResult = await fetch(
+  const fetchResult = await fetch({
     workspace,
-    fetchProgress,
+    progressEmitter: fetchProgress,
     accounts,
-    regenerateSaltoIds,
+    ignoreStateElemIdMapping: regenerateSaltoIds,
     withChangesDetection,
-    regenerateSaltoIdsForSelectors,
-  )
+    ignoreStateElemIdMappingForSelectors: regenerateSaltoIdsForSelectors,
+    adapterCreators,
+  })
 
   // A few merge errors might have occurred,
   // but since it's fetch flow, we omitted the elements

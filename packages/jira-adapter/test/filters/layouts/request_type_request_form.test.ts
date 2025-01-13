@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -488,6 +488,98 @@ describe('requestTypeLayoutsFilter', () => {
       expect(issueLayoutInstance?.value.issueLayoutConfig.items[1].sectionType).toEqual('CONTENT')
       expect(issueLayoutInstance?.value.issueLayoutConfig.items[1].key).toEqual('innerContentDefaultFieldItemId')
       expect(issueLayoutInstance?.value.issueLayoutConfig.items).toHaveLength(2)
+    })
+    it('should remove empty objects in properties if their value is empty', async () => {
+      mockGet.mockImplementation(params => {
+        if (params.url === GQL_BASE_URL_GIRA) {
+          return {
+            data: {
+              issueLayoutConfiguration: {
+                issueLayoutResult: {
+                  id: '3',
+                  name: 'Default Issue Layout',
+                  containers: [
+                    {
+                      containerType: 'REQUEST',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField1',
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+                metadata: {
+                  configuration: {
+                    items: {
+                      nodes: [
+                        {
+                          fieldItemId: 'testField1',
+                          properties: { 'jsd.field.displayName': '', 'jsd.field.helpText': 'someText' },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          }
+        }
+        throw new Error('Err')
+      })
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].data.properties).toEqual({
+        'jsd.field.helpText': 'someText',
+      })
+    })
+    it('should remove properties field from request forms if all properties values are empty', async () => {
+      mockGet.mockImplementation(params => {
+        if (params.url === GQL_BASE_URL_GIRA) {
+          return {
+            data: {
+              issueLayoutConfiguration: {
+                issueLayoutResult: {
+                  id: '4',
+                  name: 'Default Issue Layout',
+                  containers: [
+                    {
+                      containerType: 'REQUEST',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField1',
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+                metadata: {
+                  configuration: {
+                    items: {
+                      nodes: [
+                        {
+                          fieldItemId: 'testField1',
+                          properties: { 'jsd.field.displayName': '', 'jsd.field.helpText': null },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          }
+        }
+        throw new Error('Err')
+      })
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].data).not.toHaveProperty('properties')
     })
   })
 })

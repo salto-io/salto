@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -38,7 +38,6 @@ import {
   RETRY_STRATEGY_NAMES,
   FETCH_CONFIG,
   MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  ENUM_FIELD_PERMISSIONS,
   DEPLOY_CONFIG,
 } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
@@ -152,29 +151,17 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     })
   }
 
-  const validateEnumFieldPermissions = (enumFieldPermissions: boolean | undefined): void => {
-    if (enumFieldPermissions !== undefined && !_.isBoolean(enumFieldPermissions)) {
-      throw new ConfigValidationError(
-        ['enumFieldPermissions'],
-        'Enabled enumFieldPermissions configuration must be true or false if it is defined',
-      )
-    }
-  }
-
   validateFetchParameters(config?.value?.[FETCH_CONFIG] ?? {}, [FETCH_CONFIG])
 
   validateClientConfig(config?.value?.client)
 
   validateValidatorsConfig(config?.value?.deploy?.changeValidators)
 
-  validateEnumFieldPermissions(config?.value?.enumFieldPermissions)
-
   const adapterConfig: {
     [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K]
   } = {
     fetch: config?.value?.[FETCH_CONFIG],
     maxItemsInRetrieveRequest: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
-    enumFieldPermissions: config?.value?.[ENUM_FIELD_PERMISSIONS],
     client: config?.value?.[CLIENT_CONFIG],
     deploy: config?.value?.[DEPLOY_CONFIG],
     fixElements: config?.value?.fixElements,
@@ -274,7 +261,7 @@ export const createDeployProgressReporter = async (
       suffix = args.suffix
       if (!wasDeploymentIdReported && deployResult.id) {
         wasDeploymentIdReported = true
-        const message = `Deployment with ID ${deployResult.id}  was created in Salesforce.`
+        const message = `Deployment with ID ${deployResult.id} was created in Salesforce.`
         log.debug(message)
         progressReporter.reportProgress({
           message,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -929,7 +929,7 @@ describe('ducktype_transformer', () => {
         typeDefaults: typeDefaultConfig,
       })
       const { errors } = res
-      expect(errors).toEqual([{ message: 'singleton err', detailedMessage: 'singleton err', severity: 'Warning' }])
+      expect(errors).toEqual([{ message: 'Other issues', detailedMessage: 'singleton err', severity: 'Warning' }])
     })
     it('should return empty array if shouldIgnorePermissionsError is true and the error is a permission error', async () => {
       jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
@@ -994,7 +994,7 @@ describe('ducktype_transformer', () => {
           typeDefaults: typeDefaultConfig,
         })
         const { errors } = res
-        expect(errors).toEqual([{ message: 'fetch err', detailedMessage: 'fetch err', severity }])
+        expect(errors).toEqual([{ message: 'Other issues', detailedMessage: 'fetch err', severity }])
       },
     )
   })

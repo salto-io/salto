@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -21,6 +21,7 @@ const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
   SBQQ__LineColumn__c: [DETECTS_PARENTS_INDICATOR, 'SBQQ__FieldName__c', 'Name'],
   SBQQ__LookupQuery__c: [DETECTS_PARENTS_INDICATOR, 'SBQQ__PriceRule2__c', 'Name'],
   SBQQ__Dimension__c: [DETECTS_PARENTS_INDICATOR, 'SBQQ__Product__c', 'Name'],
+  SBQQ__ProductOption__c: [DETECTS_PARENTS_INDICATOR, 'SBQQ__OptionalSKU__c', 'SBQQ__ConfiguredSKU__c'],
   PricebookEntry: ['Pricebook2Id', 'Name'],
   Product2: ['ProductCode', 'Family', 'Name'],
   sbaa__ApprovalCondition__c: ['sbaa__ApprovalRule__c', 'sbaa__Index__c'],

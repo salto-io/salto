@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -23,7 +23,11 @@ import { API_VERSION } from '../../src/client/client'
 import { createEncodedZipContent } from '../utils'
 import { mockFileProperties } from '../connection'
 import { mockTypes, mockDefaultValues } from '../mock_elements'
-import { LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, XML_ATTRIBUTE_PREFIX } from '../../src/constants'
+import {
+  GEN_AI_FUNCTION_METADATA_TYPE,
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
+  XML_ATTRIBUTE_PREFIX,
+} from '../../src/constants'
 import { FetchProfile } from '../../src/types'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
@@ -280,7 +284,30 @@ describe('XML Transformer', () => {
           )
         })
       })
+      describe('namespaced LightningComponentBundle', () => {
+        beforeEach(async () => {
+          const mockLightningComponentBundleValues = _.clone(mockDefaultValues.LightningComponentBundle)
+          mockLightningComponentBundleValues.fullName = 'namespace__testLightningComponentBundle'
+          _.set(mockLightningComponentBundleValues.targetConfigs.targetConfig[0], 'property', [
+            {
+              name: 'testTrueProp',
+              default: 'true',
+            },
+            {
+              name: 'testFalseProp',
+              default: 'false',
+            },
+          ])
+          await pkg.add(createInstanceElement(mockLightningComponentBundleValues, mockTypes.LightningComponentBundle))
+          zipFiles = await getZipFiles(pkg)
+        })
+        it('should contain metadata xml without the namespace', () => {
+          const filePath = `${packageName}/lwc/testLightningComponentBundle/testLightningComponentBundle.js-meta.xml`
+          expect(zipFiles).toHaveProperty([filePath])
+        })
+      })
     })
+
     describe('with Settings types', () => {
       beforeEach(async () => {
         await pkg.add(createInstanceElement({ fullName: 'TestSettings', testField: true }, mockTypes.TestSettings))
@@ -302,6 +329,7 @@ describe('XML Transformer', () => {
         expect(manifest2.TestSettings.testField).toEqual(true)
       })
     })
+
     describe('content file name override for territory types', () => {
       describe('Territory2Model type', () => {
         beforeEach(async () => {
@@ -609,13 +637,13 @@ describe('XML Transformer', () => {
           const metadataInfo = lwc.values
           expect(metadataInfo.fullName).toEqual('myLightningComponentBundle')
           expect(_.get(metadataInfo, 'apiVersion')).toEqual('47.0')
-          const jsResource = metadataInfo.lwcResources.lwcResource[0]
+          const jsResource = metadataInfo.lwcResources.lwcResource['myLightningComponentBundle_js@v']
           expect(jsResource).toBeDefined()
           expect(isStaticFile(jsResource.source)).toBe(true)
           const jsResourceStaticFile = jsResource.source as StaticFile
           expect(await jsResourceStaticFile.getContent()).toEqual(Buffer.from('// some javascript content'))
           expect(jsResourceStaticFile.filepath).toEqual(`${staticFilesExpectedFolder}/myLightningComponentBundle.js`)
-          const htmlResource = metadataInfo.lwcResources.lwcResource[1]
+          const htmlResource = metadataInfo.lwcResources.lwcResource['myLightningComponentBundle_html@v']
           expect(htmlResource).toBeDefined()
           expect(isStaticFile(htmlResource.source)).toBe(true)
           const htmlResourceStaticFile = htmlResource.source as StaticFile
@@ -799,6 +827,99 @@ describe('XML Transformer', () => {
             values,
             fileProperties,
             'salesforce/InstalledPackages/myNamespace/Records/AuraDefinitionBundle/myAuraDefinitionBundle',
+          )
+        })
+      })
+
+      describe('GenAi function', () => {
+        const createFileProperties = (namespacePrefix?: string): FileProperties =>
+          mockFileProperties({
+            fileName: 'genAiFunctions/myGenAiFunction.genAiFunction',
+            fullName: 'myGenAiFunction',
+            type: GEN_AI_FUNCTION_METADATA_TYPE,
+            namespacePrefix,
+          })
+
+        const createRetrieveResult = async (fileProperties: FileProperties[]): Promise<RetrieveResult> => ({
+          fileProperties: toResultProperties(fileProperties),
+          id: '09S4J000001dSRcUAM',
+          messages: [],
+          zipFile: await createEncodedZipContent([
+            {
+              path: 'unpackaged/genAiFunctions/myGenAiFunction/myGenAiFunction.genAiFunction-meta.xml',
+              content:
+                '<?xml version="1.0" encoding="UTF-8"?>\n' +
+                '<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">\n' +
+                '<description>Get a role name from the user and display the details</description>\n' +
+                '<invocationTarget>Get_Role_Details</invocationTarget>\n' +
+                '<invocationTargetType>flow</invocationTargetType>\n' +
+                '<isConfirmationRequired>false</isConfirmationRequired>\n' +
+                '<masterLabel>Get Role Details</masterLabel>\n' +
+                '</GenAiFunction>',
+            },
+            {
+              path: 'unpackaged/genAiFunctions/myGenAiFunction/input/schema.json',
+              content: '// input schema',
+            },
+            {
+              path: 'unpackaged/genAiFunctions/myGenAiFunction/output/schema.json',
+              content: '// output schema',
+            },
+          ]),
+        })
+
+        const verifyMetadataValues = async (
+          values: { file: FileProperties; values: MetadataValues }[],
+          fileProperties: FileProperties,
+          staticFilesExpectedFolder: string,
+        ): Promise<void> => {
+          expect(values).toHaveLength(1)
+          const [genAiFunction] = values
+          expect(genAiFunction.file).toEqual(fileProperties)
+          const metadataInfo = genAiFunction.values
+          expect(metadataInfo.fullName).toEqual('myGenAiFunction')
+          expect(metadataInfo.invocationTargetType).toEqual('flow')
+          const inputSchema = metadataInfo.schemas['input_schema_json@dv']
+          expect(inputSchema).toBeDefined()
+          expect(isStaticFile(inputSchema.source)).toBe(true)
+          const inputSchemaStaticFile = inputSchema.source as StaticFile
+          expect(await inputSchemaStaticFile.getContent()).toEqual(Buffer.from('// input schema'))
+          expect(inputSchemaStaticFile.filepath).toEqual(`${staticFilesExpectedFolder}/input/schema.json`)
+          const outputSchema = metadataInfo.schemas['output_schema_json@dv']
+          expect(outputSchema).toBeDefined()
+          expect(isStaticFile(outputSchema.source)).toBe(true)
+          const outputSchemaStaticFile = outputSchema.source as StaticFile
+          expect(await outputSchemaStaticFile.getContent()).toEqual(Buffer.from('// output schema'))
+          expect(outputSchemaStaticFile.filepath).toEqual(`${staticFilesExpectedFolder}/output/schema.json`)
+        }
+
+        it('should transform zip to MetadataInfo', async () => {
+          const fileProperties = createFileProperties()
+          const retrieveResult = await createRetrieveResult([fileProperties])
+          const values = await fromRetrieveResult({
+            zip: await new JSZip().loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
+            fileProps: [fileProperties],
+            typesWithMetaFile: new Set(),
+            typesWithContent: new Set(),
+            fetchProfile,
+          })
+          await verifyMetadataValues(values, fileProperties, 'salesforce/Records/GenAiFunction/myGenAiFunction')
+        })
+
+        it('should transform zip to MetadataInfo for instance with namespace', async () => {
+          const fileProperties = createFileProperties('myNamespace')
+          const retrieveResult = await createRetrieveResult([fileProperties])
+          const values = await fromRetrieveResult({
+            zip: await new JSZip().loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
+            fileProps: [fileProperties],
+            typesWithMetaFile: new Set(),
+            typesWithContent: new Set(),
+            fetchProfile,
+          })
+          await verifyMetadataValues(
+            values,
+            fileProperties,
+            'salesforce/InstalledPackages/myNamespace/Records/GenAiFunction/myGenAiFunction',
           )
         })
       })

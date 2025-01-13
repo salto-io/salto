@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -65,6 +65,21 @@ const filterCreator: FilterCreator = () => ({
       appType.fields.features.annotations[CORE_ANNOTATIONS.CREATABLE] = false
       appType.fields.features.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
       appType.fields.features.annotations[CORE_ANNOTATIONS.DELETABLE] = false
+    }
+    // We currently do not support Creation because it requires authentication that we do not support.
+    // In certain cases, we can able creation (when provisioning authentication has passed but was later disabled).
+    // Therefore, it may be considered in the future to change this to a CV that can be disabled for specific customers if they know what they are doing.
+    if (appType?.fields.applicationProvisioningUsers !== undefined) {
+      appType.fields.applicationProvisioningUsers.annotations[CORE_ANNOTATIONS.CREATABLE] = false
+    }
+    if (appType?.fields.applicationProvisioningGeneral !== undefined) {
+      appType.fields.applicationProvisioningGeneral.annotations[CORE_ANNOTATIONS.CREATABLE] = false
+    }
+    if (appType?.fields.applicationUserProvisioning !== undefined) {
+      appType.fields.applicationUserProvisioning.annotations[CORE_ANNOTATIONS.CREATABLE] = false
+    }
+    if (appType?.fields.applicationInboundProvisioning !== undefined) {
+      appType.fields.applicationInboundProvisioning.annotations[CORE_ANNOTATIONS.CREATABLE] = false
     }
   },
 })

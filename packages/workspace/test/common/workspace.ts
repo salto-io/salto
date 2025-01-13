@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -134,16 +134,16 @@ export const createWorkspace = async (
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
   remoteMapCreator?: RemoteMapCreator,
-  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
+  _getCustomReferences?: WorkspaceGetCustomReferencesFunc,
   persistent = true,
 ): Promise<Workspace> => {
   const mapCreator = remoteMapCreator ?? inMemRemoteMapCreator()
   const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
-  return loadWorkspace(
-    configSource || mockWorkspaceConfigSource(),
-    adaptersConfigSource || mockAdaptersConfigSource(),
-    credentials || mockCredentialsSource(),
-    {
+  return loadWorkspace({
+    config: configSource || mockWorkspaceConfigSource(),
+    adaptersConfig: adaptersConfigSource || mockAdaptersConfigSource(),
+    credentials: credentials || mockCredentialsSource(),
+    environmentsSources: {
       commonSourceName: '',
       sources: elementSources || {
         '': {
@@ -161,10 +161,7 @@ export const createWorkspace = async (
         },
       },
     },
-    mapCreator,
-    undefined,
-    undefined,
-    undefined,
-    getCustomReferences,
-  )
+    remoteMapCreator: mapCreator,
+    adapterCreators: {},
+  })
 }

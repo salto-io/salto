@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -23,3 +23,5 @@ export * from './src/elem_id_discrepancy'
 export * from './src/important_values'
 export * from './src/additional_properties'
 export * from './src/config_options'
+export * from './src/html_parser'
+export * from './src/errors'

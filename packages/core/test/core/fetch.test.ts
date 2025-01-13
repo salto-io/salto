@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -325,7 +325,7 @@ describe('fetch', () => {
         })
       })
 
-      it('should use the existing elements to resolve the fetched elements when calculcating changes', async () => {
+      it('should use the existing elements to resolve the fetched elements when calculating changes', async () => {
         const beforeElement = new InstanceElement(
           'name',
           new ObjectType({
@@ -361,10 +361,12 @@ describe('fetch', () => {
           elements: [afterElement],
           partialFetchData: { isPartial: true },
         })
+        const workspaceElementSource = createInMemoryElementSource([beforeElement, workspaceReferencedElement])
+        const stateElementSource = createInMemoryElementSource([beforeElement, stateReferencedElement])
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          createInMemoryElementSource([beforeElement, workspaceReferencedElement]),
-          createInMemoryElementSource([beforeElement, stateReferencedElement]),
+          workspaceElementSource,
+          stateElementSource,
           { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
@@ -380,10 +382,12 @@ describe('fetch', () => {
 
         if (workspaceChange.action === 'modify' && accountChange.action === 'modify') {
           expect(workspaceChange.data.after).toBe(4)
-          expect(workspaceChange.data.before.resValue).toBe(5)
+          expect(workspaceChange.data.before.resValue).toBe(undefined)
+          expect(await workspaceChange.data.before.getResolvedValue(workspaceElementSource)).toBe(5)
 
           expect(accountChange.data.after).toBe(4)
-          expect(accountChange.data.before.resValue).toBe(6)
+          expect(accountChange.data.before.resValue).toBe(undefined)
+          expect(await workspaceChange.data.before.getResolvedValue(stateElementSource)).toBe(6)
         }
       })
       it('should return an empty partiallyFetchedAccounts correctly', async () => {
@@ -1724,7 +1728,8 @@ describe('fetch from workspace', () => {
       expect(fetchRes.elements).toHaveLength(0)
       expect(fetchRes.unmergedElements).toHaveLength(0)
       expect(fetchRes.errors).toHaveLength(1)
-      expect(fetchRes.errors[0].message).toBe('nonexisiting env does not exist in the source workspace.')
+      expect(fetchRes.errors[0].message).toBe('Other issues')
+      expect(fetchRes.errors[0].detailedMessage).toBe('nonexisiting env does not exist in the source workspace.')
       expect(fetchRes.errors[0].severity).toBe('Error')
     })
 
@@ -1746,7 +1751,8 @@ describe('fetch from workspace', () => {
       expect(fetchRes.elements).toHaveLength(0)
       expect(fetchRes.unmergedElements).toHaveLength(0)
       expect(fetchRes.errors).toHaveLength(1)
-      expect(fetchRes.errors[0].message).toBe('Source env does not contain the following accounts: salesforce')
+      expect(fetchRes.errors[0].message).toBe('Other issues')
+      expect(fetchRes.errors[0].detailedMessage).toBe('Source env does not contain the following accounts: salesforce')
       expect(fetchRes.errors[0].severity).toBe('Error')
     })
 
@@ -1769,7 +1775,8 @@ describe('fetch from workspace', () => {
       expect(fetchRes.elements).toHaveLength(0)
       expect(fetchRes.unmergedElements).toHaveLength(0)
       expect(fetchRes.errors).toHaveLength(1)
-      expect(fetchRes.errors[0].message).toBe('Can not fetch from a workspace with errors.')
+      expect(fetchRes.errors[0].message).toBe('Other issues')
+      expect(fetchRes.errors[0].detailedMessage).toBe('Can not fetch from a workspace with errors.')
       expect(fetchRes.errors[0].severity).toBe('Error')
     })
   })
@@ -2229,9 +2236,10 @@ describe('fetch from workspace', () => {
           const newInstanceWithMismatchChange = changes.find(c => c.change.id.isEqual(newWithMismatch.elemID))
           expect(newInstanceWithMismatchChange).toBeUndefined()
           expect(fetchRes.errors).toHaveLength(2)
-          const errorsMessages = fetchRes.errors.map(err => err.message)
-          expect(errorsMessages[0]).toContain(mismatchValFullName)
-          expect(errorsMessages[1]).toContain(newWithMismatch.elemID.getFullName())
+          expect(fetchRes.errors[0].message).toContain('Other issues')
+          expect(fetchRes.errors[1].message).toContain('Other issues')
+          expect(fetchRes.errors[0].detailedMessage).toContain(mismatchValFullName)
+          expect(fetchRes.errors[1].detailedMessage).toContain(newWithMismatch.elemID.getFullName())
         })
       })
 

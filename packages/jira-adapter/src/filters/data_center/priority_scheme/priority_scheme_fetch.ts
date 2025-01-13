@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,7 +9,7 @@ import { ElemIdGetter, InstanceElement, ObjectType, Values } from '@salto-io/ada
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../../filter'
 import { JIRA, PRIORITY_SCHEME_TYPE_NAME, fetchFailedWarnings } from '../../../constants'
 import { createPrioritySchemeType } from './types'
@@ -80,12 +80,11 @@ const filter: FilterCreator = ({ paginator, client, fetchQuery, getElemIdFunc })
         log.error(
           `Received a ${e.response.status} error when fetching priority schemes. You need an admin user to fetch them.`,
         )
-        const message = fetchFailedWarnings(PRIORITY_SCHEME_TYPE_NAME)
         return {
           errors: [
             {
-              message,
-              detailedMessage: message,
+              message: ERROR_MESSAGES.OTHER_ISSUES,
+              detailedMessage: fetchFailedWarnings(PRIORITY_SCHEME_TYPE_NAME),
               severity: 'Warning',
             },
           ],

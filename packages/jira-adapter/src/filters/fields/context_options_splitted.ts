@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -198,6 +198,14 @@ const countOptionsInContext = async (contextId: string, elementsSource: ReadOnly
   )
 }
 
+const sortAllCascadeFirst = (options: InstanceElement[]): void => {
+  options.sort((a, b) => {
+    if (isCascadeOption(a) && !isCascadeOption(b)) return -1
+    if (!isCascadeOption(a) && isCascadeOption(b)) return 1
+    return 0
+  })
+}
+
 export const setContextOptionsSplitted = async ({
   contextId,
   fieldId,
@@ -218,6 +226,9 @@ export const setContextOptionsSplitted = async ({
   paginator?: clientUtils.Paginator
 }): Promise<void> => {
   const [addedCascade, addedSimple] = _.partition(added, isCascadeOption)
+
+  // we need the cascade options to be first in delete due to API limitations
+  sortAllCascadeFirst(removed)
 
   setCascadeOptions(modified.filter(isCascadeOption))
   setCascadeOptions(addedCascade)
@@ -248,7 +259,5 @@ export const setContextOptionsSplitted = async ({
     isCascade: true,
     optionsCount,
   })
-  unsetOptions(added)
-  unsetOptions(modified)
-  unsetOptions(removed)
+  ;[added, modified, removed].forEach(unsetOptions)
 }

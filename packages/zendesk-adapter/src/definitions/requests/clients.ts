@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -54,6 +54,8 @@ export const createClientDefinitions = (
           '/api/v2/custom_objects/{custom_object_key}/fields': { get: { pagination: 'links' } },
           '/api/v2/guide/permission_groups': { get: { pagination: 'basic_cursor_with_args' } },
           '/api/v2/help_center/user_segments': { get: { pagination: 'links' } },
+          // This is for the graphql endpoint, which is readonly for fetch. It allows it to be used in fetch
+          '/api/admin/private/answer_bot/graphql': { post: { readonly: true } },
         },
       },
     },

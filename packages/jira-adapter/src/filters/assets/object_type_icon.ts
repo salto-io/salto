@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -15,7 +15,7 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, ERROR_MESSAGES, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
 import { client as clientUtils } from '@salto-io/adapter-components'
@@ -115,9 +115,14 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
     const workspaceId = await getWorkspaceId(client, config)
     if (workspaceId === undefined) {
       log.error(`Skip fetching of ${OBJECT_TYPE_ICON_TYPE} types because workspaceId is undefined`)
-      const message = 'Failed to fetch object type icons because workspaceId is undefined'
       return {
-        errors: [{ message, detailedMessage: message, severity: 'Error' }],
+        errors: [
+          {
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage: 'Failed to fetch object type icons because workspaceId is undefined',
+            severity: 'Error',
+          },
+        ],
       }
     }
     const errors: SaltoError[] = []
@@ -127,7 +132,7 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
           const link = `/gateway/api/jsm/insight/workspace/${workspaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
           return await setIconContent({ client, instance: objectTypeIcon, link, fieldName: 'icon' })
         } catch (e) {
-          errors.push({ message: e.message, detailedMessage: e.message, severity: 'Error' })
+          errors.push({ message: ERROR_MESSAGES.OTHER_ISSUES, detailedMessage: e.message, severity: 'Error' })
           return undefined
         }
       }),

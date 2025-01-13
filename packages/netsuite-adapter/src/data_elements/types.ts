@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -259,20 +259,20 @@ const SCRIPT_TYPES = [
 
 export const getTypesToInternalId = (
   additionalSuiteQLTables: AdditionalSuiteQLTable[],
-): { internalIdToTypes: Record<string, string[]>; typeToInternalId: Record<string, string> } => {
-  const typeToInternalId = {
-    ...ALL_TABLE_TO_INTERNAL_ID,
-    ...Object.fromEntries(TRANSACTION_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.transaction])),
-    ...Object.fromEntries(FIELD_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.customfield])),
-    ...Object.fromEntries(SCRIPT_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.script])),
-    ...Object.fromEntries(ITEM_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.item])),
-    ...Object.fromEntries(additionalSuiteQLTables.map(table => [table.name, table.typeId])),
-  }
-  const internalIdToTypes = _(typeToInternalId)
-    .entries()
-    .groupBy(([_type, internalId]) => internalId)
-    .mapValues(values => values.map(([type]) => type))
-    .value()
+): { internalIdToTypes: Record<string, string[]>; typeToInternalId: Record<string, string[]> } => {
+  const allSuiteQLTables = additionalSuiteQLTables
+    .concat(ITEM_TYPES.map(name => ({ name, typeId: TABLE_TO_INTERNAL_ID.item })))
+    .concat(SCRIPT_TYPES.map(name => ({ name, typeId: TABLE_TO_INTERNAL_ID.script })))
+    .concat(FIELD_TYPES.map(name => ({ name, typeId: TABLE_TO_INTERNAL_ID.customfield })))
+    .concat(TRANSACTION_TYPES.map(name => ({ name, typeId: TABLE_TO_INTERNAL_ID.transaction })))
+    .concat(Object.entries(ALL_TABLE_TO_INTERNAL_ID).map(([name, typeId]) => ({ name, typeId })))
+
+  const groupedByTypeId = _.groupBy(allSuiteQLTables, row => row.typeId)
+  const groupedByName = _.groupBy(allSuiteQLTables, row => row.name)
+
+  const internalIdToTypes = _.mapValues(groupedByTypeId, rows => _.uniq(rows.map(row => row.name)))
+  const typeToInternalId = _.mapValues(groupedByName, rows => _.uniq(rows.map(row => row.typeId)))
+
   return { internalIdToTypes, typeToInternalId }
 }
 

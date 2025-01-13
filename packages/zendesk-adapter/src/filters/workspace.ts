@@ -1,19 +1,13 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import {
-  Change,
-  createSaltoElementError,
-  getChangeData,
-  InstanceElement,
-  isRemovalChange,
-  Values,
-} from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isRemovalChange, Values } from '@salto-io/adapter-api'
+import { createSaltoElementError } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -24,7 +18,7 @@ const WORKSPACE_TYPE_NAME = 'workspace'
 /**
  * Deploys workspaces
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'workspaceFilter',
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(changes, [WORKSPACE_TYPE_NAME], (instance: InstanceElement) => {
@@ -50,7 +44,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === WORKSPACE_TYPE_NAME && !isRemovalChange(change),
     )
     const deployResult = await deployChanges(workspaceChanges, async change => {
-      const response = await deployChange(change, client, config.apiDefinitions, ['selected_macros'])
+      const response = await deployChange(change, client, oldApiDefinitions, ['selected_macros'])
       // It's possible for the deployment to return with status 200 and still have errors.
       if (response !== undefined && !_.isArray(response) && response.errors !== undefined) {
         let errorMsg = 'Something went wrong'

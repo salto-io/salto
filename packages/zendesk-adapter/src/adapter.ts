@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,6 +9,7 @@ import _, { isString } from 'lodash'
 import {
   AdapterOperations,
   Change,
+  ChangeGroup,
   DeployModifiers,
   DeployOptions,
   DeployResult,
@@ -33,15 +34,15 @@ import {
   elements as elementUtils,
   resolveChangeElement,
   resolveValues,
-  definitions,
+  definitions as definitionsUtils,
   fetch as fetchUtils,
   restoreChangeElement,
 } from '@salto-io/adapter-components'
-import { getElemIdFuncWrapper, inspectValue, logDuration } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, getElemIdFuncWrapper, inspectValue, logDuration } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
-import { BrandIdToClient, Filter, FilterCreator, FilterResult, filtersRunner } from './filter'
+import { BrandIdToClient, Filter, FilterCreator, FilterResult, filterRunner } from './filter'
 import {
   API_DEFINITIONS_CONFIG,
   CLIENT_CONFIG,
@@ -57,6 +58,7 @@ import {
 } from './config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
+  CONVERSATION_BOT,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
@@ -112,6 +114,7 @@ import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
 import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
+import defaultDeployDefinitionsFilter from './filters/default_deploy_definitions'
 import commonFilters from './filters/common'
 import handleTemplateExpressionFilter from './filters/handle_template_expressions'
 import handleAppInstallationsFilter from './filters/handle_app_installations'
@@ -145,7 +148,7 @@ import hideAccountFeatures from './filters/hide_account_features'
 import auditTimeFilter from './filters/audit_logs'
 import sideConversationsFilter from './filters/side_conversation'
 import { isCurrentUserResponse } from './user_utils'
-import addAliasFilter from './filters/add_alias'
+import addRemainingAliasFilter from './filters/add_alias'
 import addRecurseIntoFieldFilter from './filters/add_recurse_into_field'
 import macroFilter from './filters/macro'
 import customRoleDeployFilter from './filters/custom_role_deploy'
@@ -158,14 +161,16 @@ import customObjectFilter from './filters/custom_objects/custom_object'
 import customObjectFieldFilter from './filters/custom_objects/custom_object_fields'
 import customObjectFieldsOrderFilter from './filters/custom_objects/custom_object_fields_order'
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
+import botBuilderArrangePaths from './filters/bot_builder_arrange_paths'
 import { createFixElementFunctions } from './fix_elements'
 import guideThemeSettingFilter from './filters/guide_theme_settings'
-import { ZendeskFetchOptions } from './definitions/types'
+import { Options } from './definitions/types'
 import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
 import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
 import ZendeskGuideClient from './client/guide_client'
+import { createDeployDefinitions } from './definitions/deploy/deploy'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -212,8 +217,6 @@ export const DEFAULT_FILTERS = [
   organizationsFilter,
   tagsFilter,
   localeFilter,
-  // supportAddress should run before referencedIdFieldsFilter
-  supportAddress,
   customStatus,
   guideAddBrandToArticleTranslation,
   macroFilter,
@@ -244,6 +247,8 @@ export const DEFAULT_FILTERS = [
   // fieldReferencesFilter should be after:
   // usersFilter, macroAttachmentsFilter, tagsFilter, guideLocalesFilter, customObjectFilter, customObjectFieldFilter
   fieldReferencesFilter,
+  // supportAddress should run before referencedIdFieldsFilter and after fieldReferencesFilter
+  supportAddress,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appInstallationsFilter,
@@ -272,13 +277,16 @@ export const DEFAULT_FILTERS = [
   deployTriggerSkills,
   guideThemeFilter, // fetches a lot of data, so should be after omitCollisionFilter to remove theme collisions
   guideThemeSettingFilter, // needs to be after guideThemeFilter as it depends on successful theme fetches
-  addAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter
+  addRemainingAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter
   guideArrangePaths,
+  botBuilderArrangePaths, // should run after fieldReferencesFilter
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   addImportantValuesFilter,
-  // defaultDeployFilter should be last!
+  // defaultDeployFilter and defaultDeployDefinitionsFilter should be last!
   defaultDeployFilter,
+  // This catches types we moved to the new infra definitions
+  defaultDeployDefinitionsFilter,
 ]
 
 const SKIP_RESOLVE_TYPE_NAMES = [
@@ -323,7 +331,7 @@ const zendeskGuideEntriesFunc = (brandInstance: InstanceElement): elementUtils.d
         return makeArray(response)
       }
       const responseEntries = makeArray(
-        responseEntryName !== definitions.DATA_FIELD_ENTIRE_OBJECT ? response[responseEntryName] : response,
+        responseEntryName !== definitionsUtils.DATA_FIELD_ENTIRE_OBJECT ? response[responseEntryName] : response,
       ) as clientUtils.ResponseValue[]
       // Defining Zendesk Guide element to its corresponding brand (= subdomain)
       responseEntries.forEach(entry => {
@@ -336,7 +344,7 @@ const zendeskGuideEntriesFunc = (brandInstance: InstanceElement): elementUtils.d
           addParentFields(entry)
         })
       }
-      if (responseEntryName === definitions.DATA_FIELD_ENTIRE_OBJECT) {
+      if (responseEntryName === definitionsUtils.DATA_FIELD_ENTIRE_OBJECT) {
         return responseEntries
       }
       return {
@@ -371,7 +379,7 @@ const getGuideElements = async ({
 }: {
   brandsList: InstanceElement[]
   brandToPaginator: Record<string, clientUtils.Paginator>
-  brandFetchDefinitions: definitions.RequiredDefinitions<ZendeskFetchOptions>
+  brandFetchDefinitions: definitionsUtils.RequiredDefinitions<Options>
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
@@ -482,7 +490,8 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
-  private adapterDefinitions: definitions.RequiredDefinitions<ZendeskFetchOptions>
+  private adapterDefinitions: definitionsUtils.RequiredDefinitions<Options>
+  private fetchSupportDefinitions: definitionsUtils.RequiredDefinitions<Options>
   private accountName?: string
   private createFiltersRunner: ({
     filterRunnerClient,
@@ -534,16 +543,27 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     const typesToOmit = this.getNonSupportedTypesToOmit()
 
-    this.adapterDefinitions = definitions.mergeDefinitionsWithOverrides(
+    this.adapterDefinitions = definitionsUtils.mergeDefinitionsWithOverrides(
       {
         // we can't add guide client at this point
         clients: createClientDefinitions({ main: this.client, guide: this.client }),
         pagination: PAGINATION,
-        fetch: definitions.mergeWithUserElemIDDefinitions({
+        fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
+          userElemID: this.userConfig.fetch.elemID,
+          fetchConfig: createFetchDefinitions({ baseUrl: this.client.getUrl().href }),
+        }),
+        deploy: createDeployDefinitions(),
+      },
+      this.accountName,
+    )
+    this.fetchSupportDefinitions = definitionsUtils.mergeDefinitionsWithOverrides(
+      {
+        // Support does not need guide client
+        clients: createClientDefinitions({ main: this.client, guide: this.client }),
+        pagination: PAGINATION,
+        fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
           userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
-          fetchConfig: createFetchDefinitions(this.userConfig, {
-            typesToOmit,
-          }),
+          fetchConfig: createFetchDefinitions({ typesToOmit, baseUrl: this.client.getUrl().href }),
         }),
       },
       this.accountName,
@@ -555,8 +575,11 @@ export default class ZendeskAdapter implements AdapterOperations {
       }
       return clientsBySubdomain[subdomain]
     }
-
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG], fetchCriteria)
+    const fetchConfig = this.userConfig[FETCH_CONFIG]
+    if (fetchConfig.fetchBotBuilder === false) {
+      fetchConfig.exclude.push({ type: CONVERSATION_BOT })
+    }
+    this.fetchQuery = elementUtils.query.createElementQuery(fetchConfig, fetchCriteria)
 
     this.createFiltersRunner = async ({
       filterRunnerClient,
@@ -567,14 +590,17 @@ export default class ZendeskAdapter implements AdapterOperations {
       paginator?: clientUtils.Paginator
       brandIdToClient?: BrandIdToClient
     }) =>
-      filtersRunner(
+      filterRunner(
         {
-          client: filterRunnerClient ?? this.client,
-          paginator: paginator ?? this.paginator,
-          config,
-          getElemIdFunc: this.getElemIdFunc,
           fetchQuery: this.fetchQuery,
-          elementsSource,
+          definitions: this.adapterDefinitions,
+          paginator: paginator ?? this.paginator,
+          config: this.userConfig,
+          getElemIdFunc: this.getElemIdFunc,
+          elementSource: elementsSource,
+          sharedContext: {},
+          oldApiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
+          client: filterRunnerClient ?? this.client,
           brandIdToClient,
         },
         filterCreators,
@@ -640,7 +666,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         adapterName: ZENDESK,
         fetchQuery: this.fetchQuery,
         getElemIdFunc: this.getElemIdFunc,
-        definitions: this.adapterDefinitions,
+        definitions: this.fetchSupportDefinitions,
         customItemFilter: filterOutInactiveItemForType(this.userConfig),
       })
       if (!isGuideInFetch) {
@@ -671,12 +697,12 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     if (_.isEmpty(brandsList)) {
       const brandPatterns = Array.from(this.userConfig[FETCH_CONFIG].guide?.brands ?? []).join(', ')
-      const message = `Could not find any brands matching the included patterns: [${brandPatterns}]. Please update the configuration under fetch.guide.brands in the configuration file`
-      log.warn(message)
+      const detailedMessage = `Could not find any brands matching the included patterns: [${brandPatterns}]. Please update the configuration under fetch.guide.brands in the configuration file`
+      log.warn(detailedMessage)
       combinedRes.errors = combinedRes.errors.concat([
         {
-          message,
-          detailedMessage: message,
+          message: ERROR_MESSAGES.OTHER_ISSUES,
+          detailedMessage,
           severity: 'Warning',
         },
       ])
@@ -703,18 +729,21 @@ export default class ZendeskAdapter implements AdapterOperations {
         'brand',
       ])
       this.guideClient = new ZendeskGuideClient(brandClients)
-      const client = createClientDefinitions({ main: this.client, guide: this.guideClient })
-      const guideFetchDef = definitions.mergeWithUserElemIDDefinitions({
+      const guideFetchDef = definitionsUtils.mergeWithUserElemIDDefinitions({
         userElemID: _.pick(this.userConfig.fetch.elemID, typesToPick) as ZendeskFetchConfig['elemID'],
-        fetchConfig: createFetchDefinitions(this.userConfig, {
-          typesToPick,
-        }),
+        fetchConfig: createFetchDefinitions({ typesToPick, baseUrl: this.client.getUrl().href }),
       })
-      const guideDefinitions = {
-        clients: client,
-        pagination: PAGINATION,
-        fetch: guideFetchDef,
-      }
+      const guideDefinitions = definitionsUtils.mergeDefinitionsWithOverrides(
+        {
+          clients: createClientDefinitions({
+            main: this.client,
+            guide: this.guideClient,
+          }),
+          pagination: PAGINATION,
+          fetch: guideFetchDef,
+        },
+        this.accountName,
+      )
 
       const zendeskGuideElements = await getGuideElements({
         brandsList,
@@ -753,11 +782,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       ).data
       if (isCurrentUserResponse(res)) {
         if (res.user.locale !== 'en-US') {
-          const message =
-            "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support"
           return {
-            message,
-            detailedMessage: message,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage:
+              "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support",
             severity: 'Warning',
           }
         }
@@ -816,7 +844,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
     const updatedConfig =
       this.configInstance && configChanges
-        ? definitions.getUpdatedConfigFromConfigChanges({
+        ? definitionsUtils.getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
             configType,
@@ -837,7 +865,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     return this.brandsList
   }
 
-  private async deployGuideChanges(guideResolvedChanges: Change<InstanceElement>[]): Promise<DeployResult[]> {
+  private async deployGuideChanges(
+    guideResolvedChanges: Change<InstanceElement>[],
+    changeGroup: ChangeGroup,
+  ): Promise<DeployResult[]> {
     if (_.isEmpty(guideResolvedChanges)) {
       return []
     }
@@ -868,7 +899,10 @@ export default class ZendeskAdapter implements AdapterOperations {
             }),
           })
           await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
-          const { deployResult: brandDeployResults } = await brandRunner.deploy(subdomainToGuideChanges[subdomain])
+          const { deployResult: brandDeployResults } = await brandRunner.deploy(
+            subdomainToGuideChanges[subdomain],
+            changeGroup,
+          )
           const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
           try {
             await brandRunner.onDeploy(guideChangesBeforeRestore)
@@ -923,13 +957,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       .map(async change =>
         SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
           ? change
-          : resolveChangeElement(
-              change,
-              lookupFunc,
-              async (element, getLookUpName, elementsSource) =>
-                resolveValues(element, getLookUpName, elementsSource, true),
-              this.elementsSource,
-            ),
+          : resolveChangeElement(change, lookupFunc, resolveValues, this.elementsSource),
       )
       .toArray()
     const [guideResolvedChanges, supportResolvedChanges] = _.partition(resolvedChanges, change =>
@@ -947,7 +975,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         errors: [e],
       }
     }
-    const { deployResult } = await runner.deploy(supportResolvedChanges)
+    const { deployResult } = await runner.deploy(supportResolvedChanges, changeGroup)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     try {
       await runner.onDeploy(appliedChangesBeforeRestore)
@@ -958,7 +986,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       saltoErrors.push(e)
     }
 
-    const guideDeployResults = await this.deployGuideChanges(guideResolvedChanges)
+    const guideDeployResults = await this.deployGuideChanges(guideResolvedChanges, changeGroup)
     const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
       guideDeployResults.flatMap(result => result.appliedChanges),
     )
@@ -980,7 +1008,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         config: this.userConfig,
-        apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
+        definitions: this.adapterDefinitions,
+        oldApiDefsConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: [

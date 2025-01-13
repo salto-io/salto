@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -11,6 +11,7 @@ import {
   ElemID,
   Field,
   InstanceElement,
+  isElement,
   isField,
   isInstanceElement,
   isObjectType,
@@ -128,6 +129,14 @@ const createReferencesForRecordType = (
   })
 }
 
+const getFullNameFromReference = (ref: ReferenceExpression): string | undefined => {
+  if (isElement(ref.value)) {
+    return apiNameSync(ref.value)
+  }
+  log.warn('Failed to get full name from reference %s. Reference value is not an Element', ref.elemID.getFullName())
+  return undefined
+}
+
 // Create reference index from baseElements full names (either Field, GlobalValueSet or StandardValueSet instances)
 // with references to each of their valueSet values.
 const createPicklistValuesReferenceIndex = (elements: Element[]): PicklistValuesReferenceIndex => {
@@ -140,7 +149,10 @@ const createPicklistValuesReferenceIndex = (elements: Element[]): PicklistValues
       return undefined
     }
     return Object.entries(values.values).reduce<Record<string, ReferenceExpression>>((acc, [key, value]) => {
-      const fullName = _.isString(value.fullName) ? value.fullName : apiNameSync(value.fullName.value) ?? ''
+      const fullName = _.isString(value.fullName) ? value.fullName : getFullNameFromReference(value.fullName)
+      if (fullName === undefined) {
+        return acc
+      }
       acc[fullName] = new ReferenceExpression(
         element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, key, 'fullName'),
         fullName,
@@ -237,7 +249,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         createReferencesForBusinessProcess({ instance, picklistValuesReferenceIndex, nonHandledParents }),
       )
     if (nonHandledParents.size > 0) {
-      log.warn(
+      log.trace(
         'Failed to resolve picklist values for the following business process parents: %s',
         inspectValue(nonHandledParents),
       )

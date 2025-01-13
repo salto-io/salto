@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -46,7 +46,6 @@ export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const DATA_MANAGEMENT = 'dataManagement'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const SHOULD_FETCH_ALL_CUSTOM_SETTINGS = 'fetchAllCustomSettings'
-export const ENUM_FIELD_PERMISSIONS = 'enumFieldPermissions'
 
 // Based on the list in https://salesforce.stackexchange.com/questions/101844/what-are-the-object-and-field-name-suffixes-that-salesforce-uses-such-as-c-an
 export const INSTANCE_SUFFIXES = [
@@ -105,6 +104,11 @@ const OPTIONAL_FEATURES = [
   'networkReferences',
   'extendFetchTargets',
   'addParentToInstancesWithinFolder',
+  'shouldPopulateInternalIdAfterDeploy',
+  'packageVersionReference',
+  'omitTotalTrustedRequestsUsageField',
+  'disablePermissionsOmissions',
+  'omitStandardFieldsNonDeployableValues',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',
@@ -126,7 +130,6 @@ const DEPRECATED_OPTIONAL_FEATURES = [
   'indexedEmailTemplateAttachments',
   'lightningPageFieldItemReference',
   'logDiffsFromParsingXmlNumbers',
-  'omitStandardFieldsNonDeployableValues',
   'profilePaths',
   'removeReferenceFromFilterItemToRecordType',
   'sharingRulesMaps',
@@ -150,6 +153,7 @@ const CHANGE_VALIDATORS = [
   'standardFieldLabel',
   'mapKeys',
   'defaultRules',
+  'packageVersion',
   'picklistPromote',
   'cpqValidator',
   'recordTypeDeletion',
@@ -182,6 +186,9 @@ const CHANGE_VALIDATORS = [
   'orderedMaps',
   'layoutDuplicateFields',
   'customApplications',
+  'flowReferencedElements',
+  'liveChatButtonRoutingType',
+  'flexiPageUnusedOrMissingFacets',
 ] as const
 const DEPRECATED_CHANGE_VALIDATORS = ['multipleDefaults'] as const
 export type ChangeValidatorName = (typeof CHANGE_VALIDATORS)[number]
@@ -219,7 +226,12 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesHandlersNames = ['profilesAndPermissionSets', 'managedElements', 'formulaRefs'] as const
+const customReferencesHandlersNames = [
+  'profilesAndPermissionSets',
+  'managedElements',
+  'formulaRefs',
+  'omitNonExistingFields',
+] as const
 export type CustomReferencesHandlers = (typeof customReferencesHandlersNames)[number]
 
 export type CustomReferencesSettings = Partial<Record<CustomReferencesHandlers, boolean>>
@@ -470,7 +482,6 @@ export type SalesforceConfig = {
   [FETCH_CONFIG]?: FetchParameters
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [CLIENT_CONFIG]?: SalesforceClientConfig
-  [ENUM_FIELD_PERMISSIONS]?: boolean
   [DEPLOY_CONFIG]?: UserDeployConfig
   [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
   [FIX_ELEMENTS_CONFIG]?: FixElementsSettings
@@ -908,10 +919,6 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'DashboardFolder' },
               { metadataType: 'Document' },
               { metadataType: 'DocumentFolder' },
-              { metadataType: 'Profile' },
-              { metadataType: 'PermissionSet' },
-              { metadataType: 'MutingPermissionSet' },
-              { metadataType: 'PermissionSetGroup' },
               { metadataType: 'SiteDotCom' },
               {
                 metadataType: 'EmailTemplate',
@@ -967,9 +974,6 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
           max: constants.MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST,
         }),
       },
-    },
-    [ENUM_FIELD_PERMISSIONS]: {
-      refType: BuiltinTypes.BOOLEAN,
     },
     [CLIENT_CONFIG]: {
       refType: clientConfigType,

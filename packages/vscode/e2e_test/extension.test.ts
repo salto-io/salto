@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,9 +7,10 @@
  */
 import readdirp from 'readdirp'
 import tmp from 'tmp-promise'
-import { SALTO_HOME_VAR, initLocalWorkspace } from '@salto-io/core'
+import { initLocalWorkspace, SALTO_HOME_VAR } from '@salto-io/local-workspace'
 import { copyFile, rm, mkdirp } from '@salto-io/file'
 import { workspace as ws, context, provider, diagnostics, definitions } from '@salto-io/lang-server'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
@@ -36,7 +37,10 @@ describe.skip('extension e2e', () => {
       await copyFile(naclFile.fullPath, `${wsPath}/${naclFile.basename}`)
     })
 
-    workspace = new ws.EditorWorkspace(wsPath, await initLocalWorkspace(wsPath, 'default'))
+    workspace = new ws.EditorWorkspace(
+      wsPath,
+      await initLocalWorkspace({ baseDir: wsPath, envName: 'default', adapterCreators }),
+    )
   })
 
   afterAll(async () => {

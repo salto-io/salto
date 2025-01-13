@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -50,11 +50,14 @@ describe('groupRelatedErrors', () => {
         it('should be in the grouped errors', () => {
           expect(groupError).toBeDefined()
         })
+        it('should contain unresolved reference message', () => {
+          expect(groupError.message).toContain('Element has unresolved references')
+        })
         it('should contain the number of errors it grouped', () => {
-          expect(groupError.message).toContain(numSources.toString())
+          expect(groupError.detailedMessage).toContain(numSources.toString())
         })
         it('should contain the target', () => {
-          expect(groupError.message).toContain(target.getFullName())
+          expect(groupError.detailedMessage).toContain(target.getFullName())
         })
       })
     })
@@ -76,7 +79,8 @@ describe('groupRelatedErrors', () => {
         expect(groupedErrors).toHaveLength(1)
         const [error] = groupedErrors
         expect(error).toBeInstanceOf(UnresolvedReferenceGroupError)
-        expect(error.message).toContain(baseTarget.getFullName())
+        expect(error.message).toContain('Element has unresolved references')
+        expect(error.detailedMessage).toContain(baseTarget.getFullName())
       })
     })
 

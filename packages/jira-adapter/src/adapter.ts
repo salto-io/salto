@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -33,7 +33,7 @@ import {
   fetch as fetchUtils,
   openapi,
 } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, ERROR_MESSAGES, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { objects, collections } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
@@ -128,6 +128,7 @@ import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
 import assetsObjectFieldConfigurationFilter from './filters/assets/assets_object_field_configuration'
+import assetsObjectFieldConfigurationReferencesFilter from './filters/assets/assets_object_field_configuration_references'
 import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
 import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
@@ -152,6 +153,7 @@ import scriptRunnerEmptyAccountIdsFilter from './filters/script_runner/workflow/
 import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
+import addAliasExtendedFilter from './filters/add_alias_extended'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
@@ -199,7 +201,7 @@ import contextDefaultValueDeploymentFilter from './filters/fields/context_defaul
 import statusPropertiesReferencesFilter from './filters/workflowV2/status_properties_references'
 import enhancedSearchNoiseReductionFilter from './filters/script_runner/enhanced_search/enhanced_search_noise_filter'
 
-const { getAllElements, addRemainingTypes } = elementUtils.ducktype
+const { getAllElements, addRemainingTypes, restoreInstanceTypeFromDeploy } = elementUtils.ducktype
 const { findDataField } = elementUtils
 const { computeGetArgs } = fetchUtils.resource
 const { getAllInstances } = elementUtils.swagger
@@ -221,64 +223,37 @@ export const DEFAULT_FILTERS = [
   automationLabelDeployFilter,
   automationFetchFilter,
   automationStructureFilter,
-  // Should run before automationDeploymentFilter
-  brokenReferences,
+  brokenReferences, // Should run before automationDeploymentFilter
   automationDeploymentFilter,
   addImportantValuesFilter,
   webhookFilter,
-  // Should run before duplicateIdsFilter
-  fieldNameFilter,
+  fieldNameFilter, // Should run before duplicateIdsFilter
   workflowFilter,
   workflowV1RemovalFilter,
   workflowStructureFilter,
   queryFilter,
-  // This should run before duplicateIdsFilter
-  projectRoleRemoveTeamManagedDuplicatesFilter,
-  // This should happen before any filter that creates references
-  duplicateIdsFilter,
-  fieldStructureFilter,
-  // This should run here again because fieldStructureFilter creates the instances and references
-  duplicateIdsFilter,
-  // This must run after duplicateIdsFilter
-  unresolvedParentsFilter,
+  projectRoleRemoveTeamManagedDuplicatesFilter, // This should run before duplicateIdsFilter
+  fieldStructureFilter, // fieldStructureFilter adds instances so it should run before duplicateIdsFilter. It also creates references so it should run before fieldReferencesFilter
   localeFilter,
-  contextReferencesFilter,
-  // must run after contextReferencesFilter
-  assetsObjectFieldConfigurationFilter,
-  fieldTypeReferencesFilter,
-  fieldDeploymentFilter,
-  // This must run after fieldDeploymentFilter
-  contextDeploymentFilter,
-  // This must run after contextDeploymentFilter
-  avatarsFilter,
   iconUrlFilter,
   triggersFilter,
   resolutionPropertyFilter,
   scriptRunnerFilter,
-  // must run before references are transformed
-  scriptedFieldsIssueTypesFilter,
+  scriptedFieldsIssueTypesFilter, // must run before references are transformed
   behaviorsMappingsFilter,
   behaviorsFieldUuidFilter,
   scriptRunnerWorkflowFilter,
-  // must run after scriptRunnerWorkflowFilter
-  scriptRunnerWorkflowListsFilter,
+  scriptRunnerWorkflowListsFilter, // must run after scriptRunnerWorkflowFilter
   scriptRunnerTemplateExpressionFilter,
   scriptRunnerEmptyAccountIdsFilter,
-  // resolves references in workflow instances!
-  workflowPropertiesFilter,
-  // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
-  scriptRunnerWorkflowReferencesFilter,
-  // must run before workflowTransitionIdsFilter
-  statusPropertiesReferencesFilter,
-  // must run after scriptRunnerWorkflowReferencesFilter
-  workflowTransitionIdsFilter,
+  workflowPropertiesFilter, // resolves references in workflow instances!
+  scriptRunnerWorkflowReferencesFilter, // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
+  statusPropertiesReferencesFilter, // must run before workflowTransitionIdsFilter
+  workflowTransitionIdsFilter, // must run after scriptRunnerWorkflowReferencesFilter
   transitionIdsFilter,
   workflowDeployFilter,
   workflowModificationFilter,
-  // must run after workflowFilter
-  emptyValidatorWorkflowFilter,
-  // must run before fieldReferencesFilter
-  formsFilter,
+  emptyValidatorWorkflowFilter, // must run after workflowFilter
   objectTypeIconFilter,
   groupNameFilter,
   workflowGroupsFilter,
@@ -312,42 +287,47 @@ export const DEFAULT_FILTERS = [
   notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
   issueTypeHierarchyFilter,
-  fieldConfigurationFilter,
-  fieldConfigurationSchemeFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
-  // Must run before jqlReferencesFilter
-  enhancedSearchNoiseReductionFilter,
-  jqlReferencesFilter,
+  enhancedSearchNoiseReductionFilter, // Must run before jqlReferencesFilter
   removeEmptyValuesFilter,
   maskingFilter,
   pluginVersionFliter,
   referenceBySelfLinkFilter,
-  // Must run after referenceBySelfLinkFilter
-  removeSelfFilter,
+  removeSelfFilter, // Must run after referenceBySelfLinkFilter
+  // serviceUrl filters must run before duplicateIdsFilter
   serviceUrlJsmFilter, // Must run before fieldReferencesFilter
+  serviceUrlInformationFilter,
+  serviceUrlFilter,
+  addAliasFilter, // must run before duplicateIdsFilter
+  duplicateIdsFilter,
+  unresolvedParentsFilter, // must run after duplicateIdsFilter
+  fieldConfigurationFilter, // must run after duplicateIdsFilter
+  fieldConfigurationSchemeFilter,
+  contextReferencesFilter, // must run after duplicateIdsFilter
+  assetsObjectFieldConfigurationFilter, // must run after contextReferencesFilter
+  fieldTypeReferencesFilter,
+  fieldDeploymentFilter,
+  contextDeploymentFilter, // must run after fieldDeploymentFilter
+  avatarsFilter, // This must run after contextDeploymentFilter
+  jqlReferencesFilter, // must run after assetsObjectFieldConfigurationFilter
+  fieldContextOptionsSplitFilter,
+  formsFilter, // must run before fieldReferencesFilter and after fieldContextOptionsSplitFilter
   fieldReferencesFilter,
-  // Must run after fieldReferencesFilter
-  addJsmTypesAsFieldsFilter,
+  assetsObjectFieldConfigurationReferencesFilter, // This filter creates references, it must run after fieldReferencesFilter, assetsObjectFieldConfigurationFilter and before changeAttributesPathFilter
+  addJsmTypesAsFieldsFilter, // Must run after fieldReferencesFilter
   issueLayoutFilter,
   fetchJsmTypesFilter,
   assetsObjectTypeChangeFields,
-  // Must run after issueLayoutFilter
-  removeSimpleFieldProjectFilter,
+  removeSimpleFieldProjectFilter, // Must run after issueLayoutFilter
   requestTypeLayoutsFilter,
   createReferencesIssueLayoutFilter,
-  // Must run after createReferencesIssueLayoutFilter
-  requestTypelayoutsToValuesFilter,
+  requestTypelayoutsToValuesFilter, // Must run after createReferencesIssueLayoutFilter
   projectFieldContextOrder,
-  fieldContextOptionsSplitFilter,
   fieldConfigurationDeployment,
-  // Must run after fieldConfigurationSplitFilter
-  fieldConfigurationDependenciesFilter,
-  missingFieldDescriptionsFilter,
-  // Must run after fieldReferencesFilter
+  fieldConfigurationDependenciesFilter, // Must run after fieldConfigurationSplitFilter
+  missingFieldDescriptionsFilter, // Must run after fieldReferencesFilter
   sortListsFilter,
-  serviceUrlInformationFilter,
-  serviceUrlFilter,
   filtersFilter,
   hiddenValuesInListsFilter,
   missingDescriptionsFilter,
@@ -355,20 +335,15 @@ export const DEFAULT_FILTERS = [
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
   deployPermissionSchemeFilter,
-  // Must run after user filter
-  accountIdFilter,
-  // Must run after accountIdFilter
-  userIdFilter,
-  // Must run after accountIdFilter
-  userFallbackFilter,
-  // Must run after accountIdFilter
-  wrongUserPermissionSchemeFilter,
+  accountIdFilter, // Must run after user filter
+  userIdFilter, // Must run after accountIdFilter
+  userFallbackFilter, // Must run after accountIdFilter
+  wrongUserPermissionSchemeFilter, // Must run after accountIdFilter
   deployDcIssueEventsFilter,
-  addAliasFilter,
-  // must be done before scriptRunnerInstances
-  scriptRunnerListenersDeployFilter,
-  // must be done before scriptRunnerInstances
-  scriptedFragmentsDeployFilter,
+  addAliasExtendedFilter, // we need to run addAliasFilter before duplicateIdsFilter but we add jsm instances after it.
+  // So we need to run it again. we should fix it in SALTO-7175.
+  scriptRunnerListenersDeployFilter, // must be done before scriptRunnerInstances
+  scriptedFragmentsDeployFilter, // must be done before scriptRunnerInstances
   scriptRunnerInstancesDeploy,
   portalSettingsFilter,
   queueDeploymentFilter,
@@ -377,25 +352,19 @@ export const DEFAULT_FILTERS = [
   requestTypeFilter,
   fieldContextOptionsDeploymentFilter,
   fieldContextOptionsDeploymentOrderFilter,
-  // Must be ran after fieldContextOptionsDeploymentFilter
-  contextDefaultValueDeploymentFilter,
-  // Must run before asstesDeployFilter
-  assetsInstancesDeploymentFilter,
-  // Must be done after JsmTypesFilter
-  jsmPathFilter,
+  contextDefaultValueDeploymentFilter, // Must be ran after fieldContextOptionsDeploymentFilter
+  assetsInstancesDeploymentFilter, // Must run before asstesDeployFilter
+  jsmPathFilter, // Must be done after JsmTypesFilter
   ...Object.values(otherCommonFilters),
-  // Must run after otherCommonFilters and specificly after referencedInstanceNamesFilterCreator.
-  assetsObjectTypePath,
-  // Must run after assetsObjectTypePath
-  changeAttributesPathFilter,
+  assetsObjectTypePath, // Must run after otherCommonFilters and specificly after referencedInstanceNamesFilterCreator.
+  changeAttributesPathFilter, // Must run after assetsObjectTypePath
   defaultAttributesFilter,
   assetsObjectTypeOrderFilter,
   deployAttributesFilter,
   objectSchemaDeployFilter, // Must run before deployJsmTypesFilter
   deployJsmTypesFilter,
   hideTypesFilter, // Must run after defaultAttributesFilter and assetsObjectTypeOrderFilter, which also create types.
-  // Must be last
-  defaultInstancesDeployFilter,
+  defaultInstancesDeployFilter, // Must be last
 ]
 
 export interface JiraAdapterParams {
@@ -616,13 +585,13 @@ export default class JiraAdapter implements AdapterOperations {
     const isJsmEnabled = await isJsmEnabledInService(this.client)
     if (!isJsmEnabled) {
       log.debug('enableJSM set to true, but JSM is not enabled in the service, skipping fetching JSM elements')
-      const message = 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.'
       return {
         elements: [],
         errors: [
           {
-            message,
-            detailedMessage: message,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage:
+              'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
             severity: 'Warning',
           },
         ],
@@ -812,11 +781,16 @@ export default class JiraAdapter implements AdapterOperations {
       deployResult: { appliedChanges, errors },
     } = await runner.deploy(changesToDeploy)
 
-    const changesToReturn = [...appliedChanges]
+    const changesToReturn = Array.from(appliedChanges)
     await runner.onDeploy(changesToReturn)
 
-    return {
+    const changesWithRestoredTypes = restoreInstanceTypeFromDeploy({
       appliedChanges: changesToReturn,
+      originalInstanceChanges: changesToDeploy,
+    })
+
+    return {
+      appliedChanges: changesWithRestoredTypes,
       errors,
     }
   }

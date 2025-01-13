@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -68,7 +68,10 @@ const getFieldContextGroup: deployment.grouping.ChangeIdFunction = async change 
   const instance = getChangeData(change)
 
   return isInstanceElement(instance) &&
-    [FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME].includes(instance.elemID.typeName)
+    (instance.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME ||
+      // we group the order only when it is a removal change. We want it separate for id updates,
+      // but on removal it breaks the grouping due to dependency changes
+      (instance.elemID.typeName === OPTIONS_ORDER_TYPE_NAME && isRemovalChange(change)))
     ? getContextParent(instance).elemID.getFullName()
     : undefined
 }

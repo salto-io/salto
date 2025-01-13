@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -45,7 +45,7 @@ describe('bundle changes', () => {
       severity: 'Error',
       elemID: bundleInstanceAfter.elemID,
       detailedMessage:
-        'Cannot create, modify or remove bundles.To manage bundles, please manually install or update them in the target account. Follow these steps: Customization > SuiteBundler > Search & Install Bundles. Learn more at https://help.salto.io/en/articles/8963376-enhancing-the-visibility-of-bundles-in-netsuite-with-salto-s-suiteapp',
+        'Cannot create, modify or remove bundles. To manage bundles, please manually install or update them in the target account. Follow these steps: Customization > SuiteBundler > Search & Install Bundles. Learn more at https://help.salto.io/en/articles/8963376-enhancing-the-visibility-of-bundles-in-netsuite-with-salto-s-suiteapp',
     })
   })
 

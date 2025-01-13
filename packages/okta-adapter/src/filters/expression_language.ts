@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -8,7 +8,6 @@
 import _ from 'lodash'
 import {
   Change,
-  createSaltoElementError,
   Element,
   getChangeData,
   InstanceElement,
@@ -20,7 +19,13 @@ import {
   TemplateExpression,
   TemplatePart,
 } from '@salto-io/adapter-api'
-import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
+import {
+  extractTemplate,
+  replaceTemplatesWithValues,
+  resolvePath,
+  resolveTemplates,
+  createSaltoElementError,
+} from '@salto-io/adapter-utils'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FETCH_CONFIG } from '../config'

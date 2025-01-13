@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -358,7 +358,7 @@ describe('flow coordinates filter', () => {
         )
       })
     })
-    describe('when a flow is in auto-layout mode', () => {
+    describe('when a flow is in auto-layout mode with zero coordinates', () => {
       const instance = new InstanceElement('flowInstance', flowType, {
         assignments: [
           {
@@ -386,6 +386,37 @@ describe('flow coordinates filter', () => {
         const instanceAfterTest = getChangeData(changes[0]) as InstanceElement
         expect(instanceAfterTest.value.assignments[0]).not.toHaveProperty('locationX')
         expect(instanceAfterTest.value.assignments[0]).not.toHaveProperty('locationX')
+      })
+    })
+    describe('when a flow is in auto-layout mode with nonzero coordinates', () => {
+      const instance = new InstanceElement('flowInstance', flowType, {
+        assignments: [
+          {
+            label: 'SomeAssignment',
+            locationX: 123,
+            locationY: 456,
+          },
+        ],
+        processMetadataValues: [
+          {
+            name: 'CanvasMode',
+            value: {
+              stringValue: 'AUTO_LAYOUT_CANVAS',
+            },
+          },
+        ],
+      })
+
+      beforeEach(async () => {
+        changes = [instance].map(e => toChange({ after: e.clone() }))
+        await filter.onDeploy(changes)
+      })
+
+      it('should not modify anything', () => {
+        expect((getChangeData(changes[0]) as InstanceElement).value).toHaveProperty(
+          'assignments',
+          instance.value.assignments,
+        )
       })
     })
   })

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -53,6 +53,7 @@ import {
   OBJECTS_PATH,
   RECORDS_PATH,
   SALESFORCE,
+  SALESFORCE_BIG_OBJECT_SUFFIX,
   SoqlQueryLimits,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
@@ -66,6 +67,7 @@ import {
   buildMetadataQueryForFetchWithChangesDetection,
 } from '../../src/fetch_profile/metadata_query'
 import * as filtersUtil from '../../src/filters/utils'
+import { bigObjectExcludeConfigChange } from '../../src/config_change'
 
 const { awu } = collections.asynciterable
 
@@ -681,7 +683,7 @@ describe('Custom Object Instances filter', () => {
           it('should issue a message if there are instances of the object', () => {
             expect(fetchResult.errors).toEqual([
               {
-                message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
+                message: expect.stringContaining('Other issues'),
                 detailedMessage: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
                 severity: 'Info',
               },
@@ -1474,6 +1476,41 @@ describe('Custom Object Instances filter', () => {
     })
   })
 
+  describe('when type is Big Object', () => {
+    const bigObjectElement = createCustomObject(`objectName${SALESFORCE_BIG_OBJECT_SUFFIX}`)
+    const notBigObjectElement = createCustomObject('objectName')
+    beforeEach(() => {
+      client.queryAll = jest.fn().mockResolvedValue([{ key: 'value' }])
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: {
+              data: {
+                includeObjects: ['.*'],
+                allowReferenceTo: [],
+                saltoIDSettings: {
+                  defaultIdFields: [],
+                  overrides: [],
+                },
+              },
+              maxInstancesPerType: 2,
+            },
+          }),
+        },
+      }) as FilterType
+    })
+    it('should not fetch the instances and create a config exclude suggestion for Big Objects', async () => {
+      const elements = [bigObjectElement, notBigObjectElement]
+      const result = await filter.onFetch(elements)
+      expect(elements).toBeArrayOfSize(3)
+      expect(result?.configSuggestions).toBeArrayOfSize(1)
+      expect(result?.configSuggestions?.[0]).toEqual(bigObjectExcludeConfigChange)
+      expect(result?.errors).toBeEmpty()
+    })
+  })
+
   describe('Fetching with MaxInstancesPerType', () => {
     const testElement = createCustomObject('testElement')
     beforeEach(() => {
@@ -1721,7 +1758,7 @@ describe('Custom Object Instances filter', () => {
           ])
           expect(errors).toEqual([
             {
-              message: expect.stringContaining('InvalidField') && expect.stringContaining('AnotherInvalidField'),
+              message: expect.stringContaining('Other issues'),
               detailedMessage:
                 expect.stringContaining('InvalidField') && expect.stringContaining('AnotherInvalidField'),
               severity: 'Warning',
@@ -1846,7 +1883,7 @@ describe('Custom Object Instances filter', () => {
       it('Should warn', () => {
         expect(filterResult.errors).toEqual([
           {
-            message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
+            message: expect.stringContaining('Other issues'),
             detailedMessage:
               expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
             severity: 'Warning',
@@ -1931,7 +1968,7 @@ describe('Custom Object Instances filter', () => {
         expect(filterResult.errors ?? []).not.toBeEmpty()
         expect(filterResult.errors).toEqual([
           {
-            message: expect.stringContaining('missing or is of the wrong type for all data records'),
+            message: expect.stringContaining('Other issues'),
             detailedMessage: expect.stringContaining('missing or is of the wrong type for all data records'),
             severity: 'Warning',
           },

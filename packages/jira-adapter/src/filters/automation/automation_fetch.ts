@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -15,6 +15,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   createSchemeGuard,
+  ERROR_MESSAGES,
   naclCase,
   pathNaclCase,
   WalkOnFunc,
@@ -289,12 +290,11 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
         log.error(
           `Received a ${e.response.status} error when fetching automations. Please make sure you have the "Automation" permission enabled in Jira.`,
         )
-        const message = fetchFailedWarnings(AUTOMATION_TYPE)
         return {
           errors: [
             {
-              message,
-              detailedMessage: message,
+              message: ERROR_MESSAGES.OTHER_ISSUES,
+              detailedMessage: fetchFailedWarnings(AUTOMATION_TYPE),
               severity: 'Warning',
             },
           ],

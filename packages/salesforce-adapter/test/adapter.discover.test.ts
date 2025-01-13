@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -991,7 +991,9 @@ describe('SalesforceAdapter fetch', () => {
           7 /* range restrictions */ +
           2 /* ChangedAtSingleton type & instance */ +
           1 /* ProfilesAndPermissionSetsBrokenPaths */ +
-          1 /* FetchTargets */,
+          1 /* FetchTargets */ +
+          1 /* OrderedMapOfvalueSet */ +
+          1 /* FieldPermissionEnum */,
       )
 
       const elementsMap = _.keyBy(result, element => element.elemID.getFullName())

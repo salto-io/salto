@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -142,6 +142,8 @@ import flowCoordinatesFilter from './filters/flow_coordinates'
 import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import picklistReferences from './filters/picklist_references'
 import addParentToInstancesWithinFolderFilter from './filters/add_parent_to_instances_within_folder'
+import addParentToRecordTriggeredFlows from './filters/add_parent_to_record_triggered_flows'
+import addParentToApprovalProcess from './filters/add_parent_to_approval_process'
 import { getConfigFromConfigChanges } from './config_change'
 import { Filter, FilterContext, FilterCreator, FilterResult } from './filter'
 import {
@@ -262,6 +264,9 @@ export const allFilters: Array<FilterCreator> = [
   // should run after convertListsFilter
   replaceFieldValuesFilter,
   valueToStaticFileFilter,
+  // addParentToRecordTriggeredFlows should run before fieldReferenceFilter
+  addParentToRecordTriggeredFlows,
+  addParentToApprovalProcess,
   fieldReferencesFilter,
   // should run after customObjectsInstancesFilter for now
   referenceAnnotationsFilter,
@@ -359,6 +364,10 @@ const METADATA_TO_RETRIEVE = [
   'ExternalDataSource',
   'FlexiPage',
   'FlowDefinition',
+  'GenAiFunction',
+  'GenAiPlanner',
+  'GenAiPlugin',
+  'GenAiPromptTemplate',
   'LightningComponentBundle', // Has several fields with base64Binary encoded content
   'NetworkBranding', // contains encoded zip content
   'Profile',
@@ -538,7 +547,6 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
           config: {
             unsupportedSystemFields,
             systemFields,
-            enumFieldPermissions: config.enumFieldPermissions ?? constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
             fetchProfile,
             elementsSource,
             separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
@@ -594,9 +602,11 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     const fetchParams = this.userConfig.fetch ?? {}
     this.initializeCustomListFunctions(withChangesDetection)
     const baseQuery = buildMetadataQuery({ fetchParams })
+    const metadataTypeInfos = await this.client.listMetadataTypes()
     const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
       client: this.client,
       metadataQuery: buildFilePropsMetadataQuery(baseQuery),
+      metadataTypeInfos,
     })
     const targetedFetchInclude = fetchParams.target
       ? await getMetadataIncludeFromFetchTargets(fetchParams.target, this.elementsSource)
@@ -630,8 +640,9 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
         .filter((namedType): namedType is [string, TypeElement] => namedType[0] !== undefined),
     )
     const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
-    const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
-
+    const metadataTypeInfosPromise = Promise.resolve(
+      metadataTypeInfos.filter(typeInfo => metadataQuery.isTypeMatch(typeInfo.xmlName)),
+    )
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await this.fetchTypes({
       metadataQuery,
@@ -775,6 +786,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
         this.client,
         this.nestedMetadataTypes,
         progressReporter,
+        fetchProfile,
         this.userConfig.client?.deploy?.deleteBeforeUpdate,
         checkOnly,
         this.userConfig.client?.deploy?.quickDeployParams,
@@ -819,10 +831,6 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
   async cancelServiceAsyncTask(input: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
     return this.client.cancelMetadataValidateOrDeployTask(input)
-  }
-
-  private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {
-    return (await this.client.listMetadataTypes()).filter(info => metadataQuery.isTypeMatch(info.xmlName))
   }
 
   private async fetchTypes({

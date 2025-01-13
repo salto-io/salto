@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -76,6 +76,7 @@ import { enhancedSearchDeploymentValidator } from './script_runner/enhanced_sear
 import { emptyProjectScopedContextValidator } from './field_contexts/empty_project_scoped_context'
 import { fieldValidator } from './field'
 import { globalTransitionValidator } from './workflowsV2/global_transition'
+import { htmlBodyContentValidator } from './automation/html_body_content'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
   deployment.changeValidators
@@ -160,6 +161,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     field: fieldValidator,
     kanbanBoardBacklog: kanbanBoardBacklogValidator,
     globalTransition: globalTransitionValidator,
+    htmlBodyContentAction: htmlBodyContentValidator,
   }
 
   return createChangeValidator({

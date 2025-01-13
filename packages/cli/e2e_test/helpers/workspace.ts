@@ -1,14 +1,16 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import glob from 'glob'
-import { Plan, telemetrySender, preview, loadLocalWorkspace, AppConfig } from '@salto-io/core'
+import { Plan, preview } from '@salto-io/core'
+import { loadLocalWorkspace, AppConfig, telemetrySender } from '@salto-io/local-workspace'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { readTextFile, writeFile } from '@salto-io/file'
 import {
   ActionName,
@@ -163,7 +165,7 @@ export const runDeleteEnv = async (workspacePath: string, envName: string): Prom
 }
 
 export const getCurrentEnv = async (workspacePath: string): Promise<string> => {
-  const workspace = await loadLocalWorkspace({ path: workspacePath })
+  const workspace = await loadLocalWorkspace({ path: workspacePath, adapterCreators })
   return workspace.currentEnv()
 }
 
@@ -196,7 +198,15 @@ export const runDeploy = async ({
 }): Promise<void> => {
   const cliOutput = mockCliOutput()
   const result = await runCommand({
-    args: ['deploy', '-f'],
+    args: [
+      'deploy',
+      '-f',
+      // to be changed at https://salto-io.atlassian.net/browse/SALTO-7121
+      '-C',
+      'salesforce.fetch.optionalFeatures.shouldPopulateInternalIdAfterDeploy=false',
+      '-C',
+      'e2esalesforce.fetch.optionalFeatures.shouldPopulateInternalIdAfterDeploy=false',
+    ],
     workspacePath,
     cliOutput,
   })
@@ -232,15 +242,15 @@ export const runClean = async ({
 }
 
 export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Workspace> => {
-  const workspace = await loadLocalWorkspace({ path: fetchOutputDir })
+  const workspace = await loadLocalWorkspace({ path: fetchOutputDir, adapterCreators })
   const { errors } = await validateWorkspace(workspace)
   expect(errors).toHaveLength(0)
   return workspace
 }
 
 export const runPreviewGetPlan = async (fetchOutputDir: string, accounts?: string[]): Promise<Plan> => {
-  const workspace = await loadLocalWorkspace({ path: fetchOutputDir })
-  return preview(workspace, accounts)
+  const workspace = await loadLocalWorkspace({ path: fetchOutputDir, adapterCreators })
+  return preview({ workspace, accounts, adapterCreators })
 }
 
 const getChangedElementName = (change: Change): string => getChangeData(change).elemID.name

@@ -1,10 +1,11 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { extname } from 'path'
 import wu from 'wu'
 import _ from 'lodash'
 import { XMLBuilder, XMLParser } from 'fast-xml-parser'
@@ -16,6 +17,7 @@ import { logger } from '@salto-io/logging'
 import {
   MapKeyFunc,
   mapKeysRecursive,
+  naclCase,
   safeJsonStringify,
   TransformFunc,
   transformValues,
@@ -34,6 +36,8 @@ import {
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   SETTINGS_METADATA_TYPE,
   SETTINGS_DIR_NAME,
+  GEN_AI_FUNCTION_METADATA_TYPE,
+  AURA_DEFINITION_BUNDLE_METADATA_TYPE,
 } from '../constants'
 import {
   apiName,
@@ -47,7 +51,7 @@ import {
 import { FetchProfile } from '../types'
 
 const { isDefined } = lowerDashValues
-const { makeArray } = collections.array
+const { isPlainObject } = lowerDashValues
 
 const log = logger(module)
 
@@ -68,6 +72,7 @@ const MARKUP = 'markup'
 const TARGET_CONFIGS = 'targetConfigs'
 const LWC_RESOURCES = 'lwcResources'
 const LWC_RESOURCE = 'lwcResource'
+const GEN_AI_FUNCTION_SCHEMAS = 'schemas'
 
 export const getManifestTypeName = (type: MetadataObjectType): string =>
   // Salesforce quirk - folder instances are listed under their content's type in the manifest
@@ -147,12 +152,12 @@ type ComplexType = {
   mapContentFields(instanceName: string, values: Values): Record<FieldName, Record<FileName, Content>>
   sortMetadataValues?(metadataValues: Values): Values
   getMetadataFilePath(instanceName: string, values?: Values): string
-  folderName: string
 }
 
 type ComplexTypesMap = {
-  AuraDefinitionBundle: ComplexType
-  LightningComponentBundle: ComplexType
+  [AURA_DEFINITION_BUNDLE_METADATA_TYPE]: ComplexType
+  [LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE]: ComplexType
+  [GEN_AI_FUNCTION_METADATA_TYPE]: ComplexType
 }
 
 const auraFileSuffixToFieldName: Record<string, string> = {
@@ -178,12 +183,63 @@ const auraTypeToFileSuffix: Record<string, string> = {
   Tokens: '.tokens',
 }
 
+/**
+ * Convert a string value of a file path to a map key.
+ * In this case, we want to use the last part of the path as the key, and it's
+ * unknown how many levels the path has.
+ * If there are less than two levels, take only the last.
+ */
+const pathToKey = (val: string): string => {
+  const splitPath = val.split('/')
+  if (splitPath.length >= 3) {
+    return naclCase(splitPath.slice(2).join('/'))
+  }
+  log.warn(`Path ${val} has less than two levels, using only the last part as the key`)
+  return naclCase(_.last(splitPath))
+}
+
+const addContentFieldsAsStaticFiles =
+  (path: string[]): ComplexType['addContentFields'] =>
+  ({ fileNameToContent, values, type, namespacePrefix, packagePath }) => {
+    Object.entries(fileNameToContent).forEach(([contentFileName, content]) => {
+      const filePath = packagePath ? contentFileName.replace(new RegExp(`^${packagePath}`), '') : contentFileName
+      const resourcePath = path.concat(pathToKey(filePath))
+      addContentFieldAsStaticFile({
+        values,
+        valuePath: [...resourcePath, 'source'],
+        content,
+        contentFileName,
+        type,
+        namespacePrefix,
+        packagePath,
+      })
+      _.set(values, [...resourcePath, 'filePath'], filePath)
+    })
+  }
+
+const isBuffer = (val: unknown): val is Buffer => _.isBuffer(val)
+
+const mapStaticFilesContentFields =
+  (field: string, path: string[]): ComplexType['mapContentFields'] =>
+  (_instanceName: string, values: Values) => ({
+    [field]: Object.fromEntries(
+      Object.values(_.get(values, path))
+        .filter(
+          (val: unknown): val is { filePath: string; source: Buffer | string } =>
+            isPlainObject(val) &&
+            _.isString(_.get(val, 'filePath')) &&
+            (isBuffer(_.get(val, 'source')) || _.isString(_.get(val, 'source'))),
+        )
+        .map(({ filePath, source }) => [`${PACKAGE}/${filePath}`, isBuffer(source) ? source : Buffer.from(source)]),
+    ),
+  })
+
 export const complexTypesMap: ComplexTypesMap = {
   /**
    * AuraDefinitionBundle has several base64Binary content fields. We should use its content fields
    * suffix in order to set their content to the correct field
    */
-  AuraDefinitionBundle: {
+  [AURA_DEFINITION_BUNDLE_METADATA_TYPE]: {
     addContentFields: ({ fileNameToContent, values, type, namespacePrefix, packagePath }) => {
       Object.entries(fileNameToContent).forEach(([contentFileName, content]) => {
         const fieldName = Object.entries(auraFileSuffixToFieldName).find(([fileSuffix, _fieldName]) =>
@@ -249,39 +305,13 @@ export const complexTypesMap: ComplexTypesMap = {
       }
       return `${PACKAGE}/aura/${instanceName}/${instanceName}${auraTypeToFileSuffix[type]}${METADATA_XML_SUFFIX}`
     },
-    folderName: 'aura',
   },
   /**
    * LightningComponentBundle has array of base64Binary content fields under LWC_RESOURCES field.
    */
-  LightningComponentBundle: {
-    addContentFields: ({ fileNameToContent, values, type, namespacePrefix, packagePath }) => {
-      Object.entries(fileNameToContent).forEach(([contentFileName, content], index) => {
-        const resourcePath = [LWC_RESOURCES, LWC_RESOURCE, String(index)]
-        addContentFieldAsStaticFile({
-          values,
-          valuePath: [...resourcePath, 'source'],
-          content,
-          contentFileName,
-          type,
-          namespacePrefix,
-          packagePath,
-        })
-        _.set(
-          values,
-          [...resourcePath, 'filePath'],
-          packagePath ? contentFileName.replace(new RegExp(`^${packagePath}`), '') : contentFileName,
-        )
-      })
-    },
-    mapContentFields: (_instanceName: string, values: Values) => ({
-      [LWC_RESOURCES]: Object.fromEntries(
-        makeArray(values[LWC_RESOURCES]?.[LWC_RESOURCE]).map(lwcResource => [
-          `${PACKAGE}/${lwcResource.filePath}`,
-          lwcResource.source,
-        ]),
-      ),
-    }),
+  [LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE]: {
+    addContentFields: addContentFieldsAsStaticFiles([LWC_RESOURCES, LWC_RESOURCE]),
+    mapContentFields: mapStaticFilesContentFields(LWC_RESOURCES, [LWC_RESOURCES, LWC_RESOURCE]),
     /**
      * Due to SF quirk, TARGET_CONFIGS field must be in the xml after the targets field
      */
@@ -293,7 +323,15 @@ export const complexTypesMap: ComplexTypesMap = {
       ),
     getMetadataFilePath: (instanceName: string) =>
       `${PACKAGE}/lwc/${instanceName}/${instanceName}.js${METADATA_XML_SUFFIX}`,
-    folderName: 'lwc',
+  },
+  /**
+   * GenAiFunctions have input and output folders
+   */
+  [GEN_AI_FUNCTION_METADATA_TYPE]: {
+    addContentFields: addContentFieldsAsStaticFiles([GEN_AI_FUNCTION_SCHEMAS]),
+    mapContentFields: mapStaticFilesContentFields(GEN_AI_FUNCTION_SCHEMAS, [GEN_AI_FUNCTION_SCHEMAS]),
+    getMetadataFilePath: (instanceName: string) =>
+      `${PACKAGE}/genAiFunctions/${instanceName}/${instanceName}.genAiFunction${METADATA_XML_SUFFIX}`,
   },
 }
 
@@ -362,7 +400,7 @@ const extractFileNameToData = async ({
     return { [zipFile.name]: await zipFile.async('nodebuffer') }
   }
   // bring all matching files from the fileName directory
-  let instanceFolderName = `${packagePath}${fileName}`
+  let instanceFolderName = `${packagePath}${fileName.substring(0, fileName.length - extname(fileName).length)}`
   if (namespacePrefix !== undefined) {
     instanceFolderName = instanceFolderName.replace(`${namespacePrefix}${NAMESPACE_SEPARATOR}`, '')
   }
@@ -574,6 +612,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
         zipContent.set(fileName, content)
         log.trace('Added XML file %s with content %s', fileName, content)
       }
+      const removeNamespacePrefix = (name: string): string => name.replace(/^\w+__/g, '')
       try {
         if (withManifest) {
           addToManifest(assertMetadataObjectType(await instance.getType()), instanceName)
@@ -588,7 +627,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
           // Add instance metadata
           const metadataValues = _.omit(values, ...Object.keys(fieldToFileToContent))
           setAndLogZipFile(
-            complexType.getMetadataFilePath(instanceName, values),
+            complexType.getMetadataFilePath(removeNamespacePrefix(instanceName), values),
             toMetadataXml(typeName, complexType.sortMetadataValues?.(metadataValues) ?? metadataValues),
           )
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -261,7 +261,10 @@ const closeTmpConnection = async (
   log.debug('closed temporary connection to %s', tmpLocation)
 }
 
-export const closeRemoteMapsOfLocation = async (location: string): Promise<void> =>
+/**
+ * @deprecated use `workspace.close()` / `remoteMapCreator.close()` instead.
+ */
+export const closeRemoteMapsOfLocation = async (location: string): Promise<boolean> =>
   log.timeDebug(
     async () => {
       let didClose = false
@@ -295,6 +298,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
       if (didClose) {
         remoteMapLocations.return(location)
       }
+      return didClose
     },
     'closeRemoteMapsOfLocation with location %s',
     location,
@@ -468,7 +472,9 @@ export const createRemoteMapCreator = (
   return {
     // Note: this implementation of `close` is not safe as it closes everything in the location, even if there are other
     // remote map creators using it
-    close: async () => closeRemoteMapsOfLocation(location),
+    close: async () => {
+      await closeRemoteMapsOfLocation(location)
+    },
     create: async <T, K extends string = string>({
       namespace,
       batchInterval = 1000,
@@ -691,7 +697,7 @@ export const createRemoteMapCreator = (
           await promisify(newDb.close.bind(newDb))()
         } catch (e) {
           if (newDb.status === 'new' && readOnly) {
-            log.info('DB does not exist. Creating on %s', loc)
+            log.info('DB does not exist. Creating on %s. open failed with %o', loc, e)
             try {
               await promisify(newDb.open.bind(newDb, DB_OPTIONS))()
               await promisify(newDb.close.bind(newDb))()
@@ -782,15 +788,19 @@ export const createRemoteMapCreator = (
             throw new Error('can not flush a non persistent remote map')
           }
 
+          log.debug('flushing %s, wasClearCalled=%s', namespace, wasClearCalled)
           if (wasClearCalled) {
             await clearImpl(persistentDB, keyPrefix)
+            log.debug('cleared persistent db %s', namespace)
           }
 
           const writeRes = await batchUpdate(
             awu(aggregatedIterable([createTempIterator({ keys: true, values: true })])),
             false,
           )
+          log.debug('finished writing to persistent db %s, writeRes=%s', namespace, writeRes)
           await clearImpl(tmpDB, tempKeyPrefix)
+          log.debug('cleared temp db %s', namespace)
           const deleteRes = await batchUpdate(
             awu(delKeys.keys()).map(async key => ({ key, value: key })),
             false,
@@ -830,7 +840,9 @@ export const createRemoteMapCreator = (
         close: async (): Promise<void> => {
           // Do nothing - we can not close the connection here
           //  because we share the connection across multiple namespaces
-          log.warn('cannot close connection of remote map with close method - use closeRemoteMapsOfLocation')
+          log.warn(
+            'cannot close connection of remote map with close method - use `workspace.close()` / `remoteMapCreator.close()` instead.',
+          )
         },
         isEmpty: async (): Promise<boolean> => {
           if (isNamespaceEmpty === undefined) {

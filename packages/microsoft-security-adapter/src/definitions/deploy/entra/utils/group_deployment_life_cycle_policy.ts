@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -13,7 +13,10 @@ import { entraConstants } from '../../../../constants'
 import { EndpointPath } from '../../../types'
 import { DeployRequestDefinition, DeployableRequestDefinition } from '../../shared/types'
 
-const { GROUP_LIFE_CYCLE_POLICY_FIELD_NAME, GROUP_TYPE_NAME } = entraConstants
+const {
+  TOP_LEVEL_TYPES: { GROUP_TYPE_NAME },
+  GROUP_LIFE_CYCLE_POLICY_FIELD_NAME,
+} = entraConstants
 
 export const getGroupLifecyclePolicyGroupModificationRequest = (action: 'add' | 'remove'): DeployRequestDefinition => ({
   endpoint: {

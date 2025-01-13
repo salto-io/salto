@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -47,6 +47,31 @@ describe('custom records', () => {
             type: 'custrecord2',
             records: [],
           },
+          {
+            type: 'custrecord_singleton',
+            records: [
+              {
+                attributes: {
+                  internalId: '1',
+                },
+              },
+            ],
+          },
+          {
+            type: 'custrecord_not_singleton',
+            records: [
+              {
+                attributes: {
+                  internalId: '1',
+                },
+              },
+              {
+                attributes: {
+                  internalId: '2',
+                },
+              },
+            ],
+          },
         ],
         largeTypesError: [],
       }),
@@ -84,19 +109,37 @@ describe('custom records', () => {
           scriptid: 'custrecord3',
         },
       }),
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'custrecord_singleton'),
+        annotations: {
+          metadataType: 'customrecordtype',
+          scriptid: 'custrecord_singleton',
+        },
+      }),
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'custrecord_not_singleton'),
+        annotations: {
+          metadataType: 'customrecordtype',
+          scriptid: 'custrecord_not_singleton',
+        },
+      }),
     ]
-    it('should return elements', async () => {
-      const { elements: instances } = await getCustomRecords(
+    it('should return elements and errors', async () => {
+      const { elements: instances, errors } = await getCustomRecords(
         client as unknown as NetsuiteClient,
         customRecordTypes,
         query as unknown as NetsuiteQuery,
+        ['custrecord_singleton', 'custrecord_not_singleton'],
         elemIdGetter,
       )
-      expect(instances.length).toEqual(3)
+      expect(instances.length).toEqual(6)
       expect(instances.map(({ elemID }) => elemID.getFullName())).toEqual([
         'netsuite.custrecord1.instance.val_111',
         'netsuite.custrecord1.instance.val_2',
         'netsuite.custrecord1.instance.val_3',
+        'netsuite.custrecord_singleton.instance',
+        'netsuite.custrecord_not_singleton.instance.val_1',
+        'netsuite.custrecord_not_singleton.instance.val_2',
       ])
       expect(instances.map(inst => inst.value)).toEqual([
         {
@@ -116,6 +159,34 @@ describe('custom records', () => {
           attributes: {
             internalId: '3',
           },
+        },
+        {
+          scriptid: 'val_1',
+          attributes: {
+            internalId: '1',
+          },
+        },
+        {
+          scriptid: 'val_1',
+          attributes: {
+            internalId: '1',
+          },
+        },
+        {
+          scriptid: 'val_2',
+          attributes: {
+            internalId: '2',
+          },
+        },
+      ])
+      expect(errors).toEqual([
+        {
+          detailedMessage: `Expected a single instance of type custrecord_not_singleton, but received the following instances instead:
+netsuite.custrecord_not_singleton.instance.val_1
+netsuite.custrecord_not_singleton.instance.val_2`,
+          elemID: new ElemID(NETSUITE, 'custrecord_not_singleton'),
+          message: 'Other issues',
+          severity: 'Warning',
         },
       ])
     })

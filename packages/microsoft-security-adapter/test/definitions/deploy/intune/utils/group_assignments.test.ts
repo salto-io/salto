@@ -1,18 +1,18 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { groupAssignments } from '../../../../../src/definitions/deploy/intune/utils'
+import { assignments } from '../../../../../src/definitions/deploy/intune/utils'
 
-describe('Intune group assignments deploy utils', () => {
-  describe(`${groupAssignments.createAssignmentsRequest.name} function`, () => {
+describe('Intune assignments deploy utils', () => {
+  describe(`${assignments.createAssignmentsRequest.name} function`, () => {
     describe('when rootField is not provided', () => {
       it('should return a request with the default rootField', () => {
-        const request = groupAssignments.createAssignmentsRequest({ resourcePath: '/test' })
+        const request = assignments.createAssignmentsRequest({ resourcePath: '/test' })
         expect(request).toEqual({
           request: {
             endpoint: {
@@ -39,7 +39,7 @@ describe('Intune group assignments deploy utils', () => {
 
     describe('when rootField is provided', () => {
       it('should return a request with the provided rootField', () => {
-        const request = groupAssignments.createAssignmentsRequest({ resourcePath: '/test', rootField: 'testField' })
+        const request = assignments.createAssignmentsRequest({ resourcePath: '/test', rootField: 'testField' })
         expect(request).toEqual({
           request: {
             endpoint: {
@@ -65,9 +65,9 @@ describe('Intune group assignments deploy utils', () => {
     })
   })
 
-  describe(`${groupAssignments.createBasicDeployDefinitionForTypeWithAssignments.name} function`, () => {
+  describe(`${assignments.createBasicDeployDefinitionForTypeWithAssignments.name} function`, () => {
     it('should return a correct deploy definition', () => {
-      const definition = groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+      const definition = assignments.createBasicDeployDefinitionForTypeWithAssignments({
         resourcePath: '/test',
         assignmentRootField: 'testField',
       })

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -33,7 +33,10 @@ export const homepageAdditionToModification: ({
   change,
   changeGroup,
   elementSource,
-}: definitions.deploy.ChangeAndContext) => (ActionName | AdditionalAction)[] = ({ change, changeGroup }) => {
+}: definitions.deploy.ChangeAndContext) => Promise<(ActionName | AdditionalAction)[]> = async ({
+  change,
+  changeGroup,
+}) => {
   const spaceChange = changeGroup.changes.find(c => getChangeData(c).elemID.typeName === SPACE_TYPE_NAME)
   if (isAdditionChange(change) && spaceChange !== undefined && isInstanceChange(spaceChange)) {
     const changeData = getChangeData(change)

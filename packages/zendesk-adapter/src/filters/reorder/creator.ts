@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -21,15 +21,13 @@ import {
   isModificationChange,
   isInstanceChange,
   SaltoError,
-  createSaltoElementError,
   isSaltoError,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, pathNaclCase, inspectValue } from '@salto-io/adapter-utils'
+import { createSaltoElementError, applyFunctionToChangeData, pathNaclCase, inspectValue } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ZENDESK } from '../../constants'
 import { deployChange } from '../../deployment'
-import { API_DEFINITIONS_CONFIG } from '../../config'
 import ZendeskClient from '../../client/client'
 
 const { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH, SETTINGS_NESTED_PATH } = elementsUtils
@@ -64,7 +62,7 @@ export const createReorderFilterCreator =
     activeFieldName,
     filterName,
   }: ReorderFilterCreatorParams): FilterCreator =>
-  ({ config, client }) => ({
+  ({ oldApiDefinitions, client }) => ({
     name: filterName,
     onFetch: async (elements: Element[]): Promise<void> => {
       const orderTypeName = createOrderTypeName(typeName)
@@ -162,7 +160,7 @@ export const createReorderFilterCreator =
             elemID: getChangeData(change).elemID,
           })
         }
-        await deployFunc(change, client, config[API_DEFINITIONS_CONFIG])
+        await deployFunc(change, client, oldApiDefinitions)
       } catch (err) {
         if (!isSaltoError(err)) {
           throw err

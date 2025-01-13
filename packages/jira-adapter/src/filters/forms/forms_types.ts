@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -157,6 +157,37 @@ export const createFormType = (): {
       },
     },
   })
+
+  const cIdsType = new ObjectType({
+    elemID: new ElemID(JIRA, 'CIds'),
+    fields: {
+      key: {
+        refType: BuiltinTypes.STRING,
+      },
+      value: {
+        refType: new ListType(BuiltinTypes.STRING),
+      },
+    },
+  })
+
+  const coType = new ObjectType({
+    elemID: new ElemID(JIRA, 'Co'),
+    fields: {
+      cIds: {
+        refType: new ListType(cIdsType),
+      },
+    },
+  })
+
+  const conditionType = new ObjectType({
+    elemID: new ElemID(JIRA, 'Condition'),
+    fields: {
+      i: {
+        refType: new MapType(coType),
+      },
+    },
+  })
+
   const formDesignType = new ObjectType({
     elemID: new ElemID(JIRA, 'FormDesign'),
     fields: {
@@ -167,7 +198,7 @@ export const createFormType = (): {
         refType: new ListType(formLayoutItemType),
       },
       conditions: {
-        refType: BuiltinTypes.UNKNOWN,
+        refType: new MapType(conditionType),
       },
       sections: {
         refType: BuiltinTypes.UNKNOWN,
@@ -226,6 +257,9 @@ export const createFormType = (): {
       contentLayoutType,
       formPortalType,
       formPublishType,
+      conditionType,
+      coType,
+      cIdsType,
     ],
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -139,13 +139,13 @@ const calculateMergedChanges = async (
       if (!sieve.has(fullname)) {
         sieve.add(fullname)
         const before = await currentElements.get(id)
+        const relevantMergeError = await newMergedElementsResult.errors.get(fullname)
+        if (relevantMergeError !== undefined) {
+          mergeErrors.push({ value: relevantMergeError, key: fullname })
+        } else {
+          noErrorMergeIds.push(fullname)
+        }
         if (!isEqualElements(before, element)) {
-          const relevantMergeError = await newMergedElementsResult.errors.get(fullname)
-          if (relevantMergeError) {
-            mergeErrors.push({ value: relevantMergeError, key: fullname })
-          } else {
-            noErrorMergeIds.push(fullname)
-          }
           return toChange({ before, after: element })
         }
       }
@@ -450,19 +450,35 @@ export const createMergeManager = async (
 
   const mergeManager: ElementMergeManager = {
     clear: ensureInitiated(() => lock.acquire(MERGER_LOCK, clearImpl)),
-    flush: ensureInitiated(async () =>
-      lock.acquire(MERGER_LOCK, async () => {
-        log.debug(`Started flushing hashes under namespace ${namespace}.`)
-        await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
-        await hashes.flush()
-        const hasChanged = (await Promise.all(flushables.map(async f => f.flush()))).some(
-          b => typeof b !== 'boolean' || b,
-        )
-        await hashes.delete(MERGER_LOCK)
-        await hashes.flush()
-        log.debug(`Successfully flushed hashes under namespace ${namespace}.`)
-        return hasChanged
-      }),
+    flush: ensureInitiated(() =>
+      log.timeDebug(
+        () =>
+          lock.acquire(MERGER_LOCK, async () => {
+            const timeoutId = setTimeout(
+              () => {
+                log.error('Flushing hashes under namespace %s is taking more than 10 minutes.', namespace)
+              },
+              10 * 60 * 1000, // 10 minutes
+            )
+
+            try {
+              await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
+              await hashes.flush()
+              const flushResults = await awu(flushables)
+                .map(f => f.flush())
+                .toArray()
+              const hasChanged = flushResults.some(b => typeof b !== 'boolean' || b)
+
+              await hashes.delete(MERGER_LOCK)
+              await hashes.flush()
+              return hasChanged
+            } finally {
+              clearTimeout(timeoutId)
+            }
+          }),
+        'mergeManager.flush %s',
+        namespace,
+      ),
     ),
     mergeComponents: ensureInitiated(async (cacheUpdate: CacheChangeSetUpdate) =>
       lock.acquire(MERGER_LOCK, async () => {
@@ -558,43 +574,4 @@ export const buildNewMergedElementsAndErrors = async ({
     }
   })
   return changes
-}
-
-export const getAfterElements = async ({
-  src1Changes,
-  src2Changes,
-  src1,
-  src2,
-}: CacheUpdate): Promise<{
-  afterElements: AsyncIterable<Element>
-  relevantElementIDs: AsyncIterable<ElemID>
-}> => {
-  const relevantElementIDs = _.uniqBy(
-    [src1Changes, src2Changes]
-      .flat()
-      .map(getChangeData)
-      .map(e => e.elemID),
-    id => id.getFullName(),
-  )
-
-  const src1ChangesByID = _.keyBy(src1Changes, change => getChangeData(change).elemID.getFullName())
-  const src2ChangesByID = _.keyBy(src2Changes, change => getChangeData(change).elemID.getFullName())
-  const changeAfterElements = [...src1Changes, ...src2Changes]
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(values.isDefined)
-  const unmodifiedFragments = awu(relevantElementIDs)
-    .map(async id => {
-      const sr1Change = src1ChangesByID[id.getFullName()]
-      const src2Change = src2ChangesByID[id.getFullName()]
-      if (values.isDefined(sr1Change) && values.isDefined(src2Change)) {
-        return undefined
-      }
-      return values.isDefined(sr1Change) ? src2.get(id) : src1.get(id)
-    })
-    .filter(values.isDefined)
-  return {
-    afterElements: awu(changeAfterElements).concat(unmodifiedFragments),
-    relevantElementIDs: awu(relevantElementIDs),
-  }
 }

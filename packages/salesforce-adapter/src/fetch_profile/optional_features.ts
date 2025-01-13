@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -16,11 +16,16 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   hideTypesFolder: true,
   metaTypes: false,
   picklistsAsMaps: false,
-  retrieveSettings: false,
+  retrieveSettings: true,
   genAiReferences: true,
-  networkReferences: false,
-  extendFetchTargets: false,
-  addParentToInstancesWithinFolder: false,
+  networkReferences: true,
+  extendFetchTargets: true,
+  shouldPopulateInternalIdAfterDeploy: true,
+  addParentToInstancesWithinFolder: true,
+  packageVersionReference: true,
+  omitTotalTrustedRequestsUsageField: true,
+  disablePermissionsOmissions: true,
+  omitStandardFieldsNonDeployableValues: true,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

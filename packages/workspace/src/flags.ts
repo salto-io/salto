@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -24,4 +24,7 @@ export const getSaltoFlagBool = (flagName: string): boolean => {
 export const WORKSPACE_FLAGS = {
   createFilenamesToElementIdsMapping: 'CREATE_FILENAMES_TO_ELEMENT_IDS_MAPPING',
   useSplitSourceMapInUpdate: 'USE_SPLIT_SOURCE_MAP_IN_UPDATE',
+  // Killswitch for the new fetch diff computation logic. Activating this restores the old logic.
+  // TODO(SALTO-6992): Remove this killswitch after 2025-01-30
+  computePlanOnFetch: 'COMPUTE_PLAN_ON_FETCH',
 } as const

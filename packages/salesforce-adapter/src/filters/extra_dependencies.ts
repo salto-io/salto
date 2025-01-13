@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -252,7 +252,7 @@ const addExtraReferences = async (
   log.debug('Added %d extra dependencies', addedDeps.length)
 }
 
-export const WARNING_MESSAGE =
+const WARNING_MESSAGE =
   'Encountered an error while trying to query your salesforce account for additional configuration dependencies.'
 
 /**

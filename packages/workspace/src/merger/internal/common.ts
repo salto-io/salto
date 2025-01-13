@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import { types } from '@salto-io/lowerdash'
 import { ElemID, SaltoElementError, SeverityLevel } from '@salto-io/adapter-api'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, inspectValue } from '@salto-io/adapter-utils'
 
 export abstract class MergeError
   extends types.Bean<
@@ -19,9 +19,7 @@ export abstract class MergeError
   >
   implements SaltoElementError
 {
-  get message(): string {
-    return `Error merging ${this.elemID.getFullName()}: ${this.error}`
-  }
+  message = ERROR_MESSAGES.INVALID_NACL_CONTENT
 
   get detailedMessage(): string {
     return `Error merging ${this.elemID.getFullName()}: ${this.error}`
@@ -30,7 +28,7 @@ export abstract class MergeError
   public severity: SeverityLevel = 'Error'
 
   toString(): string {
-    return this.message
+    return this.detailedMessage
   }
 }
 

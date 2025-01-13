@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -13,7 +13,7 @@ import { FilterCreator } from '../filter'
  */
 const filterCreators: Record<string, FilterCreator> = {
   hideTypes: filters.hideTypesFilterCreator(),
-  referencedInstanceNames: filters.referencedInstanceNamesFilterCreatorDeprecated(),
+  referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
   query: filters.queryFilterCreator({
     typesToKeep: [
       'automation_order',
@@ -27,6 +27,7 @@ const filterCreators: Record<string, FilterCreator> = {
       'workspace_order',
     ],
   }),
+  addAlias: filters.addAliasFilterCreator(), // should run after fieldReferencesFilter
 }
 
 export default filterCreators

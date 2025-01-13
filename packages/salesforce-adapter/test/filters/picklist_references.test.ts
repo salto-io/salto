@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -47,6 +47,7 @@ describe('picklistReferences filter', () => {
   })
   describe('RecordType instances', () => {
     const highCustomObject = createCustomObjectType('High', {})
+    const veryHighCustomObject = createCustomObjectType('VeryHigh', {})
 
     const accountObjectType = new ObjectType({
       elemID: new ElemID('salesforce', 'Account'),
@@ -73,6 +74,10 @@ describe('picklistReferences filter', () => {
                   fullName: new ReferenceExpression(highCustomObject.elemID, highCustomObject),
                   default: false,
                   label: 'High',
+                },
+                VeryHigh: {
+                  // Make sure we support the case where fullName is unresolved reference
+                  fullName: new ReferenceExpression(veryHighCustomObject.elemID),
                 },
                 Low: {
                   fullName: 'Low',
@@ -148,11 +153,13 @@ describe('picklistReferences filter', () => {
               ),
               values: [
                 { fullName: 'High', default: false },
+                { fullName: 'VeryHigh', default: false },
                 { fullName: 'Low', default: false },
                 { fullName: 'High %26 Low', default: false },
                 // Make sure the filter does not crash violently when trying to decode this URI value.
                 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURIComponent#catching_errors
                 { fullName: 'Non %% Decode-able', default: false },
+                // Make sure we handle the use-case where
               ],
             },
             // Field in old format
@@ -226,6 +233,10 @@ describe('picklistReferences filter', () => {
               accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'High', 'fullName'),
               'High',
             ),
+            default: false,
+          },
+          {
+            fullName: 'VeryHigh',
             default: false,
           },
           {

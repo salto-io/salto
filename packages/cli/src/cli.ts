@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,7 +9,7 @@ import os from 'os'
 import chalk from 'chalk'
 import { logger } from '@salto-io/logging'
 import { streams } from '@salto-io/lowerdash'
-import { closeAllRemoteMaps } from '@salto-io/core'
+import { closeAllRemoteMaps } from '@salto-io/local-workspace'
 import { CliInput, CliOutput, CliExitCode, SpinnerCreator, CliError } from './types'
 import { CommandOrGroupDef } from './command_builder'
 import {

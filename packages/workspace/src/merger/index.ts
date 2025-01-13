@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -79,7 +79,7 @@ export const mergeElements = async (elements: AsyncIterable<Element>): Promise<M
     log.warn(
       `All merge errors:\n${(
         await awu(errors.values())
-          .flatMap(elemErrs => elemErrs.map(e => e.message))
+          .flatMap(elemErrs => elemErrs.map(e => e.detailedMessage))
           .toArray()
       ).join('\n')}`,
     )
@@ -93,14 +93,14 @@ export const mergeSingleElement = async <T extends Element>(elementParts: T[]): 
 
   const errorMessages = await awu(mergeRes.errors.entries())
     .flatMap(err => err.value)
-    .map(err => err.message)
+    .map(err => err.detailedMessage)
     .toArray()
   if (errorMessages.length !== 0) {
     throw new Error(`Received merge errors: ${errorMessages.join(', ')}`)
   }
   const [error] = await awu(mergeRes.errors.entries()).toArray()
   if (error !== undefined) {
-    throw new Error(`Received merge errors: ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
+    throw new Error(`Received merge errors: ${error.key}: ${error.value.map(err => err.detailedMessage).join(', ')}`)
   }
 
   const mergedElements = await awu(mergeRes.merged.values()).toArray()

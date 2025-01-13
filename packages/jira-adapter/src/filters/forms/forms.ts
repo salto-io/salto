@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -13,6 +13,7 @@ import {
   ReferenceExpression,
   SaltoError,
   SeverityLevel,
+  Value,
   getChangeData,
   isAdditionChange,
   isAdditionOrModificationChange,
@@ -21,14 +22,16 @@ import {
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import {
+  ERROR_MESSAGES,
   getParent,
   inspectValue,
   invertNaclCase,
   mapKeysRecursive,
   naclCase,
   pathNaclCase,
+  transformValuesSync,
 } from '@salto-io/adapter-utils'
-import _ from 'lodash'
+import _, { isPlainObject } from 'lodash'
 import { logger } from '@salto-io/logging'
 import { resolveValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
@@ -41,6 +44,59 @@ import { getLookUpName } from '../../reference_mapping'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+
+const isTransformedFormObject = (value: Value): boolean => {
+  if (!isPlainObject(value)) {
+    return false
+  }
+  const keys = Object.keys(value)
+  return keys.length === 2 && keys.includes('value') && keys.includes('key')
+}
+
+/* Since the reference infrastructure does not support lists within maps, we modify the form values structure. */
+const transformFormValues = (form: InstanceElement): void => {
+  form.value = transformValuesSync({
+    values: form.value,
+    type: form.getTypeSync(),
+    pathID: form.elemID,
+    strict: false,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
+    transformFunc: ({ value, path }) => {
+      if (
+        path !== undefined &&
+        !isTransformedFormObject(value) &&
+        form.elemID.createNestedID('design', 'conditions').isParentOf(path) &&
+        Object.values(value).some(Array.isArray)
+      ) {
+        const newValue = Object.entries(value).map(([key, val]) => ({ key, value: val }))
+        return newValue
+      }
+      return value
+    },
+  })
+}
+
+const transformFormValuesToOriginalValues = (form: InstanceElement): void => {
+  form.value = transformValuesSync({
+    values: form.value,
+    type: form.getTypeSync(),
+    pathID: form.elemID,
+    strict: false,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
+    transformFunc: ({ value, path }) => {
+      if (path !== undefined && Array.isArray(value) && value.length > 0 && value.every(isTransformedFormObject)) {
+        const originalValue = value.reduce((acc, { key, value: val }) => {
+          acc[key] = val
+          return acc
+        }, {})
+        return originalValue
+      }
+      return value
+    },
+  })
+}
 
 const deployForms = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const form = getChangeData(change)
@@ -161,26 +217,30 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     )
       .flat()
       .filter(isDefined)
+
     forms.forEach(form => {
+      if (form.value.design?.conditions && config.fetch.splitFieldContextOptions) {
+        transformFormValues(form)
+      }
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
       elements.push(form)
     })
     if (projectsWithoutForms.length > 0) {
-      const message = `Unable to fetch forms for the following projects: ${projectsWithoutForms.join(', ')}. This issue is likely due to insufficient permissions.`
-      log.debug(message)
+      const detailedMessage = `Unable to fetch forms for the following projects: ${projectsWithoutForms.join(', ')}. This issue is likely due to insufficient permissions.`
+      log.debug(detailedMessage)
       errors.push({
-        message,
-        detailedMessage: message,
+        message: ERROR_MESSAGES.OTHER_ISSUES,
+        detailedMessage,
         severity: 'Warning' as SeverityLevel,
       })
     }
     const projectsWithUntitledFormsArr = Array.from(projectsWithUntitledForms)
     if (projectsWithUntitledFormsArr.length > 0) {
-      const message = `Salto does not support fetching untitled forms, found in the following projects: ${projectsWithUntitledFormsArr.join(', ')}`
-      log.debug(message)
+      const detailedMessage = `Salto does not support fetching untitled forms, found in the following projects: ${projectsWithUntitledFormsArr.join(', ')}`
+      log.debug(detailedMessage)
       errors.push({
-        message,
-        detailedMessage: message,
+        message: ERROR_MESSAGES.OTHER_ISSUES,
+        detailedMessage,
         severity: 'Warning' as SeverityLevel,
       })
     }
@@ -192,8 +252,9 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(isInstanceChange)
       .map(change => getChangeData(change))
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
-      .forEach(instance => {
+      .forEach((instance: InstanceElement) => {
         instance.value.updated = new Date().toISOString()
+        transformFormValuesToOriginalValues(instance)
       })
   },
   deploy: async changes => {
@@ -220,7 +281,10 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(isInstanceChange)
       .map(change => getChangeData(change))
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
-      .forEach(instance => {
+      .forEach((instance: InstanceElement) => {
+        if (instance.value.design?.conditions && config.fetch.splitFieldContextOptions) {
+          transformFormValues(instance)
+        }
         delete instance.value.updated
       })
   },

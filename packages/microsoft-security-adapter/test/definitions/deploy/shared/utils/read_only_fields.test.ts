@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,7 +9,7 @@
 import {
   TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION,
   TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
-} from '../../../../../src/change_validators'
+} from '../../../../../src/change_validators/shared'
 import { omitReadOnlyFields } from '../../../../../src/definitions/deploy/shared/utils'
 import { contextMock, modificationChangeMock, removalChangeMock } from '../../../../mocks'
 

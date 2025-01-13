@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -14,7 +14,7 @@ import {
   RECORDS_PATH,
   SALESFORCE,
 } from '../../src/constants'
-import filterCreator, { WARNING_MESSAGE } from '../../src/filters/profile_paths'
+import filterCreator from '../../src/filters/profile_paths'
 import { FilterResult } from '../../src/filter'
 import mockClient from '../client'
 import { mockQueryResult } from '../connection'
@@ -99,8 +99,9 @@ describe('profile paths filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: WARNING_MESSAGE,
-        detailedMessage: WARNING_MESSAGE,
+        message: 'Other issues',
+        detailedMessage:
+          'Failed to update the NaCl file names for some of your salesforce profiles. Therefore, profiles NaCl file names might differ from their display names in some cases.',
       })
     })
   })

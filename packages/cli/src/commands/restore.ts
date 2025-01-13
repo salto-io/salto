@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,7 +9,8 @@ import _ from 'lodash'
 import { Workspace, nacl, createElementSelectors } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { logger } from '@salto-io/logging'
-import { CommandConfig, LocalChange, restore, restorePaths as restorePathsCore } from '@salto-io/core'
+import { LocalChange, restore, restorePaths as restorePathsCore } from '@salto-io/core'
+import { CommandConfig } from '@salto-io/local-workspace'
 import { getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'

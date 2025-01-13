@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -620,74 +620,6 @@ describe('Convert maps filter', () => {
         expect(afterPermissionSetObj).toEqual(generatePermissionSetType(true))
         expect(beforeInstances).toEqual(generatePermissionSetInstances(beforePermissionSetObj))
         expect(afterInstances).toEqual(generatePermissionSetInstances(afterPermissionSetObj))
-      })
-    })
-  })
-
-  describe('Convert inner field to map', () => {
-    let lwcBefore: InstanceElement
-    let lwcAfter: InstanceElement
-    let lwcSorted: InstanceElement
-    let elements: Element[]
-    type FilterType = FilterWith<'onFetch' | 'preDeploy'>
-    let filter: FilterType
-    beforeAll(async () => {
-      lwcBefore = createInstanceElement(
-        {
-          fullName: 'lwc',
-          lwcResources: {
-            lwcResource: [
-              { filePath: 'lwc/dir/lwc.js', source: 'lwc.ts' },
-              { filePath: 'lwc/dir/__mocks__/lwc.js', source: 'lwc.ts' },
-            ],
-          },
-        },
-        mockTypes.LightningComponentBundle,
-      )
-      lwcSorted = createInstanceElement(
-        {
-          fullName: 'lwc',
-          lwcResources: {
-            lwcResource: [
-              { filePath: 'lwc/dir/__mocks__/lwc.js', source: 'lwc.ts' },
-              { filePath: 'lwc/dir/lwc.js', source: 'lwc.ts' },
-            ],
-          },
-        },
-        mockTypes.LightningComponentBundle,
-      )
-      const lwcType = mockTypes.LightningComponentBundle
-      elements = [lwcBefore.clone(), lwcType.clone()]
-
-      filter = filterCreator({
-        config: { ...defaultFilterContext },
-      }) as FilterType
-      await filter.onFetch(elements)
-      lwcAfter = elements[0] as InstanceElement
-    })
-    describe('on fetch', () => {
-      it('should convert lwc resource inner field to map ', async () => {
-        const fieldType = await lwcAfter.getType()
-        const lwcResourcesType = await fieldType.fields.lwcResources.getType()
-        if (isObjectType(lwcResourcesType)) {
-          const lwcResourceType = await lwcResourcesType.fields.lwcResource.getType()
-          expect(isMapType(lwcResourceType)).toBeTruthy()
-        }
-      })
-      it('should use the custom mapper to create the key', async () => {
-        expect(Object.keys(lwcAfter.value.lwcResources.lwcResource)[0]).toEqual('lwc_js@v')
-        expect(Object.keys(lwcAfter.value.lwcResources.lwcResource)[1]).toEqual('__mocks___lwc_js@uuuudv')
-      })
-    })
-    describe('pre deploy', () => {
-      let lwcDeploy: InstanceElement
-
-      beforeEach(async () => {
-        lwcDeploy = lwcAfter.clone()
-        await filter.preDeploy([toChange({ after: lwcDeploy })])
-      })
-      it('should return inner field back to list', async () => {
-        expect(lwcDeploy).toEqual(lwcSorted)
       })
     })
   })

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -1628,8 +1628,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'ruleHome' },
         { fieldName: 'schemaVersion' },
         { fieldName: 'idUuid' },
+        { fieldName: 'tags' },
+        { fieldName: 'webhookToken' },
         // serviceDesk is referenced from the associated request type, so we don't need to keep it in the automation component
         { fieldName: 'serviceDesk' },
+        { fieldName: 'eventFilters' },
       ],
       serviceUrl: '/jira/settings/automation#/rule/{id}',
       idFields: ['name', PROJECTS_FIELD], // idFields is handled separately in automation filter.

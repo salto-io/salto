@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -10,7 +10,6 @@ import { StaticFile, StaticFileParameters, calculateStaticFileHash } from '@salt
 import wu from 'wu'
 import { values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import _ from 'lodash'
 import { StaticFilesCache, StaticFilesData } from './cache'
 import { DirectoryStore } from '../dir_store'
 
@@ -24,14 +23,14 @@ const { withLimitedConcurrency } = promises.array
 const CACHE_READ_CONCURRENCY = 100
 
 class StaticFileAccessDeniedError extends Error {
-  constructor(filepath: string) {
-    super(`access denied for ${filepath}`)
+  constructor(filepath: string, reason: string) {
+    super(`access denied for ${filepath}: ${reason}`)
   }
 }
 
 class MissingStaticFileError extends Error {
-  constructor(filepath: string) {
-    super(`missing static file ${filepath}`)
+  constructor(filepath: string, source: string) {
+    super(`missing static file ${filepath} from ${source}`)
   }
 }
 
@@ -82,7 +81,7 @@ export const buildStaticFilesSource = (
     let modified: number | undefined
     if (ignoreFileChanges) {
       if (cachedResult === undefined) {
-        throw new MissingStaticFileError(filepath)
+        throw new MissingStaticFileError(filepath, 'static files cache')
       }
       return {
         ...cachedResult,
@@ -92,11 +91,11 @@ export const buildStaticFilesSource = (
 
     try {
       modified = await staticFilesDirStore.mtimestamp(filepath)
-    } catch {
-      throw new StaticFileAccessDeniedError(filepath)
+    } catch (error) {
+      throw new StaticFileAccessDeniedError(filepath, error.message)
     }
     if (modified === undefined) {
-      throw new MissingStaticFileError(filepath)
+      throw new MissingStaticFileError(filepath, 'static files dir store (mtimestamp)')
     }
 
     const cacheModified = cachedResult ? cachedResult.modified : undefined
@@ -104,7 +103,7 @@ export const buildStaticFilesSource = (
     if (cachedResult === undefined || cacheModified === undefined || modified > cacheModified) {
       const file = await staticFilesDirStore.get(filepath)
       if (file === undefined) {
-        throw new MissingStaticFileError(filepath)
+        throw new MissingStaticFileError(filepath, 'static files dir store')
       }
       const staticFileBuffer = file.buffer
       const hash = calculateStaticFileHash(staticFileBuffer)
@@ -160,6 +159,13 @@ export const buildStaticFilesSource = (
       try {
         const staticFileData = await getStaticFileData(args.filepath)
         if (args.hash !== undefined && staticFileData.hash !== args.hash) {
+          log.trace(
+            'received file with hash %s but expected hash to be %s - returning file %s without content (hash: %s)',
+            staticFileData.hash,
+            args.hash,
+            args.filepath,
+            args.hash,
+          )
           // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
           // in the elements cache between a file that was really missing when the cache was
           // written, and a file that existed but was modified since the cache was written,
@@ -189,12 +195,24 @@ export const buildStaticFilesSource = (
           staticFilesDirStore.getFullPath(args.filepath),
           // We use ignoreDeletionsCache to make sure that if the file was requested and then the content
           // was deleted, we will still lbe able to access the content
-          async () => (await staticFilesDirStore.get(args.filepath, { ignoreDeletionsCache: true }))?.buffer,
+          async () => {
+            const file = await staticFilesDirStore.get(args.filepath, { ignoreDeletionsCache: true })
+            if (file === undefined) {
+              log.warn('file %s is missing from static files dir store', args.filepath)
+              return undefined
+            }
+            if (file.buffer === undefined) {
+              log.warn('received file %s without buffer from static files dir store', args.filepath)
+            }
+            return file.buffer
+          },
           args.encoding,
-          _.isObject(args) ? args.isTemplate : undefined,
+          args.isTemplate,
         )
       } catch (e) {
+        log.warn('failed to get file %s with error: %o', args.filepath, e)
         if (args.hash !== undefined) {
+          log.trace('returning file %s without content (hash: %s)', args.filepath, args.hash)
           // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
           // in the elements cache between a file that was really missing when the cache was
           // written, and a file that existed but was removed since the cache was written,

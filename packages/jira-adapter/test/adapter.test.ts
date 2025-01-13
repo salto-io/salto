@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -65,6 +65,7 @@ jest.mock('@salto-io/adapter-components', () => {
         addRemainingTypes: jest.fn().mockImplementation(() => {
           throw new Error('addRemainingTypes called without a mock')
         }),
+        restoreInstanceTypeFromDeploy: jest.fn().mockImplementation(args => args.appliedChanges),
       },
     },
     openapi: {
@@ -233,6 +234,21 @@ describe('adapter', () => {
       })
 
       expect((getChangeData(appliedChanges[0]) as InstanceElement)?.value.id).toBeUndefined()
+    })
+    it('should restore changes to include their original type', async () => {
+      await adapter.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({
+              before: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType),
+              after: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType),
+            }),
+          ],
+        },
+        progressReporter: nullProgressReporter,
+      })
+      expect(elements.ducktype.restoreInstanceTypeFromDeploy).toHaveBeenCalled()
     })
   })
   describe('deployModifiers', () => {
@@ -641,7 +657,7 @@ describe('adapter', () => {
             severity: 'Error',
           },
           {
-            message: 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
+            message: 'Other issues',
             detailedMessage:
               'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
             severity: 'Warning',

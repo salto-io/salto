@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -751,8 +751,7 @@ describe('workflowStructureFilter', () => {
           errors: [
             {
               severity: 'Warning',
-              message: `The following transitions of workflow instance are not unique: tran1, tran2.
-It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
+              message: 'Other issues',
               detailedMessage: `The following transitions of workflow instance are not unique: tran1, tran2.
 It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
             },

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,14 +7,8 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import {
-  Change,
-  createSaltoElementError,
-  getChangeData,
-  InstanceElement,
-  isAdditionChange,
-  isInstanceChange,
-} from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { createSaltoElementError } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { assignServiceIdToAdditionChange, deployChanges } from '../deprecated_deployment'

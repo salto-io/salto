@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -8,6 +8,7 @@
 import { EOL } from 'os'
 import { cleanWorkspace } from '@salto-io/core'
 import { ProviderOptionsS3, StateConfig, WorkspaceComponents } from '@salto-io/workspace'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { getUserBooleanInput } from '../callbacks'
 import {
   header,
@@ -53,7 +54,7 @@ export const cleanAction: WorkspaceCommandAction<CleanArgs> = async ({
   outputLine(formatStepStart(Prompts.CLEAN_STARTED), output)
 
   try {
-    await cleanWorkspace(workspace, cleanArgs)
+    await cleanWorkspace(workspace, cleanArgs, adapterCreators)
   } catch (e) {
     errorOutputLine(formatStepFailed(Prompts.CLEAN_FAILED(e.toString())), output)
     return CliExitCode.AppError

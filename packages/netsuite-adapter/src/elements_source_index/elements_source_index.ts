@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -23,7 +23,7 @@ import { getElementValueOrAnnotations, isCustomRecordType } from '../types'
 import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { extractCustomRecordFields, getElementServiceIdRecords } from '../filters/element_references'
-import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE, SELECT_RECORD_TYPE } from '../constants'
+import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, SELECT_RECORD_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -46,26 +46,27 @@ const toCustomListValueElemID = (instanceElemId: ElemID, valueKey: string): Elem
 export const assignToInternalIdsIndex = async (
   element: Element,
   internalIdsIndex: Record<string, ElemID>,
-  typeToInternalId: Record<string, string>,
+  typeToInternalId: Record<string, string[]>,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
   const values = getElementValueOrAnnotations(element)
   const internalId = values[INTERNAL_ID]
-  if (!internalId || values[IS_SUB_INSTANCE]) {
+  if (!internalId) {
     return
   }
   const { elemID } = element
   if (isObjectType(element) && isCustomRecordType(element)) {
-    const customRecordTypeId = typeToInternalId[CUSTOM_RECORD_TYPE]
     internalIdsIndex[getDataInstanceId(internalId, CUSTOM_RECORD_TYPE)] = elemID
-    internalIdsIndex[getDataInstanceId(internalId, customRecordTypeId)] = elemID
+    typeToInternalId[CUSTOM_RECORD_TYPE]?.forEach(typeId => {
+      internalIdsIndex[getDataInstanceId(internalId, typeId)] = elemID
+    })
   }
   if (isInstanceElement(element)) {
     const { typeName } = elemID
     internalIdsIndex[getDataInstanceId(internalId, typeName)] = elemID
-    if (typeName in typeToInternalId) {
-      internalIdsIndex[getDataInstanceId(internalId, typeToInternalId[typeName])] = elemID
-    }
+    typeToInternalId[typeName]?.forEach(typeId => {
+      internalIdsIndex[getDataInstanceId(internalId, typeId)] = elemID
+    })
     const type = await element.getType(elementsSource)
     if (isCustomRecordType(type) && type.annotations[INTERNAL_ID]) {
       internalIdsIndex[getDataInstanceId(internalId, type.annotations[INTERNAL_ID])] = elemID
@@ -102,7 +103,7 @@ const createIndexes = async ({
 }: {
   elementsSource: ReadOnlyElementsSource
   isPartial: boolean
-  typeToInternalId: Record<string, string>
+  typeToInternalId: Record<string, string[]>
   internalIdToTypes: Record<string, string[]>
   deletedElements: ElemID[]
 }): Promise<ElementsSourceIndexes> => {
@@ -196,7 +197,7 @@ export const createElementsSourceIndex = ({
 }: {
   elementsSource: ReadOnlyElementsSource
   isPartial: boolean
-  typeToInternalId: Record<string, string>
+  typeToInternalId: Record<string, string[]>
   internalIdToTypes: Record<string, string[]>
   deletedElements?: ElemID[]
 }): LazyElementsSourceIndexes => {

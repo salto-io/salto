@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -170,7 +170,7 @@ describe('filterCreator', () => {
           },
         }
         filter = filterCreator(
-          createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements([articleInstance]) }),
+          createFilterCreatorParams({ config, elementSource: buildElementsSourceFromElements([articleInstance]) }),
         )
         mockDownload = jest.spyOn(DownloadModule, 'download')
       })
@@ -190,7 +190,7 @@ describe('filterCreator', () => {
           it('returns a warning for the theme', async () => {
             const errors = [
               {
-                message: 'Error fetching theme id park?, download failed specific error',
+                message: 'Other issues',
                 detailedMessage: 'Error fetching theme id park?, download failed specific error',
                 severity: 'Warning',
               },
@@ -213,7 +213,7 @@ describe('filterCreator', () => {
           it('returns a default warning for the theme', async () => {
             const errors = [
               {
-                message: 'Error fetching theme id park?, no content returned from Zendesk API',
+                message: 'Other issues',
                 detailedMessage: 'Error fetching theme id park?, no content returned from Zendesk API',
                 severity: 'Warning',
               },
@@ -305,7 +305,7 @@ describe('filterCreator', () => {
           it('returns a warning for the theme', async () => {
             const errors = [
               {
-                message: 'Error fetching theme id park?, Bad zip file',
+                message: 'Other issues',
                 detailedMessage: 'Error fetching theme id park?, Bad zip file',
                 severity: 'Warning',
               },
@@ -335,7 +335,7 @@ describe('filterCreator', () => {
         },
       }
       filter = filterCreator(
-        createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements([themeSettingsInstance]) }),
+        createFilterCreatorParams({ config, elementSource: buildElementsSourceFromElements([themeSettingsInstance]) }),
       )
       mockCreate = jest.spyOn(CreateModule, 'create')
       mockDelete = jest.spyOn(DeleteModule, 'deleteTheme')
@@ -469,7 +469,7 @@ describe('filterCreator', () => {
           filter = filterCreator(
             createFilterCreatorParams({
               config,
-              elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]),
+              elementSource: buildElementsSourceFromElements([themeSettingsInstance2]),
             }),
           )
 
@@ -595,7 +595,7 @@ describe('filterCreator', () => {
           filter = filterCreator(
             createFilterCreatorParams({
               config,
-              elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]),
+              elementSource: buildElementsSourceFromElements([themeSettingsInstance2]),
             }),
           )
           await filter.deploy?.(changes)
@@ -647,7 +647,7 @@ describe('filterCreator', () => {
             filter = filterCreator(
               createFilterCreatorParams({
                 config,
-                elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]),
+                elementSource: buildElementsSourceFromElements([themeSettingsInstance2]),
               }),
             )
             mockPublish.mockResolvedValue(['Failed to publish'])

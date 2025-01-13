@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -18,7 +18,7 @@ import {
   SaltoError,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { TransformFunc, safeJsonStringify, transformValues } from '@salto-io/adapter-utils'
+import { TransformFunc, safeJsonStringify, transformValues, ERROR_MESSAGES } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { toBasicInstance } from '../instance_elements'
@@ -484,10 +484,9 @@ export const getAllInstances = async ({
         }
       } catch (e) {
         if (e.response?.status === 403 || e.response?.status === 401) {
-          const message = `Salto could not access the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`
           const newError: SaltoError = {
-            message,
-            detailedMessage: message,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage: `Salto could not access the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
             severity: 'Warning',
           }
           return { elements: [], errors: [newError] }
@@ -495,7 +494,7 @@ export const getAllInstances = async ({
         if (e instanceof InvalidSingletonType) {
           return {
             elements: [],
-            errors: [{ message: e.message, detailedMessage: e.message, severity: 'Warning' }],
+            errors: [{ message: ERROR_MESSAGES.OTHER_ISSUES, detailedMessage: e.message, severity: 'Warning' }],
           }
         }
         throw e

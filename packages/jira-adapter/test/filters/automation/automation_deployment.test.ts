@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -33,6 +33,7 @@ describe('automationDeploymentFilter', () => {
   let config: JiraConfig
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
+  let deploymentTriggerSegment: Value
   const objectSchemaType = new ObjectType({
     elemID: new ElemID(JIRA, OBJECT_SCHEMA_TYPE),
     fields: {
@@ -117,12 +118,41 @@ describe('automationDeploymentFilter', () => {
     instance = new InstanceElement('instance', type, {
       name: 'someName',
       state: 'ENABLED',
+      trigger: {
+        component: 'ACTION',
+        schemaVersion: 1,
+        value: {
+          objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+          schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+        },
+        children: [],
+        conditions: [],
+      },
       projects: [
         {
           projectId: '1',
         },
       ],
     })
+    deploymentTriggerSegment = {
+      trigger: {
+        component: 'ACTION',
+        schemaVersion: 1,
+        value: {
+          objectTypeId: {
+            id: '35',
+            name: 'objectTypeName',
+          },
+          schemaId: {
+            id: '25',
+            name: 'schemaName',
+            workspaceId: 'w11',
+          },
+        },
+        children: [],
+        conditions: [],
+      },
+    }
   })
 
   describe('onFetch', () => {
@@ -207,11 +237,13 @@ describe('automationDeploymentFilter', () => {
       expect(instance.value.id).toBe(3)
       expect(instance.value.created).toBe(1)
 
+      deploymentTriggerSegment.trigger.value.eventFilters = ['ari:cloud:jira:cloudId:project/1']
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import',
         {
           rules: [
             {
+              ...deploymentTriggerSegment,
               name: 'someName',
               state: 'ENABLED',
               projects: [
@@ -229,7 +261,7 @@ describe('automationDeploymentFilter', () => {
           headers: PRIVATE_API_HEADERS,
         },
       )
-
+      deploymentTriggerSegment.trigger.value.eventFilters = ['ari:cloud:jira:cloudId:project/1']
       expect(connection.put).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/3',
         {
@@ -238,6 +270,7 @@ describe('automationDeploymentFilter', () => {
             created: 1,
             name: 'someName',
             state: 'ENABLED',
+            ...deploymentTriggerSegment,
             projects: [
               {
                 projectId: '1',
@@ -420,6 +453,7 @@ describe('automationDeploymentFilter', () => {
             {
               name: 'someName',
               state: 'ENABLED',
+              ...deploymentTriggerSegment,
               projects: [
                 {
                   projectId: '1',
@@ -440,6 +474,7 @@ describe('automationDeploymentFilter', () => {
           created: 1,
           name: 'someName',
           state: 'ENABLED',
+          ...deploymentTriggerSegment,
           projects: [
             {
               projectId: '1',
@@ -457,7 +492,7 @@ describe('automationDeploymentFilter', () => {
       await filter.deploy([toChange({ after: instance })])
 
       expect(instance.value.id).toBe(3)
-
+      deploymentTriggerSegment.trigger.value.eventFilters = ['ari:cloud:jira:cloudId:project/1']
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import',
         {
@@ -465,6 +500,7 @@ describe('automationDeploymentFilter', () => {
             {
               name: 'someName',
               state: 'DISABLED',
+              ...deploymentTriggerSegment,
               projects: [
                 {
                   projectId: '1',
@@ -489,7 +525,7 @@ describe('automationDeploymentFilter', () => {
       connection.post.mockClear()
       connection.post.mockImplementation(async url => createPostMockResponse([])(url))
       await filter.deploy([toChange({ after: instance })])
-
+      deploymentTriggerSegment.trigger.value.eventFilters = ['ari:cloud:jira::site/cloudId']
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import',
         {
@@ -497,6 +533,7 @@ describe('automationDeploymentFilter', () => {
             {
               name: 'someName',
               state: 'ENABLED',
+              ...deploymentTriggerSegment,
               ruleScope: {
                 resources: ['ari:cloud:jira::site/cloudId'],
               },
@@ -524,7 +561,7 @@ describe('automationDeploymentFilter', () => {
         ])(url),
       )
       await filter.deploy([toChange({ after: instance })])
-
+      deploymentTriggerSegment.trigger.value.eventFilters = ['ari:cloud:jira-core::site/cloudId']
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import',
         {
@@ -532,6 +569,7 @@ describe('automationDeploymentFilter', () => {
             {
               name: 'someName',
               state: 'ENABLED',
+              ...deploymentTriggerSegment,
               projects: [
                 {
                   projectTypeKey: 'business',
@@ -640,7 +678,7 @@ describe('automationDeploymentFilter', () => {
       instance.value.id = 3
       instance.value.created = 1
       await filter.deploy([toChange({ before: instance, after: instance })])
-
+      deploymentTriggerSegment.trigger.value.eventFilters = ['ari:cloud:jira:cloudId:project/1']
       expect(connection.put).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/3',
         {
@@ -649,6 +687,7 @@ describe('automationDeploymentFilter', () => {
             created: 1,
             name: 'someName',
             state: 'ENABLED',
+            ...deploymentTriggerSegment,
             projects: [
               {
                 projectId: '1',

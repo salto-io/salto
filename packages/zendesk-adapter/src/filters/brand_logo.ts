@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -8,10 +8,8 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import {
-  BuiltinTypes,
   Change,
   CORE_ANNOTATIONS,
-  ElemID,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
@@ -23,6 +21,7 @@ import {
   SaltoElementError,
   SaltoError,
   StaticFile,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
 import {
@@ -44,7 +43,7 @@ import { FilterCreator } from '../filter'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
+const { RECORDS_PATH } = elementsUtils
 
 export const LOGO_FIELD = 'logo'
 
@@ -76,20 +75,6 @@ const isBrand = (value: unknown): value is Brand => {
   return true
 }
 
-export const BRAND_LOGO_TYPE = new ObjectType({
-  elemID: new ElemID(ZENDESK, BRAND_LOGO_TYPE_NAME),
-  fields: {
-    id: {
-      refType: BuiltinTypes.SERVICE_ID_NUMBER,
-      annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-    },
-    filename: { refType: BuiltinTypes.STRING },
-    contentType: { refType: BuiltinTypes.STRING },
-    content: { refType: BuiltinTypes.STRING },
-  },
-  path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, BRAND_LOGO_TYPE_NAME],
-})
-
 const getLogoContent = async (
   client: ZendeskClient,
   logoId: string,
@@ -116,9 +101,11 @@ const getLogoContent = async (
 const getBrandLogo = async ({
   client,
   brand,
+  brandLogoType,
 }: {
   client: ZendeskClient
   brand: InstanceElement
+  brandLogoType: ObjectType
 }): Promise<InstanceElement | undefined> => {
   const logoValues = brand.value.logo
   if (logoValues === undefined) {
@@ -135,13 +122,13 @@ const getBrandLogo = async ({
   }
   const logoInstance = new InstanceElement(
     naclCase(name),
-    BRAND_LOGO_TYPE,
+    brandLogoType,
     {
       id: logoValues.id,
       filename: logoValues.file_name,
       contentType: logoValues.content_type,
       content: new StaticFile({
-        filepath: `${ZENDESK}/${BRAND_LOGO_TYPE.elemID.name}/${resourcePathName}`,
+        filepath: `${ZENDESK}/${brandLogoType.elemID.name}/${resourcePathName}`,
         content,
       }),
     },
@@ -226,10 +213,14 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
       .filter(e => !_.isEmpty(e.value[LOGO_FIELD]))
-    elements.push(BRAND_LOGO_TYPE)
+    const brandLogoType = elements.filter(isObjectType).find(e => e.elemID.typeName === BRAND_LOGO_TYPE_NAME)
+    if (brandLogoType === undefined) {
+      log.error('Failed to find brand logo type. Not fetching brand logos')
+      return { errors: [] }
+    }
     try {
       const logoInstances = (
-        await Promise.all(brandsWithLogos.map(async brand => getBrandLogo({ client, brand })))
+        await Promise.all(brandsWithLogos.map(async brand => getBrandLogo({ client, brand, brandLogoType })))
       ).filter(isInstanceElement)
       logoInstances.forEach(instance => elements.push(instance))
       return { errors: [] }

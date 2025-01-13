@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -14,7 +14,7 @@ import { ROUTING_ATTRIBUTE_VALUE_TYPE_NAME } from '../constants'
 /**
  * Deploys routing attribute value one by one as zendesk does not support parallel deploy
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'routingAttributeValueFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -22,7 +22,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === ROUTING_ATTRIBUTE_VALUE_TYPE_NAME,
     )
     const deployResult = await deployChangesSequentially(relevantChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions)
+      await deployChange(change, client, oldApiDefinitions)
     })
     return { deployResult, leftoverChanges }
   },

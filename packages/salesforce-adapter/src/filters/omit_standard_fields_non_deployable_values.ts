@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -14,6 +14,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
   name: 'omitStandardFieldsNonDeployableValues',
   onFetch: ensureSafeFilterFetch({
     config,
+    filterName: 'omitStandardFieldsNonDeployableValues',
     warningMessage: 'Error occurred when attempting to omit standard fields non deployable values',
     fetchFilterFunc: async elements =>
       elements

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -226,9 +226,10 @@ describe('merger', () => {
         .toArray()
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(ConflictingFieldTypesError)
-      expect(errors[0].message).toContain(BuiltinTypes.STRING.elemID.getFullName())
-      expect(errors[0].message).toContain(BuiltinTypes.NUMBER.elemID.getFullName())
-      expect(String(errors[0])).toEqual(errors[0].message)
+      expect(errors[0].message).toEqual('Element has invalid NaCl content')
+      expect(errors[0].detailedMessage).toContain(BuiltinTypes.STRING.elemID.getFullName())
+      expect(errors[0].detailedMessage).toContain(BuiltinTypes.NUMBER.elemID.getFullName())
+      expect(String(errors[0])).toEqual(errors[0].detailedMessage)
     })
 
     it('returns an error when meta types have conflicting types', async () => {
@@ -238,7 +239,7 @@ describe('merger', () => {
         .toArray()
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(ConflictingMetaTypeError)
-      expect(String(errors[0])).toEqual(errors[0].message)
+      expect(String(errors[0])).toEqual(errors[0].detailedMessage)
     })
   })
 
@@ -422,7 +423,8 @@ describe('merger', () => {
         .flat()
         .toArray()
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Error merging salto.settingObj: conflicting is settings definitions')
+      expect(errors[0].message).toEqual('Element has invalid NaCl content')
+      expect(errors[0].detailedMessage).toEqual('Error merging salto.settingObj: conflicting is settings definitions')
     })
   })
 

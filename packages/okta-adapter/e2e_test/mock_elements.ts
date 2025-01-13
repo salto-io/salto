@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -177,35 +177,6 @@ export const mockDefaultValues: Record<string, Values> = {
       notes: {
         admin: 'test note',
         enduser: 'note',
-      },
-      signOn: {
-        ssoAcsUrl: 'https://sso.test.io',
-        // eslint-disable-next-line no-template-curly-in-string
-        idpIssuer: 'http://www.okta.com/${org.externalKey}',
-        audience: 'https://sso.test.io',
-        recipient: 'https://sso.test.io',
-        destination: 'https://sso.test.io',
-        // eslint-disable-next-line no-template-curly-in-string
-        subjectNameIdTemplate: '${user.userName}',
-        subjectNameIdFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
-        responseSigned: true,
-        assertionSigned: true,
-        signatureAlgorithm: 'RSA_SHA256',
-        digestAlgorithm: 'SHA256',
-        honorForceAuthn: true,
-        authnContextClassRef: 'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport',
-        requestCompressed: false,
-        attributeStatements: [],
-        inlineHooks: [],
-        acsEndpoints: [],
-        allowMultipleAcsEndpoints: false,
-        samlSignedRequestEnabled: false,
-        slo: {
-          enabled: false,
-        },
-        assertionEncryption: {
-          enabled: false,
-        },
       },
       manualProvisioning: false,
       implicitAssignment: false,

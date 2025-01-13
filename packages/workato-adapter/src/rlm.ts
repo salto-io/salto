@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -21,7 +21,6 @@ import {
   Values,
   SaltoError,
   Value,
-  createSaltoElementError,
   SaltoElementError,
   isSaltoError,
 } from '@salto-io/adapter-api'
@@ -31,6 +30,7 @@ import {
   getParent,
   ResolveValuesFunc,
   safeJsonStringify,
+  createSaltoElementError,
 } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
 import Joi from 'joi'

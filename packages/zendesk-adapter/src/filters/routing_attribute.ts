@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -14,7 +14,7 @@ import { ROUTING_ATTRIBUTE_TYPE_NAME } from '../constants'
 /**
  * Deploys routing attribute
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'routingAttributeFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -22,7 +22,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === ROUTING_ATTRIBUTE_TYPE_NAME && !isRemovalChange(change),
     )
     const deployResult = await deployChanges(relevantChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions, ['values'])
+      await deployChange(change, client, oldApiDefinitions, ['values'])
     })
     return { deployResult, leftoverChanges }
   },

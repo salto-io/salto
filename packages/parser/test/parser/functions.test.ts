@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -11,9 +11,10 @@ describe('Functions', () => {
   describe('MissingFunctionError', () => {
     it('should show correct message and severity', () => {
       const missus = new MissingFunctionError('ZOMG')
-      expect(missus.message).toEqual("Invalid function name 'ZOMG'")
+      expect(missus.message).toEqual('Element has invalid NaCl content')
+      expect(missus.detailedMessage).toEqual("Invalid function name 'ZOMG'")
       expect(missus.severity).toEqual('Error')
-      expect(missus.toString()).toEqual(missus.message)
+      expect(missus.toString()).toEqual(missus.detailedMessage)
     })
   })
   describe('Factory', () => {

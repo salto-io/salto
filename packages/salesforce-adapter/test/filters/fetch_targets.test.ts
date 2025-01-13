@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -10,8 +10,17 @@ import filterCreator from '../../src/filters/fetch_targets'
 import { FilterWith } from './mocks'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { Types } from '../../src/transformers/transformer'
-import { ArtificialTypes, FIELD_ANNOTATIONS } from '../../src/constants'
+import { createMetadataObjectType, Types } from '../../src/transformers/transformer'
+import {
+  APEX_CLASS_METADATA_TYPE,
+  ArtificialTypes,
+  CUSTOM_OBJECT,
+  FIELD_ANNOTATIONS,
+  SALESFORCE,
+  SUBTYPES_PATH,
+  TYPES_PATH,
+} from '../../src/constants'
+import { mockTypes } from '../mock_elements'
 
 describe('fetch targets filter', () => {
   let filter: FilterWith<'onFetch'>
@@ -44,7 +53,12 @@ describe('fetch targets filter', () => {
           },
         },
       })
-      elements = [customObjectType, customObjectTypeWithLookup]
+      // Make sure subtypes are not included in the fetch targets
+      const mockSubtype = createMetadataObjectType({
+        annotations: { metadataType: 'mockSubtype' },
+        path: [SALESFORCE, TYPES_PATH, SUBTYPES_PATH, 'mockSubtype'],
+      })
+      elements = [customObjectType, customObjectTypeWithLookup, mockTypes.ApexClass, mockSubtype]
     })
     describe('when feature is enabled', () => {
       describe('when fetch is full', () => {
@@ -57,13 +71,14 @@ describe('fetch targets filter', () => {
           }) as typeof filter
         })
 
-        it('should create a fetch targets instance with correct custom objects and lookups', async () => {
+        it('should create a fetch targets instance with correct values', async () => {
           await filter.onFetch(elements)
           const fetchTargetsInstance = elements
             .filter(isInstanceElement)
             .find(e => e.getTypeSync() === ArtificialTypes.FetchTargets) as InstanceElement
           expect(fetchTargetsInstance).toBeDefined()
           expect(fetchTargetsInstance.value).toEqual({
+            metadataTypes: [CUSTOM_OBJECT, APEX_CLASS_METADATA_TYPE],
             customObjects: [CUSTOM_OBJECT_NAME, CUSTOM_OBJECT_WITH_LOOKUP_NAME],
             customObjectsLookups: {
               [CUSTOM_OBJECT_WITH_LOOKUP_NAME]: [CUSTOM_OBJECT_NAME, 'Account', 'Contact'],

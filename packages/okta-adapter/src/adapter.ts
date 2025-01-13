@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -32,13 +32,13 @@ import {
   restoreChangeElement,
   createChangeElementResolver,
 } from '@salto-io/adapter-components'
-import { logDuration } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
 import { CLIENT_CONFIG, FETCH_CONFIG, OLD_API_DEFINITIONS_CONFIG } from './config'
-import { configType, OktaUserConfig } from './user_config'
+import { configType, getExcludeUserRolesConfigSuggestion, OktaUserConfig, OktaUserFetchConfig } from './user_config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -64,6 +64,7 @@ import appLogoFilter from './filters/app_logo'
 import brandThemeRemovalFilter from './filters/brand_theme_removal'
 import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
+import removeApplicationGrants from './filters/remove_application_grants'
 import unorderedListsFilter from './filters/unordered_lists'
 import addAliasFilter from './filters/add_alias'
 import profileMappingRemovalFilter from './filters/profile_mapping_removal'
@@ -73,7 +74,16 @@ import policyPrioritiesFilter, {
 } from './filters/policy_priority'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
-import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA, USER_TYPE_NAME } from './constants'
+import removedUserRoleAssignments from './filters/removed_user_roles_assignments'
+import brandCustomizationsFilter from './filters/brand_customizations'
+import {
+  APP_LOGO_TYPE_NAME,
+  BRAND_LOGO_TYPE_NAME,
+  FAV_ICON_TYPE_NAME,
+  OKTA,
+  USER_ROLES_TYPE_NAME,
+  USER_TYPE_NAME,
+} from './constants'
 import { getLookUpNameCreator } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances, shouldConvertUserIds } from './user_utils'
 import { isClassicEngineOrg, logUsersCount } from './utils'
@@ -95,6 +105,8 @@ const DEFAULT_FILTERS = [
   standardRolesFilter, // TODO SALTO-5607 - move to infra
   userSchemaFilter,
   authorizationRuleFilter,
+  // must run before userFilter
+  removedUserRoleAssignments,
   // should run before fieldReferencesFilter
   userFilter,
   groupPushFilter,
@@ -106,6 +118,7 @@ const DEFAULT_FILTERS = [
   defaultPolicyRuleDeployment,
   appUserSchemaAdditionAndRemovalFilter,
   schemaDeploymentFilter,
+  removeApplicationGrants,
   appLogoFilter,
   brandThemeRemovalFilter,
   brandThemeFilesFilter,
@@ -121,6 +134,7 @@ const DEFAULT_FILTERS = [
   profileMappingRemovalFilter,
   // should run after fieldReferences
   ...Object.values(commonFilters),
+  brandCustomizationsFilter, // must run after fieldReferencesFilter and referencedInstanceNames (SALTO-7314) filter
   // should run last
   privateApiDeployFilter,
   defaultDeployFilter,
@@ -135,6 +149,25 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   ...POLICY_RULE_PRIORITY_TYPE_NAMES,
   ...POLICY_PRIORITY_TYPE_NAMES,
 ]
+
+/**
+ * Temporary adjusment to support migration of UserRoles type into the exclude list
+ */
+const createElementQueryWithExcludedUserRoles = (
+  fetchConfig: OktaUserFetchConfig,
+  criteria: Record<string, elementUtils.query.QueryCriterion>,
+): elementUtils.query.ElementQuery => {
+  const isUserRolesExcluded = fetchConfig.exclude.some(fetchEnrty => fetchEnrty.type === USER_ROLES_TYPE_NAME)
+  const isUserRolesIncluded = fetchConfig.include.some(fetchEntry => fetchEntry.type === USER_ROLES_TYPE_NAME)
+  const updatedConfig =
+    !isUserRolesExcluded && !isUserRolesIncluded
+      ? {
+          ...fetchConfig,
+          exclude: fetchConfig.exclude.concat({ type: USER_ROLES_TYPE_NAME }),
+        }
+      : fetchConfig
+  return elementUtils.query.createElementQuery(updatedConfig, criteria)
+}
 
 export interface OktaAdapterParams {
   filterCreators?: FilterCreator[]
@@ -161,6 +194,7 @@ export default class OktaAdapter implements AdapterOperations {
   private fixElementsFunc: FixElementsFunc
   private definitions: definitionsUtils.RequiredDefinitions<OktaOptions>
   private accountName?: string
+  private elementsSource: ReadOnlyElementsSource
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -179,11 +213,12 @@ export default class OktaAdapter implements AdapterOperations {
     this.client = client
     this.adminClient = adminClient
     this.isOAuthLogin = isOAuthLogin
+    this.elementsSource = elementsSource
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
     })
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
+    this.fetchQuery = createElementQueryWithExcludedUserRoles(this.userConfig.fetch, fetchCriteria)
     this.accountName = accountName
 
     const definitions = {
@@ -261,13 +296,12 @@ export default class OktaAdapter implements AdapterOperations {
       log.warn(
         'Fetching private APIs is not supported for OAuth login, creating config suggestion to exclude private APIs',
       )
-      const message =
-        'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched'
       return {
         errors: [
           {
-            message,
-            detailedMessage: message,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage:
+              'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
             severity: 'Warning',
           },
         ],
@@ -334,6 +368,7 @@ export default class OktaAdapter implements AdapterOperations {
     const configChanges = (getElementsConfigChanges ?? [])
       .concat(classicOrgConfigSuggestion ?? [])
       .concat(oauthConfigChange ?? [])
+      .concat(getExcludeUserRolesConfigSuggestion(this.configInstance) ?? [])
     const updatedConfig =
       !_.isEmpty(configChanges) && this.configInstance
         ? definitionsUtils.getUpdatedConfigFromConfigChanges({
@@ -389,7 +424,7 @@ export default class OktaAdapter implements AdapterOperations {
     const sourceChanges = _.keyBy(instanceChanges, change => getChangeData(change).elemID.getFullName())
     const runner = this.createFiltersRunner()
     const deployDefQuery = definitionsUtils.queryWithDefault(this.definitions.deploy.instances)
-    const changeResolver = createChangeElementResolver({ getLookUpName })
+    const changeResolver = createChangeElementResolver({ getLookUpName, elementSource: this.elementsSource })
     const resolvedChanges = await awu(instanceChanges)
       .map(async change =>
         deployDefQuery.query(getChangeData(change).elemID.typeName)?.referenceResolution?.when === 'early' &&

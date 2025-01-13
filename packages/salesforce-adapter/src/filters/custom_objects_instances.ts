@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -21,8 +21,9 @@ import {
   ReadOnlyElementsSource,
   Values,
 } from '@salto-io/adapter-api'
-import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
+  bigObjectExcludeConfigChange,
   createInvalidIdFieldConfigChange,
   createManyInstancesExcludeConfigChange,
   createUnresolvedRefIdFieldConfigChange,
@@ -39,6 +40,7 @@ import {
   DETECTS_PARENTS_INDICATOR,
   API_NAME_SEPARATOR,
   DATA_INSTANCES_CHANGED_AT_MAGIC,
+  SALESFORCE_BIG_OBJECT_SUFFIX,
 } from '../constants'
 import { FilterContext, FilterResult, FilterCreator } from '../filter'
 import { apiName, Types, createInstanceServiceIds, isNameField, toRecord } from '../transformers/transformer'
@@ -617,22 +619,31 @@ const filterTypesWithManyInstances = async ({
   const typesToFilter: string[] = []
   const heavyTypesSuggestions: ConfigChangeSuggestion[] = []
 
+  let wasBigObjectTypeFound = false
   // Creates a lists of typeNames and changeSuggestions for types with too many instances
   await awu(Object.entries(validChangesFetchSettings))
     .filter(([, setting]) => setting.isBase)
     .forEach(async ([typeName]) => {
-      const instancesCount = await client.countInstances(typeName)
-      if (instancesCount > maxInstancesPerType) {
+      if (typeName.endsWith(SALESFORCE_BIG_OBJECT_SUFFIX)) {
         typesToFilter.push(typeName)
-        heavyTypesSuggestions.push(
-          createManyInstancesExcludeConfigChange({
-            typeName,
-            instancesCount,
-            maxInstancesPerType,
-          }),
-        )
+        wasBigObjectTypeFound = true
+      } else {
+        const instancesCount = await client.countInstances(typeName)
+        if (instancesCount > maxInstancesPerType) {
+          typesToFilter.push(typeName)
+          heavyTypesSuggestions.push(
+            createManyInstancesExcludeConfigChange({
+              typeName,
+              instancesCount,
+              maxInstancesPerType,
+            }),
+          )
+        }
       }
     })
+  if (wasBigObjectTypeFound) {
+    heavyTypesSuggestions.push(bigObjectExcludeConfigChange)
+  }
 
   return {
     filteredChangesFetchSettings: _.omit(validChangesFetchSettings, typesToFilter),
@@ -651,14 +662,11 @@ const getInaccessibleCustomFields = (objectType: ObjectType): string[] =>
 const createInvalidAliasFieldFetchWarning = ({
   objectType,
   invalidAliasFields,
-}: CustomObjectFetchSetting): SaltoError => {
-  const message = `Invalid alias fields for type ${apiNameSync(objectType)}: ${safeJsonStringify(invalidAliasFields)}. Value of these fields will be omitted from the Alias`
-  return {
-    message,
-    detailedMessage: message,
-    severity: 'Warning',
-  }
-}
+}: CustomObjectFetchSetting): SaltoError => ({
+  message: ERROR_MESSAGES.OTHER_ISSUES,
+  detailedMessage: `Invalid alias fields for type ${apiNameSync(objectType)}: ${safeJsonStringify(invalidAliasFields)}. Value of these fields will be omitted from the Alias`,
+  severity: 'Warning',
+})
 
 const createInvalidManagedBySaltoFieldFetchWarning = (
   objectType: ObjectType,
@@ -668,30 +676,25 @@ const createInvalidManagedBySaltoFieldFetchWarning = (
   const typeName = apiNameSync(objectType) as string
   const errorPreamble = `The field ${typeName}${API_NAME_SEPARATOR}${fieldName} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration.`
   if ((objectType.fields[fieldName]?.annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false) {
-    const message = `${errorPreamble} However, the user configured for fetch does not have read access to this field. Records of type ${typeName} will not be fetched.`
     return {
-      message,
-      detailedMessage: message,
+      message: ERROR_MESSAGES.OTHER_ISSUES,
+      detailedMessage: `${errorPreamble} However, the user configured for fetch does not have read access to this field. Records of type ${typeName} will not be fetched.`,
       severity: 'Warning',
     }
   }
   // we assume if the issue is not the queryability of the field then it must be that the field is of the wrong type
-  const message = `${errorPreamble} However, the type of the field (${objectType.fields[fieldName].getTypeSync().elemID.getFullName()}) is not boolean. Records of type ${typeName} will not be fetched.`
   return {
-    message,
-    detailedMessage: message,
+    message: ERROR_MESSAGES.OTHER_ISSUES,
+    detailedMessage: `${errorPreamble} However, the type of the field (${objectType.fields[fieldName].getTypeSync().elemID.getFullName()}) is not boolean. Records of type ${typeName} will not be fetched.`,
     severity: 'Warning',
   }
 }
 
-const createInaccessibleFieldsFetchWarning = (objectType: ObjectType, inaccessibleFields: string[]): SaltoError => {
-  const message = `There are ${inaccessibleFields.length} fields in the ${apiNameSync(objectType)} object that the fetch user does not have access to. These are the fields: ${inaccessibleFields.join(',')}. If ${apiNameSync(objectType)} records are deployed from this environment, values of these fields will appear as deletions.`
-  return {
-    message,
-    detailedMessage: message,
-    severity: 'Info',
-  }
-}
+const createInaccessibleFieldsFetchWarning = (objectType: ObjectType, inaccessibleFields: string[]): SaltoError => ({
+  message: ERROR_MESSAGES.OTHER_ISSUES,
+  detailedMessage: `There are ${inaccessibleFields.length} fields in the ${apiNameSync(objectType)} object that the fetch user does not have access to. These are the fields: ${inaccessibleFields.join(',')}. If ${apiNameSync(objectType)} records are deployed from this environment, values of these fields will appear as deletions.`,
+  severity: 'Info',
+})
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
@@ -735,11 +738,10 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         invalidFetchSettings.length > 0 &&
         invalidFetchSettings.every(setting => setting.invalidManagedBySaltoField !== undefined)
       ) {
-        const message =
-          'The Salto environment is configured to use a Salto Management field but the field is missing or is of the wrong type for all data records. No data records will be fetched. Please verify the field name in saltoManagementFieldSettings.defaultFieldName in the environment configuration file.'
         fatalErrors.push({
-          message,
-          detailedMessage: message,
+          message: ERROR_MESSAGES.OTHER_ISSUES,
+          detailedMessage:
+            'The Salto environment is configured to use a Salto Management field but the field is missing or is of the wrong type for all data records. No data records will be fetched. Please verify the field name in saltoManagementFieldSettings.defaultFieldName in the environment configuration file.',
           severity: 'Warning',
         })
       }

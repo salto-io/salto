@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -51,7 +51,7 @@ describe('plugin_version', () => {
     expect(errors).toEqual({
       errors: [
         {
-          message: `Your Jira instance is running an old version ${changeVersion(PLUGIN_VERSION_NUMBER, -1)} of Salto Configuration Manager for Jira Data Center. Please update the app to the latest version from https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira.`,
+          message: 'Other issues',
           detailedMessage: `Your Jira instance is running an old version ${changeVersion(PLUGIN_VERSION_NUMBER, -1)} of Salto Configuration Manager for Jira Data Center. Please update the app to the latest version from https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira.`,
           severity: 'Warning',
         },
@@ -80,8 +80,7 @@ describe('plugin_version', () => {
     expect(errors).toEqual({
       errors: [
         {
-          message:
-            'Could not verify version number for Salto for Jira DC addon. Please make sure you are using the latest version of Salto Configuration Manager for Jira Data Center. You can download it from the Jira Marketplace: https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira?tab=overview&hosting=datacenter',
+          message: 'Other issues',
           detailedMessage:
             'Could not verify version number for Salto for Jira DC addon. Please make sure you are using the latest version of Salto Configuration Manager for Jira Data Center. You can download it from the Jira Marketplace: https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira?tab=overview&hosting=datacenter',
           severity: 'Warning',

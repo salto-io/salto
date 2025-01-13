@@ -24,6 +24,8 @@ export type TemplateContainer = {
   fieldName: string
 }
 
+export type TemplateExtractionFunc = (expression: string) => TemplatePart | TemplatePart[]
+
 export const compactTemplateParts = (parts: TemplatePart[]): TemplatePart[] => {
   let tempString: string[] = []
   const compactedParts: TemplatePart[] = []
@@ -108,7 +110,7 @@ export const resolveTemplates = (
 export const extractTemplate = (
   formula: string,
   regexes: RegExp[],
-  extractionFunc: (expression: string) => TemplatePart | TemplatePart[],
+  extractionFunc: TemplateExtractionFunc,
 ): TemplateExpression | string => {
   // The second part is a split that separates the now-marked ids, so they could be replaced
   // with ReferenceExpression in the loop code.
@@ -120,4 +122,35 @@ export const extractTemplate = (
     return templateParts.join('')
   }
   return createTemplateExpression({ parts: templateParts })
+}
+
+export type PotentialReference<T extends string | TemplateExpression> = {
+  value: T
+  loc: { start: number; end: number }
+}
+
+export const mergeDistinctReferences = (
+  content: string,
+  references: PotentialReference<string | TemplateExpression>[],
+): string | TemplateExpression => {
+  const sortedReferences = references.sort((a, b) => a.loc.start - b.loc.start)
+  const mergedReferences: (string | TemplateExpression)[] = []
+  let lastEnd = 0
+  sortedReferences.forEach(reference => {
+    if (reference.loc.start > lastEnd) {
+      mergedReferences.push(content.slice(lastEnd, reference.loc.start))
+    }
+    mergedReferences.push(reference.value)
+    lastEnd = reference.loc.end
+  })
+  if (lastEnd < content.length) {
+    mergedReferences.push(content.slice(lastEnd))
+  }
+  const templateParts = mergedReferences.flatMap(part => (typeof part === 'string' ? part : part.parts))
+  const templateExpression = createTemplateExpression({
+    parts: templateParts,
+  })
+  return templateExpression.parts.every(part => typeof part === 'string')
+    ? templateExpression.parts.join('')
+    : templateExpression
 }

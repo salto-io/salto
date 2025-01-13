@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -142,7 +142,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      toActionNames: async ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [
         {
           first: 'add',
@@ -303,7 +303,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: changeContext => {
+      toActionNames: async changeContext => {
         const { change } = changeContext
         if (isRemovalChange(change) && getChangeData(change).value.status !== INACTIVE_STATUS) {
           return ['deactivate', 'remove']
@@ -394,7 +394,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: changeContext => {
+      toActionNames: async changeContext => {
         // NetworkZone works like other "simple status" types, except it must
         // be deactivated before removal.
         const { change } = changeContext
@@ -604,7 +604,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           changeIdFields: GRANTS_CHANGE_ID_FIELDS,
         },
       ],
-      toActionNames: ({ change }) => {
+      toActionNames: async ({ change }) => {
         if (isRemovalChange(change)) {
           return ['deactivate', 'remove']
         }
@@ -666,7 +666,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => {
+      toActionNames: async ({ change }) => {
         if (isAdditionChange(change)) {
           return ['add', 'modify']
         }
@@ -705,7 +705,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => {
+      toActionNames: async ({ change }) => {
         if (isAdditionChange(change)) {
           return ['add', 'modify']
         }
@@ -755,7 +755,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => {
+      toActionNames: async ({ change }) => {
         if (isAdditionChange(change)) {
           return ['add', 'modify']
         }
@@ -884,7 +884,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      toActionNames: async ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
     [SIGN_IN_PAGE_TYPE_NAME]: {
@@ -1413,7 +1413,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) =>
+      toActionNames: async ({ change }) =>
         isAdditionChange(change) && isSystemScope(change) ? ['add', 'modify'] : [change.action],
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
@@ -1474,7 +1474,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) =>
+      toActionNames: async ({ change }) =>
         isAdditionChange(change) && isSubDefaultClaim(change) ? ['add', 'modify'] : [change.action],
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
@@ -1527,7 +1527,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           remove: [{ request: { earlySuccess: true } }],
         },
       },
-      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      toActionNames: async ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
     [EMAIL_CUSTOMIZATION_TYPE_NAME]: {
@@ -1701,7 +1701,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change, changeGroup }) => {
+      toActionNames: async ({ change, changeGroup }) => {
         if (isAdditionChange(change) && isPermissionChangeOfAddedRole(change, changeGroup)) {
           return ['modify']
         }

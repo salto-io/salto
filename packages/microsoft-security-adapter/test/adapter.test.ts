@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -95,6 +95,7 @@ describe('Microsoft Security adapter', () => {
           'EntraGroupLifeCyclePolicy',
           'EntraGroup__appRoleAssignments',
           'EntraOauth2PermissionGrant',
+          'EntraOauth2PermissionScope',
           'EntraPermissionGrantPolicy',
           'EntraRoleDefinition',
           'EntraServicePrincipal',
@@ -155,10 +156,15 @@ describe('Microsoft Security adapter', () => {
                 )
 
                 const { resourceAccess } = appResourceRef
-                expect(resourceAccess).toHaveLength(1)
+                expect(resourceAccess).toHaveLength(2)
                 expect(resourceAccess[0].id).toBeInstanceOf(ReferenceExpression)
                 expect(resourceAccess[0].id.elemID.getFullName()).toEqual(
                   'microsoft_security.EntraAppRole.instance.test_application__testAppRole_variation1@suuu',
+                )
+
+                expect(resourceAccess[1].id).toBeInstanceOf(ReferenceExpression)
+                expect(resourceAccess[1].id.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraOauth2PermissionScope.instance.test_application__testValue@suu',
                 )
               })
 
@@ -216,6 +222,31 @@ describe('Microsoft Security adapter', () => {
                     p?.elemID.getFullName() === 'microsoft_security.EntraApplication.instance.test_application@s' ||
                     p?.elemID.getFullName() ===
                       'microsoft_security.EntraServicePrincipal.instance.test_service_principal_2@s',
+                ),
+              ).toBeTruthy()
+            })
+          })
+
+          describe('oauth2 permission scopes', () => {
+            let permissionScopeInstances: InstanceElement[]
+            beforeEach(async () => {
+              permissionScopeInstances = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraOauth2PermissionScope')
+            })
+
+            it('should create the correct instances for Entra oauth2 permission scopes', async () => {
+              expect(permissionScopeInstances).toHaveLength(1)
+
+              const permissionScopeNames = permissionScopeInstances.map(e => e.elemID.name)
+              expect(permissionScopeNames).toEqual(expect.arrayContaining(['test_application__testValue@suu']))
+            })
+
+            it('should include parent reference to the application', async () => {
+              const parentRefs = permissionScopeInstances.map(ps => getParent(ps))
+              expect(
+                parentRefs.every(
+                  p => p?.elemID.getFullName() === 'microsoft_security.EntraApplication.instance.test_application@s',
                 ),
               ).toBeTruthy()
             })
@@ -1274,6 +1305,7 @@ describe('Microsoft Security adapter', () => {
           'EntraGroupLifeCyclePolicy',
           'EntraGroup__appRoleAssignments',
           'EntraOauth2PermissionGrant',
+          'EntraOauth2PermissionScope',
           'EntraPermissionGrantPolicy',
           'EntraRoleDefinition',
           'EntraServicePrincipal',

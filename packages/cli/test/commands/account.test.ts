@@ -1,19 +1,13 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { AdapterAuthentication, ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
-import {
-  addAdapter,
-  installAdapter,
-  LoginStatus,
-  verifyCredentials,
-  updateCredentials,
-  loadLocalWorkspace,
-} from '@salto-io/core'
+import { addAdapter, installAdapter, LoginStatus, verifyCredentials, updateCredentials } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { Workspace } from '@salto-io/workspace'
 import { getPrivateAdaptersNames } from '../../src/formatter'
 import {
@@ -88,6 +82,12 @@ jest.mock('@salto-io/core', () => {
       return loginStatuses
     }),
     installAdapter: jest.fn(),
+  }
+})
+jest.mock('@salto-io/local-workspace', () => {
+  const actual = jest.requireActual('@salto-io/local-workspace')
+  return {
+    ...actual,
     loadLocalWorkspace: jest.fn().mockImplementation(actual.loadLocalWorkspace),
   }
 })

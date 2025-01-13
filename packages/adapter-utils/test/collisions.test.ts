@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -87,7 +87,7 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
       expect(errors).toHaveLength(1)
       expect(errors[0]).toEqual({
         severity: 'Warning',
-        message: baseExpectedWarningMessage,
+        message: COLLISION_MESSAGE,
         detailedMessage: baseExpectedWarningMessage,
       })
     })
@@ -107,7 +107,7 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
       expect(errors).toHaveLength(1)
       expect(errors[0]).toEqual({
         severity: 'Warning',
-        message: `${baseExpectedWarningMessage}\n\nLearn more at: ${docsUrl}`,
+        message: COLLISION_MESSAGE,
         detailedMessage: `${baseExpectedWarningMessage}\n\nLearn more at: ${docsUrl}`,
       })
     })
@@ -143,9 +143,7 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
       expect(collisionWarnings).toEqual([
         expect.objectContaining({
           severity: 'Warning',
-          message: expect.stringContaining(
-            'Instances with empty name (Due to no values in any of the provided ID fields)',
-          ),
+          message: expect.stringContaining(COLLISION_MESSAGE),
           detailedMessage: expect.stringContaining(
             'Instances with empty name (Due to no values in any of the provided ID fields)',
           ),

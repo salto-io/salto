@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -7,7 +7,7 @@
  */
 import { filterUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import ZendeskClient from './client/client'
-import { ZendeskFetchOptions } from './definitions/types'
+import { Options } from './definitions/types'
 import { ZendeskApiConfig, ZendeskUserConfig } from './user_config'
 
 export const { filterRunner } = filterUtils
@@ -28,5 +28,5 @@ export type FilterCreator = filterUtils.AdapterFilterCreator<
   ZendeskUserConfig,
   filterUtils.FilterResult,
   FilterAdditionalParams,
-  ZendeskFetchOptions
+  Options
 >

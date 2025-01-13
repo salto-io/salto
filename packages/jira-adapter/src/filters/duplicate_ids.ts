@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -51,6 +51,10 @@ const filter: FilterCreator = ({ config }) => ({
       )
     })
 
+    const getServiceUrl = (instance: InstanceElement): string =>
+      instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined
+        ? `. View in the service - ${instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]}`
+        : ''
     const prettifiesName = (instance: InstanceElement): string =>
       instance.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
         ? instance.annotations[CORE_ANNOTATIONS.ALIAS]
@@ -58,7 +62,9 @@ const filter: FilterCreator = ({ config }) => ({
     const duplicateInstanceNames = _.uniq(
       duplicateInstances
         .filter(isInstanceElement)
-        .flatMap(instance => `${prettifiesName(instance)} (${instance.elemID.getFullName()})`),
+        .flatMap(
+          instance => `${prettifiesName(instance)} (${instance.elemID.getFullName()})${getServiceUrl(instance)}`,
+        ),
     )
     if (!config.fetch.fallbackToInternalId) {
       const message = `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.

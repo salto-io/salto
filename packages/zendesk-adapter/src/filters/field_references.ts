@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -38,7 +38,7 @@ import {
   QUEUE_TYPE_NAME,
   BOT_BUILDER_NODE,
   BOT_BUILDER_ANSWER,
-  BOT_BUILDER_FLOW,
+  CONVERSATION_BOT,
 } from '../constants'
 import { FETCH_CONFIG } from '../config'
 import {
@@ -375,7 +375,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   },
   {
     src: { field: 'brandId' },
-    serializationStrategy: 'id',
+    serializationStrategy: 'idString',
     target: { type: BRAND_TYPE_NAME },
   },
   {
@@ -583,7 +583,12 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'flowId', parentTypes: [BOT_BUILDER_ANSWER] },
     serializationStrategy: 'id',
-    target: { type: BOT_BUILDER_FLOW },
+    target: { type: CONVERSATION_BOT },
+  },
+  {
+    src: { field: 'nodeSetId', parentTypes: [`${BOT_BUILDER_NODE}__data`] },
+    serializationStrategy: 'id',
+    target: { type: BOT_BUILDER_ANSWER },
   },
   {
     src: { field: 'custom_field_options', parentTypes: [TICKET_FIELD_TYPE_NAME] },

@@ -1,12 +1,13 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import glob from 'glob'
-import { Plan, telemetrySender, preview, loadLocalWorkspace, AppConfig } from '@salto-io/core'
+import { Plan, preview } from '@salto-io/core'
+import { loadLocalWorkspace, AppConfig, telemetrySender } from '@salto-io/local-workspace'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
 import { adapterCreators } from '@salto-io/adapter-creators'

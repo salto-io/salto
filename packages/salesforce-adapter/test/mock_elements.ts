@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -12,6 +12,7 @@ import {
   ElemID,
   InstanceElement,
   ListType,
+  MapType,
   ObjectType,
   toChange,
   TypeElement,
@@ -270,7 +271,7 @@ export const mockTypes = {
         refType: createMetadataObjectType({
           annotations: { metadataType: 'LwcResources' },
           fields: {
-            lwcResource: { refType: new ListType(BuiltinTypes.STRING) },
+            lwcResource: { refType: new MapType(BuiltinTypes.STRING) },
           },
         }),
       },
@@ -866,10 +867,12 @@ export const mockTypes = {
   }),
 }
 
-export const lwcJsResourceContent =
-  "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"
-export const lwcHtmlResourceContent =
-  '<template>\n    <div>\n        <div>Name: {name}</div>\n        <div>Description: {description}</div>\n        <lightning-badge label={material}></lightning-badge>\n        <lightning-badge label={category}></lightning-badge>\n        <div>Price: {price}</div>\n        <div><img src={pictureUrl}/></div>\n    </div>\n</template>'
+export const lwcJsResourceContent = Buffer.from(
+  "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }",
+)
+export const lwcHtmlResourceContent = Buffer.from(
+  '<template>\n    <div>\n        <div>Name: {name}</div>\n        <div>Description: {description}</div>\n        <lightning-badge label={material}></lightning-badge>\n        <lightning-badge label={category}></lightning-badge>\n        <div>Price: {price}</div>\n        <div><img src={pictureUrl}/></div>\n    </div>\n</template>',
+)
 
 export const mockDefaultValues = {
   ApexClass: {
@@ -906,16 +909,16 @@ export const mockDefaultValues = {
     apiVersion: 49,
     isExposed: true,
     lwcResources: {
-      lwcResource: [
-        {
+      lwcResource: {
+        'testLightningComponentBundle_js@v': {
           source: lwcJsResourceContent,
           filePath: 'lwc/testLightningComponentBundle/testLightningComponentBundle.js',
         },
-        {
+        'testLightningComponentBundle_html@v': {
           source: lwcHtmlResourceContent,
           filePath: 'lwc/testLightningComponentBundle/testLightningComponentBundle.html',
         },
-      ],
+      },
     },
     targetConfigs: {
       targetConfig: [

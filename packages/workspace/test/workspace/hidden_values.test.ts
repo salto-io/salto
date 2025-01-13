@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -388,6 +388,88 @@ describe('handleHiddenChanges', () => {
           action: 'add',
         }),
       )
+    })
+  })
+
+  // This scenario happens when a field changes both hidden_value and refType
+  describe('when a hidden value annotation is part of a field modification', () => {
+    describe('when changed to hidden', () => {
+      it('should hide existing field values', async () => {
+        const objectTypeBefore = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            myField: {
+              refType: BuiltinTypes.STRING,
+            },
+          },
+        })
+        const objectTypeAfter = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            myField: {
+              refType: BuiltinTypes.STRING,
+              annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+            },
+          },
+        })
+        const instance = new InstanceElement('instance', objectTypeAfter, {
+          myField: 'myValue',
+        })
+        const change = toDetailedChangeFromBaseChange(
+          toChange({ before: objectTypeBefore.fields.myField, after: objectTypeAfter.fields.myField }),
+        )
+        const { visible } = await handleHiddenChanges(
+          [change],
+          mockState([objectTypeAfter, instance]),
+          createInMemoryElementSource([objectTypeAfter, instance]),
+        )
+
+        expect(visible).toContainEqual(
+          expect.objectContaining({
+            id: instance.elemID.createNestedID('myField'),
+            action: 'remove',
+          }),
+        )
+      })
+    })
+    describe('when changed to visible', () => {
+      it('should unhide existing field values', async () => {
+        const objectTypeBefore = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            myField: {
+              refType: BuiltinTypes.STRING,
+              annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+            },
+          },
+        })
+        const objectTypeAfter = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            myField: {
+              refType: BuiltinTypes.STRING,
+            },
+          },
+        })
+        const instance = new InstanceElement('instance', objectTypeAfter, {
+          myField: 'myValue',
+        })
+        const instanceVisible = new InstanceElement('instance', objectTypeBefore)
+        const change = toDetailedChangeFromBaseChange(
+          toChange({ before: objectTypeBefore.fields.myField, after: objectTypeAfter.fields.myField }),
+        )
+        const { visible } = await handleHiddenChanges(
+          [change],
+          mockState([objectTypeAfter, instance]),
+          createInMemoryElementSource([objectTypeAfter, instanceVisible]),
+        )
+        expect(visible).toContainEqual(
+          expect.objectContaining({
+            id: instance.elemID.createNestedID('myField'),
+            action: 'add',
+          }),
+        )
+      })
     })
   })
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,10 +9,11 @@
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
 import { odataType } from '../shared'
-import { APPLICATION_TYPE_NAME } from '../../constants/intune'
+import { intuneConstants } from '../../constants'
 
 const isAndroidManagedStoreApp = (value: Values): boolean =>
-  _.get(value, odataType.getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME)) === 'androidManagedStoreApp'
+  _.get(value, odataType.getAdjustedOdataTypeFieldName(intuneConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME)) ===
+  'androidManagedStoreApp'
 
 const isSystemApp = (value: Values): boolean => Boolean(value.isSystemApp)
 

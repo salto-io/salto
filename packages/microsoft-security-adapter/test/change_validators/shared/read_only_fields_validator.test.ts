@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -13,9 +13,9 @@ import { readOnlyFieldsValidator } from '../../../src/change_validators/shared/r
 // Please notice that only a subset of the types are being tested here, since the logic is the same for all of them.
 describe(`${readOnlyFieldsValidator.name}`, () => {
   const INSTANCE_NAME = 'test'
-  describe(entraConstants.ROLE_DEFINITION_TYPE_NAME, () => {
+  describe(entraConstants.TOP_LEVEL_TYPES.ROLE_DEFINITION_TYPE_NAME, () => {
     const roleDefinitionType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.ROLE_DEFINITION_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.ROLE_DEFINITION_TYPE_NAME),
     })
     it('should return change warning if there is a change in inheritsPermissionsFrom field', async () => {
       const roleDefinition = new InstanceElement(INSTANCE_NAME, roleDefinitionType, {
@@ -64,9 +64,9 @@ describe(`${readOnlyFieldsValidator.name}`, () => {
     })
   })
 
-  describe(entraConstants.SERVICE_PRINCIPAL_TYPE_NAME, () => {
+  describe(entraConstants.TOP_LEVEL_TYPES.SERVICE_PRINCIPAL_TYPE_NAME, () => {
     const servicePrincipalType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.SERVICE_PRINCIPAL_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.SERVICE_PRINCIPAL_TYPE_NAME),
     })
     it('should return change warning if there is a change in readonly fields', async () => {
       const servicePrincipal = new InstanceElement('testServicePrincipal', servicePrincipalType, {
@@ -104,9 +104,9 @@ describe(`${readOnlyFieldsValidator.name}`, () => {
     })
   })
 
-  describe(entraConstants.APPLICATION_TYPE_NAME, () => {
+  describe(entraConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME, () => {
     const applicationType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.APPLICATION_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME),
     })
     it('should return change warning if there is a change in readonly fields', async () => {
       const application = new InstanceElement('testApplication', applicationType, {
@@ -144,9 +144,9 @@ describe(`${readOnlyFieldsValidator.name}`, () => {
     })
   })
 
-  describe(entraConstants.DIRECTORY_ROLE_TYPE_NAME, () => {
+  describe(entraConstants.TOP_LEVEL_TYPES.DIRECTORY_ROLE_TYPE_NAME, () => {
     const directoryRoleType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.DIRECTORY_ROLE_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.DIRECTORY_ROLE_TYPE_NAME),
     })
     it('should return change warning if there is a change in readonly fields', async () => {
       const directoryRole = new InstanceElement('testDirectoryRole', directoryRoleType, {
@@ -184,9 +184,9 @@ describe(`${readOnlyFieldsValidator.name}`, () => {
     })
   })
 
-  describe(entraConstants.GROUP_TYPE_NAME, () => {
+  describe(entraConstants.TOP_LEVEL_TYPES.GROUP_TYPE_NAME, () => {
     const groupType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.GROUP_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.GROUP_TYPE_NAME),
     })
 
     it('should return change warning if there is a change in readonly fields on modification', async () => {

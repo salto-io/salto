@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -10,7 +10,7 @@ import { values } from '@salto-io/lowerdash'
 import { logger, compareLogLevels, LogLevel } from '@salto-io/logging'
 import { adapterCreators } from '@salto-io/adapter-creators'
 import { Workspace } from '@salto-io/workspace'
-import { loadLocalWorkspace, Tags } from '@salto-io/core'
+import { loadLocalWorkspace, Tags } from '@salto-io/local-workspace'
 import { CliOutput, CliExitCode, CliError, PositionalOption, KeyedOption, CliArgs, CliTelemetry } from './types'
 import { getCliTelemetry } from './telemetry'
 import { getWorkspaceTelemetryTags } from './workspace/workspace'

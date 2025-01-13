@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -8,8 +8,6 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
-// for backward comptability
-import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import {
   AdapterOperations,
   AdapterOperationsContext,
@@ -1503,13 +1501,11 @@ export const getFetchAdapterAndServicesSetup = async ({
   elementsSource: ReadOnlyElementsSource
   ignoreStateElemIdMapping?: boolean
   ignoreStateElemIdMappingForSelectors?: ElementSelector[]
-  adapterCreators?: Record<string, Adapter>
+  adapterCreators: Record<string, Adapter>
 }): Promise<{
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
 }> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const elemIDGetters = await createElemIdGetters({
     workspace,
     accountToServiceNameMap,
@@ -1526,7 +1522,7 @@ export const getFetchAdapterAndServicesSetup = async ({
     accountToServiceNameMap,
     elemIDGetters,
     resolveTypes,
-    actualAdapterCreator,
+    adapterCreators,
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -47,7 +47,6 @@ import {
   PERMISSION_SET_METADATA_TYPE,
   BUSINESS_HOURS_METADATA_TYPE,
   EMAIL_TEMPLATE_METADATA_TYPE,
-  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   MUTING_PERMISSION_SET_METADATA_TYPE,
   SHARING_RULES_TYPE,
   INSTANCE_FULL_NAME_FIELD,
@@ -125,20 +124,6 @@ export const defaultMapper: MapperFunc = val =>
     .split(API_NAME_SEPARATOR)
     .map(v => naclCase(v))
 
-/**
- * Convert a string value of a file path to the map index key.
- * In this case, we want to use the last part of the path as the key, and it's
- * unknown how many levels the path has. If there are less than two levels, take only the last.
- */
-const filePathMapper = (val: MapperInput): string[] => {
-  const splitPath = stringifyMapperInput(val).split('/')
-  if (splitPath.length >= 3) {
-    return [naclCase(splitPath.slice(2).join('/'))]
-  }
-  log.warn(`Path ${val} has less than two levels, using only the last part as the key`)
-  return [naclCase(_.last(splitPath))]
-}
-
 const BUSINESS_HOURS_MAP_FIELD_DEF: Record<string, MapDef> = {
   // One-level maps
   businessHours: { key: 'name' },
@@ -177,13 +162,6 @@ const EMAIL_TEMPLATE_MAP_FIELD_DEF: Record<string, MapDef> = {
   attachments: { key: 'name' },
 }
 
-const LIGHTNING_COMPONENT_BUNDLE_MAP: Record<string, MapDef> = {
-  'lwcResources.lwcResource': {
-    key: 'filePath',
-    mapper: item => filePathMapper(item),
-  },
-}
-
 const SHARING_RULES_MAP_FIELD_DEF: Record<string, MapDef> = {
   sharingCriteriaRules: { key: INSTANCE_FULL_NAME_FIELD },
   sharingOwnerRules: { key: INSTANCE_FULL_NAME_FIELD },
@@ -211,7 +189,6 @@ export const getMetadataTypeToFieldToMapDef: (
   [PROFILE_METADATA_TYPE]: PROFILE_MAP_FIELD_DEF,
   [PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [MUTING_PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
-  [LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE]: LIGHTNING_COMPONENT_BUNDLE_MAP,
   [SHARING_RULES_TYPE]: SHARING_RULES_MAP_FIELD_DEF,
   ...(fetchProfile.isFeatureEnabled('picklistsAsMaps')
     ? {

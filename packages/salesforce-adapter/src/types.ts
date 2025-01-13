@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -153,6 +153,7 @@ const CHANGE_VALIDATORS = [
   'standardFieldLabel',
   'mapKeys',
   'defaultRules',
+  'packageVersion',
   'picklistPromote',
   'cpqValidator',
   'recordTypeDeletion',
@@ -223,7 +224,12 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesHandlersNames = ['profilesAndPermissionSets', 'managedElements', 'formulaRefs'] as const
+const customReferencesHandlersNames = [
+  'profilesAndPermissionSets',
+  'managedElements',
+  'formulaRefs',
+  'omitNonExistingFields',
+] as const
 export type CustomReferencesHandlers = (typeof customReferencesHandlersNames)[number]
 
 export type CustomReferencesSettings = Partial<Record<CustomReferencesHandlers, boolean>>

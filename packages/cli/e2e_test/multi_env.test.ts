@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
+ * Copyright 2025 Salto Labs Ltd.
  * Licensed under the Salto Terms of Use (the "License");
  * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
@@ -9,7 +9,8 @@ import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesfo
 // eslint-disable-next-line no-restricted-imports
 import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
 import path from 'path'
-import { Plan, loadLocalWorkspace } from '@salto-io/core'
+import { Plan } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { parser } from '@salto-io/parser'
 import { logger } from '@salto-io/logging'
 import { strings, collections } from '@salto-io/lowerdash'

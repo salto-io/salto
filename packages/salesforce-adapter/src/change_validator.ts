@@ -55,6 +55,7 @@ import layoutDuplicateFields from './change_validators/layout_duplicate_fields'
 import customApplications from './change_validators/custom_applications'
 import flowReferencedElements from './change_validators/flow_referenced_elements'
 import liveChatButtonRoutingType from './change_validators/live_chat_button_routing_type'
+import flexiPageUnusedOrMissingFacets from './change_validators/flexi_page_unused_or_missing_facets'
 
 const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
 
@@ -116,6 +117,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   customApplications: () => customApplications,
   flowReferencedElements: () => flowReferencedElements,
   liveChatButtonRoutingType: () => liveChatButtonRoutingType,
+  flexiPageUnusedOrMissingFacets: () => flexiPageUnusedOrMissingFacets,
   ..._.mapValues(getDefaultChangeValidators(), validator => () => validator),
 }
 

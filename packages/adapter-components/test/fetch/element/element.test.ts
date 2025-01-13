@@ -173,6 +173,10 @@ describe('element', () => {
                       { fieldName: 'otherField', mapping: 'secondCustom' },
                     ],
                   },
+                  importantValues: [
+                    {value: 'str', indexed: true, highlighted: false},
+                    {value: 'nonExistentField', indexed: true, highlighted: false},
+                  ]
                 },
               },
             },
@@ -231,6 +235,9 @@ describe('element', () => {
           new InstanceElement('CCCCustomTest_SecondDDD', objType, entries[1], []),
         ),
       ).toBeTruthy()
+      expect(objType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]).toEqual([
+        { value: 'str', indexed: true, highlighted: false },
+      ])
     })
 
     describe('handleError', () => {

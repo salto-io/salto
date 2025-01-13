@@ -366,7 +366,8 @@ export const addImportantValues = <Options extends FetchApiDefinitionsOptions>({
       const { element: elementDef } = defQuery.query(typeName) ?? {}
 
       const importantValues = (elementDef?.topLevel?.importantValues ?? []).filter(
-        ({ value }: ImportantValue) => type.fields[value] !== undefined)
+        ({ value }: ImportantValue) => type.fields[value] !== undefined,
+      )
 
       type.annotate({
         [CORE_ANNOTATIONS.IMPORTANT_VALUES]: _.isEmpty(importantValues) ? undefined : importantValues,

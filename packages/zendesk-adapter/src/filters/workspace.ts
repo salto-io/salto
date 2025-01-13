@@ -6,14 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import {
-  Change,
-  createSaltoElementError,
-  getChangeData,
-  InstanceElement,
-  isRemovalChange,
-  Values,
-} from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isRemovalChange, Values } from '@salto-io/adapter-api'
+import { createSaltoElementError } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'

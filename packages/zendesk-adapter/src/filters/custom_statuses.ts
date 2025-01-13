@@ -8,7 +8,6 @@
 import {
   BuiltinTypes,
   Change,
-  createSaltoElementErrorFromError,
   DeployResult,
   Element,
   ElemID,
@@ -18,6 +17,7 @@ import {
   isInstanceElement,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { createSaltoElementErrorFromError } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'

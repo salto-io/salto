@@ -19,11 +19,11 @@ import {
   inspectValue,
   isResolvedReferenceExpression,
   extractTemplate,
+  createSaltoElementError,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   Change,
-  createSaltoElementError,
   getChangeData,
   InstanceElement,
   isModificationChange,

@@ -15,7 +15,6 @@ import {
   DeployResult,
   InstanceElement,
   ReadOnlyElementsSource,
-  createSaltoElementError,
   getChangeData,
   isAdditionChange,
   isAdditionOrModificationChange,
@@ -26,7 +25,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, createSaltoElementError } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'

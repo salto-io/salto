@@ -6,7 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { EOL } from 'os'
-import { createSaltoElementError, ElemID } from '@salto-io/adapter-api'
+import { ElemID } from '@salto-io/adapter-api'
+import { createSaltoElementError } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../src/constants'
 import { getZendeskError } from '../src/errors'

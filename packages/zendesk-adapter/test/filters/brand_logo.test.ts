@@ -16,9 +16,9 @@ import {
   ReferenceExpression,
   CORE_ANNOTATIONS,
   getChangeData,
-  createSaltoElementError,
   BuiltinTypes,
 } from '@salto-io/adapter-api'
+import { createSaltoElementError } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import filterCreator, { LOGO_FIELD } from '../../src/filters/brand_logo'
 import ZendeskClient from '../../src/client/client'

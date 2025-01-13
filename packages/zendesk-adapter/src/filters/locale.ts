@@ -13,12 +13,11 @@ import {
   InstanceElement,
   Change,
   isAdditionOrRemovalChange,
-  createSaltoElementErrorFromError,
   SeverityLevel,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
+import { createSaltoElementErrorFromError, getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { LOCALE_TYPE_NAME } from '../constants'
 

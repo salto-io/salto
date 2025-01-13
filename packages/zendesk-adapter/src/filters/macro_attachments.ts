@@ -12,7 +12,6 @@ import {
   BuiltinTypes,
   Change,
   CORE_ANNOTATIONS,
-  createSaltoElementError,
   ElemID,
   getChangeData,
   InstanceElement,
@@ -32,6 +31,7 @@ import {
   pathNaclCase,
   references,
   inspectValue,
+  createSaltoElementError,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils, fetch as fetchUtils, resolveChangeElement } from '@salto-io/adapter-components'

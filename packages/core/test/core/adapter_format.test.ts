@@ -700,8 +700,10 @@ describe('updateElementFolder', () => {
   const mockAdapterCreator: Record<string, Adapter> = {}
   let mockAdapter: ReturnType<typeof createMockAdapter>
   let workspace: Workspace
-  let changes: ReadonlyArray<Change>
+  let toWorkspace: Workspace
+  let allChanges: ReadonlyArray<Change>
   let visibleChanges: ReadonlyArray<Change>
+  let unsupportedChanges: ReadonlyArray<Change>
 
   const unresolved = (instance: InstanceElement): InstanceElement =>
     new InstanceElement(instance.elemID.name, new TypeReference(instance.getTypeSync().elemID), instance.value)
@@ -724,22 +726,39 @@ describe('updateElementFolder', () => {
     const hiddenInstance = new InstanceElement('hiddenInst', type, { f: 'v_hidden' }, undefined, {
       [CORE_ANNOTATIONS.HIDDEN]: true,
     })
+    const unsupportedType = new ObjectType({ elemID: new ElemID(mockAdapterName, 'unsupportedType') })
+    const unsupportedInstance = new InstanceElement('unsupportedInst', unsupportedType, { value: 'unsupported' })
+
     const unresolvedVisibleChanges = [
       toChange({ after: unresolved(instance1) }),
       toChange({ before: unresolved(instance2) }),
       toChange({ before: unresolved(instance3Before), after: unresolved(instance3After) }),
       toChange({ after: type }),
+      toChange({ after: unresolved(unsupportedInstance) }),
     ]
+
     visibleChanges = [
       toChange({ after: instance1 }),
       toChange({ before: instance2 }),
       toChange({ before: instance3Before, after: instance3After }),
       toChange({ after: type }),
+      toChange({ after: unsupportedInstance }),
     ]
-    changes = unresolvedVisibleChanges.concat([toChange({ after: hiddenInstance })])
+
+    unsupportedChanges = [toChange({ after: unsupportedInstance })]
+
+    allChanges = unresolvedVisibleChanges.concat([toChange({ after: hiddenInstance })])
+
     workspace = mockWorkspace({
       name: 'workspace',
-      elements: [instance1, instance2, type],
+      elements: [instance1, instance2, type, unsupportedInstance, unsupportedType],
+      accountToServiceName: { [mockAdapterName]: mockAdapterName },
+    })
+
+    toWorkspace = mockWorkspace({
+      elements: [],
+      name: 'workspace',
+      accounts: [mockAdapterName],
       accountToServiceName: { [mockAdapterName]: mockAdapterName },
     })
   })
@@ -749,9 +768,14 @@ describe('updateElementFolder', () => {
   })
 
   describe('when called with valid parameters', () => {
+    let result: UpdateElementFolderResult
     beforeEach(async () => {
-      await updateElementFolder({
-        changes,
+      mockAdapter.adapterFormat.dumpElementsToFolder.mockImplementationOnce(async ({ changes }) => ({
+        errors: [],
+        unappliedChanges: changes.filter(change => getChangeData(change).elemID.typeName === 'unsupportedType'),
+      }))
+      result = await updateElementFolder({
+        changes: allChanges,
         workspace,
         accountName: mockAdapterName,
         baseDir: 'dir',
@@ -765,6 +789,53 @@ describe('updateElementFolder', () => {
         changes: visibleChanges,
         elementsSource: expect.anything(),
       })
+    })
+
+    it('should return no errors', () => {
+      expect(result.errors).toBeEmpty()
+    })
+
+    it('should return the unapplied changes', () => {
+      expect(result.unappliedChanges).toEqual(unsupportedChanges)
+    })
+  })
+  describe('when called with valid parameters and toWorkspace is provided', () => {
+    let result: UpdateElementFolderResult
+    beforeEach(async () => {
+      mockAdapter.adapterFormat.dumpElementsToFolder.mockImplementationOnce(async ({ changes }) => ({
+        errors: [],
+        unappliedChanges: changes.filter(change => getChangeData(change).elemID.typeName === 'unsupportedType'),
+      }))
+      result = await updateElementFolder({
+        changes: allChanges,
+        workspace,
+        toWorkspace,
+        accountName: mockAdapterName,
+        baseDir: 'dir',
+        adapterCreators: mockAdapterCreator,
+      })
+    })
+
+    it('should call dumpElementsToFolder with the correct parameters', async () => {
+      expect(mockAdapter.adapterFormat.dumpElementsToFolder).toHaveBeenCalledWith({
+        baseDir: 'dir',
+        changes: visibleChanges,
+        elementsSource: expect.anything(),
+      })
+    })
+
+    it('should call updateNaclFiles with the correct parameters', async () => {
+      expect(toWorkspace.updateNaclFiles).toHaveBeenCalledWith(
+        expect.arrayContaining(unsupportedChanges.flatMap(change => getDetailedChanges(change))),
+      )
+    })
+
+    it('should return no errors', () => {
+      expect(result.errors).toBeEmpty()
+    })
+
+    it('should return no unapplied changes', () => {
+      expect(result.unappliedChanges).toBeEmpty()
     })
   })
 
@@ -781,7 +852,7 @@ describe('updateElementFolder', () => {
       ]
       mockAdapter.adapterFormat.dumpElementsToFolder.mockResolvedValue({ errors, unappliedChanges: [] })
       result = await updateElementFolder({
-        changes,
+        changes: allChanges,
         workspace,
         accountName: mockAdapterName,
         baseDir: 'dir',
@@ -799,7 +870,7 @@ describe('updateElementFolder', () => {
     it('should return an error', async () => {
       delete (mockAdapter as Adapter).adapterFormat
       result = await updateElementFolder({
-        changes,
+        changes: allChanges,
         workspace,
         accountName: mockAdapterName,
         baseDir: 'dir',
@@ -829,7 +900,7 @@ describe('updateElementFolder', () => {
         accountToServiceName: { [accountName]: mockAdapterName },
       })
       result = updateElementFolder({
-        changes,
+        changes: allChanges,
         workspace,
         accountName,
         baseDir: 'dir',

@@ -254,37 +254,32 @@ const getValidationRulesUrls = (validationRules: ValidationRule[]): string[] =>
 export const enrichSaltoDeployErrors = async (
   errors: readonly SaltoError[],
   getAllElements: () => Promise<Element[]>,
-): Promise<SaltoError[] | readonly SaltoError[]> => {
-  const indexToValidationRulesMessages: Record<number, string[]> = []
-  errors.forEach((error, index) => {
-    if (error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION))
-      indexToValidationRulesMessages[index] = getValidationRulesMessages(error)
-  })
+): Promise<readonly SaltoError[]> => {
+  if (
+    !errors
+      .map(error => error.message)
+      .some(error => error.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION))
+  )
+    return errors
 
-  const validationRulesIndex: Map<string, ValidationRule[]> =
-    Object.keys(indexToValidationRulesMessages).length > 0
-      ? createValidationRulesIndex(await getAllElements())
-      : new DefaultMap(() => [])
+  const validationRulesIndex: Map<string, ValidationRule[]> = createValidationRulesIndex(await getAllElements())
 
   if (validationRulesIndex.size > 0) {
-    return errors.reduce((acc: SaltoError[], error, index) => {
-      acc.push(
-        indexToValidationRulesMessages[index] === undefined
-          ? error
-          : {
-              ...error,
-              detailedMessage: `${indexToValidationRulesMessages[index]
-                .map(
-                  validationRuleMessage =>
-                    `${validationRuleMessage}:${getValidationRulesUrls(
-                      validationRulesIndex.get(validationRuleMessage) ?? [],
-                    )}`,
-                )
-                .join('\n')}`,
-            },
-      )
-      return acc
-    }, [])
+    return errors.map(error =>
+      error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION)
+        ? {
+            ...error,
+            detailedMessage: `${getValidationRulesMessages(error)
+              .map(
+                validationRuleMessage =>
+                  `${validationRuleMessage}:${getValidationRulesUrls(
+                    validationRulesIndex.get(validationRuleMessage) ?? [],
+                  )}`,
+              )
+              .join('\n')}`,
+          }
+        : error,
+    )
   }
   return errors
 }

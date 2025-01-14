@@ -6,13 +6,13 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { filterUtils } from '@salto-io/adapter-components'
-import { CORE_ANNOTATIONS, Element, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { Element, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import assetsObjectFieldConfigurationReferencesFilter from '../../../src/filters/assets/assets_object_field_configuration_references'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../../src/filters/fields/constants'
-import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE } from '../../../src/constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE } from '../../../src/constants'
 
 describe('assetsObjectFieldConfiguration', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -21,35 +21,37 @@ describe('assetsObjectFieldConfiguration', () => {
   let contextInstance1: InstanceElement
   let objectSchemaInstance1: InstanceElement
   let objectSchemaInstance2: InstanceElement
-  let objectTypeInstance1: InstanceElement
-  let objectTypeInstance2: InstanceElement
   let objectTypeAttribute11: InstanceElement
   let objectTypeAttribute12: InstanceElement
   let objectTypeAttribute21: InstanceElement
   let objectTypeAttribute22: InstanceElement
 
-  const createObjectTypeInstance = (name: string, parent: InstanceElement): InstanceElement =>
-    new InstanceElement(name, createEmptyType(OBJECT_TYPE_TYPE), undefined, undefined, {
-      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)],
-    })
-
-  const createObjectTypeAttributeInstance = (name: string, objectType: InstanceElement): InstanceElement =>
-    new InstanceElement(name, createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE), {
-      objectType: new ReferenceExpression(objectType.elemID, objectType),
-      name,
-    })
-
   beforeEach(() => {
-    objectSchemaInstance1 = new InstanceElement('objectSchema1', createEmptyType(OBJECT_SCHEMA_TYPE))
-    objectSchemaInstance2 = new InstanceElement('objectSchema2', createEmptyType(OBJECT_SCHEMA_TYPE))
+    objectTypeAttribute11 = new InstanceElement('objectTypeAttribute11', createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE), {
+      name: 'objectTypeAttribute11',
+    })
+    objectTypeAttribute12 = new InstanceElement('objectTypeAttribute12', createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE), {
+      name: 'objectTypeAttribute12',
+    })
+    objectTypeAttribute21 = new InstanceElement('objectTypeAttribute21', createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE), {
+      name: 'objectTypeAttribute21',
+    })
+    objectTypeAttribute22 = new InstanceElement('objectTypeAttribute22', createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE), {
+      name: 'objectTypeAttribute22',
+    })
 
-    objectTypeInstance1 = createObjectTypeInstance('objectType1', objectSchemaInstance1)
-    objectTypeInstance2 = createObjectTypeInstance('objectType2', objectSchemaInstance1)
+    objectSchemaInstance1 = new InstanceElement('objectSchema1', createEmptyType(OBJECT_SCHEMA_TYPE), {
+      attributes: [
+        new ReferenceExpression(objectTypeAttribute11.elemID, objectTypeAttribute11),
+        new ReferenceExpression(objectTypeAttribute12.elemID, objectTypeAttribute12),
+        new ReferenceExpression(objectTypeAttribute21.elemID, objectTypeAttribute21),
+        new ReferenceExpression(objectTypeAttribute22.elemID, objectTypeAttribute22),
+      ],
+    })
 
-    objectTypeAttribute11 = createObjectTypeAttributeInstance('objectTypeAttribute11', objectTypeInstance1)
-    objectTypeAttribute12 = createObjectTypeAttributeInstance('objectTypeAttribute12', objectTypeInstance1)
-    objectTypeAttribute21 = createObjectTypeAttributeInstance('objectTypeAttribute21', objectTypeInstance2)
-    objectTypeAttribute22 = createObjectTypeAttributeInstance('objectTypeAttribute22', objectTypeInstance2)
+    objectSchemaInstance2 = new InstanceElement('objectSchema2', createEmptyType(OBJECT_SCHEMA_TYPE), {
+      attributes: [new ReferenceExpression(objectTypeAttribute22.elemID, objectTypeAttribute22)],
+    })
 
     contextInstance1 = new InstanceElement('context1', createEmptyType(FIELD_CONTEXT_TYPE_NAME), {
       assetsObjectFieldConfiguration: {
@@ -61,8 +63,6 @@ describe('assetsObjectFieldConfiguration', () => {
     elements = [
       objectSchemaInstance1,
       objectSchemaInstance2,
-      objectTypeInstance1,
-      objectTypeInstance2,
       objectTypeAttribute11,
       objectTypeAttribute12,
       objectTypeAttribute21,
@@ -94,7 +94,7 @@ describe('assetsObjectFieldConfiguration', () => {
       ])
     })
 
-    it('should not create references when the attribute is not a grand child of the relevant objectSchema', async () => {
+    it('should not create references when the objectSchema does not contain the attribute', async () => {
       contextInstance1.value.assetsObjectFieldConfiguration.objectSchemaId = new ReferenceExpression(
         objectSchemaInstance2.elemID,
         objectSchemaInstance2,
@@ -107,7 +107,7 @@ describe('assetsObjectFieldConfiguration', () => {
       ])
       expect(contextInstance1.value.assetsObjectFieldConfiguration.attributesDisplayedOnIssue).toEqual([
         'objectTypeAttribute21',
-        'objectTypeAttribute22',
+        new ReferenceExpression(objectTypeAttribute22.elemID, objectTypeAttribute22),
       ])
     })
 

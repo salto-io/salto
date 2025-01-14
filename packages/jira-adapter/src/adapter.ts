@@ -313,7 +313,7 @@ export const DEFAULT_FILTERS = [
   avatarsFilter, // This must run after contextDeploymentFilter
   jqlReferencesFilter, // must run after assetsObjectFieldConfigurationFilter
   fieldReferencesFilter,
-  assetsObjectFieldConfigurationReferencesFilter, // This filter creates references, it must run after fieldReferencesFilter and assetsObjectFieldConfigurationFilter
+  assetsObjectFieldConfigurationReferencesFilter, // This filter creates references, it must run after fieldReferencesFilter, assetsObjectFieldConfigurationFilter and before changeAttributesPathFilter
   addJsmTypesAsFieldsFilter, // Must run after fieldReferencesFilter
   issueLayoutFilter,
   fetchJsmTypesFilter,

@@ -83,18 +83,12 @@ const getMatchingDomainInstance = (
 }
 
 const getTemplateFromContent = ({
-  instance,
   content,
-  domainByBrandElementID,
+  domain,
 }: {
-  instance: InstanceElement
   content: string
-  domainByBrandElementID: Record<string, InstanceElement[]>
+  domain: InstanceElement
 }): TemplateExpression | string => {
-  const domain = getMatchingDomainInstance(instance, domainByBrandElementID)
-  if (domain === undefined) {
-    return content
-  }
   const domainValue = domain.value.domain
   if (!_.isString(domainValue)) {
     log.warn('received invalid domain value %s for domain %s', inspectValue(domainValue), domain.elemID.getFullName())
@@ -137,8 +131,9 @@ const brandCustomizationsFilter: FilterCreator = ({ config: { fetch } }) => ({
     brandCustomizations.forEach(instance => {
       const fieldName = brandCustomizationsToContentField[instance.elemID.typeName as BrandCustomizationType]
       const content = _.get(instance.value, fieldName)
-      if (_.isString(content)) {
-        const template = getTemplateFromContent({ instance, content, domainByBrandElementID })
+      const matchingDomain = getMatchingDomainInstance(instance, domainByBrandElementID)
+      if (_.isString(content) && matchingDomain !== undefined) {
+        const template = getTemplateFromContent({ content, domain: matchingDomain })
         instance.value[fieldName] = template
       }
     })

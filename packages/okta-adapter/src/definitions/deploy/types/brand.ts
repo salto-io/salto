@@ -38,7 +38,7 @@ export const adjustBrandCustomizationContent: definitions.AdjustFunction<
   if (!isTemplateExpression(content)) {
     return { value }
   }
-  const resolvedValue = prepareTemplateForDeploy(content, resolveDomainReference)
+  const { value: resolvedValue } = prepareTemplateForDeploy(content, resolveDomainReference)
   return {
     value: {
       ...value,

@@ -32,6 +32,7 @@ export const INSTANCE_FULL_NAME_FIELD = 'fullName'
 export const METADATA_CONTENT_FIELD = 'content'
 export const FORMULA_TYPE_NAME = 'Formula'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
+export const SALESFORCE_BIG_OBJECT_SUFFIX = '__b'
 export const CUSTOM_METADATA_SUFFIX = '__mdt'
 export const GLOBAL_VALUE_SET_SUFFIX = '__gvs'
 export const ADMIN_PROFILE = 'Admin'
@@ -355,7 +356,6 @@ export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
 export const DEFAULT_MAX_INSTANCES_PER_TYPE = 5000
 export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
 export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
-export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
 
 export const DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY = 1000
 
@@ -462,6 +462,7 @@ export const CANVAS_METADATA_TYPE = 'CanvasMetadata'
 export const STATIC_RESOURCE_METADATA_TYPE = 'StaticResource'
 export const AURA_DEFINITION_BUNDLE_METADATA_TYPE = 'AuraDefinitionBundle'
 export const GEN_AI_FUNCTION_METADATA_TYPE = 'GenAiFunction'
+export const LIVE_CHAT_BUTTON = 'LiveChatButton'
 
 // Wave Metadata Types
 export const WAVE_RECIPE_METADATA_TYPE = 'WaveRecipe'
@@ -492,6 +493,13 @@ export const CUSTOM_OBJECTS_LOOKUPS_FIELD = 'customObjectsLookups'
 export const METADATA_TYPES_FIELD = 'metadataTypes'
 
 export const ORDERED_MAP_PREFIX = 'OrderedMapOf'
+
+// Related Types
+export const PERMISSIONS_TYPES = [
+  PROFILE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+]
 
 export const getTypePath = (name: string, isTopLevelType = true): string[] => [
   SALESFORCE,

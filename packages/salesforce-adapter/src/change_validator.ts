@@ -54,6 +54,7 @@ import { getLookUpName } from './transformers/reference_mapping'
 import layoutDuplicateFields from './change_validators/layout_duplicate_fields'
 import customApplications from './change_validators/custom_applications'
 import flowReferencedElements from './change_validators/flow_referenced_elements'
+import liveChatButtonRoutingType from './change_validators/live_chat_button_routing_type'
 
 const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
 
@@ -114,6 +115,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   layoutDuplicateFields: () => layoutDuplicateFields,
   customApplications: () => customApplications,
   flowReferencedElements: () => flowReferencedElements,
+  liveChatButtonRoutingType: () => liveChatButtonRoutingType,
   ..._.mapValues(getDefaultChangeValidators(), validator => () => validator),
 }
 

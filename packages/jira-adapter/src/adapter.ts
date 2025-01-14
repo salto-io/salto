@@ -128,6 +128,7 @@ import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
 import assetsObjectFieldConfigurationFilter from './filters/assets/assets_object_field_configuration'
+import assetsObjectFieldConfigurationReferencesFilter from './filters/assets/assets_object_field_configuration_references'
 import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
 import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
@@ -253,7 +254,6 @@ export const DEFAULT_FILTERS = [
   workflowDeployFilter,
   workflowModificationFilter,
   emptyValidatorWorkflowFilter, // must run after workflowFilter
-  formsFilter, // must run before fieldReferencesFilter
   objectTypeIconFilter,
   groupNameFilter,
   workflowGroupsFilter,
@@ -311,7 +311,10 @@ export const DEFAULT_FILTERS = [
   contextDeploymentFilter, // must run after fieldDeploymentFilter
   avatarsFilter, // This must run after contextDeploymentFilter
   jqlReferencesFilter, // must run after assetsObjectFieldConfigurationFilter
+  fieldContextOptionsSplitFilter,
+  formsFilter, // must run before fieldReferencesFilter and after fieldContextOptionsSplitFilter
   fieldReferencesFilter,
+  assetsObjectFieldConfigurationReferencesFilter, // This filter creates references, it must run after fieldReferencesFilter, assetsObjectFieldConfigurationFilter and before changeAttributesPathFilter
   addJsmTypesAsFieldsFilter, // Must run after fieldReferencesFilter
   issueLayoutFilter,
   fetchJsmTypesFilter,
@@ -321,7 +324,6 @@ export const DEFAULT_FILTERS = [
   createReferencesIssueLayoutFilter,
   requestTypelayoutsToValuesFilter, // Must run after createReferencesIssueLayoutFilter
   projectFieldContextOrder,
-  fieldContextOptionsSplitFilter,
   fieldConfigurationDeployment,
   fieldConfigurationDependenciesFilter, // Must run after fieldConfigurationSplitFilter
   missingFieldDescriptionsFilter, // Must run after fieldReferencesFilter

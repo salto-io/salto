@@ -9,6 +9,7 @@ import _, { isString } from 'lodash'
 import {
   AdapterOperations,
   Change,
+  ChangeGroup,
   DeployModifiers,
   DeployOptions,
   DeployResult,
@@ -113,6 +114,7 @@ import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
 import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
+import defaultDeployDefinitionsFilter from './filters/default_deploy_definitions'
 import commonFilters from './filters/common'
 import handleTemplateExpressionFilter from './filters/handle_template_expressions'
 import handleAppInstallationsFilter from './filters/handle_app_installations'
@@ -168,6 +170,7 @@ import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
 import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
 import ZendeskGuideClient from './client/guide_client'
+import { createDeployDefinitions } from './definitions/deploy/deploy'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -280,8 +283,10 @@ export const DEFAULT_FILTERS = [
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   addImportantValuesFilter,
-  // defaultDeployFilter should be last!
+  // defaultDeployFilter and defaultDeployDefinitionsFilter should be last!
   defaultDeployFilter,
+  // This catches types we moved to the new infra definitions
+  defaultDeployDefinitionsFilter,
 ]
 
 const SKIP_RESOLVE_TYPE_NAMES = [
@@ -547,6 +552,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           userElemID: this.userConfig.fetch.elemID,
           fetchConfig: createFetchDefinitions({ baseUrl: this.client.getUrl().href }),
         }),
+        deploy: createDeployDefinitions(),
       },
       this.accountName,
     )
@@ -860,7 +866,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     return this.brandsList
   }
 
-  private async deployGuideChanges(guideResolvedChanges: Change<InstanceElement>[]): Promise<DeployResult[]> {
+  private async deployGuideChanges(
+    guideResolvedChanges: Change<InstanceElement>[],
+    changeGroup: ChangeGroup,
+  ): Promise<DeployResult[]> {
     if (_.isEmpty(guideResolvedChanges)) {
       return []
     }
@@ -891,7 +900,10 @@ export default class ZendeskAdapter implements AdapterOperations {
             }),
           })
           await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
-          const { deployResult: brandDeployResults } = await brandRunner.deploy(subdomainToGuideChanges[subdomain])
+          const { deployResult: brandDeployResults } = await brandRunner.deploy(
+            subdomainToGuideChanges[subdomain],
+            changeGroup,
+          )
           const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
           try {
             await brandRunner.onDeploy(guideChangesBeforeRestore)
@@ -946,13 +958,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       .map(async change =>
         SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
           ? change
-          : resolveChangeElement(
-              change,
-              lookupFunc,
-              async (element, getLookUpName, elementsSource) =>
-                resolveValues(element, getLookUpName, elementsSource, true),
-              this.elementsSource,
-            ),
+          : resolveChangeElement(change, lookupFunc, resolveValues, this.elementsSource),
       )
       .toArray()
     const [guideResolvedChanges, supportResolvedChanges] = _.partition(resolvedChanges, change =>
@@ -970,7 +976,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         errors: [e],
       }
     }
-    const { deployResult } = await runner.deploy(supportResolvedChanges)
+    const { deployResult } = await runner.deploy(supportResolvedChanges, changeGroup)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     try {
       await runner.onDeploy(appliedChangesBeforeRestore)
@@ -981,7 +987,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       saltoErrors.push(e)
     }
 
-    const guideDeployResults = await this.deployGuideChanges(guideResolvedChanges)
+    const guideDeployResults = await this.deployGuideChanges(guideResolvedChanges, changeGroup)
     const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
       guideDeployResults.flatMap(result => result.appliedChanges),
     )
@@ -1003,7 +1009,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         config: this.userConfig,
-        apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
+        definitions: this.adapterDefinitions,
+        oldApiDefsConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: [

@@ -5,20 +5,29 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Change, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
-import { FilterCreator } from '../filter'
+import { Change, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { definitions as definitionUtils } from '@salto-io/adapter-components'
+import { partition } from 'lodash'
 import { deployChange, deployChanges } from '../deployment'
+import { FilterCreator } from '../filter'
+
+const { queryWithDefault } = definitionUtils
 
 /**
  * Deploys all the changes that were not deployed by the previous filters
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
-  name: 'defaultDeployFilter',
+const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions, client }) => ({
+  name: 'oldDefaultDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const deployResult = await deployChanges(changes.filter(isInstanceChange), async change => {
+    const [newInfraChanges, oldInfraChanges] = partition(changes, change =>
+      queryWithDefault(definitions.deploy?.instances ?? {})
+        .allKeys()
+        .includes(getChangeData(change).elemID.typeName),
+    )
+    const deployResult = await deployChanges(oldInfraChanges.filter(isInstanceChange), async change => {
       await deployChange(change, client, oldApiDefinitions)
     })
-    return { deployResult, leftoverChanges: [] }
+    return { deployResult, leftoverChanges: newInfraChanges }
   },
 })
 

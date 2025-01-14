@@ -31,7 +31,13 @@ import {
   isTypeReference,
   isElement,
 } from '@salto-io/adapter-api'
-import { TransformFuncSync, getSubtypes, inspectValue, transformValuesSync } from '@salto-io/adapter-utils'
+import {
+  TransformFuncSync,
+  getSubtypes,
+  inspectValue,
+  transformValuesSync,
+  ImportantValue,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
@@ -340,6 +346,44 @@ export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
       })
     })
   }, 'hideAndOmitFields')
+
+export const addImportantValues = <Options extends FetchApiDefinitionsOptions>({
+  definedTypes,
+  defQuery,
+  finalTypeNames,
+}: {
+  definedTypes: Record<string, ObjectType>
+  defQuery: ElementAndResourceDefFinder<Options>
+  finalTypeNames?: Set<string>
+}): void =>
+  log.timeDebug(() => {
+    Object.entries(definedTypes).forEach(([typeName, type]) => {
+      if (finalTypeNames?.has(typeName)) {
+        log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
+        return
+      }
+
+      const { element: elementDef } = defQuery.query(typeName) ?? {}
+
+      const importantValues = (elementDef?.topLevel?.importantValues ?? []).filter(
+        ({ value }: ImportantValue) => type.fields[value] !== undefined,
+      )
+
+      // Avoid creating unnecessary annotations for types that don't have important values and don't need an override.
+      if (
+        _.isEmpty(importantValues) &&
+        (type.annotations === undefined || type.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] === undefined)
+      ) {
+        return
+      }
+
+      // Generated duck-typed types may contain default important values that are not relevant,
+      // so we want to override them at this point where we know what fields are actually relevant.
+      type.annotate({
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: _.isEmpty(importantValues) ? undefined : importantValues,
+      })
+    })
+  }, 'addImportantValues')
 
 /**
  * Filter for types that are either used by instance or defined in fetch definitions

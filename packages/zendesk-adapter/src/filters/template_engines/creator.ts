@@ -7,13 +7,13 @@
  */
 
 import { InstanceElement, TemplateExpression } from '@salto-io/adapter-api'
-import { createTemplateExpression } from '@salto-io/adapter-utils'
+import { PotentialReference, createTemplateExpression, mergeDistinctReferences } from '@salto-io/adapter-utils'
 import { Themes } from '../../user_config'
 import { parseHandlebarPotentialReferences } from './handlebar_parser'
 import { parseHtmlPotentialReferences } from './html_parser'
 import { extractDomainsAndFieldsFromScripts, extractNumericValueIdsFromScripts } from './javascript_extractor'
 import { parsePotentialReferencesByPrefix } from './javascript_parser'
-import { PotentialReference, TemplateEngineOptions } from './types'
+import { TemplateEngineOptions } from './types'
 
 export type TemplateEngineCreator = (
   content: string,
@@ -101,32 +101,6 @@ const javascriptReferencesByConfig = (
   return extractOrParseByStrategy(scripts, idsToElements, javascriptReferenceLookupStrategy).flatMap(script =>
     extractDomainsAndFieldsAfterStrategy(script, idsToElements, matchBrandSubdomain),
   )
-}
-
-const mergeDistinctReferences = (
-  content: string,
-  references: PotentialReference<string | TemplateExpression>[],
-): string | TemplateExpression => {
-  const sortedReferences = references.sort((a, b) => a.loc.start - b.loc.start)
-  const mergedReferences: (string | TemplateExpression)[] = []
-  let lastEnd = 0
-  sortedReferences.forEach(reference => {
-    if (reference.loc.start > lastEnd) {
-      mergedReferences.push(content.slice(lastEnd, reference.loc.start))
-    }
-    mergedReferences.push(reference.value)
-    lastEnd = reference.loc.end
-  })
-  if (lastEnd < content.length) {
-    mergedReferences.push(content.slice(lastEnd))
-  }
-  const templateParts = mergedReferences.flatMap(part => (typeof part === 'string' ? part : part.parts))
-  const templateExpression = createTemplateExpression({
-    parts: templateParts,
-  })
-  return templateExpression.parts.every(part => typeof part === 'string')
-    ? templateExpression.parts.join('')
-    : templateExpression
 }
 
 export const createHandlebarTemplateExpression: TemplateEngineCreator = (

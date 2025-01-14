@@ -69,6 +69,7 @@ import { SUB_CLAIM_NAME, isSubDefaultClaim, isSystemScope } from './types/author
 import { isActiveGroupRuleChange } from './types/group_rules'
 import { adjustRoleAdditionChange, isPermissionChangeOfAddedRole, shouldUpdateRolePermission } from './types/roles'
 import { USER_ROLE_CHANGE_ID_FIELDS, getRoleIdFromSharedContext } from './types/user_roles'
+import { adjustBrandCustomizationContent } from './types/brand'
 
 const log = logger(module)
 
@@ -894,6 +895,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/brands/{parent_id}/pages/sign-in/customized', method: 'put' },
+                transformation: { adjust: adjustBrandCustomizationContent },
               },
             },
           ],
@@ -901,6 +903,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/brands/{parent_id}/pages/sign-in/customized', method: 'put' },
+                transformation: { adjust: adjustBrandCustomizationContent },
               },
             },
           ],
@@ -921,6 +924,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/brands/{parent_id}/pages/error/customized', method: 'put' },
+                transformation: { adjust: adjustBrandCustomizationContent },
               },
             },
           ],
@@ -928,6 +932,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/brands/{parent_id}/pages/error/customized', method: 'put' },
+                transformation: { adjust: adjustBrandCustomizationContent },
               },
             },
           ],
@@ -1544,6 +1549,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   brandId: '{_parent.0.brandId}',
                   templateName: '{_parent.0.name}',
                 },
+                transformation: { adjust: adjustBrandCustomizationContent },
               },
             },
           ],
@@ -1558,6 +1564,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   brandId: '{_parent.0.brandId}',
                   templateName: '{_parent.0.name}',
                 },
+                transformation: { adjust: adjustBrandCustomizationContent },
               },
             },
           ],

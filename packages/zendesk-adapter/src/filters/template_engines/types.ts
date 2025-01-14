@@ -5,12 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { InstanceElement, TemplateExpression } from '@salto-io/adapter-api'
-
-export type PotentialReference<T extends string | TemplateExpression> = {
-  value: T
-  loc: { start: number; end: number }
-}
+import { InstanceElement } from '@salto-io/adapter-api'
 
 export type TemplateEngineOptions = {
   matchBrandSubdomain: (url: string) => InstanceElement | undefined

@@ -356,7 +356,6 @@ export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
 export const DEFAULT_MAX_INSTANCES_PER_TYPE = 5000
 export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
 export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
-export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
 
 export const DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY = 1000
 
@@ -493,6 +492,13 @@ export const CUSTOM_OBJECTS_FIELD = 'customObjects'
 export const CUSTOM_OBJECTS_LOOKUPS_FIELD = 'customObjectsLookups'
 
 export const ORDERED_MAP_PREFIX = 'OrderedMapOf'
+
+// Related Types
+export const PERMISSIONS_TYPES = [
+  PROFILE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+]
 
 export const getTypePath = (name: string, isTopLevelType = true): string[] => [
   SALESFORCE,

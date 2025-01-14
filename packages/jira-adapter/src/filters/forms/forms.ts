@@ -76,6 +76,27 @@ const transformFormValues = (form: InstanceElement): void => {
   })
 }
 
+const transformFormValuesToOriginalValues = (form: InstanceElement): void => {
+  form.value = transformValuesSync({
+    values: form.value,
+    type: form.getTypeSync(),
+    pathID: form.elemID,
+    strict: false,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
+    transformFunc: ({ value, path }) => {
+      if (path !== undefined && Array.isArray(value) && value.length > 0 && value.every(isTransformedFormObject)) {
+        const originalValue = value.reduce((acc, { key, value: val }) => {
+          acc[key] = val
+          return acc
+        }, {})
+        return originalValue
+      }
+      return value
+    },
+  })
+}
+
 const deployForms = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const form = getChangeData(change)
   const project = getParent(form)
@@ -232,29 +253,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach((instance: InstanceElement) => {
         instance.value.updated = new Date().toISOString()
-        instance.value = transformValuesSync({
-          values: instance.value,
-          type: instance.getTypeSync(),
-          pathID: instance.elemID,
-          strict: false,
-          allowEmptyArrays: true,
-          allowEmptyObjects: true,
-          transformFunc: ({ value, path }) => {
-            if (
-              path !== undefined &&
-              Array.isArray(value) &&
-              value.length > 0 &&
-              value.every(isTransformedFormObject)
-            ) {
-              const originalValue = value.reduce((acc, { key, value: val }) => {
-                acc[key] = val
-                return acc
-              }, {})
-              return originalValue
-            }
-            return value
-          },
-        })
+        transformFormValuesToOriginalValues(instance)
       })
   },
   deploy: async changes => {
@@ -282,7 +281,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .map(change => getChangeData(change))
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach((instance: InstanceElement) => {
-        if (instance.value.design?.conditions) {
+        if (instance.value.design?.conditions && config.fetch.splitFieldContextOptions) {
           transformFormValues(instance)
         }
         delete instance.value.updated

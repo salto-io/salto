@@ -25,6 +25,7 @@ import {
   RECORDS_PATH,
   SALESFORCE,
   SETTINGS_PATH,
+  SUBTYPES_PATH,
 } from '../constants'
 
 const { isDefined } = values
@@ -35,8 +36,10 @@ const getCustomObjectLookupTypes = (customObject: ObjectType): string[] =>
 export type SalesforceFetchTargets = {
   [METADATA_TYPES_FIELD]: ReadonlyArray<string>
   [CUSTOM_OBJECTS_FIELD]: ReadonlyArray<string>
-  [CUSTOM_OBJECTS_LOOKUPS_FIELD]: Record<string, readonly string[]>
+  [CUSTOM_OBJECTS_LOOKUPS_FIELD]: Record<string, ReadonlyArray<string>>
 }
+
+const isSubType = (objectType: ObjectType): boolean => objectType.path?.includes(SUBTYPES_PATH) ?? false
 
 const createFetchTargetsValue = (elements: Element[]): SalesforceFetchTargets => {
   const customObjects = elements.filter(isCustomObjectSync)
@@ -54,7 +57,13 @@ const createFetchTargetsValue = (elements: Element[]): SalesforceFetchTargets =>
     }
   })
   return {
-    [METADATA_TYPES_FIELD]: _.uniq(elements.filter(isObjectType).map(metadataTypeOrUndefined).filter(isDefined)),
+    [METADATA_TYPES_FIELD]: _.uniq(
+      elements
+        .filter(isObjectType)
+        .filter(type => !isSubType(type))
+        .map(metadataTypeOrUndefined)
+        .filter(isDefined),
+    ),
     [CUSTOM_OBJECTS_FIELD]: customObjectNames,
     [CUSTOM_OBJECTS_LOOKUPS_FIELD]: customObjectsLookups,
   }

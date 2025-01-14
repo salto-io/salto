@@ -10,8 +10,16 @@ import filterCreator from '../../src/filters/fetch_targets'
 import { FilterWith } from './mocks'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { Types } from '../../src/transformers/transformer'
-import { APEX_CLASS_METADATA_TYPE, ArtificialTypes, CUSTOM_OBJECT, FIELD_ANNOTATIONS } from '../../src/constants'
+import { createMetadataObjectType, Types } from '../../src/transformers/transformer'
+import {
+  APEX_CLASS_METADATA_TYPE,
+  ArtificialTypes,
+  CUSTOM_OBJECT,
+  FIELD_ANNOTATIONS,
+  SALESFORCE,
+  SUBTYPES_PATH,
+  TYPES_PATH,
+} from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 
 describe('fetch targets filter', () => {
@@ -45,7 +53,12 @@ describe('fetch targets filter', () => {
           },
         },
       })
-      elements = [customObjectType, customObjectTypeWithLookup, mockTypes.ApexClass]
+      // Make sure subtypes are not included in the fetch targets
+      const mockSubtype = createMetadataObjectType({
+        annotations: { metadataType: 'mockSubtype' },
+        path: [SALESFORCE, TYPES_PATH, SUBTYPES_PATH, 'mockSubtype'],
+      })
+      elements = [customObjectType, customObjectTypeWithLookup, mockTypes.ApexClass, mockSubtype]
     })
     describe('when feature is enabled', () => {
       describe('when fetch is full', () => {

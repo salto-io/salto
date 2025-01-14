@@ -44,7 +44,6 @@ import {
   createSchemeGuard,
   detailedCompare,
   getParents,
-  inspectValue,
   setAdditionalPropertiesAnnotation,
 } from '@salto-io/adapter-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
@@ -1027,9 +1026,9 @@ export const getAccountFetchTargets = async ({
 }): Promise<SalesforceFetchTargets> => {
   const fetchTargetsElemID = new ElemID(accountName, FETCH_TARGETS, 'instance', ElemID.CONFIG_NAME)
   const fetchTargetsInstance = await elementsSource.get(fetchTargetsElemID)
-  if (!isInstanceElement(fetchTargetsInstance)) {
+  if (!isInstanceElement(fetchTargetsInstance) || !isFetchTargetsInstance(fetchTargetsInstance)) {
     log.warn(
-      'Expected FetchTargets Instance with ElemID %s to be in elements source. Fetch targets will include a constant list of metadata types',
+      'FetchTargets instance %s is invalid or does not exist. Fetch targets will include a constant list of metadata types',
       fetchTargetsElemID.getFullName(),
     )
     return {
@@ -1038,22 +1037,7 @@ export const getAccountFetchTargets = async ({
       customObjectsLookups: {},
     }
   }
-  if (!isFetchTargetsInstance(fetchTargetsInstance)) {
-    log.warn(
-      'Failed to extract customObject fetch settings from OrganizationSettings instance. Fetch targets will include a constant list of metadata types',
-    )
-    log.trace('FetchTargets values are: %s', inspectValue(fetchTargetsInstance.value))
-    return {
-      metadataTypes: SUPPORTED_METADATA_TYPES,
-      customObjects: [],
-      customObjectsLookups: {},
-    }
-  }
-  return {
-    metadataTypes: fetchTargetsInstance.value.metadataTypes,
-    customObjects: fetchTargetsInstance.value.customObjects,
-    customObjectsLookups: fetchTargetsInstance.value.customObjectsLookups,
-  }
+  return fetchTargetsInstance.value
 }
 
 const getCustomObjectDependenciesRecursively = (

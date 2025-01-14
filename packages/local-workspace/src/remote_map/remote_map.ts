@@ -261,6 +261,9 @@ const closeTmpConnection = async (
   log.debug('closed temporary connection to %s', tmpLocation)
 }
 
+/**
+ * @deprecated use `workspace.close()` / `remoteMapCreator.close()` instead.
+ */
 export const closeRemoteMapsOfLocation = async (location: string): Promise<boolean> =>
   log.timeDebug(
     async () => {
@@ -833,7 +836,9 @@ export const createRemoteMapCreator = (
         close: async (): Promise<void> => {
           // Do nothing - we can not close the connection here
           //  because we share the connection across multiple namespaces
-          log.warn('cannot close connection of remote map with close method - use closeRemoteMapsOfLocation')
+          log.warn(
+            'cannot close connection of remote map with close method - use `workspace.close()` / `remoteMapCreator.close()` instead.',
+          )
         },
         isEmpty: async (): Promise<boolean> => {
           if (isNamespaceEmpty === undefined) {

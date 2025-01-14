@@ -26,21 +26,12 @@ import {
   Field,
   ChangeDataType,
   Change,
-  isInstanceChange,
   isMapType,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeDataSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import {
-  SALESFORCE,
-  METADATA_TYPE,
-  PROFILE_METADATA_TYPE,
-  TYPES_PATH,
-  SUBTYPES_PATH,
-  PERMISSION_SET_METADATA_TYPE,
-  MUTING_PERMISSION_SET_METADATA_TYPE,
-} from '../constants'
+import { SALESFORCE, METADATA_TYPE, TYPES_PATH, SUBTYPES_PATH, PERMISSIONS_TYPES } from '../constants'
 import {
   apiNameSync,
   buildElementsSourceForFetch,
@@ -52,8 +43,6 @@ import {
 const { awu } = collections.asynciterable
 const { isDefined } = values
 const log = logger(module)
-
-const PERMISSIONS_TYPES = [PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, MUTING_PERMISSION_SET_METADATA_TYPE]
 
 const FIELD_PERMISSIONS = 'fieldPermissions'
 
@@ -214,10 +203,7 @@ const fieldPermissionsFieldToOriginalType = (objectType: ObjectType): void => {
 const getInstanceChangesWithFieldPermissions = (
   changes: Change<ChangeDataType>[],
 ): (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[] =>
-  changes
-    .filter(isAdditionOrModificationChange)
-    .filter(isInstanceOfTypeChangeSync(...PERMISSIONS_TYPES))
-    .filter(isInstanceChange)
+  changes.filter(isInstanceOfTypeChangeSync(...PERMISSIONS_TYPES)).filter(isAdditionOrModificationChange)
 
 let shouldRunDeployFilters: boolean
 

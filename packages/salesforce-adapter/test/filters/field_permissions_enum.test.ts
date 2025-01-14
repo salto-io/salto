@@ -23,7 +23,7 @@ import fieldPermissionsEnumFilter, {
   enumFieldPermissions,
   profileFieldLevelSecurity,
 } from '../../src/filters/field_permissions_enum'
-import { generateProfileType, defaultFilterContext } from '../utils'
+import { generateProfileType, defaultFilterContext, buildFilterContext } from '../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, SALESFORCE } from '../../src/constants'
 import { FilterWith } from './mocks'
 
@@ -174,21 +174,21 @@ describe('FieldPermissionsEnum filter', () => {
       await filter.onFetch(elements)
     })
 
-    it('Should convert Profile Object fieldPermissions type to fieldPermissionEnum', async () => {
+    it('should convert Profile Object fieldPermissions type to fieldPermissionEnum', async () => {
       const fieldPermissionsFieldType = await profileObjectClone.fields.fieldPermissions.getType()
       expect(isMapType(fieldPermissionsFieldType)).toBeTruthy()
       const deepInnerFieldPermissionType = await getDeepInnerType(fieldPermissionsFieldType)
       expect(deepInnerFieldPermissionType.elemID.isEqual(enumFieldPermissions.elemID)).toBeTruthy()
     })
 
-    it('Should convert PermissionSet Object fieldPermissions type to fieldPermissionEnum', async () => {
+    it('should convert PermissionSet Object fieldPermissions type to fieldPermissionEnum', async () => {
       const fieldPermissionsFieldType = await permissionSetObjectClone.fields.fieldPermissions.getType()
       expect(isMapType(fieldPermissionsFieldType)).toBeTruthy()
       const deepInnerFieldPermissionType = await getDeepInnerType(fieldPermissionsFieldType)
       expect(deepInnerFieldPermissionType.elemID.isEqual(enumFieldPermissions.elemID)).toBeTruthy()
     })
 
-    it("Should convert Profile and PermissionSet instances' fieldPermissions values to right enums", async () => {
+    it("should convert Profile and PermissionSet instances' fieldPermissions values to right enums", async () => {
       ;[profileInstanceClone, permissionSetInstanceClone].forEach(instance => {
         expect(instance.value).toEqual({
           fieldPermissions: fieldPermissionEnumValue,
@@ -196,9 +196,47 @@ describe('FieldPermissionsEnum filter', () => {
       })
     })
 
-    it('Should not covert Profile and PermissionSet type and instances if field did not convert to map', async () => {
+    it('should not covert Profile and PermissionSet type and instances if field did not convert to map', async () => {
       expect(permissionSetInstanceBeforeConvertClone.value.fieldPermissions).toEqual(fieldPermissionObjectValueAsList)
       expect(isMapType(await permissionSetObjectBeforeConvertClone.fields.fieldPermissions.getType())).toBeFalsy()
+    })
+
+    describe('with fieldPermissions that are not part of the fetch', () => {
+      describe('with disablePermissionsOmissions false', () => {
+        beforeAll(async () => {
+          filter = fieldPermissionsEnumFilter({
+            config: defaultFilterContext,
+          }) as FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
+          profileInstanceClone = profileInstance.clone()
+          profileObjectClone = profileObj.clone()
+          elements = [profileObjectClone, profileInstanceClone]
+          await filter.onFetch(elements)
+        })
+
+        it('should omit the fieldPermissions from the instance', () => {
+          expect(profileInstanceClone.value.fieldPermissions).toBeEmpty()
+        })
+      })
+
+      describe('with disablePermissionsOmissions true', () => {
+        beforeAll(async () => {
+          filter = fieldPermissionsEnumFilter({
+            config: buildFilterContext({
+              optionalFeatures: {
+                disablePermissionsOmissions: true,
+              },
+            }),
+          }) as FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
+          profileInstanceClone = profileInstance.clone()
+          profileObjectClone = profileObj.clone()
+          elements = [profileObjectClone, profileInstanceClone]
+          await filter.onFetch(elements)
+        })
+
+        it('should not omit the fieldPermissions from the instance', () => {
+          expect(profileInstanceClone.value.fieldPermissions).not.toBeEmpty()
+        })
+      })
     })
   })
 
@@ -252,14 +290,14 @@ describe('FieldPermissionsEnum filter', () => {
           await filter.preDeploy(changes)
         })
 
-        it('Should have instances with fieldPermission Object values', async () => {
+        it('should have instances with fieldPermission Object values', async () => {
           changes.forEach(change => {
             const instance = getChangeData(change)
             expect(instance.value.fieldPermissions).toEqual(fieldPermissionObjectValue)
           })
         })
 
-        it("Should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
+        it("should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
           await awu(changes).forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()
@@ -276,14 +314,14 @@ describe('FieldPermissionsEnum filter', () => {
           await filter.onDeploy(changes)
         })
 
-        it('Should have instances with fieldPermission Enum values', () => {
+        it('should have instances with fieldPermission Enum values', () => {
           changes.forEach(change => {
             const instance = getChangeData(change)
             expect(instance.value.fieldPermissions).toEqual(fieldPermissionEnumValue)
           })
         })
 
-        it("Should have instances' type fieldPermission field type as enumFieldPermissions map type", async () => {
+        it("should have instances' type fieldPermission field type as enumFieldPermissions map type", async () => {
           await awu(changes).forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()
@@ -309,14 +347,14 @@ describe('FieldPermissionsEnum filter', () => {
           await filter.preDeploy(changes)
         })
 
-        it('Should have instances with fieldPermission Object values', () => {
+        it('should have instances with fieldPermission Object values', () => {
           changes.forEach(change => {
             const instance = getChangeData(change)
             expect(instance.value.fieldPermissions).toEqual(fieldPermissionObjectValue)
           })
         })
 
-        it("Should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
+        it("should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
           await awu(changes).forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()
@@ -333,14 +371,14 @@ describe('FieldPermissionsEnum filter', () => {
           await filter.onDeploy(changes)
         })
 
-        it('Should have instances with fieldPermission Object values', () => {
+        it('should have instances with fieldPermission Object values', () => {
           changes.forEach(change => {
             const instance = getChangeData(change)
             expect(instance.value.fieldPermissions).toEqual(fieldPermissionObjectValue)
           })
         })
 
-        it("Should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
+        it("should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
           await awu(changes).forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()

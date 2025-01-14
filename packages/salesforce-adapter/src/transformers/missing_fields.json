@@ -2023,5 +2023,14 @@
         "type": "STRING"
       }
     ]
+  },
+  {
+    "id": "LiveChatButton",
+    "fields": [
+      {
+        "name": "routingType",
+        "type": "STRING"
+      }
+    ]
   }
 ]

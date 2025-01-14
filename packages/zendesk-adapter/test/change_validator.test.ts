@@ -6,10 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { definitions } from '@salto-io/adapter-components'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, DEPLOY_CONFIG, FETCH_CONFIG } from '../src/config'
 import createChangeValidator from '../src/change_validator'
 import { ZENDESK } from '../src/constants'
 import ZendeskClient from '../src/client/client'
+import { Options } from '../src/definitions/types'
 
 describe('change validator creator', () => {
   const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
@@ -19,9 +21,10 @@ describe('change validator creator', () => {
         await createChangeValidator({
           client,
           config: DEFAULT_CONFIG,
-          apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+          oldApiDefsConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
           fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
           deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
+          definitions: {} as definitions.ApiDefinitions<Options>,
           typesDeployedViaParent: [],
           typesWithNoDeploy: [],
         })([]),
@@ -33,9 +36,10 @@ describe('change validator creator', () => {
         await createChangeValidator({
           client,
           config: DEFAULT_CONFIG,
-          apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+          oldApiDefsConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
           fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
           deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
+          definitions: {} as definitions.ApiDefinitions<Options>,
           typesDeployedViaParent: [],
           typesWithNoDeploy: [],
         })([
@@ -67,9 +71,10 @@ describe('change validator creator', () => {
         await createChangeValidator({
           client,
           config: DEFAULT_CONFIG,
-          apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+          oldApiDefsConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
           fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
           deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
+          definitions: {} as definitions.ApiDefinitions<Options>,
           typesDeployedViaParent: [],
           typesWithNoDeploy: [],
         })([

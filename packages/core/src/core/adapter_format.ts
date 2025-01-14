@@ -20,6 +20,7 @@ import {
   SaltoError,
   toChange,
 } from '@salto-io/adapter-api'
+import { getDetailedChanges } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, Workspace, ElementSelector, expressions, elementSource, hiddenValues } from '@salto-io/workspace'
@@ -60,6 +61,11 @@ const getAdapter = ({
   return { adapter: adapterCreators[adapterName], adapterName, error: undefined }
 }
 
+const getResolvedWorkspaceElements = async (workspace: Workspace): Promise<Element[]> => {
+  const workspaceElements = await workspace.elements()
+  return expressions.resolve(await awu(await workspaceElements.getAll()).toArray(), workspaceElements)
+}
+
 type GetAdapterAndContextArgs = {
   ignoreStateElemIdMapping?: boolean
   ignoreStateElemIdMappingForSelectors?: ElementSelector[]
@@ -83,11 +89,7 @@ const getAdapterAndContext = async ({
     throw new Error(error.message)
   }
 
-  const workspaceElements = await workspace.elements()
-  const resolvedElements = await expressions.resolve(
-    await awu(await workspaceElements.getAll()).toArray(),
-    workspaceElements,
-  )
+  const resolvedElements = await getResolvedWorkspaceElements(workspace)
   const { adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup({
     workspace,
     fetchAccounts: [accountName],
@@ -321,6 +323,7 @@ export const calculatePatch = async ({
 
 type SyncWorkspaceToFolderArgs = {
   baseDir: string
+  toWorkspace?: Workspace
 } & GetAdapterAndContextArgs
 
 export type SyncWorkspaceToFolderResult = {
@@ -331,6 +334,7 @@ export const syncWorkspaceToFolder = ({
   workspace,
   accountName,
   baseDir,
+  toWorkspace,
   ignoreStateElemIdMapping,
   ignoreStateElemIdMappingForSelectors,
   adapterCreators,
@@ -384,12 +388,14 @@ export const syncWorkspaceToFolder = ({
         }
       }
 
+      const toWorkspaceElements = toWorkspace ? await getResolvedWorkspaceElements(toWorkspace) : []
+
       // We know this is not accurate - we will get false modify changes here because we are directly comparing
       // salto elements to folder elements and we know salto elements have more information in them.
       // This should hopefully be ok because the effect of this incorrect comparison is that we will potentially
       // re-dump elements that are equal, so even though we do redundant work, the end result should be correct
       const plan = await getPlan({
-        before: elementSource.createInMemoryElementSource(folderElements),
+        before: elementSource.createInMemoryElementSource(folderElements.concat(toWorkspaceElements)),
         after: elementSource.createInMemoryElementSource(workspaceElements),
         dependencyChangers: [],
       })
@@ -404,11 +410,20 @@ export const syncWorkspaceToFolder = ({
         changes.length,
         changeCounts,
       )
-      return dumpElementsToFolder({
+
+      const { errors, unappliedChanges } = await dumpElementsToFolder({
         baseDir,
         changes: await filterHiddenChanges(changes, adapterContext.elementsSource),
         elementsSource: adapterContext.elementsSource,
       })
+
+      if (toWorkspace) {
+        log.debug('Updating nacl files with the %d unapplied changes', unappliedChanges.length)
+        await toWorkspace.updateNaclFiles(unappliedChanges.map(change => getDetailedChanges(change)).flat())
+        await toWorkspace.flush()
+      }
+
+      return { errors }
     },
     'syncWorkspaceToFolder %s',
     baseDir,
@@ -417,6 +432,7 @@ export const syncWorkspaceToFolder = ({
 type UpdateElementFolderArgs = {
   workspace: Workspace
   baseDir: string
+  toWorkspace?: Workspace
   accountName: string
   changes: ReadonlyArray<Change>
   adapterCreators: Record<string, Adapter>
@@ -430,6 +446,7 @@ export type UpdateElementFolderResult = {
 export const updateElementFolder = ({
   workspace,
   baseDir,
+  toWorkspace,
   changes,
   accountName,
   adapterCreators,
@@ -454,7 +471,7 @@ export const updateElementFolder = ({
           ],
         }
       }
-      return dumpElementsToFolder({
+      const { errors, unappliedChanges } = await dumpElementsToFolder({
         baseDir,
         changes: await filterHiddenChanges(
           await resolveChanges(changes, adapterContext.elementsSource),
@@ -462,6 +479,14 @@ export const updateElementFolder = ({
         ),
         elementsSource: adapterContext.elementsSource,
       })
+
+      if (toWorkspace) {
+        log.debug('Updating nacl files with the %d unapplied changes', unappliedChanges.length)
+        await toWorkspace.updateNaclFiles(unappliedChanges.map(change => getDetailedChanges(change)).flat())
+        await toWorkspace.flush()
+      }
+
+      return { errors, unappliedChanges: toWorkspace ? [] : unappliedChanges }
     },
     'updateElementFolder %s',
     baseDir,

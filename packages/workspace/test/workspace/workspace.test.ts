@@ -3275,6 +3275,16 @@ salesforce.staticFile staticFileInstance {
 
           await elementsPromise
         })
+
+        it('should close remoteMapCreator even if workspaceState throws', async () => {
+          mockCreate.mockRejectedValue(new Error('error in workspaceState'))
+          await expect(workspace.elements()).rejects.toThrow('error in workspaceState')
+
+          mockCreate.mockClear()
+          await workspace.close()
+          expect(mockCreate).not.toHaveBeenCalled()
+          expect(mockClose).toHaveBeenCalled()
+        })
       })
     })
   })

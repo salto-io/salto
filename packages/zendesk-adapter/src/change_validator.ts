@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { config as configUtils, deployment } from '@salto-io/adapter-components'
+import { config as configUtils, deployment, definitions as definitionUtils } from '@salto-io/adapter-components'
 import {
   accountSettingsValidator,
   emptyCustomFieldOptionsValidator,
@@ -84,11 +84,12 @@ import {
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskConfig } from './config'
+import { Options } from './definitions/types'
 import { ZendeskDeployConfig, ZendeskFetchConfig } from './user_config'
 
 const {
   deployTypesNotSupportedValidator,
-  createCheckDeploymentBasedOnConfigValidator,
+  createCheckDeploymentBasedOnDefinitionsValidator,
   createSkipParentsOfSkippedInstancesValidator,
   getDefaultChangeValidators,
 } = deployment.changeValidators
@@ -96,16 +97,18 @@ const {
 export default ({
   client,
   config,
-  apiConfig,
+  oldApiDefsConfig,
   fetchConfig,
+  definitions,
   deployConfig,
   typesDeployedViaParent,
   typesWithNoDeploy,
 }: {
   client: ZendeskClient
   config: ZendeskConfig
-  apiConfig: configUtils.AdapterDuckTypeApiConfig
+  oldApiDefsConfig: configUtils.AdapterDuckTypeApiConfig
   fetchConfig: ZendeskFetchConfig
+  definitions: definitionUtils.ApiDefinitions<Options>
   deployConfig?: ZendeskDeployConfig
   typesDeployedViaParent: string[]
   typesWithNoDeploy: string[]
@@ -113,18 +116,19 @@ export default ({
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
     deployTypesNotSupported: deployTypesNotSupportedValidator,
-    createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({
-      typesConfig: apiConfig.types,
+    createCheckDeploymentBasedOnDefinitions: createCheckDeploymentBasedOnDefinitionsValidator<Options>({
+      typesConfig: oldApiDefsConfig.types,
+      deployDefinitions: definitions.deploy ?? { instances: {} },
       typesDeployedViaParent,
       typesWithNoDeploy,
     }),
     accountSettings: accountSettingsValidator,
     emptyCustomFieldOptions: emptyCustomFieldOptionsValidator,
     emptyVariants: emptyVariantsValidator,
-    parentAnnotationToHaveSingleValue: parentAnnotationToHaveSingleValueValidatorCreator(apiConfig),
-    missingFromParent: missingFromParentValidatorCreator(apiConfig),
-    childMissingParentAnnotation: childMissingParentAnnotationValidatorCreator(apiConfig),
-    removedFromParent: removedFromParentValidatorCreator(apiConfig),
+    parentAnnotationToHaveSingleValue: parentAnnotationToHaveSingleValueValidatorCreator(oldApiDefsConfig),
+    missingFromParent: missingFromParentValidatorCreator(oldApiDefsConfig),
+    childMissingParentAnnotation: childMissingParentAnnotationValidatorCreator(oldApiDefsConfig),
+    removedFromParent: removedFromParentValidatorCreator(oldApiDefsConfig),
     duplicateCustomFieldOptionValues: duplicateCustomFieldOptionValuesValidator,
     noDuplicateLocaleIdInDynamicContentItem: noDuplicateLocaleIdInDynamicContentItemValidator,
     onlyOneTicketFormDefault: onlyOneTicketFormDefaultValidator,
@@ -133,7 +137,7 @@ export default ({
     triggerOrderInstanceContainsAllTheInstances: triggerOrderInstanceContainsAllTheInstancesValidator,
     brandCreation: brandCreationValidator(client),
     webhookAuthData: webhookAuthDataValidator(client),
-    targetAuthData: targetValidator(client, apiConfig),
+    targetAuthData: targetValidator(client, oldApiDefsConfig),
     phoneNumbers: phoneNumbersValidator,
     automationAllConditions: automationAllConditionsValidator,
     macroActionsTicketFieldDeactivation: macroActionsTicketFieldDeactivationValidator,
@@ -155,7 +159,7 @@ export default ({
     brandFieldForBrandBasedElements: brandFieldForBrandBasedElementsValidator,
     translationForDefaultLocale: translationForDefaultLocaleValidator,
     helpCenterActivation: helpCenterActivationValidator,
-    helpCenterCreationOrRemoval: helpCenterCreationOrRemovalValidator(client, apiConfig),
+    helpCenterCreationOrRemoval: helpCenterCreationOrRemovalValidator(client, oldApiDefsConfig),
     externalSourceWebhook: externalSourceWebhookValidator,
     defaultGroupChange: defaultGroupChangeValidator(client),
     organizationExistence: organizationExistenceValidator(client, fetchConfig, deployConfig),
@@ -174,7 +178,7 @@ export default ({
     attachmentWithoutContent: attachmentWithoutContentValidator,
     duplicateRoutingAttributeValue: duplicateRoutingAttributeValueValidator,
     triggerCategoryRemoval: triggerCategoryRemovalValidator(fetchConfig),
-    duplicateIdFieldValues: duplicateIdFieldValuesValidator(apiConfig),
+    duplicateIdFieldValues: duplicateIdFieldValuesValidator(oldApiDefsConfig),
     duplicateDynamicContentItem: duplicateDynamicContentItemValidator,
     notEnabledMissingReferences: notEnabledMissingReferencesValidator(config),
     conditionalTicketFields: conditionalTicketFieldsValidator,

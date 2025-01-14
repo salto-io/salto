@@ -139,13 +139,13 @@ const calculateMergedChanges = async (
       if (!sieve.has(fullname)) {
         sieve.add(fullname)
         const before = await currentElements.get(id)
+        const relevantMergeError = await newMergedElementsResult.errors.get(fullname)
+        if (relevantMergeError !== undefined) {
+          mergeErrors.push({ value: relevantMergeError, key: fullname })
+        } else {
+          noErrorMergeIds.push(fullname)
+        }
         if (!isEqualElements(before, element)) {
-          const relevantMergeError = await newMergedElementsResult.errors.get(fullname)
-          if (relevantMergeError) {
-            mergeErrors.push({ value: relevantMergeError, key: fullname })
-          } else {
-            noErrorMergeIds.push(fullname)
-          }
           return toChange({ before, after: element })
         }
       }
@@ -558,43 +558,4 @@ export const buildNewMergedElementsAndErrors = async ({
     }
   })
   return changes
-}
-
-export const getAfterElements = async ({
-  src1Changes,
-  src2Changes,
-  src1,
-  src2,
-}: CacheUpdate): Promise<{
-  afterElements: AsyncIterable<Element>
-  relevantElementIDs: AsyncIterable<ElemID>
-}> => {
-  const relevantElementIDs = _.uniqBy(
-    [src1Changes, src2Changes]
-      .flat()
-      .map(getChangeData)
-      .map(e => e.elemID),
-    id => id.getFullName(),
-  )
-
-  const src1ChangesByID = _.keyBy(src1Changes, change => getChangeData(change).elemID.getFullName())
-  const src2ChangesByID = _.keyBy(src2Changes, change => getChangeData(change).elemID.getFullName())
-  const changeAfterElements = [...src1Changes, ...src2Changes]
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(values.isDefined)
-  const unmodifiedFragments = awu(relevantElementIDs)
-    .map(async id => {
-      const sr1Change = src1ChangesByID[id.getFullName()]
-      const src2Change = src2ChangesByID[id.getFullName()]
-      if (values.isDefined(sr1Change) && values.isDefined(src2Change)) {
-        return undefined
-      }
-      return values.isDefined(sr1Change) ? src2.get(id) : src1.get(id)
-    })
-    .filter(values.isDefined)
-  return {
-    afterElements: awu(changeAfterElements).concat(unmodifiedFragments),
-    relevantElementIDs: awu(relevantElementIDs),
-  }
 }

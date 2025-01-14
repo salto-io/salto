@@ -245,7 +245,7 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
     return config
   }
   if (options.value.cpq === true || options.value.managedPackages?.includes(CPQ_MANAGED_PACKAGE)) {
-    config = CONFIG_WITH_CPQ
+    config = CONFIG_WITH_CPQ.clone()
   }
   const shouldExcludeProfiles = options.value.manageProfiles ? [] : EXCLUDE_PROFILES
   const shouldExcludePermissionSets = options.value.managePermissionSets ? [] : EXCLUDE_PERMISSION_SETS

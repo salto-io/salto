@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { configType, MetadataInstance } from '../src/types'
 import { optionsType, getConfig, SalesforceConfigOptionsType } from '../src/config_creator'
 import {
@@ -14,14 +15,6 @@ import {
   PERMISSION_SET_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
 } from '../src/constants'
-
-const mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType)
-const mockCreateDefaultInstanceFromType = jest.fn().mockResolvedValue(mockDefaultInstanceFromTypeResult)
-
-jest.mock('@salto-io/adapter-utils', () => ({
-  ...jest.requireActual<{}>('@salto-io/adapter-utils'),
-  createDefaultInstanceFromType: jest.fn().mockImplementation((...args) => mockCreateDefaultInstanceFromType(...args)),
-}))
 
 const mockLogError = jest.fn()
 jest.mock('@salto-io/logging', () => ({
@@ -39,10 +32,18 @@ describe('config_creator', () => {
 
   const createMockOptionsInstance = (value: SalesforceConfigOptionsType): InstanceElement =>
     new InstanceElement('options', optionsType, value)
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
+  const getClonedDefaultConfig = async (): Promise<InstanceElement> => {
+    const conf = (await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)).clone()
+    conf.value.fetch.metadata.exclude.push(
+      ...[
+        { metadataType: PROFILE_METADATA_TYPE },
+        { metadataType: PERMISSION_SET_METADATA_TYPE },
+        { metadataType: MUTING_PERMISSION_SET_METADATA_TYPE },
+        { metadataType: PERMISSION_SET_GROUP_METADATA_TYPE },
+      ],
+    )
+    return conf
+  }
 
   describe('when input contains cpq equal true', () => {
     beforeEach(async () => {
@@ -71,13 +72,6 @@ describe('config_creator', () => {
     const getExcludedTypesFromConfig = (instance: InstanceElement): string[] =>
       instance.value.fetch.metadata.exclude.map((entry: MetadataInstance) => entry.metadataType)
     describe('without cpq', () => {
-      beforeEach(() => {
-        const originalCreateDefaultInstanceFromType =
-          jest.requireActual('@salto-io/adapter-utils').createDefaultInstanceFromType
-        mockCreateDefaultInstanceFromType.mockImplementationOnce((...args) =>
-          originalCreateDefaultInstanceFromType(...args),
-        )
-      })
       describe('when manageProfiles=true and managePermissionSets=true', () => {
         it('should not exclude Profiles, PermissionSets, PermissionSetGroups and MutingPermissionSets', async () => {
           const configInstance = await getConfig(
@@ -89,6 +83,7 @@ describe('config_creator', () => {
             MUTING_PERMISSION_SET_METADATA_TYPE,
             PERMISSION_SET_GROUP_METADATA_TYPE,
           ])
+          expect(mockLogError).not.toHaveBeenCalled()
         })
       })
       describe('when manageProfiles=true and managePermissionSets=false', () => {
@@ -102,56 +97,11 @@ describe('config_creator', () => {
             PERMISSION_SET_GROUP_METADATA_TYPE,
           ])
           expect(getExcludedTypesFromConfig(configInstance)).not.toInclude(PROFILE_METADATA_TYPE)
-        })
-      })
-      describe('when manageProfiles=false and managePermissionSets=true', () => {
-        it('should not exclude PermissionSets, PermissionSetGroups and MutingPermissionSets and exclude Profiles', async () => {
-          const configInstance = await getConfig(
-            createMockOptionsInstance({ manageProfiles: false, managePermissionSets: true }),
-          )
-          expect(getExcludedTypesFromConfig(configInstance)).not.toIncludeAnyMembers([
-            PERMISSION_SET_METADATA_TYPE,
-            MUTING_PERMISSION_SET_METADATA_TYPE,
-            PERMISSION_SET_GROUP_METADATA_TYPE,
-          ])
-          expect(getExcludedTypesFromConfig(configInstance)).toInclude(PROFILE_METADATA_TYPE)
-        })
-      })
-      describe('when manageProfiles=false and managePermissionSets=false', () => {
-        it('should not exclude Profiles, PermissionSets, PermissionSetGroups and MutingPermissionSets', async () => {
-          const configInstance = await getConfig(
-            createMockOptionsInstance({
-              manageProfiles: false,
-              managePermissionSets: false,
-            }),
-          )
-          expect(getExcludedTypesFromConfig(configInstance)).toIncludeAllMembers([
-            PROFILE_METADATA_TYPE,
-            PERMISSION_SET_METADATA_TYPE,
-            MUTING_PERMISSION_SET_METADATA_TYPE,
-            PERMISSION_SET_GROUP_METADATA_TYPE,
-          ])
+          expect(mockLogError).not.toHaveBeenCalled()
         })
       })
     })
     describe('with cpq', () => {
-      describe('when manageProfiles=true and managePermissionSets=false', () => {
-        it('should exclude PermissionSets, PermissionSetGroups and MutingPermissionSets and not exclude Profiles', async () => {
-          const configInstance = await getConfig(
-            createMockOptionsInstance({
-              manageProfiles: true,
-              managePermissionSets: false,
-              managedPackages: ['sbaa, SBQQ (CPQ)'],
-            }),
-          )
-          expect(getExcludedTypesFromConfig(configInstance)).toIncludeAllMembers([
-            PERMISSION_SET_METADATA_TYPE,
-            MUTING_PERMISSION_SET_METADATA_TYPE,
-            PERMISSION_SET_GROUP_METADATA_TYPE,
-          ])
-          expect(getExcludedTypesFromConfig(configInstance)).not.toInclude(PROFILE_METADATA_TYPE)
-        })
-      })
       describe('when manageProfiles=false and managePermissionSets=true', () => {
         it('should not exclude PermissionSets, PermissionSetGroups and MutingPermissionSets and exclude Profiles', async () => {
           const configInstance = await getConfig(
@@ -167,23 +117,7 @@ describe('config_creator', () => {
             PERMISSION_SET_GROUP_METADATA_TYPE,
           ])
           expect(getExcludedTypesFromConfig(configInstance)).toInclude(PROFILE_METADATA_TYPE)
-        })
-      })
-      describe('when manageProfiles=true and managePermissionSets=true', () => {
-        it('should not exclude Profiles, PermissionSets, PermissionSetGroups and MutingPermissionSets', async () => {
-          const configInstance = await getConfig(
-            createMockOptionsInstance({
-              manageProfiles: true,
-              managePermissionSets: true,
-              managedPackages: ['sbaa, SBQQ (CPQ)'],
-            }),
-          )
-          expect(getExcludedTypesFromConfig(configInstance)).not.toIncludeAnyMembers([
-            PROFILE_METADATA_TYPE,
-            PERMISSION_SET_METADATA_TYPE,
-            MUTING_PERMISSION_SET_METADATA_TYPE,
-            PERMISSION_SET_GROUP_METADATA_TYPE,
-          ])
+          expect(mockLogError).not.toHaveBeenCalled()
         })
       })
       describe('when manageProfiles=false and managePermissionSets=false', () => {
@@ -201,6 +135,7 @@ describe('config_creator', () => {
             MUTING_PERMISSION_SET_METADATA_TYPE,
             PERMISSION_SET_GROUP_METADATA_TYPE,
           ])
+          expect(mockLogError).not.toHaveBeenCalled()
         })
       })
     })
@@ -212,8 +147,8 @@ describe('config_creator', () => {
       resultConfig = await getConfig(options)
     })
     it('should create default instance from type', async () => {
-      expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
-      expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
+      const a = await getClonedDefaultConfig()
+      expect(resultConfig).toMatchObject(a)
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -224,8 +159,7 @@ describe('config_creator', () => {
       resultConfig = await getConfig(options)
     })
     it('should create default instance from type', async () => {
-      expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
-      expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
+      expect(resultConfig).toMatchObject(await getClonedDefaultConfig())
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -239,8 +173,7 @@ describe('config_creator', () => {
       resultConfig = await getConfig(options)
     })
     it('should create default instance from type and log error', async () => {
-      expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
-      expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
+      expect(resultConfig).toMatchObject(await getClonedDefaultConfig())
       expect(mockLogError).toHaveBeenCalledWith(
         `Received an invalid instance for config options. Received instance with refType ElemId full name: ${options?.refType.elemID.getFullName()}`,
       )

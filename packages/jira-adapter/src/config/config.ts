@@ -298,6 +298,7 @@ const CHANGE_VALIDATOR_NAMES = [
   'filter',
   'kanbanBoardBacklog',
   'globalTransition',
+  'htmlBodyContentAction',
 ]
 
 export type ChangeValidatorName = (typeof CHANGE_VALIDATOR_NAMES)[number]

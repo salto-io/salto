@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { definitions } from '@salto-io/adapter-components'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { get, isArray } from 'lodash'
 
@@ -18,7 +18,7 @@ export const transform: (innerRoot: string) => definitions.AdjustFunctionMulti =
       throw new Error('unexpected value for graphql item, not transforming')
     }
     if ('errors' in value) {
-      throw new Error(`graphql response contained errors: ${safeJsonStringify(value)}`)
+      throw new Error(`graphql response contained errors: ${inspectValue(value)}`)
     }
     const graphqlValues = get(value, `data.${innerRoot}`)
     if (graphqlValues === undefined) {

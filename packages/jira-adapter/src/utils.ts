@@ -16,12 +16,13 @@ import {
   isInstanceElement,
   Value,
   Values,
+  ElemID,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, fileNameFromNaclCase } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { JiraConfig, JspUrls } from './config/config'
 import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN, SOFTWARE_FIELD } from './constants'
@@ -266,5 +267,10 @@ export type HTMLResponse = {
 const HTML_RESPONSE_SCHEME = Joi.object({
   data: Joi.string().required(),
 }).unknown(true)
+
+export const getHTMLStaticFileName = (path: ElemID): string => {
+  const pathName = fileNameFromNaclCase(path.getFullName()).split('instance.')
+  return pathName[1]
+}
 
 export const isHTMLResponse = createSchemeGuard<HTMLResponse>(HTML_RESPONSE_SCHEME, 'Failed to get HTML response')

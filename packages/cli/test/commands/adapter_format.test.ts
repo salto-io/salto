@@ -9,6 +9,7 @@ import { Element, InstanceElement, ObjectType, toChange } from '@salto-io/adapte
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { calculatePatch, initFolder, isInitializedFolder, syncWorkspaceToFolder } from '@salto-io/core'
 import { merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import * as mocks from '../mocks'
 import { applyPatchAction, syncWorkspaceToFolderAction } from '../../src/commands/adapter_format'
 import { CliExitCode } from '../../src/types'
@@ -24,10 +25,19 @@ jest.mock('@salto-io/core', () => {
   }
 })
 
+jest.mock('@salto-io/local-workspace', () => {
+  const actual = jest.requireActual('@salto-io/local-workspace')
+  return {
+    ...actual,
+    loadLocalWorkspace: jest.fn().mockImplementation(actual.loadLocalWorkspace),
+  }
+})
+
 const mockCalculatePatch = calculatePatch as jest.MockedFunction<typeof calculatePatch>
 const mockSyncWorkspaceToFolder = syncWorkspaceToFolder as jest.MockedFunction<typeof syncWorkspaceToFolder>
 const mockIsInitializedFolder = isInitializedFolder as jest.MockedFunction<typeof isInitializedFolder>
 const mockInitFolder = initFolder as jest.MockedFunction<typeof initFolder>
+const mockLoadLocalWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
 
 describe('apply-patch command', () => {
   const commandName = 'apply-patch'
@@ -350,6 +360,51 @@ describe('sync-to-workspace command', () => {
     })
     it('should return non-success exit code', () => {
       expect(result).toEqual(CliExitCode.AppError)
+    })
+  })
+
+  describe('when toWorkspaceDir is provided but workspace cannot be loaded', () => {
+    let result: CliExitCode
+    beforeEach(async () => {
+      mockIsInitializedFolder.mockResolvedValueOnce({ result: true, errors: [] })
+      mockLoadLocalWorkspace.mockRejectedValue(new Error('Failed to load workspace'))
+      result = await syncWorkspaceToFolderAction({
+        ...cliCommandArgs,
+        workspace,
+        input: {
+          accountName: 'salesforce',
+          toDir: 'someDir',
+          force: true,
+          toWorkspaceDir: 'someWorkspaceDir',
+        },
+      })
+    })
+
+    it('should return non-success exit code', () => {
+      expect(result).toEqual(CliExitCode.UserInputError)
+    })
+  })
+
+  describe('when toWorkspaceDir is provided and core sync returns without errors', () => {
+    let result: CliExitCode
+    beforeEach(async () => {
+      mockIsInitializedFolder.mockResolvedValueOnce({ result: true, errors: [] })
+      mockLoadLocalWorkspace.mockResolvedValueOnce(mocks.mockWorkspace({}))
+      mockSyncWorkspaceToFolder.mockResolvedValueOnce({ errors: [] })
+      result = await syncWorkspaceToFolderAction({
+        ...cliCommandArgs,
+        workspace,
+        input: {
+          accountName: 'salesforce',
+          toDir: 'someDir',
+          force: true,
+          toWorkspaceDir: 'someWorkspaceDir',
+        },
+      })
+    })
+
+    it('should return success exit code', () => {
+      expect(result).toEqual(CliExitCode.Success)
     })
   })
 })

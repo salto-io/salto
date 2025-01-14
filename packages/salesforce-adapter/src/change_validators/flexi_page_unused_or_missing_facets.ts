@@ -17,10 +17,27 @@ import {
   isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
-import { FLEXI_PAGE_TYPE } from '../constants'
+import {
+  COMPONENT_INSTANCE_PROPERTY_FILED_NAMES,
+  FLEXI_PAGE_FIELD_NAMES,
+  FLEXI_PAGE_REGION_FIELD_NAMES,
+  FLEXI_PAGE_TYPE,
+  PAGE_REGION_TYPE_VALUES,
+} from '../constants'
 import { isInstanceOfTypeSync } from '../filters/utils'
 
 const { DefaultMap } = collections.map
+
+type FlexiPageRegion = {
+  type: string
+  name: string
+}
+
+const isFlexiPageRegion = (instance: unknown): instance is FlexiPageRegion =>
+  _.get(instance, FLEXI_PAGE_REGION_FIELD_NAMES.TYPE) === PAGE_REGION_TYPE_VALUES.FACET &&
+  _.isString(_.get(instance, FLEXI_PAGE_REGION_FIELD_NAMES.NAME))
+
+const isFacetReference = (value: unknown): value is string => _.isString(value) && value.startsWith('Facet-')
 
 const getFacetDefinitionsAndReferences = (
   element: InstanceElement,
@@ -29,10 +46,10 @@ const getFacetDefinitionsAndReferences = (
   const facetReferences = new DefaultMap<string, ElemID[]>(() => [])
   const findDefinitionsAndReferences: TransformFuncSync = ({ value, path, field }) => {
     if (field === undefined || path === undefined) return value
-    if (field.name === 'flexiPageRegions' && _.get(value, 'type') === 'Facet' && _.isString(_.get(value, 'name'))) {
+    if (field.name === FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS && isFlexiPageRegion(value)) {
       facetDefinitions[value.name] = path
     }
-    if (path.name === 'value' && _.isString(value) && value.startsWith('Facet-')) {
+    if (path.name === COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE && isFacetReference(value)) {
       facetReferences.get(value).push(path)
     }
     return value
@@ -75,16 +92,11 @@ const createUnusedFacetChangeError = (elemId: ElemID, elemName: string): ChangeE
   elemID: elemId,
   severity: 'Warning',
   message: 'Unused Facet',
-  detailedMessage: `The Facet "${elemName}" isn’t being used in the Flow.`,
+  detailedMessage: `The Facet "${elemName}" isn’t being used in the ${FLEXI_PAGE_TYPE}.`,
 })
 
-const createChangeErrors = ({
-  facetDefinitions,
-  facetReferences,
-}: {
-  facetDefinitions: Record<string, ElemID>
-  facetReferences: Map<string, ElemID[]>
-}): ChangeError[] => {
+const createChangeErrors = (element: InstanceElement): ChangeError[] => {
+  const { facetDefinitions, facetReferences } = getFacetDefinitionsAndReferences(element)
   const { unusedFacets, missingReferences } = getUnusedFacetsAndMissingReferences({ facetDefinitions, facetReferences })
   const unusedFacetErrors = Object.entries(unusedFacets).map(([name, elemId]) =>
     createUnusedFacetChangeError(elemId, name),
@@ -100,7 +112,6 @@ const changeValidator: ChangeValidator = async changes =>
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(FLEXI_PAGE_TYPE))
-    .map(getFacetDefinitionsAndReferences)
     .flatMap(createChangeErrors)
 
 export default changeValidator

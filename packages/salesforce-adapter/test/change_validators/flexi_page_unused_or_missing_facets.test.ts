@@ -14,85 +14,104 @@ import {
   MetadataInstanceElement,
   MetadataObjectType,
 } from '../../src/transformers/transformer'
-import { FLEXI_PAGE_TYPE } from '../../src/constants'
+import {
+  COMPONENT_INSTANCE,
+  COMPONENT_INSTANCE_FILED_NAMES,
+  COMPONENT_INSTANCE_PROPERTY,
+  COMPONENT_INSTANCE_PROPERTY_FILED_NAMES,
+  FLEXI_PAGE_FIELD_NAMES,
+  FLEXI_PAGE_REGION,
+  FLEXI_PAGE_REGION_FIELD_NAMES,
+  FLEXI_PAGE_TYPE,
+  ITEM_INSTANCE,
+  PAGE_REGION_TYPE_VALUES,
+} from '../../src/constants'
 
 describe('changeValidator', () => {
   let flexiPageChange: Change
   let ComponentInstanceProperty: MetadataObjectType
   let ComponentInstance: MetadataObjectType
-  let ItemInstance: MetadataObjectType
-  let FlexiPageRegion: MetadataObjectType
-  let FlexiPage: MetadataObjectType
+  let itemInstance: MetadataObjectType
+  let flexiPageRegion: MetadataObjectType
+  let flexiPage: MetadataObjectType
 
   beforeEach(() => {
     ComponentInstanceProperty = createMetadataObjectType({
       annotations: {
-        metadataType: 'ComponentInstanceProperty',
+        metadataType: COMPONENT_INSTANCE_PROPERTY,
       },
       fields: {
-        value: { refType: BuiltinTypes.STRING },
+        [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: { refType: BuiltinTypes.STRING },
       },
     })
     ComponentInstance = createMetadataObjectType({
       annotations: {
-        metadataType: 'ComponentInstance',
+        metadataType: COMPONENT_INSTANCE,
       },
       fields: {
-        componentInstanceProperties: { refType: new ListType(ComponentInstanceProperty) },
+        [COMPONENT_INSTANCE_FILED_NAMES.COMPONENT_INSTANCE_PROPERTIES]: {
+          refType: new ListType(ComponentInstanceProperty),
+        },
       },
     })
-    ItemInstance = createMetadataObjectType({
+    itemInstance = createMetadataObjectType({
       annotations: {
-        metadataType: 'ItemInstance',
+        metadataType: ITEM_INSTANCE,
       },
       fields: {
-        componentInstanceProperties: { refType: new ListType(ComponentInstanceProperty) },
+        [COMPONENT_INSTANCE_FILED_NAMES.COMPONENT_INSTANCE_PROPERTIES]: {
+          refType: new ListType(ComponentInstanceProperty),
+        },
       },
     })
-    FlexiPageRegion = createMetadataObjectType({
+    flexiPageRegion = createMetadataObjectType({
       annotations: {
-        metadataType: 'FlexiPageRegion',
+        metadataType: FLEXI_PAGE_REGION,
       },
       fields: {
-        componenetInstances: { refType: new ListType(ComponentInstance) },
-        itemInstances: { refType: new ListType(ItemInstance) },
-        name: { refType: BuiltinTypes.STRING },
-        type: { refType: BuiltinTypes.STRING },
+        [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: { refType: new ListType(ComponentInstance) },
+        [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: { refType: new ListType(itemInstance) },
+        [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: { refType: BuiltinTypes.STRING },
+        [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: { refType: BuiltinTypes.STRING },
       },
     })
-    FlexiPage = createMetadataObjectType({
+    flexiPage = createMetadataObjectType({
       annotations: {
         metadataType: FLEXI_PAGE_TYPE,
       },
       fields: {
-        flexiPageRegions: { refType: new ListType(FlexiPageRegion) },
+        [FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS]: { refType: new ListType(flexiPageRegion) },
       },
     })
   })
 
   describe('when all facets are defined and referenced', () => {
     beforeEach(() => {
-      const flexiPage = createInstanceElement(
+      const flexiPageInstance = createInstanceElement(
         {
           fullName: 'TestFlexiPage',
           flexiPageRegions: [
             {
-              componenetInstances: [{ value: 'Facet-Facet2' }],
-              itemInstances: [],
-              name: 'Facet-Facet1',
-              type: 'Facet',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet2' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-Facet1',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
             {
-              componenetInstances: [],
-              itemInstances: [{ value: 'Facet-Facet1' }],
-              name: 'Facet-Facet2',
-              type: 'Facet',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet1' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-Facet2',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
           ],
         },
-        FlexiPage,
+        flexiPage,
       )
-      flexiPageChange = toChange({ after: flexiPage })
+      flexiPageChange = toChange({ after: flexiPageInstance })
     })
 
     it('should not return any errors', async () => {
@@ -102,29 +121,35 @@ describe('changeValidator', () => {
   })
 
   describe('when there are references to missing facets', () => {
-    let flexiPage: MetadataInstanceElement
+    let flexiPageInstance: MetadataInstanceElement
     beforeEach(() => {
-      flexiPage = createInstanceElement(
+      flexiPageInstance = createInstanceElement(
         {
           fullName: 'TestFlexiPage',
           flexiPageRegions: [
             {
-              componenetInstances: [{ value: 'Facet-Facet2' }],
-              itemInstances: [],
-              name: 'Facet-Facet1',
-              type: 'Facet',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet2' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-Facet1',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
             {
-              componenetInstances: [{ value: 'Facet-MissingFacet' }],
-              itemInstances: [{ value: 'Facet-Facet1' }],
-              name: 'Facet-Facet2',
-              type: 'Facet',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-MissingFacet' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet1' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-Facet2',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
           ],
         },
-        FlexiPage,
+        flexiPage,
       )
-      flexiPageChange = toChange({ after: flexiPage })
+      flexiPageChange = toChange({ after: flexiPageInstance })
     })
 
     it('should return an error for the missing facet reference', async () => {
@@ -134,30 +159,38 @@ describe('changeValidator', () => {
           severity: 'Warning',
           message: 'Reference to missing Facet',
           detailedMessage: `The Facet "${'Facet-MissingFacet'}" does not exist.`,
-          elemID: flexiPage.elemID.createNestedID('flexiPageRegions', '1', 'componenetInstances', '0', 'value'),
+          elemID: flexiPageInstance.elemID.createNestedID(
+            FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS,
+            '1',
+            FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES,
+            '0',
+            COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE,
+          ),
         },
       ])
     })
   })
 
   describe('when there are unused facets', () => {
-    let flexiPage: MetadataInstanceElement
+    let flexiPageInstance: MetadataInstanceElement
     beforeEach(() => {
-      flexiPage = createInstanceElement(
+      flexiPageInstance = createInstanceElement(
         {
           fullName: 'TestFlexiPage',
           flexiPageRegions: [
             {
-              componenetInstances: [{ value: 'NotAFacet' }],
-              itemInstances: [],
-              name: 'Facet-UnusedFacet',
-              type: 'Facet',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'NotAFacet' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-UnusedFacet',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
           ],
         },
-        FlexiPage,
+        flexiPage,
       )
-      flexiPageChange = toChange({ after: flexiPage })
+      flexiPageChange = toChange({ after: flexiPageInstance })
     })
 
     it('should return an error for the unused facet', async () => {
@@ -166,31 +199,35 @@ describe('changeValidator', () => {
         {
           severity: 'Warning',
           message: 'Unused Facet',
-          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the Flow.`,
-          elemID: flexiPage.elemID.createNestedID('flexiPageRegions', '0'),
+          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the ${FLEXI_PAGE_TYPE}.`,
+          elemID: flexiPageInstance.elemID.createNestedID(FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS, '0'),
         },
       ])
     })
   })
 
   describe('when there are multiple errors in one FlexiPage', () => {
-    let flexiPage: MetadataInstanceElement
+    let flexiPageInstance: MetadataInstanceElement
     beforeEach(() => {
-      flexiPage = createInstanceElement(
+      flexiPageInstance = createInstanceElement(
         {
           fullName: 'TestFlexiPage',
           flexiPageRegions: [
             {
-              componenetInstances: [{ value: 'NotAFacet' }],
-              itemInstances: [{ value: 'Facet-MissingFacet' }],
-              name: 'Facet-UnusedFacet',
-              type: 'Facet',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'NotAFacet' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-MissingFacet' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-UnusedFacet',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
           ],
         },
-        FlexiPage,
+        flexiPage,
       )
-      flexiPageChange = toChange({ after: flexiPage })
+      flexiPageChange = toChange({ after: flexiPageInstance })
     })
 
     it('should create errors for both unused facets and missing references', async () => {
@@ -199,14 +236,20 @@ describe('changeValidator', () => {
         {
           severity: 'Warning',
           message: 'Unused Facet',
-          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the Flow.`,
-          elemID: flexiPage.elemID.createNestedID('flexiPageRegions', '0'),
+          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the ${FLEXI_PAGE_TYPE}.`,
+          elemID: flexiPageInstance.elemID.createNestedID(FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS, '0'),
         },
         {
           severity: 'Warning',
           message: 'Reference to missing Facet',
           detailedMessage: `The Facet "${'Facet-MissingFacet'}" does not exist.`,
-          elemID: flexiPage.elemID.createNestedID('flexiPageRegions', '0', 'itemInstances', '0', 'value'),
+          elemID: flexiPageInstance.elemID.createNestedID(
+            FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS,
+            '0',
+            FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES,
+            '0',
+            COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE,
+          ),
         },
       ])
     })

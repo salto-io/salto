@@ -253,7 +253,6 @@ export const DEFAULT_FILTERS = [
   workflowDeployFilter,
   workflowModificationFilter,
   emptyValidatorWorkflowFilter, // must run after workflowFilter
-  formsFilter, // must run before fieldReferencesFilter
   objectTypeIconFilter,
   groupNameFilter,
   workflowGroupsFilter,
@@ -311,6 +310,8 @@ export const DEFAULT_FILTERS = [
   contextDeploymentFilter, // must run after fieldDeploymentFilter
   avatarsFilter, // This must run after contextDeploymentFilter
   jqlReferencesFilter, // must run after assetsObjectFieldConfigurationFilter
+  fieldContextOptionsSplitFilter,
+  formsFilter, // must run before fieldReferencesFilter and after fieldContextOptionsSplitFilter
   fieldReferencesFilter,
   addJsmTypesAsFieldsFilter, // Must run after fieldReferencesFilter
   issueLayoutFilter,
@@ -321,7 +322,6 @@ export const DEFAULT_FILTERS = [
   createReferencesIssueLayoutFilter,
   requestTypelayoutsToValuesFilter, // Must run after createReferencesIssueLayoutFilter
   projectFieldContextOrder,
-  fieldContextOptionsSplitFilter,
   fieldConfigurationDeployment,
   fieldConfigurationDependenciesFilter, // Must run after fieldConfigurationSplitFilter
   missingFieldDescriptionsFilter, // Must run after fieldReferencesFilter

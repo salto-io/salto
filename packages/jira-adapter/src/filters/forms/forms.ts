@@ -13,6 +13,7 @@ import {
   ReferenceExpression,
   SaltoError,
   SeverityLevel,
+  Value,
   getChangeData,
   isAdditionChange,
   isAdditionOrModificationChange,
@@ -27,8 +28,9 @@ import {
   mapKeysRecursive,
   naclCase,
   pathNaclCase,
+  transformValuesSync,
 } from '@salto-io/adapter-utils'
-import _ from 'lodash'
+import _, { isPlainObject } from 'lodash'
 import { logger } from '@salto-io/logging'
 import { resolveValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
@@ -41,6 +43,37 @@ import { getLookUpName } from '../../reference_mapping'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+
+const isTransformedObject = (value: Value): boolean =>
+  isPlainObject(value) &&
+  Object.keys(value).length > 0 &&
+  Object.keys(value).every(key => key === 'value' || key === 'key')
+
+/* Since the reference infrastructure does not support lists within maps, we modify the form values structure.
+ * Update the structure here as necessary if needed.
+ */
+const transformFormValues = (form: InstanceElement): void => {
+  form.value = transformValuesSync({
+    values: form.value,
+    type: form.getTypeSync(),
+    pathID: form.elemID,
+    strict: false,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
+    transformFunc: ({ value, path }) => {
+      if (
+        path !== undefined &&
+        !isTransformedObject(value) &&
+        form.elemID.createNestedID('design', 'conditions').isParentOf(path) &&
+        Object.values(value).some(Array.isArray)
+      ) {
+        const newValue = Object.entries(value).map(([key, val]) => ({ key, value: val }))
+        return newValue
+      }
+      return value
+    },
+  })
+}
 
 const deployForms = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const form = getChangeData(change)
@@ -107,61 +140,84 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     const errors: SaltoError[] = []
     const projectsWithoutForms: string[] = []
     const projectsWithUntitledForms: Set<string> = new Set()
+    const formsEntries = await Promise.all(
+      jsmProjects.map(async project => {
+        try {
+          const res = await client.atlassianApiGet({
+            url: `project/${project.value.id}/form`,
+          })
+          if (!isFormsResponse(res)) {
+            log.debug(
+              `Didn't fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
+            )
+            return { project, formsResponse: [], detailedFormsResponse: [] }
+          }
+
+          const detailedFormsResponse = await Promise.all(
+            res.data.map(async formResponse => {
+              const detailedRes = await client.atlassianApiGet({
+                url: `project/${project.value.id}/form/${formResponse.id}`,
+              })
+              if (!isDetailedFormsResponse(detailedRes.data)) {
+                projectsWithUntitledForms.add(project.elemID.name)
+                return undefined
+              }
+              return detailedRes.data
+            }),
+          )
+          if (detailedFormsResponse.filter(isDefined).length === 0) {
+            return { project, formsResponse: [], detailedFormsResponse: [] }
+          }
+
+          return {
+            project,
+            formsResponse: res.data,
+            detailedFormsResponse: detailedFormsResponse.filter(isDefined),
+          }
+        } catch (e) {
+          log.error(
+            `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(e)}`,
+          )
+          if (e.response?.status === 403) {
+            projectsWithoutForms.push(project.elemID.name)
+          }
+          return { project, formsResponse: [], detailedFormsResponse: [] }
+        }
+      }),
+    )
+
     const forms = (
       await Promise.all(
-        jsmProjects.flatMap(async project => {
-          try {
-            const res = await client.atlassianApiGet({
-              url: `project/${project.value.id}/form`,
-            })
-            if (!isFormsResponse(res)) {
-              log.debug(
-                `Didn't fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
-              )
-              return undefined
-            }
-            return await Promise.all(
-              res.data.map(async formResponse => {
-                const detailedRes = await client.atlassianApiGet({
-                  url: `project/${project.value.id}/form/${formResponse.id}`,
-                })
-                if (!isDetailedFormsResponse(detailedRes.data)) {
-                  projectsWithUntitledForms.add(project.elemID.name)
-                  return undefined
-                }
-                const name = naclCase(`${project.value.key}_${formResponse.name}`)
-                const formValue = detailedRes.data
-                const parentPath = project.path ?? []
-                const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
-                if (jsmDuckTypeApiDefinitions === undefined) {
-                  return undefined
-                }
-                return new InstanceElement(
-                  name,
-                  formType,
-                  formValue,
-                  [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
-                  {
-                    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
-                  },
-                )
-              }),
-            )
-          } catch (e) {
-            log.error(
-              `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(e)}`,
-            )
-            if (e.response?.status === 403) {
-              projectsWithoutForms.push(project.elemID.name)
-            }
-            return undefined
+        formsEntries.flatMap(({ project, formsResponse, detailedFormsResponse }) => {
+          const parentPath = project.path ?? []
+          const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
+          if (jsmDuckTypeApiDefinitions === undefined) {
+            return []
           }
+
+          return formsResponse.map((formResponse, index) => {
+            const name = naclCase(`${project.value.key}_${formResponse.name}`)
+            const formValue = detailedFormsResponse[index]
+            return new InstanceElement(
+              name,
+              formType,
+              formValue,
+              [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
+              {
+                [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
+              },
+            )
+          })
         }),
       )
     )
       .flat()
       .filter(isDefined)
+
     forms.forEach(form => {
+      if (form.value.design?.conditions) {
+        transformFormValues(form)
+      }
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
       elements.push(form)
     })
@@ -192,8 +248,26 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(isInstanceChange)
       .map(change => getChangeData(change))
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
-      .forEach(instance => {
+      .forEach((instance: InstanceElement) => {
         instance.value.updated = new Date().toISOString()
+        instance.value = transformValuesSync({
+          values: instance.value,
+          type: instance.getTypeSync(),
+          pathID: instance.elemID,
+          strict: false,
+          allowEmptyArrays: true,
+          allowEmptyObjects: true,
+          transformFunc: ({ value, path }) => {
+            if (path !== undefined && Array.isArray(value) && value.length > 0 && value.every(isTransformedObject)) {
+              const originalValue = value.reduce((acc, { key, value: val }) => {
+                acc[key] = val
+                return acc
+              }, {})
+              return originalValue
+            }
+            return value
+          },
+        })
       })
   },
   deploy: async changes => {
@@ -220,7 +294,10 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(isInstanceChange)
       .map(change => getChangeData(change))
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
-      .forEach(instance => {
+      .forEach((instance: InstanceElement) => {
+        if (instance.value.design?.conditions) {
+          transformFormValues(instance)
+        }
         delete instance.value.updated
       })
   },

@@ -47,7 +47,7 @@ const isComponentChanged = (beforeComponents: Component[], afterComponents: Comp
 }
 
 export const automationToAssetsValidator: (config: JiraConfig) => ChangeValidator = config => async changes => {
-  if (config.fetch.enableJSM && (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
+  if (config.fetch.enableJSM) {
     return []
   }
   return changes

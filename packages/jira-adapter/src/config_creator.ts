@@ -38,7 +38,6 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
     }
     if (options.value.enableJSM) {
       defaultConf.value.fetch.enableJSM = true
-      defaultConf.value.fetch.enableJSMPremium = true
     }
   }
   return defaultConf

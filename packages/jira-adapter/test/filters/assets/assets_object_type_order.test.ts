@@ -98,7 +98,6 @@ describe('assetsObjectTypeOrderFilter', () => {
     beforeEach(() => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJsmExperimental = true
       filter = assetsObjectTypeOrderFilter(getFilterParams({ config, client })) as typeof filter
     })
     it('should add assetsObjectTypeOrderInstance and type to the elements', async () => {
@@ -149,7 +148,6 @@ describe('assetsObjectTypeOrderFilter', () => {
     beforeEach(() => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJSMPremium = true
       const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn

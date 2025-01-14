@@ -543,7 +543,6 @@ export default class JiraAdapter implements AdapterOperations {
       this.client === undefined ||
       jsmApiDefinitions === undefined ||
       !this.userConfig.fetch.enableJSM ||
-      !(this.userConfig.fetch.enableJsmExperimental || this.userConfig.fetch.enableJSMPremium) ||
       !(await isJsmPremiumEnabledInService(this.client))
     ) {
       return { elements: [] }

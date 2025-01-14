@@ -79,11 +79,7 @@ const createLabelAttributeInstance = (
 const filterCreator: FilterCreator = ({ config, fetchQuery, client }) => ({
   name: 'dafaultAttributeFilter',
   onFetch: async (elements: Element[]) => {
-    if (
-      !config.fetch.enableJSM ||
-      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
-      !fetchQuery.isTypeMatch(OBJECT_TYPE_ATTRIBUTE_TYPE)
-    ) {
+    if (!config.fetch.enableJSM || !fetchQuery.isTypeMatch(OBJECT_TYPE_ATTRIBUTE_TYPE)) {
       return
     }
 
@@ -121,11 +117,7 @@ const filterCreator: FilterCreator = ({ config, fetchQuery, client }) => ({
   },
   deploy: async changes => {
     const { jsmApiDefinitions } = config
-    if (
-      !config.fetch.enableJSM ||
-      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
-      jsmApiDefinitions === undefined
-    ) {
+    if (!config.fetch.enableJSM || jsmApiDefinitions === undefined) {
       return {
         deployResult: { appliedChanges: [], errors: [] },
         leftoverChanges: changes,

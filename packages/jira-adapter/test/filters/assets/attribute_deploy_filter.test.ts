@@ -47,7 +47,6 @@ describe('deployAttributesFilter', () => {
     beforeEach(() => {
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJsmExperimental = true
       const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn

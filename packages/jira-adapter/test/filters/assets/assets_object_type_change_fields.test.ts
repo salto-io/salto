@@ -27,7 +27,6 @@ describe('changeParentsFilter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJSMPremium = true
       filter = assetsObjectTypeChangeFields(getFilterParams({ config })) as typeof filter
       parentInstance = new InstanceElement(
         'parentInstance',

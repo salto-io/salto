@@ -75,7 +75,6 @@ describe('labelObjectTypeAttributeFilter', () => {
     beforeEach(() => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJsmExperimental = true
       filter = dafaultAttributeFilter(getFilterParams({ config, client })) as typeof filter
     })
     it('should add labelAttributeInstance and type to the elements', async () => {
@@ -108,7 +107,6 @@ describe('labelObjectTypeAttributeFilter', () => {
     beforeEach(() => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJSMPremium = true
       const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn

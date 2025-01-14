@@ -27,7 +27,9 @@ const APPLY_PATCH_ADAPTERS = ['salesforce', 'netsuite', 'dummy'] as const
 type ApplyPatchAdapters = (typeof APPLY_PATCH_ADAPTERS)[number]
 type ApplyPatchArgs = {
   fromDir: string
+  fromWorkspaceDir?: string
   toDir: string
+  toWorkspaceDir?: string
   accountName: ApplyPatchAdapters
   targetEnvs?: string[]
   updateStateInEnvs?: string[]
@@ -39,11 +41,35 @@ const applyPatchToWorkspace = async (
   updateState: boolean,
   output: CliOutput,
 ): Promise<boolean> => {
-  const { fromDir, toDir, accountName } = input
+  const { fromDir, fromWorkspaceDir, toDir, toWorkspaceDir, accountName } = input
+
+  let toWorkspace: Workspace | undefined
+  let fromWorkspace: Workspace | undefined
+
+  if (toWorkspaceDir) {
+    try {
+      toWorkspace = await loadLocalWorkspace({ path: toWorkspaceDir, adapterCreators })
+    } catch (e) {
+      log.debug('Failed to load after workspace: %o', e)
+      outputLine('Failed to load after workspace, aborting', output)
+      return false
+    }
+  }
+  if (fromWorkspaceDir) {
+    try {
+      fromWorkspace = await loadLocalWorkspace({ path: fromWorkspaceDir, adapterCreators })
+    } catch (e) {
+      log.debug('Failed to load after workspace: %o', e)
+      outputLine('Failed to load after workspace, aborting', output)
+      return false
+    }
+  }
   const { changes, fetchErrors, mergeErrors } = await calculatePatch({
     workspace,
     fromDir,
+    fromWorkspace,
     toDir,
+    toWorkspace,
     accountName,
     adapterCreators,
   })
@@ -144,6 +170,18 @@ const applyPatchCmd = createWorkspaceCommand({
         description:
           'Names for environments in which to update the state as well as the NaCls, indicating that the changes were already deployed',
       },
+      {
+        name: 'fromWorkspaceDir',
+        alias: 'b',
+        type: 'string',
+        description: 'Workspace for elements which cannot be represented in the adapter format in the before folder',
+      },
+      {
+        name: 'toWorkspaceDir',
+        alias: 'a',
+        type: 'string',
+        description: 'Workspace for elements which cannot be represented in the adapter format in the after folder',
+      },
       UPDATE_MODE_OPTION,
     ],
     positionalOptions: [
@@ -214,7 +252,7 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
   outputLine(`Synchronizing content of workspace to folder at ${toDir}`, output)
   if (toWorkspace) {
     outputLine(
-      `Using workspace at ${toWorkspace} for elements that cannot be represented in the adapter format`,
+      `Using workspace at ${toWorkspaceDir} for elements that cannot be represented in the adapter format`,
       output,
     )
   }

@@ -6,9 +6,36 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import { Element, isInstanceElement, Value, Values } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { fetchRequestTypeDetails } from './layout_service_operations'
+
+const deleteEmptyProperties = (fields: Values[]): void => {
+  fields.forEach(field => {
+    if (field.properties != null) {
+      field.properties = Object.entries(field.properties).filter(([_key, value]) => value !== '')
+      if (field.properties.length === 0) {
+        delete field.properties
+      } else {
+        field.properties = Object.fromEntries(field.properties)
+      }
+    }
+  })
+}
+
+const filterEmptyProperties = (elements: Element[]): Element[] => {
+  elements
+    .filter(e => e.elemID.typeName === REQUEST_FORM_TYPE)
+    .filter(isInstanceElement)
+    .forEach(instance => {
+      if (instance.value.issueLayoutConfig?.items !== undefined && _.isArray(instance.value.issueLayoutConfig.items)) {
+        deleteEmptyProperties(instance.value.issueLayoutConfig.items.map((item: Value) => item.data ?? {}))
+      }
+    })
+  return elements
+}
 
 const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) => ({
   name: 'requestTypeLayoutsFilter',
@@ -29,6 +56,7 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
       getElemIdFunc,
       typeName: ISSUE_VIEW_TYPE,
     })
+    filterEmptyProperties(elements)
   },
 })
 

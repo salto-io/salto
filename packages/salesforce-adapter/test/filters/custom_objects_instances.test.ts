@@ -53,6 +53,7 @@ import {
   OBJECTS_PATH,
   RECORDS_PATH,
   SALESFORCE,
+  SALESFORCE_BIG_OBJECT_SUFFIX,
   SoqlQueryLimits,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
@@ -1471,6 +1472,40 @@ describe('Custom Object Instances filter', () => {
           `${NAME_FROM_GET_ELEM_ID}${recordLocation}___${recordDisplayOrder}___${recordName}`,
         )
       })
+    })
+  })
+
+  describe('Fetching big object instances', () => {
+    const bigObjectElement = createCustomObject(`objectName${SALESFORCE_BIG_OBJECT_SUFFIX}`)
+    const notBigObjectElement = createCustomObject('objectName')
+    beforeEach(() => {
+      client.queryAll = jest.fn().mockResolvedValue([{ key: 'value' }])
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: {
+              data: {
+                includeObjects: ['.*'],
+                allowReferenceTo: [],
+                saltoIDSettings: {
+                  defaultIdFields: [],
+                  overrides: [],
+                },
+              },
+              maxInstancesPerType: 2,
+            },
+          }),
+        },
+      }) as FilterType
+    })
+    it('should omit that instance from fetch', async () => {
+      const elements = [bigObjectElement, notBigObjectElement]
+      const result = await filter.onFetch(elements)
+      expect(result?.configSuggestions).toBeArrayOfSize(1)
+      expect(result?.errors).toBeArrayOfSize(0)
+      expect(result?.configSuggestions?.[0].value).toEqual('.*__b')
     })
   })
 

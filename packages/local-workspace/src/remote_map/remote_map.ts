@@ -836,7 +836,9 @@ export const createRemoteMapCreator = (
         close: async (): Promise<void> => {
           // Do nothing - we can not close the connection here
           //  because we share the connection across multiple namespaces
-          log.warn('cannot close connection of remote map with close method - use `workspace.close()` / `remoteMapCreator.close()` instead.')
+          log.warn(
+            'cannot close connection of remote map with close method - use `workspace.close()` / `remoteMapCreator.close()` instead.',
+          )
         },
         isEmpty: async (): Promise<boolean> => {
           if (isNamespaceEmpty === undefined) {

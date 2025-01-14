@@ -66,6 +66,12 @@ export const createManyInstancesExcludeConfigChange = ({
   }
 }
 
+export const bigObjectExcludeConfigChange: ConfigChangeSuggestion = {
+  type: 'dataObjectsExclude',
+  value: `.*${constants.SALESFORCE_BIG_OBJECT_SUFFIX}`,
+  reason: `Cannot manage instances of Big Objects (ending with ${constants.SALESFORCE_BIG_OBJECT_SUFFIX})`,
+}
+
 export const createInvalidIdFieldConfigChange = (
   typeName: string,
   invalidFields: string[],

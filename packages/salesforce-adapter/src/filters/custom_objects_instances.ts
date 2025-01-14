@@ -23,6 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
+  bigObjectExcludeConfigChange,
   createInvalidIdFieldConfigChange,
   createManyInstancesExcludeConfigChange,
   createUnresolvedRefIdFieldConfigChange,
@@ -39,6 +40,7 @@ import {
   DETECTS_PARENTS_INDICATOR,
   API_NAME_SEPARATOR,
   DATA_INSTANCES_CHANGED_AT_MAGIC,
+  SALESFORCE_BIG_OBJECT_SUFFIX,
 } from '../constants'
 import { FilterContext, FilterResult, FilterCreator } from '../filter'
 import { apiName, Types, createInstanceServiceIds, isNameField, toRecord } from '../transformers/transformer'
@@ -617,22 +619,31 @@ const filterTypesWithManyInstances = async ({
   const typesToFilter: string[] = []
   const heavyTypesSuggestions: ConfigChangeSuggestion[] = []
 
+  let wasBigObjectTypeFound = false
   // Creates a lists of typeNames and changeSuggestions for types with too many instances
   await awu(Object.entries(validChangesFetchSettings))
     .filter(([, setting]) => setting.isBase)
     .forEach(async ([typeName]) => {
-      const instancesCount = await client.countInstances(typeName)
-      if (instancesCount > maxInstancesPerType) {
+      if (typeName.endsWith(SALESFORCE_BIG_OBJECT_SUFFIX)) {
         typesToFilter.push(typeName)
-        heavyTypesSuggestions.push(
-          createManyInstancesExcludeConfigChange({
-            typeName,
-            instancesCount,
-            maxInstancesPerType,
-          }),
-        )
+        wasBigObjectTypeFound = true
+      } else {
+        const instancesCount = await client.countInstances(typeName)
+        if (instancesCount > maxInstancesPerType) {
+          typesToFilter.push(typeName)
+          heavyTypesSuggestions.push(
+            createManyInstancesExcludeConfigChange({
+              typeName,
+              instancesCount,
+              maxInstancesPerType,
+            }),
+          )
+        }
       }
     })
+  if (wasBigObjectTypeFound) {
+    heavyTypesSuggestions.push(bigObjectExcludeConfigChange)
+  }
 
   return {
     filteredChangesFetchSettings: _.omit(validChangesFetchSettings, typesToFilter),

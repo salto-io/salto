@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
-  CreateBigObjectExcludeConfigChange,
+  bigObjectExcludeConfigChange,
   createInvalidIdFieldConfigChange,
   createManyInstancesExcludeConfigChange,
   createUnresolvedRefIdFieldConfigChange,
@@ -619,17 +619,14 @@ const filterTypesWithManyInstances = async ({
   const typesToFilter: string[] = []
   const heavyTypesSuggestions: ConfigChangeSuggestion[] = []
 
-  let bigObjectFlag = true
+  let wasBigObjectTypeFound = false
   // Creates a lists of typeNames and changeSuggestions for types with too many instances
   await awu(Object.entries(validChangesFetchSettings))
     .filter(([, setting]) => setting.isBase)
     .forEach(async ([typeName]) => {
       if (typeName.endsWith(SALESFORCE_BIG_OBJECT_SUFFIX)) {
         typesToFilter.push(typeName)
-        if (bigObjectFlag) {
-          bigObjectFlag = false
-          heavyTypesSuggestions.push(CreateBigObjectExcludeConfigChange())
-        }
+        wasBigObjectTypeFound = true
       } else {
         const instancesCount = await client.countInstances(typeName)
         if (instancesCount > maxInstancesPerType) {
@@ -644,6 +641,9 @@ const filterTypesWithManyInstances = async ({
         }
       }
     })
+  if (wasBigObjectTypeFound) {
+    heavyTypesSuggestions.push(bigObjectExcludeConfigChange)
+  }
 
   return {
     filteredChangesFetchSettings: _.omit(validChangesFetchSettings, typesToFilter),

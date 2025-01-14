@@ -67,6 +67,7 @@ import {
   buildMetadataQueryForFetchWithChangesDetection,
 } from '../../src/fetch_profile/metadata_query'
 import * as filtersUtil from '../../src/filters/utils'
+import { bigObjectExcludeConfigChange } from '../../src/config_change'
 
 const { awu } = collections.asynciterable
 
@@ -1475,7 +1476,7 @@ describe('Custom Object Instances filter', () => {
     })
   })
 
-  describe('Fetching big object instances', () => {
+  describe('when type is Big Object', () => {
     const bigObjectElement = createCustomObject(`objectName${SALESFORCE_BIG_OBJECT_SUFFIX}`)
     const notBigObjectElement = createCustomObject('objectName')
     beforeEach(() => {
@@ -1500,12 +1501,13 @@ describe('Custom Object Instances filter', () => {
         },
       }) as FilterType
     })
-    it('should omit that instance from fetch', async () => {
+    it('should not fetch the instances and create a config exclude suggestion for Big Objects', async () => {
       const elements = [bigObjectElement, notBigObjectElement]
       const result = await filter.onFetch(elements)
+      expect(elements).toBeArrayOfSize(3)
       expect(result?.configSuggestions).toBeArrayOfSize(1)
-      expect(result?.errors).toBeArrayOfSize(0)
-      expect(result?.configSuggestions?.[0].value).toEqual('.*__b')
+      expect(result?.configSuggestions?.[0]).toEqual(bigObjectExcludeConfigChange)
+      expect(result?.errors).toBeEmpty()
     })
   })
 

@@ -24,6 +24,7 @@ import formsFilter from '../../../src/filters/forms/forms'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { FORM_TYPE, JIRA, PROJECT_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 describe('forms filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy', FilterResult>
@@ -32,6 +33,11 @@ describe('forms filter', () => {
   let mockAtlassianApiPost: jest.SpyInstance
   let client: JiraClient
   const projectType = createEmptyType(PROJECT_TYPE)
+  const CustomFieldContextOptionType = createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME)
+  const CustomFieldContextOptionInstance = new InstanceElement('project1', CustomFieldContextOptionType, {
+    id: '123456',
+    name: 'project1',
+  })
   let projectInstance: InstanceElement
   let elements: Element[]
   afterEach(() => {
@@ -41,6 +47,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
+      config.fetch.splitFieldContextOptions = true
       const { client: cli } = mockClient(false)
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
@@ -96,7 +103,17 @@ describe('forms filter', () => {
                 ],
               },
             ],
-            conditions: {},
+            conditions: {
+              8: {
+                i: {
+                  co: {
+                    cIds: {
+                      3: ['123456'],
+                    },
+                  },
+                },
+              },
+            },
             sections: {
               36: {
                 t: 'sh',
@@ -170,7 +187,20 @@ describe('forms filter', () => {
               ],
             },
           ],
-          conditions: {},
+          conditions: {
+            '8@': {
+              i: {
+                co: {
+                  cIds: [
+                    {
+                      key: '3',
+                      value: ['123456'],
+                    },
+                  ],
+                },
+              },
+            },
+          },
           sections: {
             '36@': {
               t: 'sh',
@@ -608,7 +638,12 @@ describe('forms filter', () => {
                 i: {
                   co: {
                     cIds: {
-                      2: ['2'],
+                      2: [
+                        new ReferenceExpression(
+                          CustomFieldContextOptionInstance.elemID,
+                          CustomFieldContextOptionInstance,
+                        ),
+                      ],
                     },
                   },
                 },
@@ -672,6 +707,30 @@ describe('forms filter', () => {
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(mockAtlassianApiPost).toHaveBeenCalledTimes(1)
+      // Check that it resolved the reference inside conditions
+      expect(mockAtlassianApiPost).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            design: expect.objectContaining({
+              conditions: {
+                '10': {
+                  i: {
+                    co: {
+                      cIds: {
+                        '2': ['123456'],
+                      },
+                    },
+                  },
+                  o: {
+                    sIds: ['1'],
+                  },
+                  t: 'sh',
+                },
+              },
+            }),
+          }),
+        }),
+      )
     })
     it('should modify form', async () => {
       const mockAtlassianApiPut = jest.spyOn(client, 'atlassianApiPut')
@@ -682,6 +741,30 @@ describe('forms filter', () => {
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(mockAtlassianApiPut).toHaveBeenCalledTimes(1)
+      // Check that it resolved the reference inside conditions
+      expect(mockAtlassianApiPut).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            design: expect.objectContaining({
+              conditions: {
+                '10': {
+                  i: {
+                    co: {
+                      cIds: {
+                        '2': ['123456'],
+                      },
+                    },
+                  },
+                  o: {
+                    sIds: ['1'],
+                  },
+                  t: 'sh',
+                },
+              },
+            }),
+          }),
+        }),
+      )
     })
     it('should delete form', async () => {
       const mockAtlassianApiDelete = jest.spyOn(client, 'atlassianApiDelete')
@@ -784,14 +867,20 @@ describe('forms filter', () => {
                 t: 'sh',
                 i: {
                   co: {
-                    cIds: {
-                      2: ['2'],
-                    },
+                    cIds: [
+                      {
+                        key: '3',
+                        value: ['123456'],
+                      },
+                    ],
                   },
                 },
-                o: {
-                  sIds: ['1'],
-                },
+                o: [
+                  {
+                    key: 'sIds',
+                    value: ['1'],
+                  },
+                ],
               },
             },
             sections: {
@@ -838,12 +927,31 @@ describe('forms filter', () => {
       const isBetween = updatedTime >= timeBeforeFilter && updatedTime <= timeAfterFilter
       expect(isBetween).toBeTruthy()
     })
+    it('should return the conditions field to its original structure', async () => {
+      await filter.preDeploy([{ action: 'add', data: { after: formInstance } }])
+      expect(formInstance.value.design.conditions).toEqual({
+        10: {
+          t: 'sh',
+          i: {
+            co: {
+              cIds: {
+                3: ['123456'],
+              },
+            },
+          },
+          o: {
+            sIds: ['1'],
+          },
+        },
+      })
+    })
   })
   describe('onDeploy', () => {
     let formInstance: InstanceElement
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
+      config.fetch.splitFieldContextOptions = true
       const { client: cli } = mockClient(false)
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
@@ -943,6 +1051,12 @@ describe('forms filter', () => {
     it('should delete updated field', async () => {
       await filter.onDeploy([{ action: 'add', data: { after: formInstance } }])
       expect(formInstance.value.updated).toBeUndefined()
+    })
+    it('should return the conditions field to its modified structure', async () => {
+      await filter.onDeploy([{ action: 'add', data: { after: formInstance } }])
+      expect(formInstance.value.design.conditions).toEqual({
+        '10': { i: { co: { cIds: [{ key: '2', value: ['2'] }] } }, o: [{ key: 'sIds', value: ['1'] }], t: 'sh' },
+      })
     })
   })
 })

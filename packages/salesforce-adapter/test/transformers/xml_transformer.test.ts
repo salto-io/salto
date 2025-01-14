@@ -284,7 +284,30 @@ describe('XML Transformer', () => {
           )
         })
       })
+      describe('namespaced LightningComponentBundle', () => {
+        beforeEach(async () => {
+          const mockLightningComponentBundleValues = _.clone(mockDefaultValues.LightningComponentBundle)
+          mockLightningComponentBundleValues.fullName = 'namespace__testLightningComponentBundle'
+          _.set(mockLightningComponentBundleValues.targetConfigs.targetConfig[0], 'property', [
+            {
+              name: 'testTrueProp',
+              default: 'true',
+            },
+            {
+              name: 'testFalseProp',
+              default: 'false',
+            },
+          ])
+          await pkg.add(createInstanceElement(mockLightningComponentBundleValues, mockTypes.LightningComponentBundle))
+          zipFiles = await getZipFiles(pkg)
+        })
+        it('should contain metadata xml without the namespace', () => {
+          const filePath = `${packageName}/lwc/testLightningComponentBundle/testLightningComponentBundle.js-meta.xml`
+          expect(zipFiles).toHaveProperty([filePath])
+        })
+      })
     })
+
     describe('with Settings types', () => {
       beforeEach(async () => {
         await pkg.add(createInstanceElement({ fullName: 'TestSettings', testField: true }, mockTypes.TestSettings))
@@ -306,6 +329,7 @@ describe('XML Transformer', () => {
         expect(manifest2.TestSettings.testField).toEqual(true)
       })
     })
+
     describe('content file name override for territory types', () => {
       describe('Territory2Model type', () => {
         beforeEach(async () => {

@@ -1632,6 +1632,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'webhookToken' },
         // serviceDesk is referenced from the associated request type, so we don't need to keep it in the automation component
         { fieldName: 'serviceDesk' },
+        { fieldName: 'eventFilters' },
       ],
       serviceUrl: '/jira/settings/automation#/rule/{id}',
       idFields: ['name', PROJECTS_FIELD], // idFields is handled separately in automation filter.

@@ -74,6 +74,8 @@ describe('assetsObjectFieldConfiguration', () => {
     beforeEach(() => {
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableAssetsObjectFieldConfiguration = true
+      config.fetch.enableJSM = true
+      config.fetch.enableJSMPremium = true
       filter = assetsObjectFieldConfigurationReferencesFilter(
         getFilterParams({
           config,
@@ -113,6 +115,33 @@ describe('assetsObjectFieldConfiguration', () => {
 
     it('should do nothing if enableAssetsObjectFieldConfiguration is false', async () => {
       config.fetch.enableAssetsObjectFieldConfiguration = false
+      await filter.onFetch(elements)
+      expect(contextInstance1.value.assetsObjectFieldConfiguration.attributesIncludedInAutoCompleteSearch).toEqual([
+        'objectTypeAttribute11',
+        'objectTypeAttribute12',
+        'Label',
+      ])
+      expect(contextInstance1.value.assetsObjectFieldConfiguration.attributesDisplayedOnIssue).toEqual([
+        'objectTypeAttribute21',
+        'objectTypeAttribute22',
+      ])
+    })
+
+    it('should do nothing if enableJSM is false', async () => {
+      config.fetch.enableJSM = false
+      await filter.onFetch(elements)
+      expect(contextInstance1.value.assetsObjectFieldConfiguration.attributesIncludedInAutoCompleteSearch).toEqual([
+        'objectTypeAttribute11',
+        'objectTypeAttribute12',
+        'Label',
+      ])
+      expect(contextInstance1.value.assetsObjectFieldConfiguration.attributesDisplayedOnIssue).toEqual([
+        'objectTypeAttribute21',
+        'objectTypeAttribute22',
+      ])
+    })
+    it('should do nothing if enableJSMPremium is false', async () => {
+      config.fetch.enableJSMPremium = false
       await filter.onFetch(elements)
       expect(contextInstance1.value.assetsObjectFieldConfiguration.attributesIncludedInAutoCompleteSearch).toEqual([
         'objectTypeAttribute11',

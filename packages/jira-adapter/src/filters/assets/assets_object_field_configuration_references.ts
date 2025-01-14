@@ -64,12 +64,16 @@ ObjectSchema -> ObjectType[] -> ObjectTypeAttribute[]
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsObjectFieldConfigurationReferencesFilter',
   onFetch: async elements => {
-    if (!config.fetch.enableAssetsObjectFieldConfiguration) {
+    if (
+      !config.fetch.enableAssetsObjectFieldConfiguration ||
+      !config.fetch.enableJSM ||
+      !config.fetch.enableJSMPremium
+    ) {
       return
     }
+    const instances = elements.filter(isInstanceElement)
     const objectSchemaToAttributeReferenceByName = Object.fromEntries(
-      elements
-        .filter(isInstanceElement)
+      instances
         .filter(instance => instance.elemID.typeName === OBJECT_SCHEMA_TYPE)
         .map(instance => [
           instance.elemID.getFullName(),
@@ -77,8 +81,7 @@ const filter: FilterCreator = ({ config }) => ({
         ]),
     )
 
-    const assetObjectFieldContexts = elements
-      .filter(isInstanceElement)
+    const assetObjectFieldContexts = instances
       .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
       .filter(instance => instance.value.assetsObjectFieldConfiguration !== undefined)
 

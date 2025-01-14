@@ -47,6 +47,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
+      config.fetch.splitFieldContextOptions = true
       const { client: cli } = mockClient(false)
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter

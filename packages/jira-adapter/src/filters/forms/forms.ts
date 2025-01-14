@@ -13,6 +13,7 @@ import {
   ReferenceExpression,
   SaltoError,
   SeverityLevel,
+  Value,
   getChangeData,
   isAdditionChange,
   isAdditionOrModificationChange,
@@ -27,8 +28,9 @@ import {
   mapKeysRecursive,
   naclCase,
   pathNaclCase,
+  transformValuesSync,
 } from '@salto-io/adapter-utils'
-import _ from 'lodash'
+import _, { isPlainObject } from 'lodash'
 import { logger } from '@salto-io/logging'
 import { resolveValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
@@ -41,6 +43,59 @@ import { getLookUpName } from '../../reference_mapping'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+
+const isTransformedFormObject = (value: Value): boolean => {
+  if (!isPlainObject(value)) {
+    return false
+  }
+  const keys = Object.keys(value)
+  return keys.length === 2 && keys.includes('value') && keys.includes('key')
+}
+
+/* Since the reference infrastructure does not support lists within maps, we modify the form values structure. */
+const transformFormValues = (form: InstanceElement): void => {
+  form.value = transformValuesSync({
+    values: form.value,
+    type: form.getTypeSync(),
+    pathID: form.elemID,
+    strict: false,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
+    transformFunc: ({ value, path }) => {
+      if (
+        path !== undefined &&
+        !isTransformedFormObject(value) &&
+        form.elemID.createNestedID('design', 'conditions').isParentOf(path) &&
+        Object.values(value).some(Array.isArray)
+      ) {
+        const newValue = Object.entries(value).map(([key, val]) => ({ key, value: val }))
+        return newValue
+      }
+      return value
+    },
+  })
+}
+
+const transformFormValuesToOriginalValues = (form: InstanceElement): void => {
+  form.value = transformValuesSync({
+    values: form.value,
+    type: form.getTypeSync(),
+    pathID: form.elemID,
+    strict: false,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
+    transformFunc: ({ value, path }) => {
+      if (path !== undefined && Array.isArray(value) && value.length > 0 && value.every(isTransformedFormObject)) {
+        const originalValue = value.reduce((acc, { key, value: val }) => {
+          acc[key] = val
+          return acc
+        }, {})
+        return originalValue
+      }
+      return value
+    },
+  })
+}
 
 const deployForms = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const form = getChangeData(change)
@@ -161,7 +216,11 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     )
       .flat()
       .filter(isDefined)
+
     forms.forEach(form => {
+      if (form.value.design?.conditions && config.fetch.splitFieldContextOptions) {
+        transformFormValues(form)
+      }
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
       elements.push(form)
     })
@@ -192,8 +251,9 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(isInstanceChange)
       .map(change => getChangeData(change))
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
-      .forEach(instance => {
+      .forEach((instance: InstanceElement) => {
         instance.value.updated = new Date().toISOString()
+        transformFormValuesToOriginalValues(instance)
       })
   },
   deploy: async changes => {
@@ -220,7 +280,10 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(isInstanceChange)
       .map(change => getChangeData(change))
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
-      .forEach(instance => {
+      .forEach((instance: InstanceElement) => {
+        if (instance.value.design?.conditions && config.fetch.splitFieldContextOptions) {
+          transformFormValues(instance)
+        }
         delete instance.value.updated
       })
   },

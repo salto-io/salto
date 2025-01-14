@@ -78,7 +78,7 @@ import {
 } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
-import { FIELD_TYPE_NAME } from './filters/fields/constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_TYPE_NAME } from './filters/fields/constants'
 import {
   gadgetValuesContextFunc,
   gadgetValueSerialize,
@@ -1306,6 +1306,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: FIELD_TYPE_NAME },
   },
   {
+    src: { field: 'value', parentTypes: ['CIds'] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_CONTEXT_OPTION_TYPE_NAME },
+  },
+  {
     src: { field: 'parentObjectTypeId', parentTypes: [OBJECT_TYPE_TYPE] },
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',
@@ -1426,8 +1431,19 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
 ]
 
+/* Due to changes in the form structure during preDeploy and the resolution of references occurring during deploy,
+ * the resolved reference definitions are unavailable. As a result, we need to explicitly specify the serialization strategy.
+ */
+export const getConditionsLookUpName: GetLookupNameFunc = ({ ref, path }) => {
+  if (path !== undefined && path.typeName === 'Form' && path.getFullName().includes('cIds')) {
+    return ref.value.value.id
+  }
+  return ref
+}
+
 const lookupNameFuncs: GetLookupNameFunc[] = [
   getFieldsLookUpName,
+  getConditionsLookUpName,
   // The second param is needed to resolve references by serializationStrategy
   referenceUtils.generateLookupFunc(referencesRules, defs => new JiraFieldReferenceResolver(defs)),
 ]

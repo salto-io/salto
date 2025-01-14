@@ -147,8 +147,7 @@ describe('config_creator', () => {
       resultConfig = await getConfig(options)
     })
     it('should create default instance from type', async () => {
-      const a = await getClonedDefaultConfig()
-      expect(resultConfig).toMatchObject(a)
+      expect(resultConfig).toMatchObject(await getClonedDefaultConfig())
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })

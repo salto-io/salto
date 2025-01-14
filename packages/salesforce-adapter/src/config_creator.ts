@@ -247,11 +247,11 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
   if (options.value.cpq === true || options.value.managedPackages?.includes(CPQ_MANAGED_PACKAGE)) {
     config = CONFIG_WITH_CPQ.clone()
   }
-  const shouldExcludeProfiles = options.value.manageProfiles ? [] : EXCLUDE_PROFILES
-  const shouldExcludePermissionSets = options.value.managePermissionSets ? [] : EXCLUDE_PERMISSION_SETS
+  const excludeProfiles = options.value.manageProfiles ? [] : EXCLUDE_PROFILES
+  const excludePermissionSets = options.value.managePermissionSets ? [] : EXCLUDE_PERMISSION_SETS
   const excludeSection = config.value?.fetch?.metadata?.exclude
   if (Array.isArray(excludeSection)) {
-    config.value.fetch.metadata.exclude = [...excludeSection, ...shouldExcludeProfiles, ...shouldExcludePermissionSets]
+    config.value.fetch.metadata.exclude = [...excludeSection, ...excludeProfiles, ...excludePermissionSets]
   } else {
     log.error(
       'Failed to add extra exclusions due to invalid exclude section in config instance: %s',

@@ -10,7 +10,7 @@ import { decorators, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
-import { SaltoError, Element, InstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { SaltoError, Element, InstanceElement, CORE_ANNOTATIONS, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import {
   ENOTFOUND,
   ERROR_HTTP_502,
@@ -24,6 +24,7 @@ import {
 } from '../constants'
 import { isInstanceOfTypeSync } from '../filters/utils'
 
+const { awu } = collections.asynciterable
 const { DefaultMap } = collections.map
 const log = logger(module)
 
@@ -237,8 +238,12 @@ const getValidationRulesMessages = (error: SaltoError): string[] => {
   return [...error.message.matchAll(pattern)].map(match => match[1])
 }
 
-const createValidationRulesIndex = (elements: Element[]): Map<string, ValidationRule[]> => {
-  const validationRules = elements.filter(isValidationRule)
+const createValidationRulesIndex = async (
+  elementSource: ReadOnlyElementsSource,
+): Promise<Map<string, ValidationRule[]>> => {
+  const validationRules = await awu(await elementSource.getAll())
+    .filter(isValidationRule)
+    .toArray()
   return validationRules.reduce(
     (acc: Map<string, ValidationRule[]>, validationRule) => {
       acc.get(validationRule.value.errorMessage)?.push(validationRule)
@@ -253,7 +258,7 @@ const getValidationRulesUrls = (validationRules: ValidationRule[]): string[] =>
 
 export const enrichSaltoDeployErrors = async (
   errors: readonly SaltoError[],
-  getAllElements: () => Promise<Element[]>,
+  elementSource: ReadOnlyElementsSource,
 ): Promise<readonly SaltoError[]> => {
   if (
     !errors
@@ -262,7 +267,7 @@ export const enrichSaltoDeployErrors = async (
   )
     return errors
 
-  const validationRulesIndex: Map<string, ValidationRule[]> = createValidationRulesIndex(await getAllElements())
+  const validationRulesIndex: Map<string, ValidationRule[]> = await createValidationRulesIndex(elementSource)
 
   if (validationRulesIndex.size > 0) {
     return errors.map(error =>

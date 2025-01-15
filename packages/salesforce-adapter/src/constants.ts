@@ -77,6 +77,33 @@ export enum FIELD_TYPE_NAMES {
   FILE = 'File',
 }
 
+// FlexiPage constants
+export const COMPONENT_INSTANCE_PROPERTY = 'ComponentInstanceProperty'
+export const COMPONENT_INSTANCE = 'ComponentInstance'
+export const ITEM_INSTANCE = 'ItemInstance'
+export const FLEXI_PAGE_REGION = 'flexiPageRegion'
+export enum COMPONENT_INSTANCE_PROPERTY_FILED_NAMES {
+  VALUE = 'value',
+}
+export enum COMPONENT_INSTANCE_FILED_NAMES {
+  COMPONENT_INSTANCE_PROPERTIES = 'componentInstanceProperties',
+}
+export enum ITEM_INSTANCE_FILED_NAMES {
+  COMPONENT_INSTANCE_PROPERTIES = 'componentInstanceProperties',
+}
+export enum FLEXI_PAGE_REGION_FIELD_NAMES {
+  COMPONENT_INSTANCES = 'componentInstances',
+  ITEM_INSTANCES = 'itemInstances',
+  NAME = 'name',
+  TYPE = 'type',
+}
+export enum PAGE_REGION_TYPE_VALUES {
+  FACET = 'Facet',
+}
+export enum FLEXI_PAGE_FIELD_NAMES {
+  FLEXI_PAGE_REGIONS = 'flexiPageRegions',
+}
+
 // Flow constants
 export const FLOW_NODE = 'FlowNode'
 export const TARGET_REFERENCE = 'targetReference'

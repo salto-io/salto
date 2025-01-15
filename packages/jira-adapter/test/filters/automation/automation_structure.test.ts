@@ -306,6 +306,14 @@ describe('automationStructureFilter', () => {
       expect(instance.value.components[9].value.body.filepath).toBe('jira/Automation/.html')
       expect(instance.value.components[9].value.body.internalContent).toBe(HTML_BODY_TEST)
     })
+    it('static file name for html content should not be size limited', async () => {
+      const longString = 'a'.repeat(3000)
+      const longNamedInstance = new InstanceElement(longString, type)
+      longNamedInstance.value = instance.value
+      await filter.onFetch([longNamedInstance])
+      expect(longNamedInstance.value.components[9].value.body).toBeInstanceOf(StaticFile)
+      expect(longNamedInstance.value.components[9].value.body.filepath.length).toBeLessThan(255)
+    })
 
     it('should not throw if wrong structure', async () => {
       const exceptionInstance = new InstanceElement('instance', type, {

@@ -13,20 +13,25 @@ import {
   TemplateExpression,
   isReferenceExpression,
   ReferenceExpression,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import {
   TemplateExtractionFunc,
   extractTemplate,
+  fileNameFromNaclCase,
   getParent,
   inspectValue,
   mergeDistinctReferences,
+  normalizeFilePathPart,
   parseTagsFromHtml,
 } from '@salto-io/adapter-utils'
+import { parserUtils } from '@salto-io/parser'
 import {
   BRAND_TYPE_NAME,
   DOMAIN_TYPE_NAME,
   EMAIL_CUSTOMIZATION_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
+  OKTA,
   SIGN_IN_PAGE_TYPE_NAME,
 } from '../constants'
 import { FilterCreator } from '../filter'
@@ -106,6 +111,12 @@ const getTemplateFromContent = ({
   return mergeDistinctReferences(content, htmlTagsAsTemplates)
 }
 
+const getContentStaticFilePath = (instance: InstanceElement): string => {
+  const brand = getParentBrand(instance)
+  const brandName = brand?.elemID.name
+  return `${OKTA}/${brandName}/${instance.elemID.typeName}/${normalizeFilePathPart(fileNameFromNaclCase(instance.elemID.name))}.html`
+}
+
 /** *
  * Processes brand email templates and page customizations to replace references in their HTML content with references to the appropriate domain.
  */
@@ -131,11 +142,21 @@ const brandCustomizationsFilter: FilterCreator = ({ config: { fetch } }) => ({
     brandCustomizations.forEach(instance => {
       const fieldName = brandCustomizationsToContentField[instance.elemID.typeName as BrandCustomizationType]
       const content = _.get(instance.value, fieldName)
+      if (!_.isString(content)) {
+        return
+      }
       const matchingDomain = getMatchingDomainInstance(instance, domainByBrandElementID)
-      if (_.isString(content) && matchingDomain !== undefined) {
+      if (matchingDomain !== undefined) {
         const template = getTemplateFromContent({ content, domain: matchingDomain })
         instance.value[fieldName] = template
       }
+      const updatedContent = instance.value[fieldName]
+      const filepath = getContentStaticFilePath(instance)
+      const contentAsStaticFile =
+        typeof updatedContent === 'string'
+          ? new StaticFile({ filepath, content: Buffer.from(updatedContent), encoding: 'utf-8' })
+          : parserUtils.templateExpressionToStaticFile(updatedContent, filepath)
+      instance.value[fieldName] = contentAsStaticFile
     })
   },
 })

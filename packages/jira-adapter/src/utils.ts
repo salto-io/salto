@@ -268,12 +268,15 @@ const HTML_RESPONSE_SCHEME = Joi.object({
   data: Joi.string().required(),
 }).unknown(true)
 
-export const getHTMLStaticFileName = (path: ElemID): string => {
+export const getHTMLStaticFileName = (path: ElemID): string | undefined => {
   const pathName = fileNameFromNaclCase(path.getFullName()).split('instance.')
+  if (pathName.length < 2 || pathName[1] === undefined) {
+    return undefined
+  }
   const fileName = pathName[1]
-  if (fileName !== undefined && fileName.length > 200) {
+  if (fileName.length > 200) {
     // the file name has a 255 character limit, and there are some additional chars added by the static file
-    return fileName.substring(0, 160).concat(hashUtils.sizedHash({ input: fileName, evenOutputLength: 40 }))
+    return fileName.substring(0, 160).concat(hashUtils.toSha1(fileName.substring(160)))
   }
   return pathName[1]
 }

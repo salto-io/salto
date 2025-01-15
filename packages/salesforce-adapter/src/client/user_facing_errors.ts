@@ -260,31 +260,25 @@ export const enrichSaltoDeployErrors = async (
   errors: readonly SaltoError[],
   elementSource: ReadOnlyElementsSource,
 ): Promise<readonly SaltoError[]> => {
-  if (
-    !errors
-      .map(error => error.message)
-      .some(error => error.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION))
-  )
+  if (!errors.some(error => error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION)))
     return errors
-
   const validationRulesIndex: Map<string, ValidationRule[]> = await createValidationRulesIndex(elementSource)
-
-  if (validationRulesIndex.size > 0) {
-    return errors.map(error =>
-      error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION)
-        ? {
-            ...error,
-            detailedMessage: `${getValidationRulesMessages(error)
-              .map(
-                validationRuleMessage =>
-                  `${validationRuleMessage}:${getValidationRulesUrls(
-                    validationRulesIndex.get(validationRuleMessage) ?? [],
-                  )}`,
-              )
-              .join('\n')}`,
-          }
-        : error,
-    )
-  }
-  return errors
+  return errors.map(error =>
+    error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION)
+      ? {
+          ...error,
+          detailedMessage: `${getValidationRulesMessages(error)
+            .map(validationRuleMessage => {
+              const urls = getValidationRulesUrls(validationRulesIndex.get(validationRuleMessage) ?? [])
+              if (!urls?.length) return `${validationRuleMessage}.`
+              const linkMessages = urls
+                .filter(url => typeof url === 'string')
+                .map(url => `[open validation rule in service](${url})`)
+                .join(',')
+              return `${validationRuleMessage}. ${linkMessages}`
+            })
+            .join('\n')}`,
+        }
+      : error,
+  )
 }

@@ -58,10 +58,11 @@ import {
   isCustomField,
   isFieldOfTaskOrEvent,
   getProfilesAndPermissionSetsBrokenPaths,
-  getOrgFetchTargets,
+  getAccountFetchTargets,
   getMetadataIncludeFromFetchTargets,
   isOrderedMapTypeOrRefType,
   isCustomMetadataRecordInstanceSync,
+  metadataTypeOrUndefined,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -87,6 +88,9 @@ import {
   CUSTOM_OBJECTS_FIELD,
   CUSTOM_OBJECTS_LOOKUPS_FIELD,
   ORDERED_MAP_PREFIX,
+  METADATA_TYPES_FIELD,
+  APEX_CLASS_METADATA_TYPE,
+  CUSTOM_FIELD,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomField, CustomObject, CustomPicklistValue, FilterItem } from '../../src/client/types'
@@ -1478,26 +1482,27 @@ describe('filter utils', () => {
       })
     })
   })
-  describe('getOrgFetchTargets', () => {
+  describe('getAccountFetchTargets', () => {
     let elementsSource: ReadOnlyElementsSource
-    describe('when Custom Objects Targets are invalid in the organization settings instance', () => {
+    describe('when FetchTargets instance values are invalid', () => {
       beforeEach(() => {
-        const invalidOrgSettings = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
+        const invalidFetchTargetsInstance = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
           [CUSTOM_OBJECTS_FIELD]: 'Invalid',
         })
-        elementsSource = buildElementsSourceFromElements([invalidOrgSettings])
+        elementsSource = buildElementsSourceFromElements([invalidFetchTargetsInstance])
       })
       it('should return metadata types only', async () => {
-        expect(await getOrgFetchTargets(elementsSource)).toEqual({
+        expect(await getAccountFetchTargets({ elementsSource, accountName: SALESFORCE })).toEqual({
           metadataTypes: SUPPORTED_METADATA_TYPES,
           customObjects: [],
           customObjectsLookups: {},
         })
       })
     })
-    describe('when Custom Objects Targets are valid in the organization settings instance', () => {
+    describe('when FetchTargets instance is valid', () => {
       beforeEach(() => {
         const fetchTargets = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
+          [METADATA_TYPES_FIELD]: ['ApexClass', 'Role', 'CustomObject'],
           [CUSTOM_OBJECTS_FIELD]: ['Account', 'Contact'],
           [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
             Account: ['Contact'],
@@ -1506,8 +1511,8 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([fetchTargets])
       })
       it('should return correct fetch targets', async () => {
-        expect(await getOrgFetchTargets(elementsSource)).toEqual({
-          metadataTypes: SUPPORTED_METADATA_TYPES,
+        expect(await getAccountFetchTargets({ elementsSource, accountName: SALESFORCE })).toEqual({
+          metadataTypes: ['ApexClass', 'Role', 'CustomObject'],
           customObjects: ['Account', 'Contact'],
           customObjectsLookups: { Account: ['Contact'] },
         })
@@ -1518,6 +1523,7 @@ describe('filter utils', () => {
     let elementsSource: ReadOnlyElementsSource
     beforeEach(() => {
       const fetchTargets = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
+        [METADATA_TYPES_FIELD]: ['ApexClass', 'Role', 'CustomObject'],
         [CUSTOM_OBJECTS_FIELD]: ['Account', 'Contact', 'Product2', 'User'],
         [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
           Account: ['Product2'],
@@ -1612,6 +1618,33 @@ describe('filter utils', () => {
     })
     it('should return false for non customMetadataRecordType', async () => {
       expect(isCustomMetadataRecordInstanceSync(profileInstance)).toBeFalse()
+    })
+  })
+  describe('metadataTypeOrUndefined', () => {
+    describe('when Element is a Metadata Type', () => {
+      it('should return the metadata type of the Element', () => {
+        expect(metadataTypeOrUndefined(mockTypes.ApexClass)).toEqual(APEX_CLASS_METADATA_TYPE)
+      })
+    })
+    describe('when Element is a Metadata Instance', () => {
+      it('should return the metadata type of the Element', () => {
+        expect(metadataTypeOrUndefined(mockInstances().ApexClass)).toEqual(APEX_CLASS_METADATA_TYPE)
+      })
+    })
+    describe('when Element is a CustomObject', () => {
+      it('should return CustomObject', () => {
+        expect(metadataTypeOrUndefined(mockTypes.Account)).toEqual(CUSTOM_OBJECT)
+      })
+    })
+    describe('when Element is a CustomField', () => {
+      it('should return CustomField', () => {
+        expect(metadataTypeOrUndefined(mockTypes.Account.fields.Name)).toEqual(CUSTOM_FIELD)
+      })
+    })
+    describe('when Element is not a Metadata Type', () => {
+      it('should return undefined', () => {
+        expect(metadataTypeOrUndefined(ArtificialTypes.FetchTargets)).toBeUndefined()
+      })
     })
   })
 })

@@ -532,9 +532,8 @@ describe('requestTypeLayoutsFilter', () => {
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
-      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].data.properties[0]).toEqual({
-        key: 'jsd.field.helpText',
-        value: 'someText',
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].data.properties).toEqual({
+        'jsd.field.helpText': 'someText',
       })
     })
     it('should remove properties field from request forms if all properties values are empty', async () => {

@@ -39,6 +39,7 @@ import {
   BOT_BUILDER_NODE,
   BOT_BUILDER_ANSWER,
   CONVERSATION_BOT,
+  SUPPORT_ADDRESS_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG } from '../config'
 import {
@@ -70,6 +71,7 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   locale_id: 'locale',
   via_id: 'channel',
   current_via_id: 'channel',
+  recipient: SUPPORT_ADDRESS_TYPE_NAME,
   add_skills: 'routing_attribute_value',
   set_skills: 'routing_attribute_value',
   remove_skills: 'routing_attribute_value',
@@ -85,6 +87,7 @@ const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
   notification_sms_group: 'group',
   notification_webhook: 'webhook',
   via_id: 'channel',
+  recipient: SUPPORT_ADDRESS_TYPE_NAME,
   current_via_id: 'channel',
   current_tags: 'tag',
   set_tags: 'tag',
@@ -166,7 +169,7 @@ const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ r
 const neighborReferenceUserAndOrgFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
   [USER_FIELD_OPTION_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME].includes(val) ? val : undefined
 
-type ZendeskReferenceIndexField = 'key' | 'value' | 'locale'
+type ZendeskReferenceIndexField = 'key' | 'value' | 'locale' | 'email'
 type ZendeskReferenceSerializationStrategyName =
   | 'ticketField'
   | 'value'
@@ -181,6 +184,7 @@ type ZendeskReferenceSerializationStrategyName =
   | 'idString'
   | 'customObjectKey'
   | 'customStatusField'
+  | 'email'
 
 const getSerializationStrategyOfCustomFieldByContainingType = (
   prefix: string,
@@ -245,6 +249,11 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     serialize: customFieldOptionSerialization,
     lookup: val => val,
     lookupIndexName: 'value',
+  },
+  email: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.email : ref.value),
+    lookup: val => val,
+    lookupIndexName: 'email',
   },
   userFieldOption: {
     serialize: customFieldOptionSerialization,
@@ -934,6 +943,15 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     serializationStrategy: 'id',
     target: { type: 'layout' },
   },
+  {
+    src: {
+      field: 'value',
+      parentTypes: ['trigger__conditions__all', 'trigger__conditions__any'],
+    },
+    serializationStrategy: 'email',
+    target: { typeContext: 'allowlistedNeighborField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
 ]
 
 const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
@@ -1178,7 +1196,7 @@ export const fieldReferencesOnFetch = async (elements: Element[], config: Zendes
     await referenceUtils.addReferences({
       elements,
       defs: fixedDefs,
-      fieldsToGroupBy: ['id', 'name', 'key', 'value', 'locale'],
+      fieldsToGroupBy: ['id', 'name', 'key', 'value', 'locale', 'email'],
       contextStrategyLookup,
       // since ids and references to ids vary inconsistently between string/number, allow both
       fieldReferenceResolverCreator: defs => new ZendeskFieldReferenceResolver(defs),

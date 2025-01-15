@@ -38,7 +38,6 @@ const ASSETS_OBJECT_FIELD_CONFIGURATION_SCHEME = Joi.object({
 
 const isAssetsObjectFieldConfiguration = createSchemeGuard<assetObjectFieldConfiguration>(
   ASSETS_OBJECT_FIELD_CONFIGURATION_SCHEME,
-  'Received an invalid assets object field configuration',
 )
 
 const getObjectTypeAttributeReferences = (

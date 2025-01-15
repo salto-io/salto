@@ -22,6 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import {
+  ERROR_MESSAGES,
   getParent,
   inspectValue,
   invertNaclCase,
@@ -225,21 +226,21 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       elements.push(form)
     })
     if (projectsWithoutForms.length > 0) {
-      const message = `Unable to fetch forms for the following projects: ${projectsWithoutForms.join(', ')}. This issue is likely due to insufficient permissions.`
-      log.debug(message)
+      const detailedMessage = `Unable to fetch forms for the following projects: ${projectsWithoutForms.join(', ')}. This issue is likely due to insufficient permissions.`
+      log.debug(detailedMessage)
       errors.push({
-        message,
-        detailedMessage: message,
+        message: ERROR_MESSAGES.OTHER_ISSUES,
+        detailedMessage,
         severity: 'Warning' as SeverityLevel,
       })
     }
     const projectsWithUntitledFormsArr = Array.from(projectsWithUntitledForms)
     if (projectsWithUntitledFormsArr.length > 0) {
-      const message = `Salto does not support fetching untitled forms, found in the following projects: ${projectsWithUntitledFormsArr.join(', ')}`
-      log.debug(message)
+      const detailedMessage = `Salto does not support fetching untitled forms, found in the following projects: ${projectsWithUntitledFormsArr.join(', ')}`
+      log.debug(detailedMessage)
       errors.push({
-        message,
-        detailedMessage: message,
+        message: ERROR_MESSAGES.OTHER_ISSUES,
+        detailedMessage,
         severity: 'Warning' as SeverityLevel,
       })
     }

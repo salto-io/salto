@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, invertNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { ReferenceExpression, SaltoError, Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -153,7 +153,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
     ? []
     : [
         {
-          message,
+          message: ERROR_MESSAGES.OTHER_ISSUES,
           detailedMessage: message,
           severity: 'Warning',
         },

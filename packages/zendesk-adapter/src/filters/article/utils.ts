@@ -20,6 +20,7 @@ import {
   isResolvedReferenceExpression,
   extractTemplate,
   createSaltoElementError,
+  ERROR_MESSAGES,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -132,7 +133,7 @@ const getAttachmentContent = async ({
   attachmentType: ObjectType
 }): Promise<SaltoElementError | undefined> => {
   const contentWarning = (error: string): SaltoElementError => ({
-    message: error,
+    message: ERROR_MESSAGES.OTHER_ISSUES,
     detailedMessage: error,
     severity: 'Warning',
     elemID: attachment.elemID,

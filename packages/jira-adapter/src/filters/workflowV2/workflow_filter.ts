@@ -15,6 +15,7 @@ import {
   walkOnElement,
   walkOnValue,
   getInstancesFromElementSource,
+  ERROR_MESSAGES,
 } from '@salto-io/adapter-utils'
 import {
   elements as adapterElements,
@@ -95,10 +96,10 @@ const { toBasicInstance } = adapterElements
 const { getTransformationConfigByType } = configUtils
 
 const workflowFetchError = (errorMessage?: string): SaltoError => {
-  const message = errorMessage ? `Failed to fetch Workflows: ${errorMessage}.` : 'Failed to fetch Workflows.'
+  const detailedMessage = errorMessage ? `Failed to fetch Workflows: ${errorMessage}.` : 'Failed to fetch Workflows.'
   return {
-    message,
-    detailedMessage: message,
+    message: ERROR_MESSAGES.OTHER_ISSUES,
+    detailedMessage,
     severity: 'Error',
   }
 }

@@ -18,7 +18,12 @@ import {
   AdapterFormat,
   Change,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, inspectValue, getDetailedChanges } from '@salto-io/adapter-utils'
+import {
+  createDefaultInstanceFromType,
+  inspectValue,
+  getDetailedChanges,
+  ERROR_MESSAGES,
+} from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { initLocalWorkspace, loadLocalWorkspace } from '@salto-io/local-workspace'
 import { logger } from '@salto-io/logging'
@@ -96,7 +101,7 @@ const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({
       errors: [
         {
           severity: 'Error',
-          message: 'Failed loadElementsFromFolder in Dummy project',
+          message: ERROR_MESSAGES.OTHER_ISSUES,
           detailedMessage: inspectValue(error),
         },
       ],

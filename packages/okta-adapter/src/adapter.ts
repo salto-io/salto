@@ -32,7 +32,7 @@ import {
   restoreChangeElement,
   createChangeElementResolver,
 } from '@salto-io/adapter-components'
-import { logDuration } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
@@ -294,13 +294,12 @@ export default class OktaAdapter implements AdapterOperations {
       log.warn(
         'Fetching private APIs is not supported for OAuth login, creating config suggestion to exclude private APIs',
       )
-      const message =
-        'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched'
       return {
         errors: [
           {
-            message,
-            detailedMessage: message,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage:
+              'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
             severity: 'Warning',
           },
         ],

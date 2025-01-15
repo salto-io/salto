@@ -27,6 +27,7 @@ import {
 import {
   applyFunctionToChangeData,
   createTemplateExpression,
+  ERROR_MESSAGES,
   extractTemplate,
   getParent,
   normalizeFilePathPart,
@@ -150,14 +151,11 @@ const getWarningsForMissingBrands = (missingBrandsForWarning: missingBrandInfo[]
     brandSubdomain: warningObjects[0].brandSubdomain,
     articles: _.uniq(warningObjects.map(obj => obj.articleName)),
   }))
-  return missingBrandsToArticleNames.map(missingBrandInfo => {
-    const message = `Brand ${missingBrandInfo.brandName} (subdomain ${missingBrandInfo.brandSubdomain}) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): ${missingBrandInfo.articles.slice(0, 10).join(', ')}`
-    return {
-      message,
-      detailedMessage: message,
-      severity: 'Warning',
-    }
-  })
+  return missingBrandsToArticleNames.map(missingBrandInfo => ({
+    message: ERROR_MESSAGES.OTHER_ISSUES,
+    detailedMessage: `Brand ${missingBrandInfo.brandName} (subdomain ${missingBrandInfo.brandSubdomain}) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): ${missingBrandInfo.articles.slice(0, 10).join(', ')}`,
+    severity: 'Warning',
+  }))
 }
 
 const templateExpressionToStaticFile = (translationBody: TemplateExpression, translationElemID: ElemID): StaticFile => {

@@ -8,21 +8,22 @@
 import _ from 'lodash'
 import { errors as wsErrors, validator as wsValidator } from '@salto-io/workspace'
 import { ElemID, SaltoError, SaltoElementError, SeverityLevel } from '@salto-io/adapter-api'
+import { ERROR_MESSAGES } from '@salto-io/adapter-utils'
 
 const { isUnresolvedRefError } = wsValidator
 
 export class UnresolvedReferenceGroupError implements SaltoElementError {
   readonly elemID: ElemID
-  readonly message: string
   readonly detailedMessage: string
   readonly severity: SeverityLevel
   constructor(target: string, refErrors: ReadonlyArray<wsErrors.UnresolvedReferenceValidationError>) {
     const [firstError] = refErrors
     this.elemID = firstError.elemID
-    this.message = `Unresolved reference to ${target} in ${refErrors.length} places - if this was removed on purpose you may continue`
-    this.detailedMessage = this.message
+    this.detailedMessage = `Unresolved reference to ${target} in ${refErrors.length} places - if this was removed on purpose you may continue`
     this.severity = 'Warning'
   }
+
+  message = ERROR_MESSAGES.UNRESOLVED_REFERENCE
 }
 
 const groupUnresolvedRefsByTarget = (origErrors: ReadonlyArray<SaltoError>): ReadonlyArray<SaltoError> => {

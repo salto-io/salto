@@ -10,7 +10,7 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, SaltoError } from '@salto-io
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from './utils'
-import { ERROR_MESSAGES } from './error_messages'
+import { ERROR_MESSAGES } from './error'
 
 const { groupByAsync } = collections.asynciterable
 const log = logger(module)

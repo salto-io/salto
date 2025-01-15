@@ -33,7 +33,7 @@ import {
   fetch as fetchUtils,
   openapi,
 } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, ERROR_MESSAGES, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { objects, collections } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
@@ -585,13 +585,13 @@ export default class JiraAdapter implements AdapterOperations {
     const isJsmEnabled = await isJsmEnabledInService(this.client)
     if (!isJsmEnabled) {
       log.debug('enableJSM set to true, but JSM is not enabled in the service, skipping fetching JSM elements')
-      const message = 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.'
       return {
         elements: [],
         errors: [
           {
-            message,
-            detailedMessage: message,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage:
+              'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
             severity: 'Warning',
           },
         ],

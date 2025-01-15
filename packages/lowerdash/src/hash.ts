@@ -8,3 +8,13 @@
 import { createHash } from 'crypto'
 
 export const toMD5 = (buffer: Buffer | string): string => createHash('md5').update(buffer).digest('hex')
+
+// evenOutputLength must be even
+export const sizedHash = ({ input, evenOutputLength }: { input: string; evenOutputLength: number }): string => {
+  if (evenOutputLength % 2 !== 0) {
+    throw new Error('Output length must be even')
+  }
+  return createHash('shake256', { outputLength: evenOutputLength / 2 })
+    .update(input)
+    .digest('hex')
+}

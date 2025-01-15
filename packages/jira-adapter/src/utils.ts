@@ -21,7 +21,7 @@ import {
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { collections } from '@salto-io/lowerdash'
+import { collections, hash as hashUtils } from '@salto-io/lowerdash'
 import { createSchemeGuard, fileNameFromNaclCase } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { JiraConfig, JspUrls } from './config/config'
@@ -270,6 +270,11 @@ const HTML_RESPONSE_SCHEME = Joi.object({
 
 export const getHTMLStaticFileName = (path: ElemID): string => {
   const pathName = fileNameFromNaclCase(path.getFullName()).split('instance.')
+  const fileName = pathName[1]
+  if (fileName !== undefined && fileName.length > 200) {
+    // the file name has a 255 character limit, and there are some additional chars added by the static file
+    return fileName.substring(0, 160).concat(hashUtils.sizedHash({ input: fileName, evenOutputLength: 40 }))
+  }
   return pathName[1]
 }
 

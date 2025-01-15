@@ -455,9 +455,10 @@ export const createMergeManager = async (
         log.debug(`Started flushing hashes under namespace ${namespace}.`)
         await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
         await hashes.flush()
-        const hasChanged = (await Promise.all(flushables.map(async f => f.flush()))).some(
-          b => typeof b !== 'boolean' || b,
-        )
+        const hasChanged = await awu(flushables)
+          .map(async f => f.flush())
+          .some(b => typeof b !== 'boolean' || b)
+
         await hashes.delete(MERGER_LOCK)
         await hashes.flush()
         log.debug(`Successfully flushed hashes under namespace ${namespace}.`)

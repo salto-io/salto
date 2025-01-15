@@ -22,6 +22,7 @@ import {
   FLEXI_PAGE_FIELD_NAMES,
   FLEXI_PAGE_REGION_FIELD_NAMES,
   FLEXI_PAGE_TYPE,
+  LIGHTNING_PAGE_TYPE,
   PAGE_REGION_TYPE_VALUES,
 } from '../constants'
 import { isInstanceOfTypeSync } from '../filters/utils'
@@ -92,7 +93,7 @@ const createUnusedFacetChangeError = (elemId: ElemID, elemName: string): ChangeE
   elemID: elemId,
   severity: 'Warning',
   message: 'Unused Facet',
-  detailedMessage: `The Facet "${elemName}" isn’t being used in the ${FLEXI_PAGE_TYPE}.`,
+  detailedMessage: `The Facet "${elemName}" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
 })
 
 const createChangeErrors = (element: InstanceElement): ChangeError[] => {

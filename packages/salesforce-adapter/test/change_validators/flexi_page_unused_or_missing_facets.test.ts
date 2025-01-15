@@ -24,19 +24,20 @@ import {
   FLEXI_PAGE_REGION_FIELD_NAMES,
   FLEXI_PAGE_TYPE,
   ITEM_INSTANCE,
+  LIGHTNING_PAGE_TYPE,
   PAGE_REGION_TYPE_VALUES,
 } from '../../src/constants'
 
 describe('changeValidator', () => {
   let flexiPageChange: Change
-  let ComponentInstanceProperty: MetadataObjectType
-  let ComponentInstance: MetadataObjectType
+  let componentInstanceProperty: MetadataObjectType
+  let componentInstance: MetadataObjectType
   let itemInstance: MetadataObjectType
   let flexiPageRegion: MetadataObjectType
   let flexiPage: MetadataObjectType
 
   beforeEach(() => {
-    ComponentInstanceProperty = createMetadataObjectType({
+    componentInstanceProperty = createMetadataObjectType({
       annotations: {
         metadataType: COMPONENT_INSTANCE_PROPERTY,
       },
@@ -44,13 +45,13 @@ describe('changeValidator', () => {
         [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: { refType: BuiltinTypes.STRING },
       },
     })
-    ComponentInstance = createMetadataObjectType({
+    componentInstance = createMetadataObjectType({
       annotations: {
         metadataType: COMPONENT_INSTANCE,
       },
       fields: {
         [COMPONENT_INSTANCE_FILED_NAMES.COMPONENT_INSTANCE_PROPERTIES]: {
-          refType: new ListType(ComponentInstanceProperty),
+          refType: new ListType(componentInstanceProperty),
         },
       },
     })
@@ -60,7 +61,7 @@ describe('changeValidator', () => {
       },
       fields: {
         [COMPONENT_INSTANCE_FILED_NAMES.COMPONENT_INSTANCE_PROPERTIES]: {
-          refType: new ListType(ComponentInstanceProperty),
+          refType: new ListType(componentInstanceProperty),
         },
       },
     })
@@ -69,7 +70,7 @@ describe('changeValidator', () => {
         metadataType: FLEXI_PAGE_REGION,
       },
       fields: {
-        [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: { refType: new ListType(ComponentInstance) },
+        [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: { refType: new ListType(componentInstance) },
         [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: { refType: new ListType(itemInstance) },
         [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: { refType: BuiltinTypes.STRING },
         [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: { refType: BuiltinTypes.STRING },
@@ -199,7 +200,7 @@ describe('changeValidator', () => {
         {
           severity: 'Warning',
           message: 'Unused Facet',
-          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the ${FLEXI_PAGE_TYPE}.`,
+          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
           elemID: flexiPageInstance.elemID.createNestedID(FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS, '0'),
         },
       ])
@@ -236,7 +237,7 @@ describe('changeValidator', () => {
         {
           severity: 'Warning',
           message: 'Unused Facet',
-          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the ${FLEXI_PAGE_TYPE}.`,
+          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
           elemID: flexiPageInstance.elemID.createNestedID(FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS, '0'),
         },
         {

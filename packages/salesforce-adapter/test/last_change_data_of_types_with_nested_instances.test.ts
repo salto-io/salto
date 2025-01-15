@@ -16,6 +16,7 @@ import { mockFileProperties } from './connection'
 import { getLastChangeDateOfTypesWithNestedInstances } from '../src/last_change_date_of_types_with_nested_instances'
 import { buildFilePropsMetadataQuery, buildMetadataQuery } from '../src/fetch_profile/metadata_query'
 import { LastChangeDateOfTypesWithNestedInstances, MetadataQuery } from '../src/types'
+import { CUSTOM_OBJECT_FIELDS } from '../src/fetch_profile/metadata_types'
 
 const { makeArray } = collections.array
 
@@ -229,6 +230,14 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         Workflow: {},
       }
       expect(lastChangeDateOfTypesWithNestedInstances).toEqual(expected)
+    })
+    it('should list children types', async () => {
+      await getLastChangeDateOfTypesWithNestedInstances({
+        client,
+        metadataQuery,
+        metadataTypeInfos: [{ xmlName: CUSTOM_OBJECT, childXmlNames: [...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD] }],
+      })
+      expect(listedTypes).toContainValues([...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD])
     })
   })
 })

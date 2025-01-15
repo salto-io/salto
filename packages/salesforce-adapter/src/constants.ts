@@ -98,8 +98,6 @@ export enum FLEXI_PAGE_REGION_FIELD_NAMES {
 }
 export enum PAGE_REGION_TYPE_VALUES {
   FACET = 'Facet',
-  REGION = 'Region',
-  BACKGROUND = 'Background',
 }
 export enum FLEXI_PAGE_FIELD_NAMES {
   FLEXI_PAGE_REGIONS = 'flexiPageRegions',

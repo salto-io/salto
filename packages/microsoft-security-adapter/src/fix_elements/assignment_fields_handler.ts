@@ -21,29 +21,29 @@ import {
   ConditionalAccessPolicyAssignmentField,
   ConditionalAccessPolicyAssignmentFieldNamesConfig,
   IntuneAssignmentsFieldNamesConfig,
+  IntuneAssignmentsField,
 } from '../config'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
 
+type FieldName = ConditionalAccessPolicyAssignmentField | IntuneAssignmentsField
 type FixedElementWithError = { fixedElement: InstanceElement; error: ChangeError }
 
-const CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS_INFO: Record<
-  ConditionalAccessPolicyAssignmentField,
-  { parentField: string; isRequired?: boolean }
-> = {
-  includeApplications: { parentField: 'applications', isRequired: true },
-  excludeApplications: { parentField: 'applications' },
-  includeServicePrincipals: { parentField: 'clientApplications' },
-  excludeServicePrincipals: { parentField: 'clientApplications' },
-  includeUsers: { parentField: 'users', isRequired: true },
-  excludeUsers: { parentField: 'users' },
-  includeGroups: { parentField: 'users' },
-  excludeGroups: { parentField: 'users' },
-  includeRoles: { parentField: 'users' },
-  excludeRoles: { parentField: 'users' },
-  includeDevices: { parentField: 'devices' },
-  excludeDevices: { parentField: 'devices' },
+const ASSIGNMENT_FIELDS_INFO: Record<FieldName, { fieldPath: string[]; emptyValue?: string[] }> = {
+  includeApplications: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'applications'], emptyValue: ['None'] },
+  excludeApplications: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'applications'] },
+  includeServicePrincipals: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'clientApplications'] },
+  excludeServicePrincipals: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'clientApplications'] },
+  includeUsers: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'users'], emptyValue: ['None'] },
+  excludeUsers: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'users'] },
+  includeGroups: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'users'] },
+  excludeGroups: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'users'] },
+  includeRoles: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'users'] },
+  excludeRoles: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'users'] },
+  includeDevices: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'devices'] },
+  excludeDevices: { fieldPath: [entraConstants.CONDITIONS_FIELD_NAME, 'devices'] },
+  assignments: { fieldPath: [], emptyValue: [] },
 }
 
 const generateFixedAssignmentsInfo = ({
@@ -106,30 +106,23 @@ const createFixedElementWithAppliedRule = ({
 }
 
 const calculateRuleToApplyWithPath = ({
-  instance,
   fieldName,
   requestedRule,
 }: {
-  instance: InstanceElement
-  fieldName: string
+  fieldName: FieldName
   requestedRule: AssignmentFieldRuleWithFallback
 }): { rule: AssignmentFieldRuleWithFallback; fieldPath: string[] } | undefined => {
-  if (instance.elemID.typeName !== entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME) {
-    return { rule: requestedRule, fieldPath: [fieldName] }
-  }
-  const fieldInfo =
-    CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS_INFO[fieldName as ConditionalAccessPolicyAssignmentField]
-
+  const fieldInfo = ASSIGNMENT_FIELDS_INFO[fieldName]
   if (fieldInfo === undefined) {
-    log.error(`Unknown field ${fieldName} configuration in ConditionalAccessPolicyAssignmentFieldsConfig`)
+    log.error(`Unknown field ${fieldName} configuration in the assignmentFieldsStrategy`)
     return undefined
   }
 
-  const fieldPath = [entraConstants.CONDITIONS_FIELD_NAME, fieldInfo.parentField, fieldName]
+  const fieldPath = [...fieldInfo.fieldPath, fieldName]
 
-  if (requestedRule.strategy === 'omit' && fieldInfo.isRequired) {
+  if (requestedRule.strategy === 'omit' && fieldInfo.emptyValue !== undefined) {
     return {
-      rule: { strategy: 'fallback', fallbackValue: ['None'] },
+      rule: { strategy: 'fallback', fallbackValue: fieldInfo.emptyValue },
       fieldPath,
     }
   }
@@ -144,7 +137,10 @@ const handleInstanceAssignmentFields = (
   let resultFixedElement = instance
   const appliedRules = Object.entries(assignmentFieldsConfig)
     .map(([fieldName, configRule]) => {
-      const ruleToApplyWithPath = calculateRuleToApplyWithPath({ instance, fieldName, requestedRule: configRule })
+      const ruleToApplyWithPath = calculateRuleToApplyWithPath({
+        fieldName: fieldName as FieldName,
+        requestedRule: configRule,
+      })
 
       if (ruleToApplyWithPath !== undefined) {
         const fixedElement = createFixedElementWithAppliedRule({ instance: resultFixedElement, ...ruleToApplyWithPath })

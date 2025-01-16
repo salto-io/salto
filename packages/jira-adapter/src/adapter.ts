@@ -200,7 +200,7 @@ import contextDefaultValueDeploymentFilter from './filters/fields/context_defaul
 import statusPropertiesReferencesFilter from './filters/workflowV2/status_properties_references'
 import enhancedSearchNoiseReductionFilter from './filters/script_runner/enhanced_search/enhanced_search_noise_filter'
 
-const { getAllElements, addRemainingTypes } = elementUtils.ducktype
+const { getAllElements, addRemainingTypes, restoreInstanceTypeFromDeploy } = elementUtils.ducktype
 const { findDataField } = elementUtils
 const { computeGetArgs } = fetchUtils.resource
 const { getAllInstances } = elementUtils.swagger
@@ -779,11 +779,16 @@ export default class JiraAdapter implements AdapterOperations {
       deployResult: { appliedChanges, errors },
     } = await runner.deploy(changesToDeploy)
 
-    const changesToReturn = [...appliedChanges]
+    const changesToReturn = Array.from(appliedChanges)
     await runner.onDeploy(changesToReturn)
 
-    return {
+    const changesWithRestoredTypes = restoreInstanceTypeFromDeploy({
       appliedChanges: changesToReturn,
+      originalInstanceChanges: changesToDeploy,
+    })
+
+    return {
+      appliedChanges: changesWithRestoredTypes,
       errors,
     }
   }

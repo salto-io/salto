@@ -65,6 +65,7 @@ jest.mock('@salto-io/adapter-components', () => {
         addRemainingTypes: jest.fn().mockImplementation(() => {
           throw new Error('addRemainingTypes called without a mock')
         }),
+        restoreInstanceTypeFromDeploy: jest.fn().mockImplementation(args => args.appliedChanges),
       },
     },
     openapi: {
@@ -233,6 +234,21 @@ describe('adapter', () => {
       })
 
       expect((getChangeData(appliedChanges[0]) as InstanceElement)?.value.id).toBeUndefined()
+    })
+    it('should restore changes to include their original type', async () => {
+      await adapter.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({
+              before: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType),
+              after: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType),
+            }),
+          ],
+        },
+        progressReporter: nullProgressReporter,
+      })
+      expect(elements.ducktype.restoreInstanceTypeFromDeploy).toHaveBeenCalled()
     })
   })
   describe('deployModifiers', () => {

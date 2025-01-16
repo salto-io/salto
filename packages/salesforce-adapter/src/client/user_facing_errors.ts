@@ -254,7 +254,9 @@ const createValidationRulesIndex = async (
 }
 
 const getValidationRulesUrls = (validationRules: ValidationRule[]): string[] =>
-  validationRules.map(validationRule => validationRule.annotations[CORE_ANNOTATIONS.SERVICE_URL])
+  validationRules
+    .map(validationRule => validationRule.annotations[CORE_ANNOTATIONS.SERVICE_URL])
+    .filter(url => _.isString(url))
 
 export const enrichSaltoDeployErrors = async (
   errors: readonly SaltoError[],
@@ -269,9 +271,7 @@ export const enrichSaltoDeployErrors = async (
           ...error,
           detailedMessage: `${getValidationRulesMessages(error)
             .map(validationRuleMessage => {
-              const urls = (getValidationRulesUrls(validationRulesIndex.get(validationRuleMessage) ?? []) || []).filter(
-                url => typeof url === 'string',
-              )
+              const urls = getValidationRulesUrls(validationRulesIndex.get(validationRuleMessage) ?? [])
               if (urls.length === 0) {
                 return `- **${validationRuleMessage}**.`
               }

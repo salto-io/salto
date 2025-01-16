@@ -269,13 +269,17 @@ export const enrichSaltoDeployErrors = async (
           ...error,
           detailedMessage: `${getValidationRulesMessages(error)
             .map(validationRuleMessage => {
-              const urls = getValidationRulesUrls(validationRulesIndex.get(validationRuleMessage) ?? [])
-              if (!urls?.length) return `${validationRuleMessage}.`
-              const linkMessages = urls
-                .filter(url => typeof url === 'string')
-                .map(url => `[View in Salesforce](${url})`)
-                .join(',')
-              return `${validationRuleMessage}. ${linkMessages}`
+              const urls = (getValidationRulesUrls(validationRulesIndex.get(validationRuleMessage) ?? []) || []).filter(
+                url => typeof url === 'string',
+              )
+              if (urls.length === 0) {
+                return `- **${validationRuleMessage}**.`
+              }
+              if (urls.length === 1) {
+                return `- **${validationRuleMessage}**. [View in Salesforce](${urls[0]})`
+              }
+              const linkMessages = urls.map((url, index) => `   - [Link${index + 1}](${url})`).join('\n')
+              return `- **${validationRuleMessage}**. Found multiple Validation Rules with this error message. Please review them:\n${linkMessages}`
             })
             .join('\n')}`,
         }

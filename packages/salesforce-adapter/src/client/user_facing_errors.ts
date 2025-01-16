@@ -273,7 +273,7 @@ export const enrichSaltoDeployErrors = async (
               if (!urls?.length) return `${validationRuleMessage}.`
               const linkMessages = urls
                 .filter(url => typeof url === 'string')
-                .map(url => `[open validation rule in service](${url})`)
+                .map(url => `[View in Salesforce](${url})`)
                 .join(',')
               return `${validationRuleMessage}. ${linkMessages}`
             })

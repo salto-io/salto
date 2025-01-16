@@ -454,17 +454,28 @@ export const createMergeManager = async (
       log.timeDebug(
         () => async () =>
           lock.acquire(MERGER_LOCK, async () => {
-            log.debug(`Started flushing hashes under namespace ${namespace}.`)
-            await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
-            await hashes.flush()
-            const hasChanged = await awu(flushables)
-              .map(async f => f.flush())
-              .some(b => typeof b !== 'boolean' || b)
+            const timeoutId = setTimeout(
+              () => {
+                log.error('Flushing hashes under namespace %s is taking more than 10 minutes.', namespace)
+              },
+              10 * 60 * 1000, // 10 minutes
+            )
 
-            await hashes.delete(MERGER_LOCK)
-            await hashes.flush()
-            log.debug(`Successfully flushed hashes under namespace ${namespace}.`)
-            return hasChanged
+            try {
+              log.debug(`Started flushing hashes under namespace ${namespace}.`)
+              await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
+              await hashes.flush()
+              const hasChanged = await awu(flushables)
+                .map(async f => f.flush())
+                .some(b => typeof b !== 'boolean' || b)
+
+              await hashes.delete(MERGER_LOCK)
+              await hashes.flush()
+              log.debug(`Successfully flushed hashes under namespace ${namespace}.`)
+              return hasChanged
+            } finally {
+              clearTimeout(timeoutId)
+            }
           }),
         `flush ${namespace}`,
       ),

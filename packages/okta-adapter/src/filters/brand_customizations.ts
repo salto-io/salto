@@ -43,7 +43,7 @@ export type BrandCustomizationType =
   | typeof ERROR_PAGE_TYPE_NAME
   | typeof SIGN_IN_PAGE_TYPE_NAME
 
-const getParentBrand = (instance: InstanceElement): InstanceElement | undefined => {
+const getParentBrand = (instance: InstanceElement): InstanceElement => {
   const parent = getParent(instance)
   if (parent.elemID.typeName === BRAND_TYPE_NAME) {
     return parent
@@ -63,10 +63,6 @@ const getMatchingDomainInstance = (
 ): InstanceElement | undefined => {
   try {
     const matchingBrand = getParentBrand(instance)
-    if (!matchingBrand) {
-      log.warn('failed to extract domain from instance %s, matching brand was not found', instance.elemID.getFullName())
-      return undefined
-    }
     const brandDomains = domainByBrandElementID[matchingBrand.elemID.getFullName()]
     if (brandDomains.length > 1) {
       log.warn(
@@ -112,8 +108,9 @@ const getTemplateFromContent = ({
 }
 
 const getContentStaticFilePath = (instance: InstanceElement): string => {
-  const brand = getParentBrand(instance)
-  const brandName = brand?.elemID.name
+  const {
+    elemID: { name: brandName },
+  } = getParentBrand(instance)
   return `${OKTA}/${brandName}/${instance.elemID.typeName}/${normalizeFilePathPart(fileNameFromNaclCase(instance.elemID.name))}.html`
 }
 

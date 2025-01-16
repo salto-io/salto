@@ -248,10 +248,24 @@ const isHiddenAttributeChange = (change: DetailedChange, hiddenValue: boolean): 
   change.id.nestingLevel === 1 &&
   (isAttributeChangeToHidden(change, hiddenValue) || isAttributeChangeToNotHidden(change, hiddenValue))
 
+const isFieldModificationChangeToHiddenValue = (change: DetailedChange): boolean =>
+  isFieldChange(change) &&
+  isModificationChange(change) &&
+  change.data.before?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] !== false &&
+  change.data.after?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+
+const isFieldModificationChangeToNotHiddenValue = (change: DetailedChange): boolean =>
+  isFieldChange(change) &&
+  isModificationChange(change) &&
+  change.data.before?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true &&
+  change.data.after?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] !== false
+
 const isFieldModificationWithHiddenValue = (change: DetailedChange): boolean =>
-  change.id.idType === 'field' &&
-  change.id.nestingLevel === 2 &&
-  (isAttributeChangeToHidden(change, true) || isAttributeChangeToNotHidden(change, true))
+  (change.id.idType === 'field' &&
+    change.id.nestingLevel === 2 &&
+    (isAttributeChangeToHidden(change, true) || isAttributeChangeToNotHidden(change, true))) ||
+  isFieldModificationChangeToHiddenValue(change) ||
+  isFieldModificationChangeToNotHiddenValue(change)
 
 const isHiddenChangeOnField = (change: DetailedChange): boolean =>
   isFieldModificationWithHiddenValue(change) ||
@@ -394,7 +408,10 @@ const groupAnnotationIdsByParentAndName = (ids: ElemID[]): Record<string, Set<st
 const getChangeParentIdsByHideAction = (changes: DetailedChange[]): { hide: Set<string>; unhide: Set<string> } => {
   const [hideChanges, unhideChanges] = _.partition(
     changes,
-    c => isAttributeChangeToHidden(c, true) || isFieldAdditionWithHiddenValue(c),
+    c =>
+      isAttributeChangeToHidden(c, true) ||
+      isFieldAdditionWithHiddenValue(c) ||
+      isFieldModificationChangeToHiddenValue(c),
   )
   return {
     hide: new Set(

@@ -217,16 +217,20 @@ const addContentFieldsAsStaticFiles =
     })
   }
 
+const isBuffer = (val: unknown): val is Buffer => _.isBuffer(val)
+
 const mapStaticFilesContentFields =
   (field: string, path: string[]): ComplexType['mapContentFields'] =>
   (_instanceName: string, values: Values) => ({
     [field]: Object.fromEntries(
       Object.values(_.get(values, path))
         .filter(
-          (val: unknown): val is { filePath: string; source: Buffer } =>
-            isPlainObject(val) && _.isString(_.get(val, 'filePath')) && _.isBuffer(_.get(val, 'source')),
+          (val: unknown): val is { filePath: string; source: Buffer | string } =>
+            isPlainObject(val) &&
+            _.isString(_.get(val, 'filePath')) &&
+            (isBuffer(_.get(val, 'source')) || _.isString(_.get(val, 'source'))),
         )
-        .map(({ filePath, source }) => [`${PACKAGE}/${filePath}`, source]),
+        .map(({ filePath, source }) => [`${PACKAGE}/${filePath}`, isBuffer(source) ? source : Buffer.from(source)]),
     ),
   })
 
@@ -608,6 +612,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
         zipContent.set(fileName, content)
         log.trace('Added XML file %s with content %s', fileName, content)
       }
+      const removeNamespacePrefix = (name: string): string => name.replace(/^\w+__/g, '')
       try {
         if (withManifest) {
           addToManifest(assertMetadataObjectType(await instance.getType()), instanceName)
@@ -622,7 +627,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
           // Add instance metadata
           const metadataValues = _.omit(values, ...Object.keys(fieldToFileToContent))
           setAndLogZipFile(
-            complexType.getMetadataFilePath(instanceName, values),
+            complexType.getMetadataFilePath(removeNamespacePrefix(instanceName), values),
             toMetadataXml(typeName, complexType.sortMetadataValues?.(metadataValues) ?? metadataValues),
           )
 

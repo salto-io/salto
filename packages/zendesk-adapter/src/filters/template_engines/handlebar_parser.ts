@@ -15,10 +15,9 @@ import {
   SubExpression,
 } from '@handlebars/parser/types/ast'
 import { InstanceElement, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
-import { createTemplateExpression } from '@salto-io/adapter-utils'
+import { PotentialReference, createTemplateExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
-import { PotentialReference } from './types'
 import { findLineStartIndexes, sourceLocationToIndexRange } from './utils'
 
 const log = logger(module)

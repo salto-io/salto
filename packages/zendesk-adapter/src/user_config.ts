@@ -40,7 +40,6 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
 }> & {
   enableMissingReferences?: boolean
   includeAuditDetails?: boolean
-  addAlias?: boolean
   handleIdenticalAttachmentConflicts?: boolean
   greedyAppReferences?: boolean
   appReferenceLocators?: IdLocator[]

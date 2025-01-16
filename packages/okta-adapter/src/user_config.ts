@@ -26,6 +26,7 @@ export type OktaUserFetchConfig = definitions.UserFetchConfig<{
   includeProfileMappingProperties?: boolean
   getUsersStrategy?: GetUsersStrategy
   maxUsersResults?: number
+  enableBrandReferences?: boolean
 }
 
 export type OktaClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }
@@ -78,6 +79,7 @@ export const DEFAULT_CONVERT_USERS_IDS_VALUE = true
 export const DEFAULT_GET_USERS_STRATEGY = 'searchQuery'
 const DEFAULT_INCLUDE_PROFILE_MAPPING_PROPERTIES = false
 const DEFAULT_APP_URLS_VALIDATOR_VALUE = false
+const DEFAULT_ENABLE_BRAND_REFERENCES_VALUE = false
 
 export const DEFAULT_CONFIG: OktaUserConfig = {
   client: {
@@ -92,6 +94,7 @@ export const DEFAULT_CONFIG: OktaUserConfig = {
     includeGroupMemberships: false,
     includeProfileMappingProperties: DEFAULT_INCLUDE_PROFILE_MAPPING_PROPERTIES,
     getUsersStrategy: DEFAULT_GET_USERS_STRATEGY,
+    enableBrandReferences: DEFAULT_ENABLE_BRAND_REFERENCES_VALUE,
   },
   deploy: {
     changeValidators: {
@@ -113,6 +116,7 @@ const additionalFetchConfigFields = {
   },
   isClassicOrg: { refType: BuiltinTypes.BOOLEAN },
   maxUsersResults: { refType: BuiltinTypes.NUMBER },
+  enableBrandReferences: { refType: BuiltinTypes.BOOLEAN },
 }
 
 export const configType = definitions.createUserConfigType({
@@ -126,7 +130,11 @@ export const configType = definitions.createUserConfigType({
     usePrivateAPI: { refType: BuiltinTypes.BOOLEAN },
   },
   omitElemID: false,
-  pathsToOmitFromDefaultConfig: ['fetch.enableMissingReferences', 'fetch.getUsersStrategy'],
+  pathsToOmitFromDefaultConfig: [
+    'fetch.enableMissingReferences',
+    'fetch.getUsersStrategy',
+    'fetch.enableBrandReferences',
+  ],
 })
 
 /*

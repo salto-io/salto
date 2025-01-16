@@ -6,11 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
-import { createTemplateExpression } from '@salto-io/adapter-utils'
+import { PotentialReference, createTemplateExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { CallExpression, parse, SourceLocation, VariableDeclaration } from 'acorn'
 import { simple as walkSimple } from 'acorn-walk'
-import { PotentialReference } from './types'
 import { extractIdIfElementExists, findLineStartIndexes, sourceLocationToIndexRange } from './utils'
 
 const log = logger(module)

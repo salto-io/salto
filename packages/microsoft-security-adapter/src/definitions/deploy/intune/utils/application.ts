@@ -14,8 +14,12 @@ import { intuneConstants } from '../../../../constants'
 import { intuneUtils } from '../../../../utils'
 import { EndpointPath } from '../../../types'
 
-const { APPLICATION_TYPE_NAME, APP_IDENTIFIER_FIELD_NAME, APP_STORE_URL_FIELD_NAME, PACKAGE_ID_FIELD_NAME } =
-  intuneConstants
+const {
+  TOP_LEVEL_TYPES: { APPLICATION_TYPE_NAME },
+  APP_IDENTIFIER_FIELD_NAME,
+  APP_STORE_URL_FIELD_NAME,
+  PACKAGE_ID_FIELD_NAME,
+} = intuneConstants
 
 const { isManagedGooglePlayApp, isAndroidEnterpriseSystemApp } = intuneUtils.application
 

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/test-utils",
-  "version": "0.4.9",
+  "version": "0.5.0",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Test utilities for jest",
   "repository": {

@@ -61,6 +61,7 @@ import {
   OPPORTUNITY_METADATA_TYPE,
   FLOW_FIELD_TYPE_NAMES,
   ASSIGN_TO_REFERENCE,
+  LIVE_CHAT_BUTTON,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -863,6 +864,19 @@ export const mockTypes = {
     },
     fields: {
       fieldItem: { refType: BuiltinTypes.STRING },
+    },
+  }),
+  [LIVE_CHAT_BUTTON]: createMetadataObjectType({
+    annotations: {
+      metadataType: LIVE_CHAT_BUTTON,
+    },
+    fields: {
+      skills: {
+        refType: BuiltinTypes.STRING,
+      },
+      routingType: {
+        refType: BuiltinTypes.STRING,
+      },
     },
   }),
 }

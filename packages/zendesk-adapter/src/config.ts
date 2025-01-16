@@ -12,12 +12,15 @@ import { client as clientUtils, config as configUtils, definitions, elements } f
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
+  CONVERSATION_BOT,
   BRAND_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   EVERYONE_USER_TYPE,
   SECTION_ORDER_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
+  BOT_BUILDER_ANSWER,
+  BOT_BUILDER_NODE,
 } from './constants'
 import {
   fixerNames,
@@ -151,19 +154,19 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  bot_builder_flow: {
+  [CONVERSATION_BOT]: {
     transformation: {
       // This is added as the deprecated filter for references (referencedInstanceNamesFilterCreatorDeprecated) looks only in this config for the referenced idFields
       idFields: ['&brandId', 'name'],
     },
   },
-  bot_builder_answer: {
+  [BOT_BUILDER_ANSWER]: {
     transformation: {
       idFields: ['name'],
       extendsParentId: true,
     },
   },
-  bot_builder_node: {
+  [BOT_BUILDER_NODE]: {
     transformation: {
       idFields: ['id'],
       extendsParentId: true,
@@ -2764,7 +2767,7 @@ export const SUPPORTED_TYPES = {
   // tags are included in supportedTypes so that they can be easily omitted, but are fetched separately
   tag: ['tags'],
   custom_object: ['custom_objects'],
-  bot_builder_flow: ['bot_builder_flow'],
+  [CONVERSATION_BOT]: [CONVERSATION_BOT],
 }
 
 // Types in Zendesk Guide which relate to a certain brand
@@ -2812,7 +2815,6 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     resolveOrganizationIDs: false,
     resolveUserIDs: true,
     includeAuditDetails: false,
-    addAlias: true,
     handleIdenticalAttachmentConflicts: false,
     omitInactive: {
       default: OMIT_INACTIVE_DEFAULT,
@@ -2982,7 +2984,7 @@ const OmitInactiveType = createMatchingObjectType<OmitInactiveConfig>({
 
 export type ChangeValidatorName =
   | 'deployTypesNotSupported'
-  | 'createCheckDeploymentBasedOnConfig'
+  | 'createCheckDeploymentBasedOnDefinitions'
   | 'accountSettings'
   | 'emptyCustomFieldOptions'
   | 'emptyVariants'
@@ -3063,7 +3065,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   elemID: new ElemID(ZENDESK, 'changeValidatorConfig'),
   fields: {
     deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
-    createCheckDeploymentBasedOnConfig: { refType: BuiltinTypes.BOOLEAN },
+    createCheckDeploymentBasedOnDefinitions: { refType: BuiltinTypes.BOOLEAN },
     accountSettings: { refType: BuiltinTypes.BOOLEAN },
     emptyCustomFieldOptions: { refType: BuiltinTypes.BOOLEAN },
     emptyVariants: { refType: BuiltinTypes.BOOLEAN },
@@ -3158,6 +3160,28 @@ const fixerConfigType = createMatchingObjectType<Partial<ZendeskFixElementsConfi
   },
 })
 
+type ZendeskFetchCriteria = {
+  name?: string
+  key?: string
+  raw_title?: string
+  title?: string
+  type?: string
+}
+
+const zendeskFetchCriteriaType = createMatchingObjectType<ZendeskFetchCriteria>({
+  elemID: new ElemID(ZENDESK, 'FetchFilters'),
+  fields: {
+    name: { refType: BuiltinTypes.STRING },
+    key: { refType: BuiltinTypes.STRING },
+    raw_title: { refType: BuiltinTypes.STRING },
+    title: { refType: BuiltinTypes.STRING },
+    type: { refType: BuiltinTypes.STRING },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
@@ -3166,12 +3190,12 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
     },
     [FETCH_CONFIG]: {
       refType: definitions.createUserFetchConfigType({
+        fetchCriteriaType: zendeskFetchCriteriaType,
         adapterName: ZENDESK,
         additionalFields: {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           resolveUserIDs: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
-          addAlias: { refType: BuiltinTypes.BOOLEAN },
           handleIdenticalAttachmentConflicts: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
@@ -3215,7 +3239,6 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.resolveOrganizationIDs`,
       `${FETCH_CONFIG}.resolveUserIDs`,
       `${FETCH_CONFIG}.includeAuditDetails`,
-      `${FETCH_CONFIG}.addAlias`,
       `${FETCH_CONFIG}.handleIdenticalAttachmentConflicts`,
       `${FETCH_CONFIG}.extractReferencesFromFreeText`,
       `${FETCH_CONFIG}.convertJsonIdsToReferences`,

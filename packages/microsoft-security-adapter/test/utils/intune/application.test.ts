@@ -6,8 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { APPLICATION_TYPE_NAME } from '../../../src/constants/intune'
+import { intuneConstants } from '../../../src/constants'
 import { odataType, intuneUtils } from '../../../src/utils'
+
+const { APPLICATION_TYPE_NAME } = intuneConstants.TOP_LEVEL_TYPES
 
 const { getAdjustedOdataTypeFieldName } = odataType
 const { isManagedGooglePlayApp, isAndroidEnterpriseSystemApp } = intuneUtils.application

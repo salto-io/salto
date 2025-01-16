@@ -697,6 +697,7 @@ export default class SalesforceClient implements ISalesforceClient {
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = await this.retryOnBadResponse(() => this.conn.metadata.describe())
+    log.trace('listMetadataTypes result: %s', inspectValue(describeResult, { maxArrayLength: null }))
     this.orgNamespace = describeResult.organizationNamespace
     log.debug('org namespace: %s', this.orgNamespace)
     return flatValues(describeResult.metadataObjects)

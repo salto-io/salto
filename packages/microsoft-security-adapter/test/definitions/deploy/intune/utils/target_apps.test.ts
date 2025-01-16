@@ -10,7 +10,9 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { definitions } from '@salto-io/adapter-components'
 import { targetApps } from '../../../../../src/definitions/deploy/intune/utils'
 import { contextMock } from '../../../../mocks'
-import { APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME } from '../../../../../src/constants/intune'
+import { intuneConstants } from '../../../../../src/constants'
+
+const { APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME } = intuneConstants.TOP_LEVEL_TYPES
 
 describe('apps configuration definition utils', () => {
   const applicationConfigurationType = new ObjectType({

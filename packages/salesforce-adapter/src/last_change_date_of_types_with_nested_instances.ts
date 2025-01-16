@@ -81,7 +81,9 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
   metadataQuery,
   metadataTypeInfos,
 }: GetLastChangeDateOfTypesWithNestedInstancesParams): Promise<LastChangeDateOfTypesWithNestedInstances> => {
-  const knownTypes: Set<string> = new Set(metadataTypeInfos.map(({ xmlName }) => xmlName))
+  const knownTypes: Set<string> = new Set(
+    metadataTypeInfos.flatMap(({ xmlName, childXmlNames }) => (childXmlNames ?? []).concat(xmlName)),
+  )
   const lastChangeDateOfTypeWithNestedInstancesPerParent = async (
     type: TypeWithNestedInstancesPerParent,
     relatedTypes: types.NonEmptyArray<string>,

@@ -9,6 +9,7 @@ import _, { isString } from 'lodash'
 import {
   AdapterOperations,
   Change,
+  ChangeGroup,
   DeployModifiers,
   DeployOptions,
   DeployResult,
@@ -57,7 +58,7 @@ import {
 } from './config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
-  BOT_BUILDER_FLOW,
+  CONVERSATION_BOT,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
@@ -113,6 +114,7 @@ import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
 import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
+import defaultDeployDefinitionsFilter from './filters/default_deploy_definitions'
 import commonFilters from './filters/common'
 import handleTemplateExpressionFilter from './filters/handle_template_expressions'
 import handleAppInstallationsFilter from './filters/handle_app_installations'
@@ -146,7 +148,7 @@ import hideAccountFeatures from './filters/hide_account_features'
 import auditTimeFilter from './filters/audit_logs'
 import sideConversationsFilter from './filters/side_conversation'
 import { isCurrentUserResponse } from './user_utils'
-import addAliasFilter from './filters/add_alias'
+import addRemainingAliasFilter from './filters/add_alias'
 import addRecurseIntoFieldFilter from './filters/add_recurse_into_field'
 import macroFilter from './filters/macro'
 import customRoleDeployFilter from './filters/custom_role_deploy'
@@ -162,12 +164,13 @@ import customObjectFieldOptionsFilter from './filters/custom_field_options/custo
 import botBuilderArrangePaths from './filters/bot_builder_arrange_paths'
 import { createFixElementFunctions } from './fix_elements'
 import guideThemeSettingFilter from './filters/guide_theme_settings'
-import { ZendeskFetchOptions } from './definitions/types'
+import { Options } from './definitions/types'
 import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
 import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
 import ZendeskGuideClient from './client/guide_client'
+import { createDeployDefinitions } from './definitions/deploy/deploy'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -214,8 +217,6 @@ export const DEFAULT_FILTERS = [
   organizationsFilter,
   tagsFilter,
   localeFilter,
-  // supportAddress should run before referencedIdFieldsFilter
-  supportAddress,
   customStatus,
   guideAddBrandToArticleTranslation,
   macroFilter,
@@ -246,6 +247,8 @@ export const DEFAULT_FILTERS = [
   // fieldReferencesFilter should be after:
   // usersFilter, macroAttachmentsFilter, tagsFilter, guideLocalesFilter, customObjectFilter, customObjectFieldFilter
   fieldReferencesFilter,
+  // supportAddress should run before referencedIdFieldsFilter and after fieldReferencesFilter
+  supportAddress,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appInstallationsFilter,
@@ -274,14 +277,16 @@ export const DEFAULT_FILTERS = [
   deployTriggerSkills,
   guideThemeFilter, // fetches a lot of data, so should be after omitCollisionFilter to remove theme collisions
   guideThemeSettingFilter, // needs to be after guideThemeFilter as it depends on successful theme fetches
-  addAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter
+  addRemainingAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter
   guideArrangePaths,
   botBuilderArrangePaths, // should run after fieldReferencesFilter
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   addImportantValuesFilter,
-  // defaultDeployFilter should be last!
+  // defaultDeployFilter and defaultDeployDefinitionsFilter should be last!
   defaultDeployFilter,
+  // This catches types we moved to the new infra definitions
+  defaultDeployDefinitionsFilter,
 ]
 
 const SKIP_RESOLVE_TYPE_NAMES = [
@@ -374,7 +379,7 @@ const getGuideElements = async ({
 }: {
   brandsList: InstanceElement[]
   brandToPaginator: Record<string, clientUtils.Paginator>
-  brandFetchDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
+  brandFetchDefinitions: definitionsUtils.RequiredDefinitions<Options>
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
@@ -485,19 +490,17 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
-  private adapterDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
-  private fetchSupportDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
+  private adapterDefinitions: definitionsUtils.RequiredDefinitions<Options>
+  private fetchSupportDefinitions: definitionsUtils.RequiredDefinitions<Options>
   private accountName?: string
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
     brandIdToClient,
-    definitions,
   }: {
     filterRunnerClient?: ZendeskClient
     paginator?: clientUtils.Paginator
     brandIdToClient?: BrandIdToClient
-    definitions?: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
   }) => Promise<Required<Filter>>
 
   public constructor({
@@ -549,6 +552,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           userElemID: this.userConfig.fetch.elemID,
           fetchConfig: createFetchDefinitions({ baseUrl: this.client.getUrl().href }),
         }),
+        deploy: createDeployDefinitions(),
       },
       this.accountName,
     )
@@ -573,7 +577,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
     const fetchConfig = this.userConfig[FETCH_CONFIG]
     if (fetchConfig.fetchBotBuilder === false) {
-      fetchConfig.exclude.push({ type: BOT_BUILDER_FLOW })
+      fetchConfig.exclude.push({ type: CONVERSATION_BOT })
     }
     this.fetchQuery = elementUtils.query.createElementQuery(fetchConfig, fetchCriteria)
 
@@ -725,19 +729,21 @@ export default class ZendeskAdapter implements AdapterOperations {
         'brand',
       ])
       this.guideClient = new ZendeskGuideClient(brandClients)
-      const client = createClientDefinitions({
-        main: this.client,
-        guide: this.guideClient,
-      })
       const guideFetchDef = definitionsUtils.mergeWithUserElemIDDefinitions({
         userElemID: _.pick(this.userConfig.fetch.elemID, typesToPick) as ZendeskFetchConfig['elemID'],
         fetchConfig: createFetchDefinitions({ typesToPick, baseUrl: this.client.getUrl().href }),
       })
-      const guideDefinitions = {
-        clients: client,
-        pagination: PAGINATION,
-        fetch: guideFetchDef,
-      }
+      const guideDefinitions = definitionsUtils.mergeDefinitionsWithOverrides(
+        {
+          clients: createClientDefinitions({
+            main: this.client,
+            guide: this.guideClient,
+          }),
+          pagination: PAGINATION,
+          fetch: guideFetchDef,
+        },
+        this.accountName,
+      )
 
       const zendeskGuideElements = await getGuideElements({
         brandsList,
@@ -860,7 +866,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     return this.brandsList
   }
 
-  private async deployGuideChanges(guideResolvedChanges: Change<InstanceElement>[]): Promise<DeployResult[]> {
+  private async deployGuideChanges(
+    guideResolvedChanges: Change<InstanceElement>[],
+    changeGroup: ChangeGroup,
+  ): Promise<DeployResult[]> {
     if (_.isEmpty(guideResolvedChanges)) {
       return []
     }
@@ -891,7 +900,10 @@ export default class ZendeskAdapter implements AdapterOperations {
             }),
           })
           await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
-          const { deployResult: brandDeployResults } = await brandRunner.deploy(subdomainToGuideChanges[subdomain])
+          const { deployResult: brandDeployResults } = await brandRunner.deploy(
+            subdomainToGuideChanges[subdomain],
+            changeGroup,
+          )
           const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
           try {
             await brandRunner.onDeploy(guideChangesBeforeRestore)
@@ -946,13 +958,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       .map(async change =>
         SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
           ? change
-          : resolveChangeElement(
-              change,
-              lookupFunc,
-              async (element, getLookUpName, elementsSource) =>
-                resolveValues(element, getLookUpName, elementsSource, true),
-              this.elementsSource,
-            ),
+          : resolveChangeElement(change, lookupFunc, resolveValues, this.elementsSource),
       )
       .toArray()
     const [guideResolvedChanges, supportResolvedChanges] = _.partition(resolvedChanges, change =>
@@ -970,7 +976,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         errors: [e],
       }
     }
-    const { deployResult } = await runner.deploy(supportResolvedChanges)
+    const { deployResult } = await runner.deploy(supportResolvedChanges, changeGroup)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     try {
       await runner.onDeploy(appliedChangesBeforeRestore)
@@ -981,7 +987,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       saltoErrors.push(e)
     }
 
-    const guideDeployResults = await this.deployGuideChanges(guideResolvedChanges)
+    const guideDeployResults = await this.deployGuideChanges(guideResolvedChanges, changeGroup)
     const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
       guideDeployResults.flatMap(result => result.appliedChanges),
     )
@@ -1003,7 +1009,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         config: this.userConfig,
-        apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
+        definitions: this.adapterDefinitions,
+        oldApiDefsConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: [

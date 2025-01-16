@@ -10,7 +10,11 @@ import { entraConstants } from '../../constants'
 import { mapMemberRefToChangeData } from '../shared'
 import { deployArrayFieldsFilterCreator } from '../shared/array_fields_deployment'
 
-const { ADMINISTRATIVE_UNIT_TYPE_NAME, MEMBERS_FIELD_NAME, ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME } = entraConstants
+const {
+  TOP_LEVEL_TYPES: { ADMINISTRATIVE_UNIT_TYPE_NAME },
+  MEMBERS_FIELD_NAME,
+  ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME,
+} = entraConstants
 
 export const deployAdministrativeUnitMembersFilter = deployArrayFieldsFilterCreator({
   topLevelTypeName: ADMINISTRATIVE_UNIT_TYPE_NAME,

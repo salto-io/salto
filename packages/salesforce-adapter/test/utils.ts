@@ -398,7 +398,6 @@ export const buildFilterContext = ({
     customReferencesSettings,
   }),
   elementsSource: buildElementsSourceFromElements([]),
-  enumFieldPermissions: false,
   flsProfiles: [constants.ADMIN_PROFILE],
 })
 

@@ -13,57 +13,65 @@ import { entraConstants, PARENT_ID_FIELD_NAME } from '../../../constants'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
 import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shared/defaults'
-import {
-  adjustEntitiesWithExpandedMembers,
-  createDefinitionForAppRoleAssignment,
-  addParentIdToAppRoles,
-  adjustApplication,
-} from './utils'
-import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
+import { adjustEntitiesWithExpandedMembers, createDefinitionForAppRoleAssignment, adjustApplication } from './utils'
+import { createCustomizationsWithBasePathForFetch, addParentIdToStandaloneFields } from '../shared/utils'
 
 const {
+  TOP_LEVEL_TYPES: {
+    OAUTH2_PERMISSION_GRANT_TYPE_NAME,
+    SERVICE_PRINCIPAL_TYPE_NAME,
+    CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
+    APPLICATION_TYPE_NAME,
+    GROUP_TYPE_NAME,
+    LIFE_CYCLE_POLICY_TYPE_NAME,
+    ROLE_DEFINITION_TYPE_NAME,
+    AUTHENTICATION_METHOD_POLICY_TYPE_NAME,
+    AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME,
+    ADMINISTRATIVE_UNIT_TYPE_NAME,
+    CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
+    DIRECTORY_ROLE_TYPE_NAME,
+    DIRECTORY_ROLE_TEMPLATE_TYPE_NAME,
+    CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME,
+    CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME,
+    DOMAIN_TYPE_NAME,
+    PERMISSION_GRANT_POLICY_TYPE_NAME,
+    APP_ROLE_TYPE_NAME,
+    OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
+  },
   SERVICE_BASE_URL,
   SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_TYPE_NAME,
   DELEGATED_PERMISSION_CLASSIFICATION_TYPE_NAME,
   GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME,
-  OAUTH2_PERMISSION_GRANT_TYPE_NAME,
-  SERVICE_PRINCIPAL_TYPE_NAME,
-  CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
-  APPLICATION_TYPE_NAME,
-  GROUP_TYPE_NAME,
   APP_ROLE_ASSIGNMENT_FIELD_NAME,
   GROUP_LIFE_CYCLE_POLICY_FIELD_NAME,
   GROUP_LIFE_CYCLE_POLICY_TYPE_NAME,
-  LIFE_CYCLE_POLICY_TYPE_NAME,
   GROUP_ADDITIONAL_DATA_FIELD_NAME,
   GROUP_ADDITIONAL_DATA_TYPE_NAME,
-  ROLE_DEFINITION_TYPE_NAME,
   AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME,
-  AUTHENTICATION_METHOD_POLICY_TYPE_NAME,
   AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME,
   APP_ROLES_FIELD_NAME,
-  AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME,
-  ADMINISTRATIVE_UNIT_TYPE_NAME,
-  CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
-  DIRECTORY_ROLE_TYPE_NAME,
-  DIRECTORY_ROLE_TEMPLATE_TYPE_NAME,
   DELEGATED_PERMISSION_CLASSIFICATIONS_FIELD_NAME,
-  CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME,
-  CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME,
   CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_FIELD_NAME,
   DOMAIN_NAME_REFERENCES_FIELD_NAME,
   DOMAIN_NAME_REFERENCE_TYPE_NAME,
-  DOMAIN_TYPE_NAME,
-  PERMISSION_GRANT_POLICY_TYPE_NAME,
-  APP_ROLE_TYPE_NAME,
-  CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
   AUTHENTICATION_STRENGTH_PATH,
+  APPLICATION_API_TYPE_NAME,
+  CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
+  OAUTH2_PERMISSION_SCOPES_FIELD_NAME,
 } = entraConstants
 
-const APP_ROLES_FIELD_CUSTOMIZATIONS = {
+const APP_ROLES_STANDALONE_DEFINITION = {
   standalone: {
     typeName: APP_ROLE_TYPE_NAME,
+    nestPathUnderParent: true,
+    referenceFromParent: false,
+  },
+}
+
+const OAUTH2_PERMISSION_SCOPE_STANDALONE_DEFINITION = {
+  standalone: {
+    typeName: OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
     nestPathUnderParent: true,
     referenceFromParent: false,
   },
@@ -262,7 +270,19 @@ const graphV1Customizations: FetchCustomizations = {
         appId: {
           hide: true,
         },
-        [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+        [APP_ROLES_FIELD_NAME]: APP_ROLES_STANDALONE_DEFINITION,
+        // This is a workaround for SALTO-7146
+        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_STANDALONE_DEFINITION,
+      },
+    },
+  },
+  [APPLICATION_API_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      fieldCustomizations: {
+        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_STANDALONE_DEFINITION,
       },
     },
   },
@@ -283,7 +303,6 @@ const graphV1Customizations: FetchCustomizations = {
             'disabledByMicrosoftStatus',
             'homepage',
             'info',
-            'oauth2PermissionScopes',
             'keyCredentials',
             'passwordCredentials',
             'tokenEncryptionKeyId',
@@ -301,7 +320,11 @@ const graphV1Customizations: FetchCustomizations = {
             return {
               value: {
                 ...value,
-                [APP_ROLES_FIELD_NAME]: addParentIdToAppRoles(value),
+                [APP_ROLES_FIELD_NAME]: addParentIdToStandaloneFields({ fieldPath: [APP_ROLES_FIELD_NAME], value }),
+                [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: addParentIdToStandaloneFields({
+                  fieldPath: [OAUTH2_PERMISSION_SCOPES_FIELD_NAME],
+                  value,
+                }),
               },
             }
           },
@@ -346,7 +369,9 @@ const graphV1Customizations: FetchCustomizations = {
             referenceFromParent: false,
           },
         },
-        [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+        [APP_ROLES_FIELD_NAME]: APP_ROLES_STANDALONE_DEFINITION,
+        // This is a workaround for SALTO-7146
+        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_STANDALONE_DEFINITION,
         [APP_ROLE_ASSIGNMENT_FIELD_NAME]: {
           standalone: {
             typeName: SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
@@ -374,6 +399,23 @@ const graphV1Customizations: FetchCustomizations = {
           extendsParent: true,
           parts: [NAME_ID_FIELD, { fieldName: 'value' }],
         },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [OAUTH2_PERMISSION_SCOPE_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+      serviceIDFields: [PARENT_ID_FIELD_NAME, 'id'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          extendsParent: true,
+          parts: [{ fieldName: 'value' }],
+        },
+        alias: { aliasComponents: [NAME_ID_FIELD] },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },

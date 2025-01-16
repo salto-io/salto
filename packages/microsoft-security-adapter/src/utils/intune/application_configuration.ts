@@ -13,8 +13,11 @@ import { definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { intuneConstants } from '../../constants'
 
-const { APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME, PAYLOAD_JSON_FIELD_NAME, ENCODED_SETTING_XML_FIELD_NAME } =
-  intuneConstants
+const {
+  TOP_LEVEL_TYPES: { APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME },
+  PAYLOAD_JSON_FIELD_NAME,
+  ENCODED_SETTING_XML_FIELD_NAME,
+} = intuneConstants
 
 const log = logger(module)
 

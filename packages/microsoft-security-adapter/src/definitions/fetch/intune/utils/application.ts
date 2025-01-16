@@ -10,13 +10,18 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { APP_IDENTIFIER_FIELD_NAME, APPLICATION_TYPE_NAME, PACKAGE_ID_FIELD_NAME } from '../../../../constants/intune'
+import { intuneConstants } from '../../../../constants'
 import { NAME_ID_FIELD } from '../../shared/defaults'
 import { odataType } from '../../../../utils/shared'
 import { AdjustFunctionSingle } from '../../shared/types'
 import { ExtractScriptParams, extractStaticFileFromBinaryScript } from './script_content'
 
 const log = logger(module)
+const {
+  TOP_LEVEL_TYPES: { APPLICATION_TYPE_NAME },
+  APP_IDENTIFIER_FIELD_NAME,
+  PACKAGE_ID_FIELD_NAME,
+} = intuneConstants
 
 export const APPLICATION_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
   uploadState: { omit: true },

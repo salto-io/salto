@@ -7,10 +7,10 @@
  */
 import _ from 'lodash'
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
-import { ZendeskFetchOptions } from '../types'
+import { Options } from '../types'
 import {
   BOT_BUILDER_ANSWER,
-  BOT_BUILDER_FLOW,
+  CONVERSATION_BOT,
   BOT_BUILDER_NODE,
   BUSINESS_HOUR_SCHEDULE_HOLIDAY,
   EVERYONE_USER_TYPE,
@@ -43,10 +43,7 @@ const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFiel
   extended_input_schema: { omit: true },
 }
 
-const createCustomizations = (): Record<
-  string,
-  definitions.fetch.InstanceFetchApiDefinitions<ZendeskFetchOptions>
-> => ({
+const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
   group: {
     requests: [
       {
@@ -665,7 +662,7 @@ const createCustomizations = (): Record<
         alias: { aliasComponents: [{ fieldName: 'filename' }] },
       },
       fieldCustomizations: {
-        id: { hide: true },
+        id: { hide: true, fieldType: 'number' },
         filename: { fieldType: 'string' },
         contentType: { fieldType: 'string' },
         content: { fieldType: 'string' },
@@ -1578,7 +1575,7 @@ const createCustomizations = (): Record<
         alias: { aliasComponents: [{ fieldName: 'name' }] },
       },
       fieldCustomizations: {
-        id: { hide: true },
+        id: { hide: true }, // id is a string
         name: { fieldType: 'string' },
       },
     },
@@ -2096,7 +2093,7 @@ const createCustomizations = (): Record<
     },
   },
 
-  [BOT_BUILDER_FLOW]: {
+  [CONVERSATION_BOT]: {
     requests: [
       {
         endpoint: {
@@ -2118,9 +2115,21 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'brandId', isReference: true }, { fieldName: 'name' }] },
         path: { pathParts: [{ parts: [{ fieldName: 'brandId', isReference: true }, { fieldName: 'name' }] }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: 'brandId',
+              referenceFieldName: '_alias',
+            },
+            { fieldName: 'name' },
+          ],
+        },
+        serviceUrl: { path: '/admin/channels/ai-agents-automation/ai-agents/conversation-bots/{id}/insights' },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: {
         id: { hide: true },
+        brandId: { fieldType: 'string' },
         subflows: {
           standalone: {
             typeName: BOT_BUILDER_ANSWER,
@@ -2140,6 +2149,13 @@ const createCustomizations = (): Record<
         path: {
           pathParts: [{ parts: DEFAULT_ID_PARTS, extendsParent: true }],
         },
+        alias: {
+          aliasComponents: DEFAULT_ID_PARTS,
+        },
+        serviceUrl: {
+          path: '/admin/channels/ai-agents-automation/ai-agents/conversation-bots/{_parent.0.id}/answers/{id}/canvas',
+        },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: {
         id: { hide: true },
@@ -2160,6 +2176,16 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'id' }], extendsParent: true },
         path: { pathParts: [{ parts: [{ fieldName: 'id' }], extendsParent: true }] },
+        alias: {
+          aliasComponents: [
+            {
+              fieldName: '_parent.0',
+              referenceFieldName: '_alias',
+            },
+            { fieldName: 'targetType' },
+          ],
+        },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: {
         externalId: { fieldType: 'string', hide: true },
@@ -2176,7 +2202,7 @@ export const createFetchDefinitions = ({
   typesToOmit?: string[]
   typesToPick?: string[]
   baseUrl?: string
-}): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => {
+}): definitions.fetch.FetchApiDefinitions<Options> => {
   const initialCustomizations = createCustomizations()
   const withoutOmitted = typesToOmit !== undefined ? _.omit(initialCustomizations, typesToOmit) : initialCustomizations
   const finalCustomizations = typesToPick !== undefined ? _.pick(withoutOmitted, typesToPick) : withoutOmitted

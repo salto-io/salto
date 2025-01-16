@@ -9,6 +9,7 @@ import { Element, InstanceElement, ObjectType, toChange } from '@salto-io/adapte
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { calculatePatch, initFolder, isInitializedFolder, syncWorkspaceToFolder } from '@salto-io/core'
 import { merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
+import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import * as mocks from '../mocks'
 import { applyPatchAction, syncWorkspaceToFolderAction } from '../../src/commands/adapter_format'
 import { CliExitCode } from '../../src/types'
@@ -24,10 +25,19 @@ jest.mock('@salto-io/core', () => {
   }
 })
 
+jest.mock('@salto-io/local-workspace', () => {
+  const actual = jest.requireActual('@salto-io/local-workspace')
+  return {
+    ...actual,
+    loadLocalWorkspace: jest.fn().mockImplementation(actual.loadLocalWorkspace),
+  }
+})
+
 const mockCalculatePatch = calculatePatch as jest.MockedFunction<typeof calculatePatch>
 const mockSyncWorkspaceToFolder = syncWorkspaceToFolder as jest.MockedFunction<typeof syncWorkspaceToFolder>
 const mockIsInitializedFolder = isInitializedFolder as jest.MockedFunction<typeof isInitializedFolder>
 const mockInitFolder = initFolder as jest.MockedFunction<typeof initFolder>
+const mockLoadLocalWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
 
 describe('apply-patch command', () => {
   const commandName = 'apply-patch'
@@ -35,6 +45,8 @@ describe('apply-patch command', () => {
   let baseElements: Element[]
   let cliCommandArgs: mocks.MockCommandArgs
   beforeEach(async () => {
+    jest.resetAllMocks()
+
     baseElements = mocks.elements()
     await updateElementsWithAlternativeAccount(baseElements, 'salesforce', 'salto')
 
@@ -104,6 +116,105 @@ describe('apply-patch command', () => {
       const instFromState = await workspace.state('env1').get(updatedInstance.elemID)
       expect(instFromState.value).toEqual(originalInstance.value)
       expect(await workspace.state('env1').has(newInstance.elemID)).toBeFalsy()
+    })
+  })
+  describe('when there are nacl workspaces provided with the folders', () => {
+    let exitCode: CliExitCode
+    let originalInstance: InstanceElement
+    let updatedInstance: InstanceElement
+    let newInstance: InstanceElement
+    let mockToWorkspace: mocks.MockWorkspace
+    let mockFromWorkspace: mocks.MockWorkspace
+
+    beforeEach(async () => {
+      const type = baseElements[3] as ObjectType
+      originalInstance = baseElements[4] as InstanceElement
+      updatedInstance = originalInstance.clone()
+      updatedInstance.value.newVal = 'asd'
+      newInstance = new InstanceElement('new', type, { val: 1 }, ['path'])
+      const modifyInstanceChanges = detailedCompare(originalInstance, updatedInstance)
+      const baseChange = toChange({ after: newInstance })
+      const additionChange = {
+        ...baseChange,
+        id: newInstance.elemID,
+        baseChange,
+      }
+      mockCalculatePatch.mockResolvedValue({
+        changes: [
+          ...modifyInstanceChanges.map(c => ({ change: c, serviceChanges: [c] })),
+          { change: additionChange, serviceChanges: [additionChange] },
+        ],
+        mergeErrors: [],
+        fetchErrors: [],
+        success: true,
+        updatedConfig: {},
+        partiallyFetchedAccounts: new Set(['salesforce']),
+      })
+
+      mockFromWorkspace = mocks.mockWorkspace({})
+      mockToWorkspace = mocks.mockWorkspace({})
+      mockLoadLocalWorkspace.mockResolvedValueOnce(mockToWorkspace).mockResolvedValueOnce(mockFromWorkspace)
+
+      exitCode = await applyPatchAction({
+        ...cliCommandArgs,
+        input: {
+          fromDir: 'a',
+          fromWorkspaceDir: 'aWorkspaceDir',
+          toDir: 'b',
+          toWorkspaceDir: 'bWorkspaceDir',
+          targetEnvs: ['env1', 'env2'],
+          accountName: 'salesforce',
+          mode: 'default',
+        },
+        workspace,
+      })
+    })
+    it('should pass loaded workspaces to calculatePath', () => {
+      expect(mockCalculatePatch).toHaveBeenCalledWith(
+        expect.objectContaining({ fromWorkspace: mockFromWorkspace, toWorkspace: mockToWorkspace }),
+      )
+    })
+    it('should flush the workspace and succeed', () => {
+      expect(workspace.flush).toHaveBeenCalled()
+      expect(exitCode).toEqual(CliExitCode.Success)
+    })
+  })
+  describe('when there are nacl invalid workspaces provieded with the folders', () => {
+    it('should fail if first workspace is invalid', async () => {
+      mockLoadLocalWorkspace.mockRejectedValueOnce(new Error('Error!'))
+      const exitCode = await applyPatchAction({
+        ...cliCommandArgs,
+        input: {
+          fromDir: 'a',
+          fromWorkspaceDir: 'aWorkspaceDir',
+          toDir: 'b',
+          toWorkspaceDir: 'bWorkspaceDir',
+          targetEnvs: ['env1', 'env2'],
+          accountName: 'salesforce',
+          mode: 'default',
+        },
+        workspace,
+      })
+      expect(exitCode).toEqual(CliExitCode.AppError)
+      expect(workspace.flush).not.toHaveBeenCalled()
+    })
+    it('should fail if second workspace is invalid', async () => {
+      mockLoadLocalWorkspace.mockRejectedValueOnce(new Error('Error!')).mockResolvedValueOnce(mocks.mockWorkspace({}))
+      const exitCode = await applyPatchAction({
+        ...cliCommandArgs,
+        input: {
+          fromDir: 'a',
+          fromWorkspaceDir: 'aWorkspaceDir',
+          toDir: 'b',
+          toWorkspaceDir: 'bWorkspaceDir',
+          targetEnvs: ['env1', 'env2'],
+          accountName: 'salesforce',
+          mode: 'default',
+        },
+        workspace,
+      })
+      expect(exitCode).toEqual(CliExitCode.AppError)
+      expect(workspace.flush).not.toHaveBeenCalled()
     })
   })
   describe('when there is no difference between the folders', () => {
@@ -350,6 +461,51 @@ describe('sync-to-workspace command', () => {
     })
     it('should return non-success exit code', () => {
       expect(result).toEqual(CliExitCode.AppError)
+    })
+  })
+
+  describe('when toWorkspaceDir is provided but workspace cannot be loaded', () => {
+    let result: CliExitCode
+    beforeEach(async () => {
+      mockIsInitializedFolder.mockResolvedValueOnce({ result: true, errors: [] })
+      mockLoadLocalWorkspace.mockRejectedValue(new Error('Failed to load workspace'))
+      result = await syncWorkspaceToFolderAction({
+        ...cliCommandArgs,
+        workspace,
+        input: {
+          accountName: 'salesforce',
+          toDir: 'someDir',
+          force: true,
+          toWorkspaceDir: 'someWorkspaceDir',
+        },
+      })
+    })
+
+    it('should return non-success exit code', () => {
+      expect(result).toEqual(CliExitCode.UserInputError)
+    })
+  })
+
+  describe('when toWorkspaceDir is provided and core sync returns without errors', () => {
+    let result: CliExitCode
+    beforeEach(async () => {
+      mockIsInitializedFolder.mockResolvedValueOnce({ result: true, errors: [] })
+      mockLoadLocalWorkspace.mockResolvedValueOnce(mocks.mockWorkspace({}))
+      mockSyncWorkspaceToFolder.mockResolvedValueOnce({ errors: [] })
+      result = await syncWorkspaceToFolderAction({
+        ...cliCommandArgs,
+        workspace,
+        input: {
+          accountName: 'salesforce',
+          toDir: 'someDir',
+          force: true,
+          toWorkspaceDir: 'someWorkspaceDir',
+        },
+      })
+    })
+
+    it('should return success exit code', () => {
+      expect(result).toEqual(CliExitCode.Success)
     })
   })
 })

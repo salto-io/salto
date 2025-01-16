@@ -75,6 +75,7 @@ import policyPrioritiesFilter, {
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import removedUserRoleAssignments from './filters/removed_user_roles_assignments'
+import brandCustomizationsFilter from './filters/brand_customizations'
 import {
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
@@ -127,6 +128,7 @@ const DEFAULT_FILTERS = [
   addAliasFilter, // TODO SALTO-5607 - move to infra
   // should run after fieldReferencesFilter and userFilter
   unorderedListsFilter,
+  brandCustomizationsFilter, // must run after fieldReferencesFilter
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,
   appDeploymentFilter,

@@ -27,6 +27,7 @@ const filterCreators: Record<string, FilterCreator> = {
       'workspace_order',
     ],
   }),
+  addAlias: filters.addAliasFilterCreator(), // should run after fieldReferencesFilter
 }
 
 export default filterCreators

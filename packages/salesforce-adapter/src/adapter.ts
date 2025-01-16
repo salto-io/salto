@@ -545,7 +545,6 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
           config: {
             unsupportedSystemFields,
             systemFields,
-            enumFieldPermissions: config.enumFieldPermissions ?? constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
             fetchProfile,
             elementsSource,
             separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
@@ -601,11 +600,11 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     const fetchParams = this.userConfig.fetch ?? {}
     this.initializeCustomListFunctions(withChangesDetection)
     const baseQuery = buildMetadataQuery({ fetchParams })
-    const metadataTypeInfosPromise = this.listMetadataTypes(baseQuery)
+    const metadataTypeInfos = await this.client.listMetadataTypes()
     const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
       client: this.client,
       metadataQuery: buildFilePropsMetadataQuery(baseQuery),
-      metadataTypeInfos: await metadataTypeInfosPromise,
+      metadataTypeInfos,
     })
     const targetedFetchInclude = fetchParams.target
       ? await getMetadataIncludeFromFetchTargets(fetchParams.target, this.elementsSource)
@@ -639,7 +638,9 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
         .filter((namedType): namedType is [string, TypeElement] => namedType[0] !== undefined),
     )
     const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
-
+    const metadataTypeInfosPromise = Promise.resolve(
+      metadataTypeInfos.filter(typeInfo => metadataQuery.isTypeMatch(typeInfo.xmlName)),
+    )
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await this.fetchTypes({
       metadataQuery,
@@ -828,10 +829,6 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
   async cancelServiceAsyncTask(input: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
     return this.client.cancelMetadataValidateOrDeployTask(input)
-  }
-
-  private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {
-    return (await this.client.listMetadataTypes()).filter(info => metadataQuery.isTypeMatch(info.xmlName))
   }
 
   private async fetchTypes({

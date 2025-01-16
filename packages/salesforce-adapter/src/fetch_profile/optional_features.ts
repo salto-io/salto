@@ -25,6 +25,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   packageVersionReference: false,
   omitTotalTrustedRequestsUsageField: false,
   supportProfileTabVisibilities: false,
+  disablePermissionsOmissions: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

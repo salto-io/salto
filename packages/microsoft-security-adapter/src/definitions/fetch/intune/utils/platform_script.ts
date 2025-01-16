@@ -15,14 +15,14 @@ import { AdjustFunctionMergeAndTransform, FetchCustomizations } from '../../shar
 import { intuneConstants } from '../../../../constants'
 import { EndpointPath } from '../../../types'
 import { SERVICE_BASE_URL } from '../../../../constants/intune'
-import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './group_assignments'
+import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './assignments'
 import { extractStaticFileFromBinaryScript } from './script_content'
 
 const log = logger(module)
 const { recursiveNestedTypeName } = fetchUtils.element
 
 const {
-  PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  TOP_LEVEL_TYPES: { PLATFORM_SCRIPT_LINUX_TYPE_NAME },
   SCRIPT_VALUE_FIELD_NAME,
   SCRIPT_CONTENT_FIELD_NAME,
   SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME,

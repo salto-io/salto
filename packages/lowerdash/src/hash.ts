@@ -8,3 +8,5 @@
 import { createHash } from 'crypto'
 
 export const toMD5 = (buffer: Buffer | string): string => createHash('md5').update(buffer).digest('hex')
+
+export const toSha1 = (input: string): string => createHash('sha1').update(input).digest('hex')

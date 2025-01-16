@@ -5,7 +5,11 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Values } from '@salto-io/adapter-api'
+import { ElemID, ReferenceExpression, StaticFile, Values } from '@salto-io/adapter-api'
+import * as path from 'path'
+import * as fs from 'fs'
+import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
+import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 export const createAutomationValues = (name: string): Values => ({
   name,
@@ -70,6 +74,150 @@ export const createAutomationValues = (name: string): Values => ({
         useLegacyRendering: false,
       },
       children: [],
+      conditions: [],
+      optimisedIds: [],
+      newComponent: false,
+    },
+    {
+      component: 'CONDITION',
+      type: 'jira.condition.container.block',
+      children: [
+        {
+          component: 'CONDITION_BLOCK',
+          type: 'jira.condition.if.block',
+          value: {
+            conditionMatchType: 'ALL',
+          },
+          children: [
+            {
+              component: 'ACTION',
+              type: 'jira.issue.outgoing.email',
+              value: {
+                from: '',
+                fromName: '',
+                replyTo: '',
+                to: [
+                  {
+                    type: 'REFERENCE',
+                    value: 'jira.Group.instance.test_deploy@b',
+                    additional: 'GROUP',
+                  },
+                ],
+                cc: [],
+                bcc: [],
+                subject: 'test1',
+                body: new StaticFile({
+                  filepath: `${JIRA}/${AUTOMATION_TYPE}/${name}.components.1.children.0.children.0.value.html`,
+                  content: fs.readFileSync(
+                    path.resolve(`${__dirname}/../../../e2e_test/stringStaticFiles/testRule1.html`),
+                  ),
+                  encoding: 'utf8',
+                }),
+                mimeType: 'text/html',
+                convertLineBreaks: true,
+              },
+              children: [],
+              conditions: [],
+              optimisedIds: [],
+              newComponent: false,
+            },
+          ],
+          conditions: [
+            {
+              component: 'CONDITION',
+              type: 'jira.user.condition',
+              value: {
+                conditions: [
+                  {
+                    field: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Reporter__user')),
+                    check: 'USER_IS',
+                    criteria: [
+                      {
+                        type: 'SMART',
+                        value: '{{issue.assignee}}',
+                      },
+                    ],
+                  },
+                ],
+                operator: 'AND',
+              },
+              children: [],
+              conditions: [],
+              optimisedIds: [],
+              newComponent: false,
+            },
+          ],
+          optimisedIds: [],
+          newComponent: false,
+        },
+        {
+          component: 'CONDITION_BLOCK',
+          type: 'jira.condition.if.block',
+          value: {
+            conditionMatchType: 'ALL',
+          },
+          children: [
+            {
+              component: 'ACTION',
+              type: 'jira.issue.outgoing.email',
+              value: {
+                from: '',
+                fromName: '',
+                replyTo: '',
+                to: [
+                  {
+                    type: 'COPY',
+                    value: 'assignee',
+                  },
+                ],
+                cc: [],
+                bcc: [],
+                subject: 'test2',
+                body: new StaticFile({
+                  filepath: `${JIRA}/${AUTOMATION_TYPE}/${name}.components.1.children.1.children.0.value.html`,
+                  content: fs.readFileSync(
+                    path.resolve(`${__dirname}/../../../e2e_test/stringStaticFiles/testRule2.html`),
+                  ),
+                  encoding: 'utf8',
+                }),
+                mimeType: 'text/html',
+                convertLineBreaks: true,
+              },
+              children: [],
+              conditions: [],
+              optimisedIds: [],
+              newComponent: false,
+            },
+          ],
+          conditions: [
+            {
+              component: 'CONDITION',
+              type: 'jira.user.condition',
+              value: {
+                conditions: [
+                  {
+                    field: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Assignee__user')),
+                    check: 'USER_IS',
+                    criteria: [
+                      {
+                        type: 'SMART',
+                        value: '{{issue.assignee}}',
+                      },
+                    ],
+                  },
+                ],
+                operator: 'AND',
+              },
+              children: [],
+              conditions: [],
+              optimisedIds: [],
+              newComponent: false,
+            },
+          ],
+          optimisedIds: [],
+          newComponent: false,
+        },
+      ],
       conditions: [],
       optimisedIds: [],
       newComponent: false,

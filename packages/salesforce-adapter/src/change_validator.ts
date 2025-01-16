@@ -16,6 +16,7 @@ import customFieldTypeValidator from './change_validators/custom_field_type'
 import standardFieldLabelValidator from './change_validators/standard_field_label'
 import mapKeysValidator from './change_validators/map_keys'
 import defaultRulesValidator from './change_validators/default_rules'
+import packageVersionValidator from './change_validators/package_version'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import omitDataValidator from './change_validators/omit_data'
 import dataChangeValidator from './change_validators/data_change'
@@ -53,6 +54,8 @@ import { getLookUpName } from './transformers/reference_mapping'
 import layoutDuplicateFields from './change_validators/layout_duplicate_fields'
 import customApplications from './change_validators/custom_applications'
 import flowReferencedElements from './change_validators/flow_referenced_elements'
+import liveChatButtonRoutingType from './change_validators/live_chat_button_routing_type'
+import flexiPageUnusedOrMissingFacets from './change_validators/flexi_page_unused_or_missing_facets'
 
 const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
 
@@ -79,6 +82,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   standardFieldLabel: () => standardFieldLabelValidator,
   mapKeys: ({ getLookupNameFunc, fetchProfile }) => mapKeysValidator(getLookupNameFunc, fetchProfile),
   defaultRules: () => defaultRulesValidator,
+  packageVersion: () => packageVersionValidator,
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,
   recordTypeDeletion: () => recordTypeDeletionValidator,
@@ -112,6 +116,8 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   layoutDuplicateFields: () => layoutDuplicateFields,
   customApplications: () => customApplications,
   flowReferencedElements: () => flowReferencedElements,
+  liveChatButtonRoutingType: () => liveChatButtonRoutingType,
+  flexiPageUnusedOrMissingFacets: () => flexiPageUnusedOrMissingFacets,
   ..._.mapValues(getDefaultChangeValidators(), validator => () => validator),
 }
 

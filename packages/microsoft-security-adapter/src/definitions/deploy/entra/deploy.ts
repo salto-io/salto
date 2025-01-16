@@ -14,40 +14,46 @@ import {
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
   getGroupLifecyclePolicyGroupModificationRequest,
-  adjustParentWithAppRolesWrapped,
 } from './utils'
 import {
   createCustomConditionCheckChangesInFields,
   createCustomizationsWithBasePathForDeploy,
   adjustWrapper,
+  omitParentIdFromPathAdjustCreator,
 } from '../shared/utils'
 
 const {
-  ADMINISTRATIVE_UNIT_TYPE_NAME,
-  APPLICATION_TYPE_NAME,
+  TOP_LEVEL_TYPES: {
+    ADMINISTRATIVE_UNIT_TYPE_NAME,
+    APPLICATION_TYPE_NAME,
+    AUTHENTICATION_METHOD_POLICY_TYPE_NAME,
+    AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME,
+    CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
+    CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
+    GROUP_TYPE_NAME,
+    SERVICE_PRINCIPAL_TYPE_NAME,
+    DIRECTORY_ROLE_TYPE_NAME,
+    ROLE_DEFINITION_TYPE_NAME,
+    OAUTH2_PERMISSION_GRANT_TYPE_NAME,
+    CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME,
+    CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME,
+    DOMAIN_TYPE_NAME,
+    LIFE_CYCLE_POLICY_TYPE_NAME,
+    APP_ROLE_TYPE_NAME,
+    OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
+  },
   AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME,
-  AUTHENTICATION_METHOD_POLICY_TYPE_NAME,
-  AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME,
-  CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
-  CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
-  GROUP_TYPE_NAME,
-  SERVICE_PRINCIPAL_TYPE_NAME,
-  DIRECTORY_ROLE_TYPE_NAME,
-  ROLE_DEFINITION_TYPE_NAME,
   DELEGATED_PERMISSION_CLASSIFICATION_TYPE_NAME,
-  OAUTH2_PERMISSION_GRANT_TYPE_NAME,
   CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_TYPE_NAME,
-  CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME,
-  CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME,
-  DOMAIN_TYPE_NAME,
-  LIFE_CYCLE_POLICY_TYPE_NAME,
   GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   GROUP_LIFE_CYCLE_POLICY_FIELD_NAME,
   ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME,
   MEMBERS_FIELD_NAME,
   DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
-  APP_ROLE_TYPE_NAME,
+  API_FIELD_NAME,
+  APP_ROLES_FIELD_NAME,
+  OAUTH2_PERMISSION_SCOPES_FIELD_NAME,
 } = entraConstants
 
 const AUTHENTICATION_STRENGTH_POLICY_DEPLOYABLE_FIELDS = ['displayName', 'description']
@@ -58,11 +64,14 @@ const SERVICE_PRINCIPAL_MODIFICATION_REQUEST: DeployRequestDefinition = {
     method: 'patch',
   },
   transformation: {
-    adjust: adjustParentWithAppRolesWrapped,
+    adjust: adjustWrapper(
+      omitParentIdFromPathAdjustCreator(APP_ROLES_FIELD_NAME),
+      omitParentIdFromPathAdjustCreator(OAUTH2_PERMISSION_SCOPES_FIELD_NAME),
+    ),
   },
 }
 
-const APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION = ['web.redirectUriSettings']
+const APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION = ['web.redirectUriSettings', 'api.preAuthorizedApplications']
 
 const APPLICATION_MODIFICATION_REQUEST: DeployRequestDefinition = {
   endpoint: {
@@ -71,7 +80,10 @@ const APPLICATION_MODIFICATION_REQUEST: DeployRequestDefinition = {
   },
   transformation: {
     omit: APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION,
-    adjust: adjustParentWithAppRolesWrapped,
+    adjust: adjustWrapper(
+      omitParentIdFromPathAdjustCreator(APP_ROLES_FIELD_NAME),
+      omitParentIdFromPathAdjustCreator(API_FIELD_NAME, OAUTH2_PERMISSION_SCOPES_FIELD_NAME),
+    ),
   },
 }
 
@@ -195,6 +207,11 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
   [APP_ROLE_TYPE_NAME]: {
     changeGroupId: deployment.grouping.groupWithFirstParent,
     // Deploying an application/servicePrincipal with its appRoles is done in a single request using the definition of the application via a filter
+    requestsByAction: {},
+  },
+  [OAUTH2_PERMISSION_SCOPE_TYPE_NAME]: {
+    changeGroupId: deployment.grouping.groupWithFirstParent,
+    // Deploying an application/servicePrincipal with its oauth2PermissionScopes is done in a single request using the definition of the application via a filter
     requestsByAction: {},
   },
   [SERVICE_PRINCIPAL_TYPE_NAME]: {

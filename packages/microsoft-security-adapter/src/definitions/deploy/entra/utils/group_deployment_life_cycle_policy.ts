@@ -13,7 +13,10 @@ import { entraConstants } from '../../../../constants'
 import { EndpointPath } from '../../../types'
 import { DeployRequestDefinition, DeployableRequestDefinition } from '../../shared/types'
 
-const { GROUP_LIFE_CYCLE_POLICY_FIELD_NAME, GROUP_TYPE_NAME } = entraConstants
+const {
+  TOP_LEVEL_TYPES: { GROUP_TYPE_NAME },
+  GROUP_LIFE_CYCLE_POLICY_FIELD_NAME,
+} = entraConstants
 
 export const getGroupLifecyclePolicyGroupModificationRequest = (action: 'add' | 'remove'): DeployRequestDefinition => ({
   endpoint: {

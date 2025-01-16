@@ -49,7 +49,7 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] },
   )
 
-  const fieldContextOptionsAndOrders = createOptionsAndOrders({
+  const { contextOptions, contextOrders } = createOptionsAndOrders({
     optionsType: findType('CustomFieldContextOption', fetchedElements),
     orderType: findType('FieldContextOptionsOrder', fetchedElements),
     contextInstance: fieldContext,
@@ -118,7 +118,8 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
       : createCloudInstances(randomString, uuid, fetchedElements)),
     [field],
     [fieldContext],
-    fieldContextOptionsAndOrders,
+    contextOptions,
+    contextOrders,
     [screen],
     [screenScheme],
     [issueTypeScreenScheme],

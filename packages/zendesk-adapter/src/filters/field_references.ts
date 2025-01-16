@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isReferenceExpression, isTemplateExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
@@ -251,7 +251,15 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     lookupIndexName: 'value',
   },
   email: {
-    serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.email : ref.value),
+    serialize: ({ ref }) => {
+      if (isInstanceElement(ref.value)) {
+        const val = ref.value.value.email
+        return isTemplateExpression(val)
+          ? val.parts.map(part => (isReferenceExpression(part) ? part.value : part)).join('')
+          : val
+      }
+      return ref.value
+    },
     lookup: val => val,
     lookupIndexName: 'email',
   },

@@ -31,7 +31,7 @@ export class MissingFunctionError implements SaltoError {
   }
 
   toString(): string {
-    return this.message
+    return this.detailedMessage
   }
 }
 

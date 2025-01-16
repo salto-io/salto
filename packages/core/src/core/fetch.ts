@@ -985,7 +985,7 @@ const createFetchChanges = async ({
 
   const errorMessages = await awu(configsMerge.errors.entries())
     .flatMap(err => err.value)
-    .map(err => err.message)
+    .map(err => err.detailedMessage)
     .toArray()
   if (errorMessages.length !== 0) {
     throw new Error(`Received configuration merge errors: ${errorMessages.join(', ')}`)

@@ -12,8 +12,9 @@ describe('Functions', () => {
     it('should show correct message and severity', () => {
       const missus = new MissingFunctionError('ZOMG')
       expect(missus.message).toEqual('Element has invalid NaCl content')
+      expect(missus.detailedMessage).toEqual("Invalid function name 'ZOMG'")
       expect(missus.severity).toEqual('Error')
-      expect(missus.toString()).toEqual(missus.message)
+      expect(missus.toString()).toEqual(missus.detailedMessage)
     })
   })
   describe('Factory', () => {

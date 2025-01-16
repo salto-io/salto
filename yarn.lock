@@ -4103,7 +4103,6 @@ __metadata:
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/object-hash": ^3.0.0
-    "@types/truncate-utf8-bytes": ^1.0.0
     "@types/wu": ^2.1.40
     domhandler: ^4.2.2
     eslint: ^9.16.0
@@ -6146,13 +6145,6 @@ __metadata:
   version: 4.0.0
   resolution: "@types/tough-cookie@npm:4.0.0"
   checksum: 454fa8d4d64532992274ebf2ff5ea0061b0dd32a2282255a3e793f04a8b64a9c4c1f9e0f4ed83c514c852b7b604d69336c66c80de4a857cb41a81e9572981e7f
-  languageName: node
-  linkType: hard
-
-"@types/truncate-utf8-bytes@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@types/truncate-utf8-bytes@npm:1.0.0"
-  checksum: df4d452de2f0c9c0811dfd965f2a2e2ed463a3a9836d5504cad766308a40f5e9d6fa14281ab0d960690d1ff2a16dd04b6bdd78b7ff2cb99febfe71cec900d391
   languageName: node
   linkType: hard
 

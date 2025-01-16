@@ -14,6 +14,7 @@ import {
   isReferenceExpression,
   ReferenceExpression,
   StaticFile,
+  normalizeFilePathPart,
 } from '@salto-io/adapter-api'
 import {
   TemplateExtractionFunc,
@@ -22,7 +23,6 @@ import {
   getParent,
   inspectValue,
   mergeDistinctReferences,
-  normalizeFilePathPart,
   parseTagsFromHtml,
 } from '@salto-io/adapter-utils'
 import { parserUtils } from '@salto-io/parser'

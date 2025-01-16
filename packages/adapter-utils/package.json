@@ -48,7 +48,6 @@
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "@types/object-hash": "^3.0.0",
-    "@types/truncate-utf8-bytes": "^1.0.0",
     "@types/wu": "^2.1.40",
     "eslint": "^9.16.0",
     "jest": "^29.7.0",

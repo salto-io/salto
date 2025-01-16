@@ -13,6 +13,7 @@ import { hash as hashUtils } from '@salto-io/lowerdash'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement, isVariable } from './elements'
+import { normalizeFilePathPart } from './utils'
 
 export type PrimitiveValue = string | boolean | number | null | undefined
 
@@ -55,7 +56,8 @@ export class StaticFile {
   private internalContent?: Buffer
   constructor(params: StaticFileParameters) {
     this.isTemplate = params.isTemplate
-    this.filepath = path.normalize(params.filepath)
+    const filePathParts = path.parse(params.filepath)
+    this.filepath = path.normalize(`${filePathParts.dir}/${normalizeFilePathPart(filePathParts.base)}`)
     this.encoding = params.encoding ?? DEFAULT_STATIC_FILE_ENCODING
     if (this.isTemplate === true && params.encoding !== 'utf8') {
       this.encoding = 'utf8'

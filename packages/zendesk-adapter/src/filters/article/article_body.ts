@@ -23,6 +23,7 @@ import {
   StaticFile,
   TemplateExpression,
   TemplatePart,
+  normalizeFilePathPart,
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
@@ -30,7 +31,6 @@ import {
   ERROR_MESSAGES,
   extractTemplate,
   getParent,
-  normalizeFilePathPart,
   replaceTemplatesWithValues,
   resolveTemplates,
 } from '@salto-io/adapter-utils'

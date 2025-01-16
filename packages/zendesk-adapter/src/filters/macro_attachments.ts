@@ -23,15 +23,9 @@ import {
   ReferenceExpression,
   SaltoElementError,
   StaticFile,
-} from '@salto-io/adapter-api'
-import {
   normalizeFilePathPart,
-  naclCase,
-  safeJsonStringify,
-  pathNaclCase,
-  references,
-  inspectValue,
-  createSaltoElementError,
+} from '@salto-io/adapter-api'
+import { naclCase, safeJsonStringify, pathNaclCase, references, inspectValue   createSaltoElementError,
   ERROR_MESSAGES,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'

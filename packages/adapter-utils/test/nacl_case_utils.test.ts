@@ -11,7 +11,6 @@ import {
   fileNameFromUniqueName,
   invertNaclCase,
   naclCase,
-  normalizeFilePathPart,
   pathNaclCase,
   prettifyName,
 } from '../src/nacl_case_utils'
@@ -144,51 +143,6 @@ describe('naclCase utils', () => {
       })
     })
   })
-
-  describe(`${normalizeFilePathPart.name} func`, () => {
-    describe('With a short path', () => {
-      const shortPaths = ['lalala.txt', 'aבגדe.טקסט', 'noExtension']
-      it('Should remain the same', () => {
-        shortPaths.forEach(path => expect(normalizeFilePathPart(path)).toEqual(path))
-      })
-    })
-    describe('With a very long path', () => {
-      const longPathPrefix = new Array(17).fill('123456שבע0_').join('')
-      const extension = '.extension'
-      const longString = longPathPrefix.concat(extension)
-      const anotherLongString = longPathPrefix.concat('a').concat(extension)
-      it('Should return at exactly 200 chars or less', () => {
-        expect(Buffer.from(normalizeFilePathPart(longString)).byteLength).toBeLessThanOrEqual(200)
-      })
-      it('Should contain the full file extension', () => {
-        expect(normalizeFilePathPart(longString)).toContain(extension)
-      })
-      it('Should maintain difference between different strings', () => {
-        expect(normalizeFilePathPart(longString)).not.toEqual(normalizeFilePathPart(anotherLongString))
-      })
-    })
-    describe('With a very long extension', () => {
-      const extension = new Array(17).fill('1234חמש890_').join('')
-      const longString = 'aaa.'.concat(extension)
-      it('Should return 200 chars or less', () => {
-        expect(Buffer.from(normalizeFilePathPart(longString)).byteLength).toBeLessThanOrEqual(200)
-      })
-      it('Should not contain the full file extension', () => {
-        expect(normalizeFilePathPart(longString)).not.toContain(extension)
-      })
-    })
-    describe('With a short non ascii extension', () => {
-      const extension = '.סיומת'
-      const longString = new Array(17).fill('1234חמש890_').join('').concat(extension)
-      it('Should return 200 chars or less', () => {
-        expect(Buffer.from(normalizeFilePathPart(longString)).byteLength).toBeLessThanOrEqual(200)
-      })
-      it('Should not contain the full file extension', () => {
-        expect(normalizeFilePathPart(longString)).not.toContain(extension)
-      })
-    })
-  })
-
   describe(`${fileNameFromNaclCase.name} func`, () => {
     it('should return empty string for empty input', () => {
       expect(fileNameFromNaclCase('')).toEqual('')

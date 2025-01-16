@@ -22,16 +22,10 @@ import {
   SaltoError,
   StaticFile,
   isObjectType,
+  normalizeFilePathPart,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
-import {
-  naclCase,
-  safeJsonStringify,
-  getParent,
-  normalizeFilePathPart,
-  pathNaclCase,
-  inspectValue,
-} from '@salto-io/adapter-utils'
+import { naclCase, safeJsonStringify, getParent, pathNaclCase, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import FormData from 'form-data'
 import { collections } from '@salto-io/lowerdash'

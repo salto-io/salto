@@ -23,7 +23,8 @@ const createSimpleStringValue = (_context: unknown, tokens: Required<Token>[]): 
 const parseBufferToTemplateExpression = (
   buffer: Buffer,
 ): { templateExpression: TemplateExpression; errors: string[] } => {
-  const tokens = stringLexerFromString(buffer.toString())
+  const contentWithUnescapedTemplates = unescapeTemplateMarker(buffer.toString())
+  const tokens = stringLexerFromString(contentWithUnescapedTemplates)
   const context = { errors: [] as ParseError[], filename: '' }
   const value = createStringValue(context, tokens, createSimpleStringValue)
   const errors = context.errors.map(err => err.detailedMessage)

@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, isTemplateExpression } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isTemplateExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
@@ -47,6 +47,7 @@ import {
   ZendeskMissingReferenceStrategyName,
 } from './references/missing_references'
 import { ZendeskUserConfig } from '../user_config'
+import { replaceIfReferenceExpression } from './support_address'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -253,10 +254,9 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
   email: {
     serialize: ({ ref }) => {
       if (isInstanceElement(ref.value)) {
+        // the email in the support address is turned to a template expression, we need to serialize this too.
         const val = ref.value.value.email
-        return isTemplateExpression(val)
-          ? val.parts.map(part => (isReferenceExpression(part) ? part.value : part)).join('')
-          : val
+        return isTemplateExpression(val) ? val.parts.map(replaceIfReferenceExpression).join('') : val
       }
       return ref.value
     },

@@ -217,7 +217,6 @@ export const DEFAULT_FILTERS = [
   organizationsFilter,
   tagsFilter,
   localeFilter,
-
   customStatus,
   guideAddBrandToArticleTranslation,
   macroFilter,

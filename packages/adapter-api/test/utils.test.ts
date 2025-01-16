@@ -234,35 +234,35 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
       expect(await getFieldType(mockObjectType, ['someAnno', 'innerField'])).toBeUndefined()
     })
   })
-})
-describe('test error verification', () => {
-  it('should return true when given an error that has elemID', () => {
-    expect(
-      isSaltoElementError({
-        message: '',
-        severity: 'Error',
-        elemID: new ElemID(''),
-        detailedMessage: '',
-      }),
-    ).toBeTruthy()
-  })
-  it('should return false when given an error that has elemID which is undefined', () => {
-    expect(
-      isSaltoElementError({
-        message: '',
-        severity: 'Error',
-        elemID: undefined,
-        detailedMessage: '',
-      }),
-    ).toBeFalsy()
-  })
-  it('should return false when given an error that does not have elemID', () => {
-    expect(
-      isSaltoElementError({
-        message: '',
-        severity: 'Error',
-        detailedMessage: '',
-      }),
-    ).toBeFalsy()
+  describe('test error verification', () => {
+    it('should return true when given an error that has elemID', () => {
+      expect(
+        isSaltoElementError({
+          message: '',
+          severity: 'Error',
+          elemID: new ElemID(''),
+          detailedMessage: '',
+        }),
+      ).toBeTruthy()
+    })
+    it('should return false when given an error that has elemID which is undefined', () => {
+      expect(
+        isSaltoElementError({
+          message: '',
+          severity: 'Error',
+          elemID: undefined,
+          detailedMessage: '',
+        }),
+      ).toBeFalsy()
+    })
+    it('should return false when given an error that does not have elemID', () => {
+      expect(
+        isSaltoElementError({
+          message: '',
+          severity: 'Error',
+          detailedMessage: '',
+        }),
+      ).toBeFalsy()
+    })
   })
 })

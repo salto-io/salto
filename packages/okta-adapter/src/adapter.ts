@@ -194,6 +194,7 @@ export default class OktaAdapter implements AdapterOperations {
   private fixElementsFunc: FixElementsFunc
   private definitions: definitionsUtils.RequiredDefinitions<OktaOptions>
   private accountName?: string
+  private elementsSource: ReadOnlyElementsSource
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -212,6 +213,7 @@ export default class OktaAdapter implements AdapterOperations {
     this.client = client
     this.adminClient = adminClient
     this.isOAuthLogin = isOAuthLogin
+    this.elementsSource = elementsSource
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -423,7 +425,7 @@ export default class OktaAdapter implements AdapterOperations {
     const sourceChanges = _.keyBy(instanceChanges, change => getChangeData(change).elemID.getFullName())
     const runner = this.createFiltersRunner()
     const deployDefQuery = definitionsUtils.queryWithDefault(this.definitions.deploy.instances)
-    const changeResolver = createChangeElementResolver({ getLookUpName })
+    const changeResolver = createChangeElementResolver({ getLookUpName, elementSource: this.elementsSource })
     const resolvedChanges = await awu(instanceChanges)
       .map(async change =>
         deployDefQuery.query(getChangeData(change).elemID.typeName)?.referenceResolution?.when === 'early' &&

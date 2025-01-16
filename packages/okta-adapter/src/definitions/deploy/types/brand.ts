@@ -20,7 +20,7 @@ const resolveDomainReference: (ref: ReferenceExpression) => TemplatePart = ref =
   if (ref.elemID.typeName === DOMAIN_TYPE_NAME) {
     return ref.value.value.domain
   }
-  log.error('found unexpected reference for type %s, not resolving reference', ref.elemID.typeName)
+  log.warn('found unexpected reference for type %s, not resolving reference', ref.elemID.typeName)
   return ref
 }
 

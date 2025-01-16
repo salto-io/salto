@@ -13,20 +13,25 @@ import {
   TemplateExpression,
   isReferenceExpression,
   ReferenceExpression,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import {
   TemplateExtractionFunc,
   extractTemplate,
+  fileNameFromNaclCase,
   getParent,
   inspectValue,
   mergeDistinctReferences,
+  normalizeFilePathPart,
   parseTagsFromHtml,
 } from '@salto-io/adapter-utils'
+import { parserUtils } from '@salto-io/parser'
 import {
   BRAND_TYPE_NAME,
   DOMAIN_TYPE_NAME,
   EMAIL_CUSTOMIZATION_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
+  OKTA,
   SIGN_IN_PAGE_TYPE_NAME,
 } from '../constants'
 import { FilterCreator } from '../filter'
@@ -38,7 +43,7 @@ export type BrandCustomizationType =
   | typeof ERROR_PAGE_TYPE_NAME
   | typeof SIGN_IN_PAGE_TYPE_NAME
 
-const getParentBrand = (instance: InstanceElement): InstanceElement | undefined => {
+const getParentBrand = (instance: InstanceElement): InstanceElement => {
   const parent = getParent(instance)
   if (parent.elemID.typeName === BRAND_TYPE_NAME) {
     return parent
@@ -58,10 +63,6 @@ const getMatchingDomainInstance = (
 ): InstanceElement | undefined => {
   try {
     const matchingBrand = getParentBrand(instance)
-    if (!matchingBrand) {
-      log.warn('failed to extract domain from instance %s, matching brand was not found', instance.elemID.getFullName())
-      return undefined
-    }
     const brandDomains = domainByBrandElementID[matchingBrand.elemID.getFullName()]
     if (brandDomains.length > 1) {
       log.warn(
@@ -106,6 +107,13 @@ const getTemplateFromContent = ({
   return mergeDistinctReferences(content, htmlTagsAsTemplates)
 }
 
+const getContentStaticFilePath = (instance: InstanceElement): string => {
+  const {
+    elemID: { name: brandName },
+  } = getParentBrand(instance)
+  return `${OKTA}/${brandName}/${instance.elemID.typeName}/${normalizeFilePathPart(fileNameFromNaclCase(instance.elemID.name))}.html`
+}
+
 /** *
  * Processes brand email templates and page customizations to replace references in their HTML content with references to the appropriate domain.
  */
@@ -131,11 +139,21 @@ const brandCustomizationsFilter: FilterCreator = ({ config: { fetch } }) => ({
     brandCustomizations.forEach(instance => {
       const fieldName = brandCustomizationsToContentField[instance.elemID.typeName as BrandCustomizationType]
       const content = _.get(instance.value, fieldName)
+      if (!_.isString(content)) {
+        return
+      }
       const matchingDomain = getMatchingDomainInstance(instance, domainByBrandElementID)
-      if (_.isString(content) && matchingDomain !== undefined) {
+      if (matchingDomain !== undefined) {
         const template = getTemplateFromContent({ content, domain: matchingDomain })
         instance.value[fieldName] = template
       }
+      const updatedContent = instance.value[fieldName]
+      const filepath = getContentStaticFilePath(instance)
+      const contentAsStaticFile =
+        typeof updatedContent === 'string'
+          ? new StaticFile({ filepath, content: Buffer.from(updatedContent), encoding: 'utf-8' })
+          : parserUtils.templateExpressionToStaticFile(updatedContent, filepath)
+      instance.value[fieldName] = contentAsStaticFile
     })
   },
 })

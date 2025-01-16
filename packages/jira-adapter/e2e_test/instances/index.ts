@@ -117,8 +117,7 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
       ? createDataCenterInstances(randomString, fetchedElements)
       : createCloudInstances(randomString, uuid, fetchedElements)),
     [field],
-    [fieldContext],
-    contextOptions,
+    [fieldContext, ...contextOptions],
     contextOrders,
     [screen],
     [screenScheme],

@@ -7,6 +7,7 @@
  */
 import { isObjectType, Element, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { TransformFunc, transformValuesSync } from '@salto-io/adapter-utils'
+import { isFeatureEnabled } from '../fetch_profile/optional_features'
 import { FilterCreator } from '../filter'
 import { apiNameSync } from './utils'
 
@@ -64,6 +65,9 @@ export const makeFilter =
   () => ({
     name: 'removeFieldsAndValuesFilter',
     onFetch: async (elements: Element[]) => {
+      if (isFeatureEnabled('supportProfileTabVisibilities')) {
+        return
+      }
       removeValuesFromInstances(elements, typeNameToFieldRemovals)
       removeFieldsFromTypes(elements, typeNameToFieldRemovals)
     },

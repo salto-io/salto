@@ -19,6 +19,7 @@ import filterCreator from '../../src/filters/profile_instance_split'
 import { generateProfileType, defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 import mockClient from '../client'
+import { isFeatureEnabled } from '../../src/fetch_profile/optional_features'
 
 describe('Profile Instance Split filter', () => {
   describe('Map profile instances', () => {
@@ -63,6 +64,14 @@ describe('Profile Instance Split filter', () => {
             },
             fullName: 'profile1',
             userLicense: 'Salesforce Platform',
+            ...(isFeatureEnabled('supportProfileTabVisibilities')
+              ? {
+                  tabVisibilities: {
+                    app1: { application: 'app1', default: true, visible: false },
+                    app2: { application: 'app2', default: true, visible: false },
+                  },
+                }
+              : {}),
           },
           ['salesforce', 'Records', 'Profile', 'profile1'],
         ),
@@ -110,7 +119,7 @@ describe('Profile Instance Split filter', () => {
 
       it('should split each map field to its own path', () => {
         const profElements = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'profile1')
-        expect(profElements).toHaveLength(4)
+        expect(profElements).toHaveLength(isFeatureEnabled('supportProfileTabVisibilities') ? 5 : 4)
 
         const fieldsByPath = _.sortBy(
           profElements.map(e => [e.path?.join('/'), Object.keys(e.value).sort()]),
@@ -121,6 +130,9 @@ describe('Profile Instance Split filter', () => {
           ['salesforce/Records/Profile/profile1/Attributes', ['fullName', 'userLicense']],
           ['salesforce/Records/Profile/profile1/FieldPermissions', ['fieldPermissions']],
           ['salesforce/Records/Profile/profile1/LayoutAssignments', ['layoutAssignments']],
+          ...(isFeatureEnabled('supportProfileTabVisibilities')
+            ? [['salesforce/Records/Profile/profile1/TabVisibilities', ['tabVisibilities']]]
+            : []),
         ])
       })
 

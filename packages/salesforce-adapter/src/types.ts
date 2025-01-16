@@ -108,6 +108,7 @@ const OPTIONAL_FEATURES = [
   'shouldPopulateInternalIdAfterDeploy',
   'packageVersionReference',
   'omitTotalTrustedRequestsUsageField',
+  'supportProfileTabVisibilities',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',

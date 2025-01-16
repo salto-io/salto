@@ -13,10 +13,11 @@ import {
   ReferenceExpression,
   isStaticFile,
   StaticFile,
+  normalizeFilePathPart,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { getParent, naclCase, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { DAG } from '@salto-io/dag'
 import { collections } from '@salto-io/lowerdash'

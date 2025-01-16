@@ -24,15 +24,9 @@ import {
   ReferenceExpression,
   SaltoElementError,
   StaticFile,
-} from '@salto-io/adapter-api'
-import {
   normalizeFilePathPart,
-  naclCase,
-  safeJsonStringify,
-  pathNaclCase,
-  references,
-  inspectValue,
-} from '@salto-io/adapter-utils'
+} from '@salto-io/adapter-api'
+import { naclCase, safeJsonStringify, pathNaclCase, references, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils, fetch as fetchUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'

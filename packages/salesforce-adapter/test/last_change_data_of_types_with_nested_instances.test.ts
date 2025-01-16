@@ -237,7 +237,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         metadataQuery,
         metadataTypeInfos: [{ xmlName: CUSTOM_OBJECT, childXmlNames: [...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD] }],
       })
-      expect(listedTypes).toContainValues([...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD])
+      expect(listedTypes).toContainValues([CUSTOM_OBJECT, ...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD])
     })
   })
 })

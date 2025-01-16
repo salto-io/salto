@@ -297,7 +297,7 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
 
 export type ReferenceContextStrategyName =
   | 'neighborField'
-  | 'allowlistedNeighborField'
+  | 'allowListedNeighborField'
   | 'allowlistedNeighborSubject'
   | 'neighborType'
   | 'parentSubject'
@@ -314,7 +314,7 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
   // We use allow lists because there are types we don't support (such as organization or requester)
   // and they'll end up being false positives
-  allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: allowListLookupType }),
+  allowListedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: allowListLookupType }),
   allowlistedNeighborSubject: neighborContextFunc({
     contextFieldName: 'subject',
     contextValueMapper: allowListLookupType,
@@ -957,7 +957,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       parentTypes: ['trigger__conditions__all', 'trigger__conditions__any'],
     },
     serializationStrategy: 'email',
-    target: { typeContext: 'allowlistedNeighborField' },
+    target: { typeContext: 'allowListedNeighborField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
 ]
@@ -985,7 +985,7 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
       parentTypes: ['trigger__actions'],
     },
     serializationStrategy: 'idString',
-    target: { typeContext: 'allowlistedNeighborField' },
+    target: { typeContext: 'allowListedNeighborField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
 
@@ -1038,7 +1038,7 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
         'queue__definition__any',
       ],
     },
-    target: { typeContext: 'allowlistedNeighborField' },
+    target: { typeContext: 'allowListedNeighborField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
   {

@@ -7,7 +7,7 @@
  */
 
 import { ElemID } from '@salto-io/adapter-api'
-import { createSaltoElementError, createSaltoElementErrorFromError } from '../src/error'
+import { createSaltoElementError, createSaltoElementErrorFromError } from '../src/errors'
 
 describe('create saltoElementError', () => {
   const elemId = new ElemID('adapter', 'test')

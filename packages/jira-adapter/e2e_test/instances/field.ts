@@ -33,7 +33,7 @@ export const createOptionsAndOrders = ({
   optionsType: ObjectType
   orderType: ObjectType
   contextInstance: InstanceElement
-}): InstanceElement[] => {
+}): { contextOptions: InstanceElement[]; contextOrders: InstanceElement[] } => {
   const createOptionInstance = (value: string, parent: InstanceElement, disabled = false): InstanceElement =>
     new InstanceElement(
       createOptionName(parent.elemID.name, value),
@@ -65,18 +65,22 @@ export const createOptionsAndOrders = ({
   const optionP3 = createOptionInstance('p3', contextInstance, true)
   const optionP4 = createOptionInstance('p4', contextInstance)
 
-  return [
-    cascadingOptionP1,
-    cascadingOptionP1C11,
-    cascadingOptionP1C12,
-    cascadingOptionP2,
-    cascadingOptionP2C22,
-    optionP3,
-    optionP4,
-    createOrderInstance(contextInstance, [cascadingOptionP1, cascadingOptionP2, optionP3, optionP4]),
-    createOrderInstance(cascadingOptionP1, [cascadingOptionP1C11, cascadingOptionP1C12]),
-    createOrderInstance(cascadingOptionP2, [cascadingOptionP2C22]),
-  ]
+  return {
+    contextOptions: [
+      cascadingOptionP1,
+      cascadingOptionP1C11,
+      cascadingOptionP1C12,
+      cascadingOptionP2,
+      cascadingOptionP2C22,
+      optionP3,
+      optionP4,
+    ],
+    contextOrders: [
+      createOrderInstance(contextInstance, [cascadingOptionP1, cascadingOptionP2, optionP3, optionP4]),
+      createOrderInstance(cascadingOptionP1, [cascadingOptionP1C11, cascadingOptionP1C12]),
+      createOrderInstance(cascadingOptionP2, [cascadingOptionP2C22]),
+    ],
+  }
 }
 
 export const createFieldValues = (name: string): Values => ({

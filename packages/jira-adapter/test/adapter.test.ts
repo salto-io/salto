@@ -641,7 +641,7 @@ describe('adapter', () => {
             severity: 'Error',
           },
           {
-            message: 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
+            message: 'Other issues',
             detailedMessage:
               'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
             severity: 'Warning',

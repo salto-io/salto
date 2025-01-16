@@ -457,7 +457,8 @@ describe('forms filter', () => {
       })
       const res = (await filter.onFetch(elements)) as FilterResult
       expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual(
+      expect(res.errors?.[0].message).toEqual('Other issues')
+      expect(res.errors?.[0].detailedMessage).toEqual(
         'Salto does not support fetching untitled forms, found in the following projects: project1, project2',
       )
     })
@@ -479,7 +480,8 @@ describe('forms filter', () => {
       })
       const res = (await filter.onFetch(elements)) as FilterResult
       expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual(
+      expect(res.errors?.[0].message).toEqual('Other issues')
+      expect(res.errors?.[0].detailedMessage).toEqual(
         'Unable to fetch forms for the following projects: project1, project2. This issue is likely due to insufficient permissions.',
       )
     })
@@ -512,7 +514,8 @@ describe('forms filter', () => {
       })
       const res = (await filter.onFetch(elements)) as FilterResult
       expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual(
+      expect(res.errors?.[0].message).toEqual('Other issues')
+      expect(res.errors?.[0].detailedMessage).toEqual(
         'Unable to fetch forms for the following projects: project2. This issue is likely due to insufficient permissions.',
       )
       const instances = elements.filter(isInstanceElement)
@@ -542,7 +545,8 @@ describe('forms filter', () => {
       })
       const res = (await filter.onFetch(elements)) as FilterResult
       expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual(
+      expect(res.errors?.[0].message).toEqual('Other issues')
+      expect(res.errors?.[0].detailedMessage).toEqual(
         'Unable to fetch forms for the following projects: project1, project2. This issue is likely due to insufficient permissions.',
       )
     })

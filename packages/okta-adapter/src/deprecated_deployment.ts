@@ -18,7 +18,6 @@ import {
   isEqualValues,
   AdditionChange,
   ElemID,
-  createSaltoElementError,
   isSaltoError,
   SaltoError,
   isRemovalChange,
@@ -30,7 +29,7 @@ import {
   client as clientUtils,
   fetch as fetchUtils,
 } from '@salto-io/adapter-components'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, createSaltoElementError } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { promises } from '@salto-io/lowerdash'
 import { ACTIVE_STATUS, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME } from './constants'

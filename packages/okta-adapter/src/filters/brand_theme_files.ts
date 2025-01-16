@@ -14,7 +14,7 @@ import {
   getChangeData,
   SaltoError,
 } from '@salto-io/adapter-api'
-import { getParents } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, getParents } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
@@ -44,14 +44,11 @@ const getBrandThemeFile = async (
   })
 }
 
-const toSaltoError = (err: Error): SaltoError => {
-  const message = `Failed to fetch brandTheme file. ${err.message}`
-  return {
-    message,
-    detailedMessage: message,
-    severity: 'Warning',
-  }
-}
+const toSaltoError = (err: Error): SaltoError => ({
+  message: ERROR_MESSAGES.OTHER_ISSUES,
+  detailedMessage: `Failed to fetch brandTheme file. ${err.message}`,
+  severity: 'Warning',
+})
 
 /**
  * Fetches and deploys brand theme fields as static file.

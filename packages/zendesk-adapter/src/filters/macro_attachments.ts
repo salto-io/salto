@@ -12,7 +12,6 @@ import {
   BuiltinTypes,
   Change,
   CORE_ANNOTATIONS,
-  createSaltoElementError,
   ElemID,
   getChangeData,
   InstanceElement,
@@ -32,6 +31,8 @@ import {
   pathNaclCase,
   references,
   inspectValue,
+  createSaltoElementError,
+  ERROR_MESSAGES,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils, fetch as fetchUtils, resolveChangeElement } from '@salto-io/adapter-components'
@@ -176,15 +177,12 @@ const createAttachmentType = (): ObjectType =>
     path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, MACRO_ATTACHMENT_TYPE_NAME],
   })
 
-const getAttachmentError = (attachment: Attachment, attachmentInstance: InstanceElement): SaltoElementError => {
-  const message = `could not add content to attachment ${attachment.filename} with id ${attachment.id}`
-  return {
-    message,
-    detailedMessage: message,
-    severity: 'Warning',
-    elemID: attachmentInstance.elemID,
-  }
-}
+const getAttachmentError = (attachment: Attachment, attachmentInstance: InstanceElement): SaltoElementError => ({
+  message: ERROR_MESSAGES.OTHER_ISSUES,
+  detailedMessage: `could not add content to attachment ${attachment.filename} with id ${attachment.id}`,
+  severity: 'Warning',
+  elemID: attachmentInstance.elemID,
+})
 
 const getAttachmentContent = async ({
   client,

@@ -6,43 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { createSaltoElementError, createSaltoElementErrorFromError, isSaltoError } from '../src/error'
+import { isSaltoError } from '../src/error'
 import { ElemID } from '../src/element_id'
 import { toChange } from '../src/change'
 import { InstanceElement, ObjectType } from '../src/elements'
-
-describe('create saltoElementError', () => {
-  const elemId = new ElemID('adapter', 'test')
-  it('should create correctly from error', () => {
-    expect(
-      createSaltoElementErrorFromError({
-        error: new Error('test'),
-        severity: 'Error',
-        elemID: elemId,
-      }),
-    ).toEqual({
-      message: 'test',
-      detailedMessage: 'test',
-      severity: 'Error',
-      elemID: elemId,
-    })
-  })
-  it('should create correctly from message', () => {
-    expect(
-      createSaltoElementError({
-        message: 'test',
-        detailedMessage: 'test',
-        severity: 'Error',
-        elemID: elemId,
-      }),
-    ).toEqual({
-      message: 'test',
-      detailedMessage: 'test',
-      severity: 'Error',
-      elemID: elemId,
-    })
-  })
-})
 
 describe('isSaltoError', () => {
   const elemID = new ElemID('adapter', 'test')
@@ -54,9 +21,7 @@ describe('isSaltoError', () => {
     expect(isSaltoError(change)).toBeFalsy()
   })
   it('should return true for saltoErrors', () => {
-    expect(
-      isSaltoError(createSaltoElementError({ message: 'test', detailedMessage: 'test', severity: 'Error', elemID })),
-    ).toBeTruthy()
+    expect(isSaltoError({ message: 'test', detailedMessage: 'test', severity: 'Error', elemID })).toBeTruthy()
   })
   it('should return false for Errors', () => {
     expect(isSaltoError(new Error('test'))).toBeFalsy()

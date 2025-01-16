@@ -683,7 +683,7 @@ describe('Custom Object Instances filter', () => {
           it('should issue a message if there are instances of the object', () => {
             expect(fetchResult.errors).toEqual([
               {
-                message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
+                message: expect.stringContaining('Other issues'),
                 detailedMessage: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
                 severity: 'Info',
               },
@@ -1758,7 +1758,7 @@ describe('Custom Object Instances filter', () => {
           ])
           expect(errors).toEqual([
             {
-              message: expect.stringContaining('InvalidField') && expect.stringContaining('AnotherInvalidField'),
+              message: expect.stringContaining('Other issues'),
               detailedMessage:
                 expect.stringContaining('InvalidField') && expect.stringContaining('AnotherInvalidField'),
               severity: 'Warning',
@@ -1883,7 +1883,7 @@ describe('Custom Object Instances filter', () => {
       it('Should warn', () => {
         expect(filterResult.errors).toEqual([
           {
-            message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
+            message: expect.stringContaining('Other issues'),
             detailedMessage:
               expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
             severity: 'Warning',
@@ -1968,7 +1968,7 @@ describe('Custom Object Instances filter', () => {
         expect(filterResult.errors ?? []).not.toBeEmpty()
         expect(filterResult.errors).toEqual([
           {
-            message: expect.stringContaining('missing or is of the wrong type for all data records'),
+            message: expect.stringContaining('Other issues'),
             detailedMessage: expect.stringContaining('missing or is of the wrong type for all data records'),
             severity: 'Warning',
           },

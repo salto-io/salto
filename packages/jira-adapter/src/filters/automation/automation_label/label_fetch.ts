@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemIdGetter, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
-import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, ERROR_MESSAGES, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
@@ -64,12 +64,11 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       const response = await client.get({ url })
       if (!isLabelsGetResponse(response.data)) {
         log.error('Failed to get automation labels, received invalid response')
-        const message = 'Unable to fetch automation labels due to invalid response'
         return {
           errors: [
             {
-              message,
-              detailedMessage: message,
+              message: ERROR_MESSAGES.OTHER_ISSUES,
+              detailedMessage: 'Unable to fetch automation labels due to invalid response',
               severity: 'Warning',
             },
           ],
@@ -91,12 +90,11 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
         log.error(
           `Received a ${e.response.status} error when fetching automation labels. Please make sure you have the "Automation" permission enabled in Jira.`,
         )
-        const message = fetchFailedWarnings(AUTOMATION_LABEL_TYPE)
         return {
           errors: [
             {
-              message,
-              detailedMessage: message,
+              message: ERROR_MESSAGES.OTHER_ISSUES,
+              detailedMessage: fetchFailedWarnings(AUTOMATION_LABEL_TYPE),
               severity: 'Warning',
             },
           ],

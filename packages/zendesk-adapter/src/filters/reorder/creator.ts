@@ -21,11 +21,10 @@ import {
   isModificationChange,
   isInstanceChange,
   SaltoError,
-  createSaltoElementError,
   isSaltoError,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, pathNaclCase, inspectValue } from '@salto-io/adapter-utils'
+import { createSaltoElementError, applyFunctionToChangeData, pathNaclCase, inspectValue } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ZENDESK } from '../../constants'
 import { deployChange } from '../../deployment'

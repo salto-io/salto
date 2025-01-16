@@ -21,7 +21,6 @@ import {
   Values,
   SaltoError,
   Value,
-  createSaltoElementError,
   SaltoElementError,
   isSaltoError,
 } from '@salto-io/adapter-api'
@@ -31,6 +30,7 @@ import {
   getParent,
   ResolveValuesFunc,
   safeJsonStringify,
+  createSaltoElementError,
 } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
 import Joi from 'joi'

@@ -139,7 +139,7 @@ const createWarnings = async (
       epilogue,
     ].join('\n')
     return createWarningFromMsg({
-      message,
+      message: ERROR_MESSAGES.ID_COLLISION,
       detailedMessage: message,
     })
   }
@@ -182,7 +182,9 @@ const createWarnings = async (
   const message = `Omitted ${illegalRefSources.size} instances due to the previous SaltoID collisions and/or missing instances.
   Types of the omitted instances are: ${typesOfIllegalRefSources.join(', ')}.`
   const illegalOriginsWarnings =
-    illegalRefSources.size === 0 ? [] : [createWarningFromMsg({ message, detailedMessage: message })]
+    illegalRefSources.size === 0
+      ? []
+      : [createWarningFromMsg({ message: ERROR_MESSAGES.ID_COLLISION, detailedMessage: message })]
 
   return [...collisionWarnings, ...instanceWithEmptyIdWarnings, ...missingRefsWarnings, ...illegalOriginsWarnings]
 }

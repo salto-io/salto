@@ -10,7 +10,6 @@ import Joi from 'joi'
 import {
   Change,
   Element,
-  createSaltoElementError,
   getChangeData,
   InstanceElement,
   isAdditionChange,
@@ -18,7 +17,7 @@ import {
   isInstanceElement,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { createSaltoElementError, inspectValue } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'

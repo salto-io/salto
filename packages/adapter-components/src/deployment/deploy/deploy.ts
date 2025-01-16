@@ -16,8 +16,8 @@ import {
   isSaltoError,
   changeId,
   isSaltoElementError,
-  createSaltoElementErrorFromError,
 } from '@salto-io/adapter-api'
+import { createSaltoElementErrorFromError } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { types, values, promises } from '@salto-io/lowerdash'
 import { APIDefinitionsOptions, ApiDefinitions, queryWithDefault } from '../../definitions'

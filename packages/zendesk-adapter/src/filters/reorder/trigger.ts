@@ -9,7 +9,6 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   BuiltinTypes,
-  createSaltoElementError,
   Element,
   ElemID,
   getChangeData,
@@ -20,7 +19,7 @@ import {
   ObjectType,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, pathNaclCase } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, pathNaclCase, createSaltoElementError } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'

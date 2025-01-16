@@ -8,14 +8,9 @@
 import _ from 'lodash'
 import { EOL } from 'os'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify, createSaltoElementError, createSaltoElementErrorFromError } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import {
-  createSaltoElementError,
-  createSaltoElementErrorFromError,
-  ElemID,
-  SaltoElementError,
-} from '@salto-io/adapter-api'
+import { ElemID, SaltoElementError } from '@salto-io/adapter-api'
 
 const log = logger(module)
 

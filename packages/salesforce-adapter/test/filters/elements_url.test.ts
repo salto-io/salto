@@ -21,7 +21,7 @@ import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
 import { Filter, FilterResult } from '../../src/filter'
-import elementsUrlFilter, { WARNING_MESSAGE } from '../../src/filters/elements_url'
+import elementsUrlFilter from '../../src/filters/elements_url'
 import { defaultFilterContext } from '../utils'
 import * as ElementsUrlRetrieverModule from '../../src/elements_url_retriever/elements_url_retriever'
 
@@ -143,8 +143,9 @@ describe('elements url filter', () => {
         expect(res.errors).toHaveLength(1)
         expect(err[0]).toEqual({
           severity: 'Warning',
-          message: WARNING_MESSAGE,
-          detailedMessage: WARNING_MESSAGE,
+          message: 'Other issues',
+          detailedMessage:
+            'Encountered an error while trying to populate URLs for some of your salesforce configuration elements. This might affect the availability of the ‘go to service’ functionality in your workspace.',
         })
       })
     })

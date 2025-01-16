@@ -20,6 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   createSchemeGuard,
+  ERROR_MESSAGES,
   replaceTemplatesWithValues,
   resolveTemplates,
   safeJsonStringify,
@@ -150,10 +151,9 @@ const replaceFormulasWithTemplates = async (
         return undefined
       }
 
-      const message = `Automation ${instance.elemID.getFullName()} has smart values that cannot be translated to a Salto reference because there is more than one field with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(allAmbiguousTokens).join(', ')}.`
       return {
-        message,
-        detailedMessage: message,
+        message: ERROR_MESSAGES.OTHER_ISSUES,
+        detailedMessage: `Automation ${instance.elemID.getFullName()} has smart values that cannot be translated to a Salto reference because there is more than one field with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(allAmbiguousTokens).join(', ')}.`,
         severity: 'Warning' as const,
       }
     })

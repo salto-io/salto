@@ -381,7 +381,8 @@ describe('workflow filter', () => {
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Failed to fetch Workflows.')
+      expect(errors[0].message).toEqual('Other issues')
+      expect(errors[0].detailedMessage).toEqual('Failed to fetch Workflows.')
       expect(errors[0].severity).toEqual('Error')
     })
     it('should fail when bulk get post request is rejected', async () => {
@@ -390,7 +391,8 @@ describe('workflow filter', () => {
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual(
+      expect(errors[0].message).toEqual('Other issues')
+      expect(errors[0].detailedMessage).toEqual(
         'Failed to fetch Workflows: Failed to post /rest/api/3/workflows with error: code 400.',
       )
       expect(errors[0].severity).toEqual('Error')
@@ -412,7 +414,8 @@ describe('workflow filter', () => {
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Failed to fetch Workflows.')
+      expect(errors[0].message).toEqual('Other issues')
+      expect(errors[0].detailedMessage).toEqual('Failed to fetch Workflows.')
       expect(errors[0].severity).toEqual('Error')
     })
 
@@ -462,7 +465,8 @@ describe('workflow filter', () => {
       expect(elements).toHaveLength(3)
       expect(errors).toHaveLength(1)
       expect(errors[0].severity).toEqual('Warning')
-      expect(errors[0].message).toEqual(
+      expect(errors[0].message).toEqual('Other issues')
+      expect(errors[0].detailedMessage).toEqual(
         `The following transitions of workflow workflow are not unique: Create.
 It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
       )

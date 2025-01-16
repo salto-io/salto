@@ -4003,6 +4003,7 @@ __metadata:
     jest: ^29.7.0
     lodash: ^4.17.21
     prettier: 3.2.5
+    truncate-utf8-bytes: ^1.0.2
     ts-jest: ^29.2.0
     tsc-watch: ^2.2.1
     turbo: ^2.0.6
@@ -4114,7 +4115,6 @@ __metadata:
     lodash: ^4.17.21
     object-hash: ^3.0.0
     prettier: 3.2.5
-    truncate-utf8-bytes: ^1.0.2
     ts-jest: ^29.2.0
     tsc-watch: ^2.2.1
     turbo: ^2.0.6

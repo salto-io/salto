@@ -410,7 +410,8 @@ describe('article filter', () => {
       expect(errors).toMatchObject({
         errors: [
           {
-            message: `could not add attachment ${clonedAttachment.elemID.getFullName()}, as could not find article for article_id ${clonedAttachment.value.article_id}`,
+            message: 'Other issues',
+            detailedMessage: `could not add attachment ${clonedAttachment.elemID.getFullName()}, as could not find article for article_id ${clonedAttachment.value.article_id}`,
             severity: 'Warning',
             elemID: clonedAttachment.elemID,
           },
@@ -427,7 +428,8 @@ describe('article filter', () => {
       expect(errors).toMatchObject({
         errors: [
           {
-            message: `Failed to get attachment content for attachment ${clonedAttachment.elemID.getFullName()}`,
+            message: 'Other issues',
+            detailedMessage: `Failed to get attachment content for attachment ${clonedAttachment.elemID.getFullName()}`,
             severity: 'Warning',
             elemID: clonedAttachment.elemID,
           },
@@ -442,7 +444,8 @@ describe('article filter', () => {
       expect(errors).toMatchObject({
         errors: [
           {
-            message: `Received invalid content response from Zendesk API for attachment ${clonedAttachment.elemID.getFullName()}`,
+            message: 'Other issues',
+            detailedMessage: `Received invalid content response from Zendesk API for attachment ${clonedAttachment.elemID.getFullName()}`,
             severity: 'Warning',
             elemID: clonedAttachment.elemID,
           },

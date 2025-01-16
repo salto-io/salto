@@ -185,7 +185,7 @@ describe('custom records', () => {
 netsuite.custrecord_not_singleton.instance.val_1
 netsuite.custrecord_not_singleton.instance.val_2`,
           elemID: new ElemID(NETSUITE, 'custrecord_not_singleton'),
-          message: 'Fetched multiple instances for a singleton custom record type',
+          message: 'Other issues',
           severity: 'Warning',
         },
       ])

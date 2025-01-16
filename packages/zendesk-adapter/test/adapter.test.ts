@@ -2489,8 +2489,7 @@ describe('adapter', () => {
         expect(errors?.length).toEqual(3)
         expect(errors?.[0]).toEqual({
           severity: 'Info',
-          message:
-            "Salto could not access the custom_status resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          message: 'Other issues',
           detailedMessage:
             "Salto could not access the custom_status resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         })
@@ -2626,8 +2625,7 @@ describe('adapter', () => {
         expect(fetchRes.errors?.length).toEqual(3)
         expect(fetchRes.errors?.[0]).toEqual({
           severity: 'Warning',
-          message:
-            'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
+          message: 'Other issues',
           detailedMessage:
             'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
         })

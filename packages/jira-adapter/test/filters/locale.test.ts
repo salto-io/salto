@@ -53,8 +53,7 @@ describe('localeFilter', () => {
       expect(filterRes).toEqual({
         errors: [
           {
-            message:
-              "Your Jira Data Center instance is not set to English-US language. Salto currently only supports accessing Jira DC through users with their default language set to English-US. Please change the user’s language, or create another user with English as its Jira language, and change Salto's credentials to use it. After doing that, make sure you re-fetch your environment using an advanced fetch, with “Regenerate Salto IDs” turned on. You only need to do this once. For help on how to change Jira users' language, go to https://confluence.atlassian.com/adminjiraserver/choosing-a-default-language-938847001.html",
+            message: 'Other issues',
             detailedMessage:
               "Your Jira Data Center instance is not set to English-US language. Salto currently only supports accessing Jira DC through users with their default language set to English-US. Please change the user’s language, or create another user with English as its Jira language, and change Salto's credentials to use it. After doing that, make sure you re-fetch your environment using an advanced fetch, with “Regenerate Salto IDs” turned on. You only need to do this once. For help on how to change Jira users' language, go to https://confluence.atlassian.com/adminjiraserver/choosing-a-default-language-938847001.html",
             severity: 'Warning',
@@ -68,8 +67,7 @@ describe('localeFilter', () => {
       expect(filterRes).toEqual({
         errors: [
           {
-            message:
-              "Your Jira Data Center instance is not set to English-US language. Salto currently only supports accessing Jira DC through users with their default language set to English-US. Please change the user’s language, or create another user with English as its Jira language, and change Salto's credentials to use it. After doing that, make sure you re-fetch your environment using an advanced fetch, with “Regenerate Salto IDs” turned on. You only need to do this once. For help on how to change Jira users' language, go to https://confluence.atlassian.com/adminjiraserver/choosing-a-default-language-938847001.html",
+            message: 'Other issues',
             detailedMessage:
               "Your Jira Data Center instance is not set to English-US language. Salto currently only supports accessing Jira DC through users with their default language set to English-US. Please change the user’s language, or create another user with English as its Jira language, and change Salto's credentials to use it. After doing that, make sure you re-fetch your environment using an advanced fetch, with “Regenerate Salto IDs” turned on. You only need to do this once. For help on how to change Jira users' language, go to https://confluence.atlassian.com/adminjiraserver/choosing-a-default-language-938847001.html",
             severity: 'Warning',

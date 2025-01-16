@@ -751,8 +751,7 @@ describe('workflowStructureFilter', () => {
           errors: [
             {
               severity: 'Warning',
-              message: `The following transitions of workflow instance are not unique: tran1, tran2.
-It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
+              message: 'Other issues',
               detailedMessage: `The following transitions of workflow instance are not unique: tran1, tran2.
 It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
             },

@@ -2232,9 +2232,10 @@ describe('fetch from workspace', () => {
           const newInstanceWithMismatchChange = changes.find(c => c.change.id.isEqual(newWithMismatch.elemID))
           expect(newInstanceWithMismatchChange).toBeUndefined()
           expect(fetchRes.errors).toHaveLength(2)
-          const errorsMessages = fetchRes.errors.map(err => err.detailedMessage)
-          expect(errorsMessages[0]).toContain(mismatchValFullName)
-          expect(errorsMessages[1]).toContain(newWithMismatch.elemID.getFullName())
+          expect(fetchRes.errors[0].message).toContain('Other issues')
+          expect(fetchRes.errors[1].message).toContain('Other issues')
+          expect(fetchRes.errors[0].detailedMessage).toContain(mismatchValFullName)
+          expect(fetchRes.errors[1].detailedMessage).toContain(newWithMismatch.elemID.getFullName())
         })
       })
 

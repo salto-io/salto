@@ -400,8 +400,9 @@ describe('extra dependencies filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: WARNING_MESSAGE,
-        detailedMessage: WARNING_MESSAGE,
+        message: 'Other issues',
+        detailedMessage:
+          'Encountered an error while trying to query your salesforce account for additional configuration dependencies.',
       })
     })
   })

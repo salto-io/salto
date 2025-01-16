@@ -122,7 +122,7 @@ describe('brand files filter', () => {
       const res = (await filter.onFetch(elements)) as FilterResult
       expect(res.errors).toHaveLength(1)
       expect(res.errors?.[0]).toEqual({
-        message: 'Failed to fetch brandTheme file. Failed to fetch attachment content from Okta API',
+        message: 'Other issues',
         detailedMessage: 'Failed to fetch brandTheme file. Failed to fetch attachment content from Okta API',
         severity: 'Warning',
       })

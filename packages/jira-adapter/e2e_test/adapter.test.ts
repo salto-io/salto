@@ -26,7 +26,13 @@ import {
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils, resolveValues } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { buildElementsSourceFromElements, getParents, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  applyDetailedChanges,
+  buildElementsSourceFromElements,
+  detailedCompare,
+  getParents,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import each from 'jest-each'
 import { Credentials } from '../src/auth'
@@ -138,6 +144,19 @@ each([
     let elements: Element[]
 
     beforeAll(async () => {
+      // this is normally done by the core
+      const updateDeployedInstances = (
+        changes: readonly Change[],
+        beforeInstanceMap: Record<string, InstanceElement>,
+      ): void => {
+        changes.map(getChangeData).forEach(updatedInstance => {
+          const preDeployInstance = beforeInstanceMap[updatedInstance.elemID.getFullName()]
+          if (preDeployInstance !== undefined) {
+            applyDetailedChanges(preDeployInstance, detailedCompare(preDeployInstance, updatedInstance))
+          }
+        })
+      }
+
       elementsSource = buildElementsSourceFromElements(fetchedElements)
       const adapterAttr = realAdapter({
         credentials: credLease.value,
@@ -146,6 +165,9 @@ each([
       })
       adapter = adapterAttr.adapter
       addInstanceGroups = createInstances(fetchedElements, isDataCenter)
+      const fullNameToAddedInstance = Object.fromEntries(
+        addInstanceGroups.flat().map(instance => [instance.elemID.getFullName(), instance]),
+      )
 
       addDeployResults = await awu(addInstanceGroups)
         .map(async group => {
@@ -156,23 +178,18 @@ each([
             },
             progressReporter: nullProgressReporter,
           })
-
-          res.appliedChanges.forEach(appliedChange => {
-            const appliedInstance = getChangeData(appliedChange)
-            addInstanceGroups
-              .flat()
-              .flatMap(getParents)
-              .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
-              .forEach(parent => {
-                parent.resValue = appliedInstance
-              })
-          })
+          updateDeployedInstances(res.appliedChanges, fullNameToAddedInstance)
           return res
         })
         .toArray()
 
       modifyInstanceGroups = createModifyInstances(fetchedElements, isDataCenter)
-
+      const fullNameToModifiedInstance = Object.fromEntries(
+        modifyInstanceGroups
+          .flat()
+          .map(getChangeData)
+          .map(instance => [instance.elemID.getFullName(), instance]),
+      )
       modifyDeployResults = await awu(modifyInstanceGroups)
         .map(async group => {
           const res = await adapter.deploy({
@@ -183,16 +200,7 @@ each([
             progressReporter: nullProgressReporter,
           })
 
-          res.appliedChanges.forEach(appliedChange => {
-            const appliedInstance = getChangeData(appliedChange)
-            modifyInstanceGroups
-              .flat()
-              .flatMap(change => getParents(change.data.after))
-              .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
-              .forEach(parent => {
-                parent.resValue = appliedInstance
-              })
-          })
+          updateDeployedInstances(res.appliedChanges, fullNameToModifiedInstance)
           return res
         })
         .toArray()

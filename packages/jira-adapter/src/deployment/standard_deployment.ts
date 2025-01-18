@@ -64,6 +64,14 @@ export const defaultServiceIdSetter = (
   instance.value[serviceIdField] = response[serviceIdField]
 }
 
+export const toNumberServiceIdSetter = (
+  instance: InstanceElement,
+  serviceIdField: string,
+  response: clientUtils.ResponseValue,
+): void => {
+  instance.value[serviceIdField] = Number(response[serviceIdField])
+}
+
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
  */

@@ -199,10 +199,6 @@ const filter: FilterCreator = ({ config, client }) => ({
                 isReferenceExpression(refOrFieldId) ? refOrFieldId.value.value.id : refOrFieldId,
               ),
             }
-          } else {
-            tab.originalFieldsIds = {
-              ids: [],
-            }
           }
         })
       })

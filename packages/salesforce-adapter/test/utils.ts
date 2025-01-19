@@ -34,6 +34,7 @@ import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { CustomReferencesSettings, LastChangeDateOfTypesWithNestedInstances, OptionalFeatures } from '../src/types'
 import { createDeployProgressReporter, DeployProgressReporter } from '../src/adapter_creator'
 import { SalesforceClient } from '../index'
+import { isFeatureEnabled } from '../src/fetch_profile/optional_features'
 
 export const findElements = (elements: ReadonlyArray<Element>, ...name: ReadonlyArray<string>): Element[] => {
   const expectedElemId =
@@ -210,6 +211,16 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
       [constants.METADATA_TYPE]: 'ProfileFieldLevelSecurity',
     },
   })
+  const ProfileTabVisibilities = new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, 'ProfileTabVisibilities'),
+    fields: {
+      tab: { refType: BuiltinTypes.STRING },
+      visibility: { refType: BuiltinTypes.STRING },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: 'ProfileTabVisibilities',
+    },
+  })
 
   // we only define types as lists if they use non-unique maps - so for onDeploy, fieldPermissions
   // will not appear as a list unless conflicts were found during the previous fetch
@@ -220,6 +231,7 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
     ProfileApplicationVisibility.fields.application.annotations[CORE_ANNOTATIONS.REQUIRED] = true
     ProfileLayoutAssignment.fields.layout.annotations[CORE_ANNOTATIONS.REQUIRED] = true
     ProfileFieldLevelSecurity.fields.field.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+    ProfileTabVisibilities.fields.tab.annotations[CORE_ANNOTATIONS.REQUIRED] = true
   }
 
   return new ObjectType({
@@ -237,6 +249,13 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
       fieldPermissions: {
         refType: useMaps ? new MapType(new MapType(ProfileFieldLevelSecurity)) : fieldPermissionsNonMapType,
       },
+      ...(isFeatureEnabled('supportProfileTabVisibilities')
+        ? {
+            tabVisibilities: {
+              refType: useMaps ? new MapType(ProfileTabVisibilities) : ProfileTabVisibilities,
+            },
+          }
+        : {}),
     },
     annotations: {
       [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,

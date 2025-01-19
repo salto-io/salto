@@ -59,6 +59,7 @@ import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { FetchProfile } from '../types'
 import { apiNameSync, isOrderedMapTypeOrRefType, metadataTypeSync } from './utils'
+import { isFeatureEnabled } from '../fetch_profile/optional_features'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -151,6 +152,7 @@ export const PERMISSIONS_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
 export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   // sharing map field def with permission set
   ...PERMISSIONS_SET_MAP_FIELD_DEF,
+  ...(isFeatureEnabled('supportProfileTabVisibilities') ? { tabVisibilities: { key: 'tab' } } : {}),
 
   // Non-unique maps (multiple values can have the same key)
   categoryGroupVisibilities: { key: 'dataCategoryGroup', mapToList: true },

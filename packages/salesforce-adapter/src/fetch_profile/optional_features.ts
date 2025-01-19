@@ -24,6 +24,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   addParentToInstancesWithinFolder: false,
   packageVersionReference: false,
   omitTotalTrustedRequestsUsageField: false,
+  supportProfileTabVisibilities: false,
   disablePermissionsOmissions: false,
 }
 

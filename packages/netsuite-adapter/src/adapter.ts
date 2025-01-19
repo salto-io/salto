@@ -535,7 +535,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(serverTimeElements)
       .concat(scriptIdListElements)
 
-    const fetchErrors = ([] as SaltoError[]).concat(errors).concat(deletedElementErrors)
+    const fetchErrors = errors.concat(deletedElementErrors)
 
     await this.createFiltersRunner({
       operation: 'fetch',

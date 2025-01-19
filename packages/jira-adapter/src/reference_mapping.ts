@@ -1352,6 +1352,16 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     missingRefStrategy: 'typeAndValue',
     target: { type: OBJECT_TYPE_TYPE },
   },
+  // target is empty because this rule is only for resolving
+  {
+    src: { field: 'attributesIncludedInAutoCompleteSearch', parentTypes: ['AssetsObjectFieldConfiguration'] },
+    serializationStrategy: 'name',
+  },
+  // target is empty because this rule is only for resolving
+  {
+    src: { field: 'attributesDisplayedOnIssue', parentTypes: ['AssetsObjectFieldConfiguration'] },
+    serializationStrategy: 'name',
+  },
   {
     src: { field: 'schemaId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',

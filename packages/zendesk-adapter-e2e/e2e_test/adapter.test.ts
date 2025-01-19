@@ -48,7 +48,7 @@ import {
   HIDDEN_PER_TYPE,
   TYPES_NOT_TO_REMOVE,
   UNIQUE_NAME,
-} from './zendesk_e2e_utils'
+} from './e2e_instance_generator'
 import { verifyCustomObject, verifyInstanceValues } from './verificationUtils'
 
 const log = logger(module)
@@ -165,7 +165,7 @@ describe('Zendesk adapter E2E', () => {
         authMethods: adapter.authenticationMethods,
       })
       const { brandInstanceE2eHelpCenter, defaultGroup } = await fetchBaseInstances(workspace)
-      if (brandInstanceE2eHelpCenter == null || defaultGroup === null) {
+      if (brandInstanceE2eHelpCenter == null || defaultGroup == null) {
         return
       }
 
@@ -272,7 +272,10 @@ describe('Zendesk adapter E2E', () => {
         )
         .forEach(instanceToAdd => {
           const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
-          expect(instance).toBeDefined()
+          expect(instance == null).toBeFalsy()
+          if (instance == null) {
+            return
+          }
           // custom object types have circular references (value and parent)
           // toMatchObject does not work well with circular references and crashes
           if ([CUSTOM_OBJECT_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME].includes(instanceToAdd.elemID.typeName)) {

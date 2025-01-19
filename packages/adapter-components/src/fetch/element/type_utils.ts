@@ -30,6 +30,7 @@ import {
   isPrimitiveType,
   isTypeReference,
   isElement,
+  getDeepInnerTypeSync,
 } from '@salto-io/adapter-api'
 import {
   TransformFuncSync,
@@ -347,26 +348,48 @@ export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
     })
   }, 'hideAndOmitFields')
 
+export const getTypeInPath = (
+  type: ObjectType | undefined,
+  fieldPath: string[],
+): ObjectType | PrimitiveType | undefined => {
+  if (type === undefined || fieldPath.length === 0) {
+    return undefined
+  }
+  const [fieldName, ...restPath] = fieldPath
+  const field = Object.prototype.hasOwnProperty.call(type.fields, fieldName) ? type.fields[fieldName] : undefined
+  if (field === undefined) {
+    log.warn('failed to find type for field %s in type %s', fieldName, type.elemID.getFullName())
+    return undefined
+  }
+
+  const fieldType = getDeepInnerTypeSync(field.getTypeSync())
+  if (fieldType === undefined) {
+    log.warn('field %s in type %s is undefined', fieldName, type.elemID.getFullName())
+    return undefined
+  }
+  if (restPath.length === 0) {
+    return fieldType
+  }
+  if (isPrimitiveType(fieldType)) {
+    log.warn('field %s in type %s is a primitive type, cannot recurse further', fieldName, type.elemID.getFullName())
+    return undefined
+  }
+  return getTypeInPath(fieldType, restPath)
+}
+
 export const addImportantValues = <Options extends FetchApiDefinitionsOptions>({
   definedTypes,
   defQuery,
-  finalTypeNames,
 }: {
   definedTypes: Record<string, ObjectType>
   defQuery: ElementAndResourceDefFinder<Options>
-  finalTypeNames?: Set<string>
 }): void =>
-  log.timeDebug(() => {
+  log.timeTrace(() => {
     Object.entries(definedTypes).forEach(([typeName, type]) => {
-      if (finalTypeNames?.has(typeName)) {
-        log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
-        return
-      }
-
       const { element: elementDef } = defQuery.query(typeName) ?? {}
 
       const importantValues = (elementDef?.topLevel?.importantValues ?? []).filter(
-        ({ value }: ImportantValue) => type.fields[value] !== undefined,
+        ({ value }: ImportantValue) => getTypeInPath(type, value.split('.')) !== undefined,
       )
 
       // Avoid creating unnecessary annotations for types that don't have important values and don't need an override.
@@ -377,8 +400,6 @@ export const addImportantValues = <Options extends FetchApiDefinitionsOptions>({
         return
       }
 
-      // Generated duck-typed types may contain default important values that are not relevant,
-      // so we want to override them at this point where we know what fields are actually relevant.
       type.annotate({
         [CORE_ANNOTATIONS.IMPORTANT_VALUES]: _.isEmpty(importantValues) ? undefined : importantValues,
       })

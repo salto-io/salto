@@ -12,5 +12,6 @@ export {
   AssignmentFieldsConfig,
   ConditionalAccessPolicyAssignmentField,
   ConditionalAccessPolicyAssignmentFieldNamesConfig,
+  IntuneAssignmentsField,
   IntuneAssignmentsFieldNamesConfig,
 } from './assignment_fields'

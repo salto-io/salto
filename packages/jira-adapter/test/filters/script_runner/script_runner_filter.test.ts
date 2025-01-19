@@ -8,9 +8,7 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import scriptRunnerFilter, {
-  scriptRunnerIdAndAuditSetter,
-} from '../../../src/filters/script_runner/script_runner_filter'
+import scriptRunnerFilter, { scriptRunnerAuditSetter } from '../../../src/filters/script_runner/script_runner_filter'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import {
@@ -203,64 +201,55 @@ describe('scriptRunnerIdAndAuditSetter', () => {
   let fragmentInstance: InstanceElement
 
   beforeEach(() => {
-    fieldInstance = new InstanceElement('instance', createEmptyType(SCRIPTED_FIELD_TYPE))
-    listenerInstance = new InstanceElement('instance', createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE))
-    fragmentInstance = new InstanceElement('instance', createEmptyType(SCRIPT_FRAGMENT_TYPE))
+    fieldInstance = new InstanceElement('instance', createEmptyType(SCRIPTED_FIELD_TYPE), {})
+    listenerInstance = new InstanceElement('instance', createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE), {})
+    fragmentInstance = new InstanceElement('instance', createEmptyType(SCRIPT_FRAGMENT_TYPE), {})
   })
-  it('should set the id and audit info in a scripted field', async () => {
-    scriptRunnerIdAndAuditSetter(fieldInstance, 'id', {
+  it('should set the audit info in a scripted field', async () => {
+    scriptRunnerAuditSetter(fieldInstance, {
       id: 'my-id',
       auditData: {
         createdTimestamp: 10,
         updatedTimestamp: 10,
       },
     })
-    expect(fieldInstance.value.id).toEqual('my-id')
     expect(fieldInstance.value.auditData).toEqual({
       createdTimestamp: 10,
       updatedTimestamp: 10,
     })
   })
   it('should not set the audit info in a scripted field if no audit provided', async () => {
-    scriptRunnerIdAndAuditSetter(fieldInstance, 'id', {
+    scriptRunnerAuditSetter(fieldInstance, {
       id: 'my-id',
     })
-    expect(fieldInstance.value.id).toEqual('my-id')
     expect(Object.prototype.hasOwnProperty.call(fieldInstance.value, 'auditData')).toBeFalsy()
   })
   it('should set the id and audit info in a listener', async () => {
-    scriptRunnerIdAndAuditSetter(listenerInstance, 'id', {
+    scriptRunnerAuditSetter(listenerInstance, {
       id: 'my-id',
       createdTimestamp: '10',
       updatedTimestamp: '10',
     })
-    expect(listenerInstance.value.id).toEqual('my-id')
     expect(listenerInstance.value.createdTimestamp).toEqual('10')
     expect(listenerInstance.value.updatedTimestamp).toEqual('10')
   })
   it('should not set the audit info in a listener if not provided', async () => {
-    scriptRunnerIdAndAuditSetter(listenerInstance, 'id', {
+    scriptRunnerAuditSetter(listenerInstance, {
       id: 'my-id',
     })
-    expect(listenerInstance.value.id).toEqual('my-id')
     expect(Object.prototype.hasOwnProperty.call(listenerInstance.value, 'createdTimestamp')).toBeFalsy()
     expect(Object.prototype.hasOwnProperty.call(listenerInstance.value, 'updatedTimestamp')).toBeFalsy()
   })
-  it('should set the id in a fragment', async () => {
-    scriptRunnerIdAndAuditSetter(fragmentInstance, 'id', {
-      id: 'my-id',
-    })
-    expect(fragmentInstance.value.id).toEqual('my-id')
-  })
   it('should not set the audit info in a fragment', async () => {
-    scriptRunnerIdAndAuditSetter(fragmentInstance, 'id', {
+    scriptRunnerAuditSetter(fragmentInstance, {
       id: 'my-id',
       auditData: {
         createdTimestamp: 10,
         updatedTimestamp: 10,
       },
     })
-    expect(fragmentInstance.value.id).toEqual('my-id')
-    expect(fragmentInstance.value.auditData).toBeUndefined()
+    expect(Object.prototype.hasOwnProperty.call(fragmentInstance.value, 'createdTimestamp')).toBeFalsy()
+    expect(Object.prototype.hasOwnProperty.call(fragmentInstance.value, 'updatedTimestamp')).toBeFalsy()
+    expect(Object.prototype.hasOwnProperty.call(fragmentInstance.value, 'auditData')).toBeFalsy()
   })
 })

@@ -399,8 +399,6 @@ const toFetchChanges = (
       const [serviceChanges, pendingChanges] = _.partition(relatedChanges, change => change.origin === 'service').map(
         changeList => changeList.map(change => change.change),
       )
-      const wsChanges = getChangesNestedUnderID(elemId, workspaceToServiceChanges).map(({ change }) => change)
-
       // Service-to-workspace diffs for a given element are only computed when pending changes exist for that element.
       // When there are no pending changes, the state and workspace are already aligned, so we can reuse service changes
       // as workspace changes. We are guaranteed no conflicts, so we can return early here. This reuse relies on the
@@ -409,6 +407,7 @@ const toFetchChanges = (
         return serviceChanges.map(change => ({ change, serviceChanges, pendingChanges: [] }))
       }
 
+      const wsChanges = getChangesNestedUnderID(elemId, workspaceToServiceChanges).map(({ change }) => change)
       if (!types.isNonEmptyArray(wsChanges)) {
         // If we get here it means there is a difference between the account and the state
         // but there is no difference between the account and the workspace. this can happen

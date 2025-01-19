@@ -120,18 +120,17 @@ ${getInstancesDetailsMsg(instanceDetails, baseUrl, maxBreakdownDetailsElements)}
   return collisionMessages
 }
 
-const createMarkdownLinkOrText = ({ text, url }: { text: string; url?: string }): string =>
-  url !== undefined ? `[${text}](${url})` : text
+const getTextWithLinkToService = ({ instanceName, url }: { instanceName: string; url?: string }): string =>
+  url !== undefined ? `${instanceName}, view in the service - ${url}` : instanceName
 
-const getInstancesMarkdownLinks = (instances: InstanceElement[]): string =>
-  instances
-    .map(instance =>
-      createMarkdownLinkOrText({
-        text: instance.annotations[CORE_ANNOTATIONS.ALIAS] ?? instance.elemID.name,
-        url: instance.annotations[CORE_ANNOTATIONS.SERVICE_URL],
-      }),
-    )
-    .join(', ')
+const getInstancesWithLinksToService = (instances: InstanceElement[]): string =>
+  instances.map(instance =>
+    getTextWithLinkToService({
+      instanceName: instance.annotations[CORE_ANNOTATIONS.ALIAS] ?? instance.elemID.name,
+      url: instance.annotations[CORE_ANNOTATIONS.SERVICE_URL],
+    }),
+  ).join(`,
+`)
 
 const createWarningMessages = ({
   elemIDtoInstances,
@@ -147,10 +146,10 @@ const createWarningMessages = ({
       elemId,
       collideInstances,
     ]) => `${collideInstances.length} ${adapterName} elements ${addChildrenMessage ? 'and their child elements ' : ''}were not fetched, as they were mapped to a single ID ${elemId}:
-${getInstancesMarkdownLinks(collideInstances)}
+${getInstancesWithLinksToService(collideInstances)}.
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-${createMarkdownLinkOrText({ text: 'Learn about additional ways to resolve this issue', url: 'https://help.salto.io/en/articles/6927157-salto-id-collisions' })}`,
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`,
   )
 
 // after SALTO-7088 is done, this function will replace getAndLogCollisionWarnings

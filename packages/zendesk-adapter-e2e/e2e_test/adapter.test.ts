@@ -11,7 +11,6 @@ import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   adapter,
   Credentials,
-  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
   GROUP_TYPE_NAME,
@@ -30,14 +29,10 @@ import {
   InstanceElement,
   isInstanceElement,
   isObjectType,
-  isReferenceExpression,
-  isStaticFile,
-  isTemplateExpression,
   ReferenceExpression,
-  StaticFile,
   Value,
 } from '@salto-io/adapter-api'
-import _, { isArray, isPlainObject } from 'lodash'
+import _ from 'lodash'
 import {
   e2eDeploy,
   fetchWorkspace,
@@ -54,6 +49,7 @@ import {
   TYPES_NOT_TO_REMOVE,
   UNIQUE_NAME,
 } from './zendesk_e2e_utils'
+import { verifyCustomObject, verifyInstanceValues } from './verificationUtils'
 
 const log = logger(module)
 
@@ -84,7 +80,7 @@ const zendeskChangeErrorFilter = (error: ChangeError): boolean =>
 // we remove elements and we don't modify the order that point at them
 // we cannot remove support address as it is the default, therefore when we remove the brand the support address gets validation error
 const zendeskValidationFilter = (error: ValidationError): boolean =>
-  !(error.elemID.typeName.includes('order') || error.elemID.typeName.includes('support_address'))
+  !(error.elemID.typeName.includes('order') || error.elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
 
 const zendeskCleanUp = async (instances: InstanceElement[], workspace: Workspace): Promise<void> => {
   const instancesToClean = instances
@@ -101,7 +97,6 @@ const zendeskCleanUp = async (instances: InstanceElement[], workspace: Workspace
       selectorsForFixers: instancesToClean.map(inst => inst.elemID.getFullName()),
     })
   }
-  // consider adding another fetch
 }
 
 const filterHiddenFields = (instances: InstanceElement[]): InstanceElement[] =>
@@ -117,48 +112,28 @@ const filterHiddenFields = (instances: InstanceElement[]): InstanceElement[] =>
       return inst
     })
 
-const verifyArray = (orgArray: Array<unknown>, fetchArray: Array<unknown>): void => {
-  const orgVals = orgArray.map(val => (isReferenceExpression(val) ? val.elemID.getFullName() : val))
-  const fetchVals = fetchArray.map(val => (isReferenceExpression(val) ? val.elemID.getFullName() : val))
-  expect(orgVals).toEqual(fetchVals)
-}
-
-const verifyStaticFile = (orgStaticFile: StaticFile, fetchStaticFile: StaticFile): void => {
-  expect(orgStaticFile.filepath).toEqual(fetchStaticFile.filepath)
-  expect(orgStaticFile.encoding).toEqual(fetchStaticFile.encoding)
-  expect(orgStaticFile.hash).toEqual(fetchStaticFile.hash)
-}
-
-const verifyInstanceValues = (
-  fetchInstance: InstanceElement | undefined,
-  orgInstance: InstanceElement,
-  fieldsToCheck: string[],
-): void => {
-  expect(fetchInstance == null).toBeFalsy()
-  if (fetchInstance == null) {
-    return
+const fetchBaseInstances = async (
+  workspace: Workspace,
+): Promise<{
+  brandInstanceE2eHelpCenter?: InstanceElement
+  defaultGroup?: InstanceElement
+}> => {
+  await fetchWorkspace({ workspace, validationFilter: zendeskValidationFilter, adapterCreators })
+  const firstFetchInstances = (await getElementsFromWorkspace(workspace)).filter(isInstanceElement)
+  const brandInstanceE2eHelpCenter = firstFetchInstances.find(e => e.elemID.name === HELP_CENTER_BRAND_NAME)
+  const defaultGroup = firstFetchInstances.find(e => e.elemID.typeName === GROUP_TYPE_NAME && e.value.default === true)
+  expect(defaultGroup).toBeDefined()
+  expect(brandInstanceE2eHelpCenter).toBeDefined()
+  expect(brandInstanceE2eHelpCenter == null || defaultGroup == null).toBeFalsy()
+  // we don't want to run zendesk clean up
+  if (brandInstanceE2eHelpCenter == null || defaultGroup === null) {
+    return {}
   }
-  const orgInstanceValues = orgInstance.value
-  const fetchInstanceValues = _.pick(fetchInstance.value, fieldsToCheck)
-  fieldsToCheck.forEach(field => {
-    if (isReferenceExpression(orgInstanceValues[field]) && isReferenceExpression(fetchInstanceValues[field])) {
-      expect(fetchInstanceValues[field].elemID.getFullName()).toEqual(orgInstanceValues[field].elemID.getFullName())
-    } else if (isArray(orgInstanceValues[field]) && isArray(fetchInstanceValues[field])) {
-      verifyArray(orgInstanceValues[field], fetchInstanceValues[field])
-    } else if (isTemplateExpression(orgInstanceValues[field]) && isTemplateExpression(fetchInstanceValues[field])) {
-      verifyArray(orgInstanceValues[field].parts, fetchInstanceValues[field].parts)
-    } else if (isPlainObject(orgInstanceValues[field]) && isPlainObject(fetchInstanceValues[field])) {
-      const fields = Object.keys(orgInstanceValues[field])
-      expect(_.pick(fetchInstanceValues[field], fields)).toEqual(orgInstanceValues[field])
-    } else if (isStaticFile(orgInstanceValues[field]) && isStaticFile(fetchInstanceValues[field])) {
-      verifyStaticFile(orgInstanceValues[field], fetchInstanceValues[field])
-    } else {
-      expect(fetchInstanceValues[field]).toEqual(orgInstanceValues[field])
-    }
-  })
+  await zendeskCleanUp(firstFetchInstances, workspace)
+  return { brandInstanceE2eHelpCenter, defaultGroup }
 }
 
-describe('Zendesk adapter E2E - 2', () => {
+describe('Zendesk adapter E2E', () => {
   describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
     let elements: Element[] = []
@@ -189,19 +164,11 @@ describe('Zendesk adapter E2E - 2', () => {
         adapterCreators,
         authMethods: adapter.authenticationMethods,
       })
-      await fetchWorkspace({ workspace, validationFilter: zendeskValidationFilter, adapterCreators })
-      const firstFetchInstances = (await getElementsFromWorkspace(workspace)).filter(isInstanceElement)
-      const brandInstanceE2eHelpCenter = firstFetchInstances.find(e => e.elemID.name === HELP_CENTER_BRAND_NAME)
-      const defaultGroup = firstFetchInstances.find(
-        e => e.elemID.typeName === GROUP_TYPE_NAME && e.value.default === true,
-      )
-      expect(defaultGroup).toBeDefined()
-      expect(brandInstanceE2eHelpCenter).toBeDefined()
-      expect(brandInstanceE2eHelpCenter == null || defaultGroup == null).toBeFalsy()
-      if (brandInstanceE2eHelpCenter == null || defaultGroup == null) {
+      const { brandInstanceE2eHelpCenter, defaultGroup } = await fetchBaseInstances(workspace)
+      if (brandInstanceE2eHelpCenter == null || defaultGroup === null) {
         return
       }
-      await zendeskCleanUp(firstFetchInstances, workspace)
+
       ;({ instancesToDeploy, guideInstances, guideThemeInstance } = await getAllInstancesToDeploy({
         brandInstanceE2eHelpCenter,
         defaultGroup,
@@ -309,21 +276,7 @@ describe('Zendesk adapter E2E - 2', () => {
           // custom object types have circular references (value and parent)
           // toMatchObject does not work well with circular references and crashes
           if ([CUSTOM_OBJECT_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME].includes(instanceToAdd.elemID.typeName)) {
-            const instanceClone = (instance as InstanceElement).clone()
-            const instanceToAddClone = instanceToAdd.clone()
-            const fieldToHandle =
-              instanceClone.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME
-                ? `${CUSTOM_OBJECT_FIELD_TYPE_NAME}s`
-                : CUSTOM_FIELD_OPTIONS_FIELD_NAME
-
-            instanceClone.value[fieldToHandle] = (instanceClone.value[fieldToHandle] ?? [])
-              .map((ref: ReferenceExpression) => ref.elemID.getFullName())
-              .sort()
-            instanceToAddClone.value[fieldToHandle] = (instanceToAddClone.value[fieldToHandle] ?? [])
-              .map((ref: ReferenceExpression) => ref.elemID.getFullName())
-              .sort()
-
-            expect(instanceClone.value).toMatchObject(instanceToAddClone.value)
+            verifyCustomObject(instance, instanceToAdd)
           } else {
             const fieldsToCheck = Object.keys(instanceToAdd.value)
             verifyInstanceValues(instance as InstanceElement, instanceToAdd, fieldsToCheck)

@@ -15,7 +15,6 @@ import {
   Values,
   ProgressReporter,
   DeployOptions,
-  Element,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
@@ -225,7 +224,6 @@ export type DeployProgressReporter = ProgressReporter & {
 
 export type SalesforceAdapterDeployOptions = DeployOptions & {
   progressReporter: DeployProgressReporter
-  getAllElements?: () => Promise<Element[]>
 }
 
 export const createDeployProgressReporter = async (

@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isTemplateExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
@@ -39,6 +39,7 @@ import {
   BOT_BUILDER_NODE,
   BOT_BUILDER_ANSWER,
   CONVERSATION_BOT,
+  SUPPORT_ADDRESS_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG } from '../config'
 import {
@@ -46,6 +47,7 @@ import {
   ZendeskMissingReferenceStrategyName,
 } from './references/missing_references'
 import { ZendeskUserConfig } from '../user_config'
+import { replaceIfReferenceExpression } from './support_address'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -166,7 +168,7 @@ const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ r
 const neighborReferenceUserAndOrgFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
   [USER_FIELD_OPTION_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME].includes(val) ? val : undefined
 
-type ZendeskReferenceIndexField = 'key' | 'value' | 'locale'
+type ZendeskReferenceIndexField = 'key' | 'value' | 'locale' | 'email'
 type ZendeskReferenceSerializationStrategyName =
   | 'ticketField'
   | 'value'
@@ -181,6 +183,7 @@ type ZendeskReferenceSerializationStrategyName =
   | 'idString'
   | 'customObjectKey'
   | 'customStatusField'
+  | 'email'
 
 const getSerializationStrategyOfCustomFieldByContainingType = (
   prefix: string,
@@ -234,6 +237,18 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     lookup: val => val,
     lookupIndexName: 'value',
   },
+  email: {
+    serialize: ({ ref }) => {
+      if (isInstanceElement(ref.value)) {
+        // the email in the support address is turned to a template expression, we need to serialize this too.
+        const val = ref.value.value.email
+        return isTemplateExpression(val) ? val.parts.map(replaceIfReferenceExpression).join('') : val
+      }
+      return ref.value
+    },
+    lookup: val => val,
+    lookupIndexName: 'email',
+  },
   localeId: {
     serialize: ({ ref }) =>
       // locale_id may be missing reference
@@ -280,7 +295,8 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
 
 export type ReferenceContextStrategyName =
   | 'neighborField'
-  | 'allowlistedNeighborField'
+  | 'allowListedNeighborField'
+  | 'allowListedEmailNeighborField'
   | 'allowlistedNeighborSubject'
   | 'neighborType'
   | 'parentSubject'
@@ -297,7 +313,11 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
   // We use allow lists because there are types we don't support (such as organization or requester)
   // and they'll end up being false positives
-  allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: allowListLookupType }),
+  allowListedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: allowListLookupType }),
+  allowListedEmailNeighborField: neighborContextFunc({
+    contextFieldName: 'field',
+    contextValueMapper: val => (val === 'recipient' ? SUPPORT_ADDRESS_TYPE_NAME : undefined),
+  }),
   allowlistedNeighborSubject: neighborContextFunc({
     contextFieldName: 'subject',
     contextValueMapper: allowListLookupType,
@@ -635,6 +655,15 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   },
   {
     src: {
+      field: 'value',
+      parentTypes: ['trigger__conditions__all', 'trigger__conditions__any'],
+    },
+    serializationStrategy: 'email',
+    target: { typeContext: 'allowListedEmailNeighborField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
+  {
+    src: {
       field: 'subject',
       parentTypes: ['routing_attribute_value__conditions__all', 'routing_attribute_value__conditions__any'],
     },
@@ -959,7 +988,7 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
       parentTypes: ['trigger__actions'],
     },
     serializationStrategy: 'idString',
-    target: { typeContext: 'allowlistedNeighborField' },
+    target: { typeContext: 'allowListedNeighborField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
 
@@ -1012,7 +1041,7 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
         'queue__definition__any',
       ],
     },
-    target: { typeContext: 'allowlistedNeighborField' },
+    target: { typeContext: 'allowListedNeighborField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
@@ -1178,7 +1207,7 @@ export const fieldReferencesOnFetch = async (elements: Element[], config: Zendes
     await referenceUtils.addReferences({
       elements,
       defs: fixedDefs,
-      fieldsToGroupBy: ['id', 'name', 'key', 'value', 'locale'],
+      fieldsToGroupBy: ['id', 'name', 'key', 'value', 'locale', 'email'],
       contextStrategyLookup,
       // since ids and references to ids vary inconsistently between string/number, allow both
       fieldReferenceResolverCreator: defs => new ZendeskFieldReferenceResolver(defs),

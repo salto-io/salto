@@ -23,6 +23,7 @@ import {
   DeployParams,
   FETCH_PARAMS,
   FetchParams,
+  MaxFilesPerFileCabinetFolder,
   MaxInstancesPerType,
   NetsuiteConfig,
   NetsuiteQueryParameters,
@@ -261,7 +262,6 @@ const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
 
 function validateMaxInstancesPerType(
   maxInstancesPerType: unknown,
-  { validateInvalidTypes }: { validateInvalidTypes: boolean },
 ): asserts maxInstancesPerType is MaxInstancesPerType[] {
   if (
     !Array.isArray(maxInstancesPerType) ||
@@ -273,9 +273,6 @@ function validateMaxInstancesPerType(
       `Expected ${CLIENT_CONFIG.maxInstancesPerType} to be a list of { name: string, limit: number },` +
         ` but found:\n${safeJsonStringify(maxInstancesPerType, undefined, 4)}.`,
     )
-  }
-  if (!validateInvalidTypes) {
-    return
   }
   const invalidTypes = maxInstancesPerType.filter(
     maxType =>
@@ -290,15 +287,44 @@ function validateMaxInstancesPerType(
   }
 }
 
+function validateMaxFilesPerFileCabinetFolder(
+  maxFilesPerFileCabinetFolder: unknown,
+): asserts maxFilesPerFileCabinetFolder is MaxFilesPerFileCabinetFolder[] {
+  if (
+    !Array.isArray(maxFilesPerFileCabinetFolder) ||
+    !maxFilesPerFileCabinetFolder.every(
+      row =>
+        'folderPath' in row && 'limit' in row && typeof row.folderPath === 'string' && typeof row.limit === 'number',
+    )
+  ) {
+    throw new Error(
+      `Expected ${CLIENT_CONFIG.maxFilesPerFileCabinetFolder} to be a list of { folderPath: string, limit: number },` +
+        ` but found:\n${safeJsonStringify(maxFilesPerFileCabinetFolder, undefined, 4)}.`,
+    )
+  }
+  const invalidRegexes = maxFilesPerFileCabinetFolder.filter(row => !regex.isValidRegex(row.folderPath))
+  if (invalidRegexes.length > 0) {
+    throw new Error(
+      `The following regular expressions in ${CLIENT_CONFIG.maxFilesPerFileCabinetFolder} are invalid: ${safeJsonStringify(invalidRegexes)}`,
+    )
+  }
+}
+
 function validateClientConfig(client: Record<string, unknown>): asserts client is ClientConfig {
   validatePlainObject(client, CONFIG.client)
-  const { installedSuiteApps, maxInstancesPerType } = _.pick(client, Object.values(CLIENT_CONFIG))
+  const { installedSuiteApps, maxInstancesPerType, maxFilesPerFileCabinetFolder } = _.pick(
+    client,
+    Object.values(CLIENT_CONFIG),
+  )
 
   if (installedSuiteApps !== undefined) {
     validateInstalledSuiteApps(installedSuiteApps)
   }
   if (maxInstancesPerType !== undefined) {
-    validateMaxInstancesPerType(maxInstancesPerType, { validateInvalidTypes: true })
+    validateMaxInstancesPerType(maxInstancesPerType)
+  }
+  if (maxFilesPerFileCabinetFolder !== undefined) {
+    validateMaxFilesPerFileCabinetFolder(maxFilesPerFileCabinetFolder)
   }
 }
 

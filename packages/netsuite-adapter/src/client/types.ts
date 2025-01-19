@@ -20,7 +20,12 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
-import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../config/types'
+import {
+  MaxFilesPerFileCabinetFolder,
+  NetsuiteFilePathsQueryParams,
+  NetsuiteTypesQueryParams,
+  ObjectID,
+} from '../config/types'
 
 export interface CustomizationInfo {
   typeName: string
@@ -37,11 +42,13 @@ export interface TemplateCustomTypeInfo extends CustomTypeInfo {
 }
 
 export interface FileCustomizationInfo extends CustomizationInfo {
+  typeName: 'file'
   path: string[]
-  fileContent: Buffer
+  fileContent?: Buffer
 }
 
 export interface FolderCustomizationInfo extends CustomizationInfo {
+  typeName: 'folder'
   path: string[]
 }
 
@@ -63,12 +70,14 @@ export type GetCustomObjectsResult = {
 export type FailedFiles = {
   lockedError: NetsuiteFilePathsQueryParams
   otherError: NetsuiteFilePathsQueryParams
-  largeFolderError: NetsuiteFilePathsQueryParams
+  largeSizeFoldersError: NetsuiteFilePathsQueryParams
+  largeFilesCountFoldersError: NetsuiteFilePathsQueryParams
 }
 
 export type ImportFileCabinetResult = {
   elements: FileCabinetCustomizationInfo[]
   failedPaths: FailedFiles
+  largeFilesCountFolderWarnings: MaxFilesPerFileCabinetFolder[]
 }
 
 export type FailedImport = {

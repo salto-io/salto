@@ -1065,7 +1065,8 @@ describe.each([
       expect(elements).toHaveLength(0)
       expect(failedPaths).toEqual({
         lockedError: [],
-        largeFolderError: [],
+        largeSizeFoldersError: [],
+        largeFilesCountFoldersError: [],
         otherError: fileCabinetTopLevelFolders.map(folderPath => `^${folderPath}.*`),
       })
     })
@@ -1107,7 +1108,12 @@ describe.each([
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, deleteAuthIdCommandMatcher)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
+      expect(failedPaths).toEqual({
+        lockedError: [],
+        largeSizeFoldersError: [],
+        largeFilesCountFoldersError: [],
+        otherError: [],
+      })
     })
 
     it('should fail to importFiles when failing to import a certain file', async () => {
@@ -1249,7 +1255,12 @@ describe.each([
           path: ['Templates', 'E-mail Templates'],
         },
       ])
-      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
+      expect(failedPaths).toEqual({
+        lockedError: [],
+        largeSizeFoldersError: [],
+        largeFilesCountFoldersError: [],
+        otherError: [],
+      })
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
@@ -1280,7 +1291,12 @@ describe.each([
       const { elements, failedPaths } = await client.importFileCabinetContent(query, maxFileCabinetSizeInGB)
       expect(readFileMock).toHaveBeenCalledTimes(0)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
+      expect(failedPaths).toEqual({
+        lockedError: [],
+        largeSizeFoldersError: [],
+        largeFilesCountFoldersError: [],
+        otherError: [],
+      })
       expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1299,7 +1315,12 @@ describe.each([
       )
 
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [], largeFolderError: [] })
+      expect(failedPaths).toEqual({
+        lockedError: [],
+        otherError: [],
+        largeSizeFoldersError: [],
+        largeFilesCountFoldersError: [],
+      })
       expect(mockExecuteAction).not.toHaveBeenCalled()
     })
 
@@ -1350,7 +1371,12 @@ describe.each([
           path: ['Templates', 'E-mail Templates', 'InnerFolder'],
         },
       ])
-      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
+      expect(failedPaths).toEqual({
+        lockedError: [],
+        largeSizeFoldersError: [],
+        largeFilesCountFoldersError: [],
+        otherError: [],
+      })
       expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 2 : 1)
     })
 
@@ -1400,7 +1426,12 @@ describe.each([
         maxFileCabinetSizeInGB,
       )
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [MOCK_FOLDER_PATH], otherError: [] })
+      expect(failedPaths).toEqual({
+        lockedError: [],
+        largeSizeFoldersError: [MOCK_FOLDER_PATH],
+        largeFilesCountFoldersError: [],
+        otherError: [],
+      })
     })
   })
 

@@ -18,6 +18,7 @@ export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
 export const DEFAULT_MAX_INSTANCES_VALUE = 5000
+export const DEFAULT_MAX_FILES_PER_FOLDER_VALUE = 1000
 export const DEFAULT_MAX_INSTANCES_PER_TYPE = [
   { name: `${CUSTOM_RECORD_TYPE_NAME_PREFIX}.*`, limit: 10_000 },
   { name: SAVED_SEARCH, limit: 20_000 },

@@ -23,11 +23,15 @@ import { decorators, collections, values } from '@salto-io/lowerdash'
 import { soap } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { captureServiceIdInfo } from '../service_id_info'
-import { NetsuiteFetchQueries, NetsuiteQuery } from '../config/query'
+import { NetsuiteFetchQueries } from '../config/query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
-import { deployFileCabinetInstances, importFileCabinet } from './suiteapp_client/suiteapp_file_cabinet'
+import {
+  deployFileCabinetInstances,
+  importFileCabinet,
+  ImportFileCabinetParams,
+} from './suiteapp_client/suiteapp_file_cabinet'
 import {
   ConfigRecord,
   EnvType,
@@ -223,16 +227,12 @@ export default class NetsuiteClient {
   }
 
   @logDecorator
-  async importFileCabinetContent(
-    query: NetsuiteQuery,
-    maxFileCabinetSizeInGB: number,
-    extensionsToExclude: string[],
-  ): Promise<ImportFileCabinetResult> {
+  async importFileCabinetContent(params: ImportFileCabinetParams): Promise<ImportFileCabinetResult> {
     if (this.suiteAppClient !== undefined) {
-      return importFileCabinet(this.suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
+      return importFileCabinet(this.suiteAppClient, params)
     }
 
-    return this.sdfClient.importFileCabinetContent(query, maxFileCabinetSizeInGB)
+    return this.sdfClient.importFileCabinetContent(params.query, params.maxFileCabinetSizeInGB)
   }
 
   private static async getSDFObjectGraphNodes(changes: DeployableChange[]): Promise<GraphNode<SDFObjectNode>[]> {

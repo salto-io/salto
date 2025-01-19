@@ -58,7 +58,5 @@ export const kanbanBoardBacklogValidator: ChangeValidator = async changes =>
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Unable to deploy a Kanban Board When the first column is not named "Backlog"',
-      detailedMessage:
-        // Change this message in 1 month, the fetch part is relevant only for deployments before the fix
-        'A Kanban board must have a first column named Backlog. If you did not edit the board manually please fetch both envs and try again',
+      detailedMessage: 'A Kanban board must have a first column named Backlog. Please fix the NaCl accordingly.',
     }))

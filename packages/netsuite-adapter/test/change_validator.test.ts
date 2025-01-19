@@ -67,7 +67,12 @@ describe('change validator', () => {
         Promise.resolve({
           failures: {
             failedToFetchAllAtOnce: false,
-            failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+            failedFilePaths: {
+              lockedError: [],
+              otherError: [],
+              largeSizeFoldersError: [],
+              largeFilesCountFoldersError: [],
+            },
             failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
             failedCustomRecords: [],
             largeSuiteQLTables: [],
@@ -151,7 +156,12 @@ describe('change validator', () => {
         Promise.resolve({
           failures: {
             failedToFetchAllAtOnce: false,
-            failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+            failedFilePaths: {
+              lockedError: [],
+              otherError: [],
+              largeSizeFoldersError: [],
+              largeFilesCountFoldersError: [],
+            },
             failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
             failedCustomRecords: [],
             largeSuiteQLTables: [],

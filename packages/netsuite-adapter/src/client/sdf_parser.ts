@@ -150,6 +150,7 @@ const convertToFileCustomizationInfo = ({
   fileContent: Buffer
 }): FileCustomizationInfo => ({
   ...convertToCustomizationInfo(xmlContent),
+  typeName: 'file',
   path,
   fileContent,
 })
@@ -162,6 +163,7 @@ const convertToFolderCustomizationInfo = ({
   path: string[]
 }): FolderCustomizationInfo => ({
   ...convertToCustomizationInfo(xmlContent),
+  typeName: 'folder',
   path,
 })
 

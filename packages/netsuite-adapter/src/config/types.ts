@@ -168,9 +168,15 @@ type SdfClientConfig = {
   installedSuiteApps?: string[]
 }
 
+export type MaxFilesPerFileCabinetFolder = {
+  folderPath: string
+  limit: number
+}
+
 export type ClientConfig = SdfClientConfig & {
   maxInstancesPerType?: MaxInstancesPerType[]
   maxFileCabinetSizeInGB?: number
+  maxFilesPerFileCabinetFolder?: MaxFilesPerFileCabinetFolder[]
 }
 
 export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<ClientConfig> = {
@@ -181,6 +187,7 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<ClientConfig> = {
   installedSuiteApps: 'installedSuiteApps',
   maxInstancesPerType: 'maxInstancesPerType',
   maxFileCabinetSizeInGB: 'maxFileCabinetSizeInGB',
+  maxFilesPerFileCabinetFolder: 'maxFilesPerFileCabinetFolder',
 }
 
 export type SuiteQLTableQueryParams = {
@@ -305,6 +312,23 @@ const maxInstancesPerConfigType = createMatchingObjectType<MaxInstancesPerType>(
   },
 })
 
+const maxFilesPerFileCabinetFolderType = createMatchingObjectType<MaxFilesPerFileCabinetFolder>({
+  elemID: new ElemID(NETSUITE, 'maxFilesPerFileCabinetFolder'),
+  fields: {
+    folderPath: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    limit: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: { _required: true },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const clientConfigType = createMatchingObjectType<ClientConfig>({
   elemID: new ElemID(NETSUITE, 'clientConfig'),
   fields: {
@@ -355,6 +379,9 @@ const clientConfigType = createMatchingObjectType<ClientConfig>({
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
       },
+    },
+    maxFilesPerFileCabinetFolder: {
+      refType: new ListType(maxFilesPerFileCabinetFolderType),
     },
   },
   annotations: {

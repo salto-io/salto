@@ -936,7 +936,13 @@ export default class SdfClient {
     if (!query.areSomeFilesMatch()) {
       return {
         elements: [],
-        failedPaths: { lockedError: [], otherError: [], largeFolderError: [] },
+        failedPaths: {
+          lockedError: [],
+          otherError: [],
+          largeSizeFoldersError: [],
+          largeFilesCountFoldersError: [],
+        },
+        largeFilesCountFolderWarnings: [],
       }
     }
 
@@ -960,11 +966,11 @@ export default class SdfClient {
     const importedPaths = _.uniq(importFilesResult)
 
     const fileCabinetDirPath = getFileCabinetDirPath(project.projectPath)
-    const largeFolders = largeFoldersToExclude(
+    const largeSizeFoldersError = largeFoldersToExclude(
       await filesToSize(importedPaths, fileCabinetDirPath),
       maxFileCabinetSizeInGB,
     )
-    const listedPaths = filterFilesInFolders(importedPaths, largeFolders)
+    const listedPaths = filterFilesInFolders(importedPaths, largeSizeFoldersError)
     const elements = await parseFileCabinetDir(project.projectPath, listedPaths)
     await this.projectCleanup(project.projectPath, project.authId)
     return {
@@ -972,8 +978,12 @@ export default class SdfClient {
       failedPaths: {
         lockedError: [],
         otherError: listFilesResults.failedPaths,
-        largeFolderError: largeFolders,
+        largeSizeFoldersError,
+        // TODO: SALTO-7297 implement for SDF too
+        largeFilesCountFoldersError: [],
       },
+      // TODO: SALTO-7297 implement for SDF too
+      largeFilesCountFolderWarnings: [],
     }
   }
 
@@ -1152,7 +1162,9 @@ ${this.deployXmlContent}
     const attrsFolderPath = osPath.resolve(fileFolderPath, ATTRIBUTES_FOLDER_NAME)
     const filename = fileCustomizationInfo.path.slice(-1)[0]
     await Promise.all([
-      writeFileInFolder(fileFolderPath, filename, fileCustomizationInfo.fileContent),
+      fileCustomizationInfo.fileContent !== undefined
+        ? writeFileInFolder(fileFolderPath, filename, fileCustomizationInfo.fileContent)
+        : Promise.resolve(),
       writeFileInFolder(attrsFolderPath, attrsFilename, convertToXmlContent(fileCustomizationInfo)),
     ])
   }

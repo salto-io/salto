@@ -171,7 +171,7 @@ export const getCollisionWarnings = ({
   if (instances.length === 0) {
     return []
   }
-  const adapterName = _.capitalize(instances[0].elemID.adapter)
+  const adapterName = _.upperFirst(instances[0].elemID.adapter)
   const elemIDtoInstances = _.pickBy(
     _.groupBy(instances, instance => instance.elemID.getFullName()),
     collideInstances => collideInstances.length > 1,

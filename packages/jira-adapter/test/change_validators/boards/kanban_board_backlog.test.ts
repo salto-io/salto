@@ -11,8 +11,7 @@ import { BOARD_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType } from '../../utils'
 
 const ERROR_TITLE = 'Unable to deploy a Kanban Board When the first column is not named "Backlog"'
-const ERROR_MESSAGE =
-  'A Kanban board must have a first column named Backlog. If you did not edit the board manually please fetch both envs and try again'
+const ERROR_MESSAGE = 'A Kanban board must have a first column named Backlog. Please fix the NaCl accordingly.'
 describe('kanbanBoardBacklogValidator', () => {
   let instance: InstanceElement
   let instance2: InstanceElement

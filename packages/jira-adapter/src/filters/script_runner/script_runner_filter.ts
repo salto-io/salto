@@ -71,6 +71,30 @@ export const scriptRunnerAuditSetter = (instance: InstanceElement, response: cli
   }
 }
 
+const updatePropertyIfExist = (
+  instance: InstanceElement,
+  property: string,
+  response: clientUtils.ResponseValue,
+): void => {
+  if (Object.prototype.hasOwnProperty.call(response, property)) {
+    instance.value[property] = response[property]
+  }
+}
+
+export const scriptRunnerIdAndAuditSetter = (
+  instance: InstanceElement,
+  serviceIdField: string,
+  response: clientUtils.ResponseValue,
+): void => {
+  instance.value[serviceIdField] = response[serviceIdField]
+  if (AUDIT_SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName)) {
+    updatePropertyIfExist(instance, 'auditData', response)
+  } else if (instance.elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE) {
+    updatePropertyIfExist(instance, 'createdTimestamp', response)
+    updatePropertyIfExist(instance, 'updatedTimestamp', response)
+  }
+}
+
 // This filter is used to:
 // * make script runner types deployable
 // * make script runner settings only updatable

@@ -114,7 +114,7 @@ export const nullProgressReporter: DeployProgressReporter = {
 }
 
 const errorToString = (error: SaltoError | SaltoElementError): string =>
-  `[${error.severity}] ${error.message}${isSaltoElementError(error) ? error.elemID.getFullName() : ''}`
+  `[${error.severity}] ${error.detailedMessage}${isSaltoElementError(error) ? error.elemID.getFullName() : ''}`
 
 export const addElements = async <T extends InstanceElement | ObjectType>(
   client: SalesforceClient,

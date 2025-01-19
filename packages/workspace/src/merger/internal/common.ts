@@ -28,7 +28,7 @@ export abstract class MergeError
   public severity: SeverityLevel = 'Error'
 
   toString(): string {
-    return this.message
+    return this.detailedMessage
   }
 }
 

@@ -229,7 +229,7 @@ describe('merger', () => {
       expect(errors[0].message).toEqual('Element has invalid NaCl content')
       expect(errors[0].detailedMessage).toContain(BuiltinTypes.STRING.elemID.getFullName())
       expect(errors[0].detailedMessage).toContain(BuiltinTypes.NUMBER.elemID.getFullName())
-      expect(String(errors[0])).toEqual(errors[0].message)
+      expect(String(errors[0])).toEqual(errors[0].detailedMessage)
     })
 
     it('returns an error when meta types have conflicting types', async () => {
@@ -239,7 +239,7 @@ describe('merger', () => {
         .toArray()
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(ConflictingMetaTypeError)
-      expect(String(errors[0])).toEqual(errors[0].message)
+      expect(String(errors[0])).toEqual(errors[0].detailedMessage)
     })
   })
 

@@ -50,7 +50,7 @@ export const mockErrors = (errors: SaltoError[], parseErrors: parser.ParseError[
   merge: [],
   parse: parseErrors,
   validation: errors.map(err => ({ elemID: new ElemID('test'), error: '', ...err })),
-  strings: () => errors.map(err => err.message),
+  strings: () => errors.map(err => err.detailedMessage),
 })
 
 const mockDirStore = <T extends dirStore.ContentType>(files: Record<string, T> = {}): dirStore.DirectoryStore<T> => {

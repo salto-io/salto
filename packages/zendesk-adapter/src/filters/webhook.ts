@@ -8,13 +8,12 @@
 import _ from 'lodash'
 import {
   Change,
-  createSaltoElementError,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
   isModificationChange,
 } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, createSaltoElementError } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { WEBHOOK_TYPE_NAME } from '../constants'

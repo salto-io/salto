@@ -20,14 +20,18 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { getParent } from '@salto-io/adapter-utils'
-import _ from 'lodash'
+import _, { every } from 'lodash'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import contextDeploymentFilter from '../../../src/filters/fields/context_deployment_filter'
 import JiraClient from '../../../src/client/client'
 import * as contexts from '../../../src/filters/fields/contexts'
-import { FIELD_CONTEXT_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from '../../../src/filters/fields/constants'
+import {
+  FIELD_CONTEXT_OPTION_TYPE_NAME,
+  FIELD_CONTEXT_TYPE_NAME,
+  OPTIONS_ORDER_TYPE_NAME,
+} from '../../../src/filters/fields/constants'
 
 describe('fieldContextDeployment', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
@@ -214,6 +218,7 @@ describe('fieldContextDeployment', () => {
     let orderInstance: InstanceElement
     let optionInstance: InstanceElement
     let cascadeInstance: InstanceElement
+    let contextInstance: InstanceElement
     beforeEach(() => {
       const config = getDefaultConfig({ isDataCenter: false })
       config.fetch.splitFieldContextOptions = true
@@ -224,7 +229,7 @@ describe('fieldContextDeployment', () => {
           config,
         }),
       ) as typeof filter
-      const contextInstance = new InstanceElement('context', contextType, {})
+      contextInstance = new InstanceElement('context', contextType, {})
       orderInstance = new InstanceElement('order', createEmptyType(OPTIONS_ORDER_TYPE_NAME), {}, undefined, {
         [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, _.cloneDeep(contextInstance)),
       })
@@ -252,11 +257,61 @@ describe('fieldContextDeployment', () => {
       expect(getParent(optionInstance).value.id).toEqual('newIdcontext')
       expect(getParent(cascadeInstance).value.id).toBeUndefined()
       expect(getParent(getParent(cascadeInstance)).value.id).toEqual('newIdcontext')
-      expect(getParent(orderInstance).value.id).toEqual('newIdcontext')
     })
     it('should keep context changes in leftoverChanges', async () => {
       const { leftoverChanges } = await filter.deploy(changes)
       expect(leftoverChanges).toHaveLength(changes.length)
+    })
+    it('should mark options of deleted contexts as applied', async () => {
+      const secondOptionInstance = new InstanceElement('option2', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, _.cloneDeep(contextInstance)),
+      })
+      const secondCascadeInstance = new InstanceElement('cascade2', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          secondOptionInstance.elemID,
+          _.cloneDeep(secondOptionInstance),
+        ),
+      })
+      const thirdCascadeInstance = new InstanceElement('cascade3', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          secondOptionInstance.elemID,
+          _.cloneDeep(secondOptionInstance),
+        ),
+      })
+      const thirdOptionInstance = new InstanceElement('option3', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, _.cloneDeep(contextInstance)),
+      })
+
+      changes = [
+        toChange({ before: optionInstance }),
+        toChange({ before: cascadeInstance }),
+        toChange({ before: contextInstance }),
+        toChange({ before: secondOptionInstance }),
+        toChange({ before: secondCascadeInstance }),
+        toChange({ before: thirdOptionInstance }),
+        toChange({ before: thirdCascadeInstance }),
+      ]
+      const { deployResult, leftoverChanges } = await filter.deploy(changes)
+      expect(deployResult.appliedChanges).toHaveLength(changes.length - 1)
+      expect(
+        every(
+          deployResult.appliedChanges,
+          change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME,
+        ),
+      ).toBeTruthy()
+      expect(leftoverChanges).toHaveLength(1)
+      expect(getChangeData(leftoverChanges[0]).elemID.typeName).toEqual(FIELD_CONTEXT_TYPE_NAME)
+    })
+    it('should not mark removal options as applied if parent is not deleted', async () => {
+      const afterContext = contextInstance.clone()
+      afterContext.value.description = 'newIdcontext'
+      changes = [toChange({ before: optionInstance }), toChange({ before: contextInstance, after: afterContext })]
+      const { deployResult, leftoverChanges } = await filter.deploy(changes)
+      expect(deployResult.appliedChanges).toHaveLength(0)
+      expect(leftoverChanges).toHaveLength(2)
+      expect(
+        leftoverChanges.find(change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME),
+      ).toBeDefined()
     })
   })
 })

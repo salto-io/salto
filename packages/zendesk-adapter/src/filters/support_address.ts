@@ -75,7 +75,8 @@ const turnEmailToTemplateExpression = ({
   )
 }
 
-const replaceIfReferenceExpression = (part: TemplatePart): string => (isReferenceExpression(part) ? part.value : part)
+export const replaceIfReferenceExpression = (part: TemplatePart): string =>
+  isReferenceExpression(part) ? part.value : part
 
 const templateToEmail = (
   change: Change<InstanceElement>,

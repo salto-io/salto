@@ -50,7 +50,7 @@ describe('locale filter', () => {
       const res = (await filter.onFetch([enUsLocaleInstance, heLocaleInstance])) as FilterResult
       expect(res.errors).toEqual([
         {
-          message: warningMsg,
+          message: 'Other issues',
           detailedMessage: warningMsg,
           severity: 'Warning',
         },

@@ -23,7 +23,7 @@ import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
 import SalesforceClient from '../../../src/client/client'
 import { Filter, FilterResult } from '../../../src/filter'
-import customObjects, { WARNING_MESSAGE } from '../../../src/filters/author_information/custom_objects'
+import customObjects from '../../../src/filters/author_information/custom_objects'
 import { defaultFilterContext } from '../../utils'
 import { API_NAME, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../../src/constants'
 import { mockTypes } from '../../mock_elements'
@@ -157,8 +157,9 @@ describe('custom objects author information test', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: WARNING_MESSAGE,
-        detailedMessage: WARNING_MESSAGE,
+        message: 'Other issues',
+        detailedMessage:
+          'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.',
       })
     })
   })

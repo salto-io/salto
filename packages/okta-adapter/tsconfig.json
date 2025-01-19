@@ -15,6 +15,7 @@
     { "path": "../element-test-utils" },
     { "path": "../logging" },
     { "path": "../lowerdash" },
-    { "path": "../test-utils" }
+    { "path": "../test-utils" },
+    { "path": "../parser" }
   ]
 }

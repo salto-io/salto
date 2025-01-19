@@ -66,6 +66,7 @@ import {
   walkOnValue,
   elementAnnotationTypes,
   getDetailedChanges as getDetailedChangesFromChange,
+  ERROR_MESSAGES,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
@@ -1022,7 +1023,7 @@ const createFetchChanges = async ({
 
   const errorMessages = await awu(configsMerge.errors.entries())
     .flatMap(err => err.value)
-    .map(err => err.message)
+    .map(err => err.detailedMessage)
     .toArray()
   if (errorMessages.length !== 0) {
     throw new Error(`Received configuration merge errors: ${errorMessages.join(', ')}`)
@@ -1118,7 +1119,7 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
     updatedConfig: {},
     errors: [
       {
-        message: errMsg,
+        message: ERROR_MESSAGES.OTHER_ISSUES,
         detailedMessage: errMsg,
         severity: 'Error',
       },
@@ -1192,14 +1193,11 @@ const fixStaticFilesForFromStateChanges = async (
     ...fetchChangesResult,
     changes: fetchChangesResult.changes.filter(change => !invalidChangeIDs.has(change.change.id.getFullName())),
     errors: fetchChangesResult.errors.concat(
-      Array.from(invalidChangeIDs).map(invalidChangeElemID => {
-        const message = `Dropping changes in element: ${invalidChangeElemID} due to static files hashes mismatch`
-        return {
-          message,
-          detailedMessage: message,
-          severity: 'Error',
-        }
-      }),
+      Array.from(invalidChangeIDs).map(invalidChangeElemID => ({
+        message: ERROR_MESSAGES.OTHER_ISSUES,
+        detailedMessage: `Dropping changes in element: ${invalidChangeElemID} due to static files hashes mismatch`,
+        severity: 'Error',
+      })),
     ),
   }
 }

@@ -252,7 +252,7 @@ const addExtraReferences = async (
   log.debug('Added %d extra dependencies', addedDeps.length)
 }
 
-export const WARNING_MESSAGE =
+const WARNING_MESSAGE =
   'Encountered an error while trying to query your salesforce account for additional configuration dependencies.'
 
 /**

@@ -9,7 +9,6 @@ import _ from 'lodash'
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
-  createSaltoElementError,
   Element,
   ElemID,
   getChangeData,
@@ -22,7 +21,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { elements as adapterElements } from '@salto-io/adapter-components'
-import { invertNaclCase, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { invertNaclCase, naclCase, pathNaclCase, createSaltoElementError } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { OBJECT_TYPE_TYPE, JIRA, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE } from '../../constants'

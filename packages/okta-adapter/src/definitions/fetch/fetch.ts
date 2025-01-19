@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
-import { naclCase, validatePlainObject } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import {
   definitions,
   fetch as fetchUtils,
@@ -1555,7 +1555,7 @@ const createCustomizations = ({
               return {
                 action: 'customSaltoError',
                 value: {
-                  message,
+                  message: ERROR_MESSAGES.OTHER_ISSUES,
                   detailedMessage: message,
                   severity: 'Warning',
                 },

@@ -8,7 +8,6 @@
 import _ from 'lodash'
 import {
   Change,
-  createSaltoElementError,
   Element,
   getChangeData,
   InstanceElement,
@@ -20,7 +19,13 @@ import {
   TemplateExpression,
   TemplatePart,
 } from '@salto-io/adapter-api'
-import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
+import {
+  extractTemplate,
+  replaceTemplatesWithValues,
+  resolvePath,
+  resolveTemplates,
+  createSaltoElementError,
+} from '@salto-io/adapter-utils'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FETCH_CONFIG } from '../config'

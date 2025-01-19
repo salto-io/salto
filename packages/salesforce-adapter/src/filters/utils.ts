@@ -43,6 +43,7 @@ import {
   buildElementsSourceFromElements,
   createSchemeGuard,
   detailedCompare,
+  ERROR_MESSAGES,
   getParents,
   setAdditionalPropertiesAnnotation,
 } from '@salto-io/adapter-utils'
@@ -695,7 +696,7 @@ export const ensureSafeFilterFetch =
       return {
         errors: [
           {
-            message: warningMessage,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
             detailedMessage: warningMessage,
             severity: 'Warning',
           },

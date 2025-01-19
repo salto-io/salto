@@ -18,7 +18,7 @@ import {
   ElemID,
   SaltoElementError,
 } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_RECORDS_PATH, INTERNAL_ID, NETSUITE, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
 import { NetsuiteQuery } from '../config/query'
 import NetsuiteClient from '../client/client'
@@ -129,7 +129,7 @@ const createInstances = async (
         {
           severity: 'Warning',
           elemID: type.elemID,
-          message: 'Fetched multiple instances for a singleton custom record type',
+          message: ERROR_MESSAGES.OTHER_ISSUES,
           detailedMessage: `Expected a single instance of type ${type.elemID.name}, but received the following instances instead:
 ${instances.map(instance => instance.elemID.getFullName()).join('\n')}`,
         },

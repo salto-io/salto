@@ -190,7 +190,7 @@ describe('filterCreator', () => {
           it('returns a warning for the theme', async () => {
             const errors = [
               {
-                message: 'Error fetching theme id park?, download failed specific error',
+                message: 'Other issues',
                 detailedMessage: 'Error fetching theme id park?, download failed specific error',
                 severity: 'Warning',
               },
@@ -213,7 +213,7 @@ describe('filterCreator', () => {
           it('returns a default warning for the theme', async () => {
             const errors = [
               {
-                message: 'Error fetching theme id park?, no content returned from Zendesk API',
+                message: 'Other issues',
                 detailedMessage: 'Error fetching theme id park?, no content returned from Zendesk API',
                 severity: 'Warning',
               },
@@ -305,7 +305,7 @@ describe('filterCreator', () => {
           it('returns a warning for the theme', async () => {
             const errors = [
               {
-                message: 'Error fetching theme id park?, Bad zip file',
+                message: 'Other issues',
                 detailedMessage: 'Error fetching theme id park?, Bad zip file',
                 severity: 'Warning',
               },

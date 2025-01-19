@@ -38,7 +38,7 @@ import {
   fetch as fetchUtils,
   restoreChangeElement,
 } from '@salto-io/adapter-components'
-import { getElemIdFuncWrapper, inspectValue, logDuration } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, getElemIdFuncWrapper, inspectValue, logDuration } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
@@ -217,8 +217,6 @@ export const DEFAULT_FILTERS = [
   organizationsFilter,
   tagsFilter,
   localeFilter,
-  // supportAddress should run before referencedIdFieldsFilter
-  supportAddress,
   customStatus,
   guideAddBrandToArticleTranslation,
   macroFilter,
@@ -249,6 +247,8 @@ export const DEFAULT_FILTERS = [
   // fieldReferencesFilter should be after:
   // usersFilter, macroAttachmentsFilter, tagsFilter, guideLocalesFilter, customObjectFilter, customObjectFieldFilter
   fieldReferencesFilter,
+  // supportAddress should run before referencedIdFieldsFilter and after fieldReferencesFilter
+  supportAddress,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appInstallationsFilter,
@@ -697,12 +697,12 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     if (_.isEmpty(brandsList)) {
       const brandPatterns = Array.from(this.userConfig[FETCH_CONFIG].guide?.brands ?? []).join(', ')
-      const message = `Could not find any brands matching the included patterns: [${brandPatterns}]. Please update the configuration under fetch.guide.brands in the configuration file`
-      log.warn(message)
+      const detailedMessage = `Could not find any brands matching the included patterns: [${brandPatterns}]. Please update the configuration under fetch.guide.brands in the configuration file`
+      log.warn(detailedMessage)
       combinedRes.errors = combinedRes.errors.concat([
         {
-          message,
-          detailedMessage: message,
+          message: ERROR_MESSAGES.OTHER_ISSUES,
+          detailedMessage,
           severity: 'Warning',
         },
       ])
@@ -782,11 +782,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       ).data
       if (isCurrentUserResponse(res)) {
         if (res.user.locale !== 'en-US') {
-          const message =
-            "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support"
           return {
-            message,
-            detailedMessage: message,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage:
+              "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support",
             severity: 'Warning',
           }
         }

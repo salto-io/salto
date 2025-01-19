@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { client as clientUtils } from '@salto-io/adapter-components'
 import {
   getChangeData,
   isInstanceChange,
@@ -14,6 +15,7 @@ import {
   CORE_ANNOTATIONS,
   Value,
   isInstanceElement,
+  InstanceElement,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
@@ -43,6 +45,30 @@ const addCreatedChanges = (value: Value, currentUserInfo: UserInfo | undefined, 
 const addUpdatedChanges = (value: Value, currentUserInfo: UserInfo | undefined, timeStampAsString: boolean): void => {
   value.updatedByAccountId = currentUserInfo?.userId ?? ''
   value.updatedTimestamp = timeStampAsString ? getTimeNowAsSeconds().toString() : getTimeNowAsSeconds()
+}
+
+const updatePropertyIfExist = (
+  instance: InstanceElement,
+  property: string,
+  response: clientUtils.ResponseValue,
+): void => {
+  if (Object.prototype.hasOwnProperty.call(response, property)) {
+    instance.value[property] = response[property]
+  }
+}
+
+export const scriptRunnerIdAndAuditSetter = (
+  instance: InstanceElement,
+  serviceIdField: string,
+  response: clientUtils.ResponseValue,
+): void => {
+  instance.value[serviceIdField] = response[serviceIdField]
+  if (AUDIT_SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName)) {
+    updatePropertyIfExist(instance, 'auditData', response)
+  } else if (instance.elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE) {
+    updatePropertyIfExist(instance, 'createdTimestamp', response)
+    updatePropertyIfExist(instance, 'updatedTimestamp', response)
+  }
 }
 
 // This filter is used to:

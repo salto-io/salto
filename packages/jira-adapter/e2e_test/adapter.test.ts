@@ -30,7 +30,6 @@ import {
   applyDetailedChanges,
   buildElementsSourceFromElements,
   detailedCompare,
-  getParents,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -247,33 +246,26 @@ each([
     })
 
     afterAll(async () => {
-      const removalChanges = addDeployResults
-        .flatMap(res => res.appliedChanges)
-        .filter(isAdditionChange)
-        .map(change => toChange({ before: getChangeData(change) }))
-        .filter(isInstanceChange)
-      removalChanges.forEach(change => {
-        const instance = getChangeData(change)
-        removalChanges
-          .map(getChangeData)
-          .flatMap(getParents)
-          .filter(parent => parent.elemID.isEqual(instance.elemID))
-          .forEach(parent => {
-            parent.resValue = instance
-          })
-      })
+      const removalChangeGroups = addDeployResults
+        .map(res => res.appliedChanges)
+        .map(changeGroup =>
+          changeGroup
+            .filter(isAdditionChange)
+            .map(change => toChange({ before: getChangeData(change) }))
+            .filter(isInstanceChange),
+        )
 
       const deployChanges = async (
-        changes: Change<InstanceElement>[],
+        changeGroups: Change<InstanceElement>[][],
         catchCondition: (e: unknown) => boolean,
       ): Promise<(SaltoError | SaltoElementError)[]> => {
         const deployResults = await Promise.all(
-          changes.map(change => {
+          changeGroups.map(changeGroup => {
             try {
               return adapter.deploy({
                 changeGroup: {
-                  groupID: getChangeData(change).elemID.getFullName(),
-                  changes: [change],
+                  groupID: getChangeData(changeGroup[0]).elemID.getFullName(),
+                  changes: changeGroup,
                 },
                 progressReporter: nullProgressReporter,
               })
@@ -292,11 +284,11 @@ each([
         return deployResults.flatMap(res => res.errors)
       }
 
-      const errors = await deployChanges(removalChanges, (e: unknown) => String(e).includes('status code 404'))
+      const errors = await deployChanges(removalChangeGroups, (e: unknown) => String(e).includes('status code 404'))
       if (errors.length) {
         throw new Error(`Failed to clean e2e changes: ${errors.map(e => safeJsonStringify(e)).join(', ')}`)
       }
-      const removalInstancesNames = removalChanges.map(change => getChangeData(change).elemID.getFullName())
+      const removalInstancesNames = removalChangeGroups.flat().map(change => getChangeData(change).elemID.getFullName())
       const allOssCreatedElements = elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.name.includes('createdByOssE2e'))
@@ -310,7 +302,7 @@ each([
         .map(instance => toChange({ before: instance }))
 
       if (!isDataCenter) {
-        const allRemovalErrors = await deployChanges(allOssCreatedElements, () => true) // do not fail on errors
+        const allRemovalErrors = await deployChanges([allOssCreatedElements], () => true) // do not fail on errors
         if (allRemovalErrors.length) {
           throw new Error(
             `Failed to clean older e2e changes: ${allRemovalErrors.map(e => safeJsonStringify(e)).join(', ')}`,

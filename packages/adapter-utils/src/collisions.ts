@@ -120,13 +120,21 @@ ${getInstancesDetailsMsg(instanceDetails, baseUrl, maxBreakdownDetailsElements)}
   return collisionMessages
 }
 
-const getTextWithLinkToService = ({ instanceName, url }: { instanceName: string; url?: string }): string =>
-  url !== undefined ? `${instanceName}, view in the service - ${url}` : instanceName
+const getTextWithLinkToService = ({
+  instanceName,
+  adapterName,
+  url,
+}: {
+  instanceName: string
+  adapterName: string
+  url?: string
+}): string => (url !== undefined ? `${instanceName} - open in ${adapterName}: ${url}` : instanceName)
 
-const getInstancesWithLinksToService = (instances: InstanceElement[]): string =>
+const getInstancesWithLinksToService = (instances: InstanceElement[], adapterName: string): string =>
   instances.map(instance =>
     getTextWithLinkToService({
       instanceName: instance.annotations[CORE_ANNOTATIONS.ALIAS] ?? instance.elemID.name,
+      adapterName,
       url: instance.annotations[CORE_ANNOTATIONS.SERVICE_URL],
     }),
   ).join(`,
@@ -146,7 +154,7 @@ const createWarningMessages = ({
       elemId,
       collideInstances,
     ]) => `${collideInstances.length} ${adapterName} elements ${addChildrenMessage ? 'and their child elements ' : ''}were not fetched, as they were mapped to a single ID ${elemId}:
-${getInstancesWithLinksToService(collideInstances)}.
+${getInstancesWithLinksToService(collideInstances, adapterName)}.
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
 Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`,
@@ -163,7 +171,7 @@ export const getCollisionWarnings = ({
   if (instances.length === 0) {
     return []
   }
-  const adapterName = instances[0].elemID.adapter
+  const adapterName = _.capitalize(instances[0].elemID.adapter)
   const elemIDtoInstances = _.pickBy(
     _.groupBy(instances, instance => instance.elemID.getFullName()),
     collideInstances => collideInstances.length > 1,

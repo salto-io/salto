@@ -64,7 +64,6 @@ describe('addParentToApprovalProcess', () => {
     })
     describe('when parent does not exist', () => {
       beforeEach(async () => {
-        jest.clearAllMocks()
         elementsSource = []
         elements = [
           (accountApprovalProcess = createInstanceElement(

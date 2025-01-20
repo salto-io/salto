@@ -62,6 +62,7 @@ const FETCH_CONFIG_OVERRIDE = {
         },
       },
     },
+    useGuideNewInfra: true,
     exclude: [],
   },
 }

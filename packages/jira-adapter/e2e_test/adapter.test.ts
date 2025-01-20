@@ -26,7 +26,12 @@ import {
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils, resolveValues } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { buildElementsSourceFromElements, getParents, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  applyDetailedChanges,
+  buildElementsSourceFromElements,
+  detailedCompare,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import each from 'jest-each'
 import { Credentials } from '../src/auth'
@@ -38,7 +43,11 @@ import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
 import { BEHAVIOR_TYPE } from '../src/constants'
-import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../src/filters/fields/constants'
+import {
+  FIELD_CONTEXT_OPTION_TYPE_NAME,
+  FIELD_CONTEXT_TYPE_NAME,
+  FIELD_TYPE_NAME,
+} from '../src/filters/fields/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
@@ -134,6 +143,19 @@ each([
     let elements: Element[]
 
     beforeAll(async () => {
+      // this is normally done by the core
+      const updateDeployedInstances = (
+        changes: readonly Change[],
+        beforeInstanceMap: Record<string, InstanceElement>,
+      ): void => {
+        changes.map(getChangeData).forEach(updatedInstance => {
+          const preDeployInstance = beforeInstanceMap[updatedInstance.elemID.getFullName()]
+          if (preDeployInstance !== undefined) {
+            applyDetailedChanges(preDeployInstance, detailedCompare(preDeployInstance, updatedInstance))
+          }
+        })
+      }
+
       elementsSource = buildElementsSourceFromElements(fetchedElements)
       const adapterAttr = realAdapter({
         credentials: credLease.value,
@@ -142,6 +164,9 @@ each([
       })
       adapter = adapterAttr.adapter
       addInstanceGroups = createInstances(fetchedElements, isDataCenter)
+      const fullNameToAddedInstance = Object.fromEntries(
+        addInstanceGroups.flat().map(instance => [instance.elemID.getFullName(), instance]),
+      )
 
       addDeployResults = await awu(addInstanceGroups)
         .map(async group => {
@@ -152,23 +177,18 @@ each([
             },
             progressReporter: nullProgressReporter,
           })
-
-          res.appliedChanges.forEach(appliedChange => {
-            const appliedInstance = getChangeData(appliedChange)
-            addInstanceGroups
-              .flat()
-              .flatMap(getParents)
-              .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
-              .forEach(parent => {
-                parent.resValue = appliedInstance
-              })
-          })
+          updateDeployedInstances(res.appliedChanges, fullNameToAddedInstance)
           return res
         })
         .toArray()
 
       modifyInstanceGroups = createModifyInstances(fetchedElements, isDataCenter)
-
+      const fullNameToModifiedInstance = Object.fromEntries(
+        modifyInstanceGroups
+          .flat()
+          .map(getChangeData)
+          .map(instance => [instance.elemID.getFullName(), instance]),
+      )
       modifyDeployResults = await awu(modifyInstanceGroups)
         .map(async group => {
           const res = await adapter.deploy({
@@ -179,16 +199,7 @@ each([
             progressReporter: nullProgressReporter,
           })
 
-          res.appliedChanges.forEach(appliedChange => {
-            const appliedInstance = getChangeData(appliedChange)
-            modifyInstanceGroups
-              .flat()
-              .flatMap(change => getParents(change.data.after))
-              .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
-              .forEach(parent => {
-                parent.resValue = appliedInstance
-              })
-          })
+          updateDeployedInstances(res.appliedChanges, fullNameToModifiedInstance)
           return res
         })
         .toArray()
@@ -239,33 +250,26 @@ each([
     })
 
     afterAll(async () => {
-      const removalChanges = addDeployResults
-        .flatMap(res => res.appliedChanges)
-        .filter(isAdditionChange)
-        .map(change => toChange({ before: getChangeData(change) }))
-        .filter(isInstanceChange)
-      removalChanges.forEach(change => {
-        const instance = getChangeData(change)
-        removalChanges
-          .map(getChangeData)
-          .flatMap(getParents)
-          .filter(parent => parent.elemID.isEqual(instance.elemID))
-          .forEach(parent => {
-            parent.resValue = instance
-          })
-      })
+      const removalChangeGroups = addDeployResults
+        .map(res => res.appliedChanges)
+        .map(changeGroup =>
+          changeGroup
+            .filter(isAdditionChange)
+            .map(change => toChange({ before: getChangeData(change) }))
+            .filter(isInstanceChange),
+        )
 
       const deployChanges = async (
-        changes: Change<InstanceElement>[],
+        changeGroups: Change<InstanceElement>[][],
         catchCondition: (e: unknown) => boolean,
       ): Promise<(SaltoError | SaltoElementError)[]> => {
         const deployResults = await Promise.all(
-          changes.map(change => {
+          changeGroups.map(changeGroup => {
             try {
               return adapter.deploy({
                 changeGroup: {
-                  groupID: getChangeData(change).elemID.getFullName(),
-                  changes: [change],
+                  groupID: getChangeData(changeGroup[0]).elemID.getFullName(),
+                  changes: changeGroup,
                 },
                 progressReporter: nullProgressReporter,
               })
@@ -284,11 +288,11 @@ each([
         return deployResults.flatMap(res => res.errors)
       }
 
-      const errors = await deployChanges(removalChanges, (e: unknown) => String(e).includes('status code 404'))
+      const errors = await deployChanges(removalChangeGroups, (e: unknown) => String(e).includes('status code 404'))
       if (errors.length) {
         throw new Error(`Failed to clean e2e changes: ${errors.map(e => safeJsonStringify(e)).join(', ')}`)
       }
-      const removalInstancesNames = removalChanges.map(change => getChangeData(change).elemID.getFullName())
+      const removalInstancesNames = removalChangeGroups.flat().map(change => getChangeData(change).elemID.getFullName())
       const allOssCreatedElements = elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.name.includes('createdByOssE2e'))
@@ -299,10 +303,11 @@ each([
             instance.elemID.typeName !== FIELD_CONTEXT_TYPE_NAME ||
             instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0].value.isLocked === false,
         ) // do not delete contexts of locked fields
+        .filter(instance => instance.elemID.typeName !== FIELD_CONTEXT_OPTION_TYPE_NAME) // do not delete options, they will be deleted with their contexts
         .map(instance => toChange({ before: instance }))
 
       if (!isDataCenter) {
-        const allRemovalErrors = await deployChanges(allOssCreatedElements, () => true) // do not fail on errors
+        const allRemovalErrors = await deployChanges([allOssCreatedElements], () => true) // do not fail on errors
         if (allRemovalErrors.length) {
           throw new Error(
             `Failed to clean older e2e changes: ${allRemovalErrors.map(e => safeJsonStringify(e)).join(', ')}`,

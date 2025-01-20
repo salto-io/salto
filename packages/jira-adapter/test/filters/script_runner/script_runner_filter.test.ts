@@ -8,7 +8,10 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import scriptRunnerFilter, { scriptRunnerAuditSetter } from '../../../src/filters/script_runner/script_runner_filter'
+import scriptRunnerFilter, {
+  listenersAuditSetter,
+  scriptRunnerAuditSetter,
+} from '../../../src/filters/script_runner/script_runner_filter'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import {
@@ -195,7 +198,7 @@ describe('script_runner_filter', () => {
     })
   })
 })
-describe('scriptRunnerIdAndAuditSetter', () => {
+describe('AuditSetter', () => {
   let fieldInstance: InstanceElement
   let listenerInstance: InstanceElement
   let fragmentInstance: InstanceElement
@@ -225,7 +228,7 @@ describe('scriptRunnerIdAndAuditSetter', () => {
     expect(Object.prototype.hasOwnProperty.call(fieldInstance.value, 'auditData')).toBeFalsy()
   })
   it('should set the id and audit info in a listener', async () => {
-    scriptRunnerAuditSetter(listenerInstance, {
+    listenersAuditSetter(listenerInstance, {
       id: 'my-id',
       createdTimestamp: '10',
       updatedTimestamp: '10',
@@ -234,7 +237,7 @@ describe('scriptRunnerIdAndAuditSetter', () => {
     expect(listenerInstance.value.updatedTimestamp).toEqual('10')
   })
   it('should not set the audit info in a listener if not provided', async () => {
-    scriptRunnerAuditSetter(listenerInstance, {
+    listenersAuditSetter(listenerInstance, {
       id: 'my-id',
     })
     expect(Object.prototype.hasOwnProperty.call(listenerInstance.value, 'createdTimestamp')).toBeFalsy()

@@ -15,11 +15,9 @@ import {
   StaticFile,
 } from '@salto-io/adapter-api'
 import _, { isArray, isPlainObject } from 'lodash'
-import {
-  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
-  CUSTOM_OBJECT_FIELD_TYPE_NAME,
-  CUSTOM_OBJECT_TYPE_NAME,
-} from '@salto-io/zendesk-adapter'
+import { e2eUtils } from '@salto-io/zendesk-adapter'
+
+const { CUSTOM_FIELD_OPTIONS_FIELD_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME, CUSTOM_OBJECT_TYPE_NAME } = e2eUtils
 
 const verifyArray = (originalArray: Array<unknown>, fetchArray: Array<unknown>): void => {
   const originalVals = originalArray.map(val => (isReferenceExpression(val) ? val.elemID.getFullName() : val))

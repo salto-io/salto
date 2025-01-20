@@ -8,19 +8,7 @@
 
 import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import {
-  adapter,
-  Credentials,
-  CUSTOM_OBJECT_FIELD_TYPE_NAME,
-  CUSTOM_OBJECT_TYPE_NAME,
-  GROUP_TYPE_NAME,
-  GUIDE_SUPPORTED_TYPES,
-  GUIDE_THEME_TYPE_NAME,
-  GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-  SUPPORT_ADDRESS_TYPE_NAME,
-  THEME_SETTINGS_TYPE_NAME,
-  ZENDESK,
-} from '@salto-io/zendesk-adapter'
+import { e2eUtils, adapter } from '@salto-io/zendesk-adapter'
 import { ValidationError, Workspace } from '@salto-io/workspace'
 import {
   ChangeError,
@@ -52,6 +40,17 @@ import {
 import { verifyCustomObject, verifyInstanceValues } from './verificationUtils'
 
 const log = logger(module)
+const {
+  CUSTOM_OBJECT_FIELD_TYPE_NAME,
+  CUSTOM_OBJECT_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  GUIDE_SUPPORTED_TYPES,
+  GUIDE_THEME_TYPE_NAME,
+  GUIDE_TYPES_TO_HANDLE_BY_BRAND,
+  SUPPORT_ADDRESS_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
+  ZENDESK,
+} = e2eUtils
 
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(1000 * 60 * 15)
@@ -135,7 +134,7 @@ const fetchBaseInstances = async (
 
 describe('Zendesk adapter E2E', () => {
   describe('fetch and deploy', () => {
-    let credLease: CredsLease<Credentials>
+    let credLease: CredsLease<e2eUtils.Credentials>
     let elements: Element[] = []
     let instancesToDeploy: InstanceElement[]
     let guideInstances: InstanceElement[]

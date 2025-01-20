@@ -7,7 +7,9 @@
  */
 import { Adapter } from '@salto-io/e2e-credentials-store'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { Credentials, createConnection } from '@salto-io/zendesk-adapter'
+import { e2eUtils } from '@salto-io/zendesk-adapter'
+
+const { createConnection } = e2eUtils
 
 type Args = {
   username: string
@@ -15,7 +17,7 @@ type Args = {
   subdomain: string
 }
 
-const adapter: Adapter<Args, Credentials> = {
+const adapter: Adapter<Args, e2eUtils.Credentials> = {
   name: 'zendesk',
   credentialsOpts: {
     username: {

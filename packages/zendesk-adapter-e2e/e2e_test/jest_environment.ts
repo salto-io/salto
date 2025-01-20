@@ -12,11 +12,11 @@ import {
   JestEnvironmentConstructorArgs,
 } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
-import { UsernamePasswordCredentials } from '@salto-io/zendesk-adapter'
+import { e2eUtils } from '@salto-io/zendesk-adapter'
 
 const log = logger(module)
 
-export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentials> => {
+export const credsSpec = (envName?: string): CredsSpec<e2eUtils.UsernamePasswordCredentials> => {
   const addEnvName = (varName: string): string => (envName === undefined ? varName : [varName, envName].join('_'))
   const userNameEnvVarName = addEnvName('ZENDESK_USERNAME')
   const passwordEnvVarName = addEnvName('ZENDESK_PASSWORD')
@@ -31,7 +31,7 @@ export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentia
         subdomain: envUtils.required(subdomainEnvVarName),
       }
     },
-    validate: async (_creds: UsernamePasswordCredentials): Promise<void> => {
+    validate: async (_creds: e2eUtils.UsernamePasswordCredentials): Promise<void> => {
       // TODO validate when connecting with real credentials
     },
     typeName: 'zendesk',

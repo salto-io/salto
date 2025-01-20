@@ -21,7 +21,16 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { config as configUtils, fetch as fetchUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import {
+import { e2eUtils } from '@salto-io/zendesk-adapter'
+import _ from 'lodash'
+import { naclCase } from '@salto-io/adapter-utils'
+import { v4 as uuidv4 } from 'uuid'
+import * as fs from 'fs'
+import * as path from 'path'
+import { parserUtils } from '@salto-io/parser'
+import { mockDefaultValues } from './mock_elements'
+
+const {
   API_DEFINITIONS_CONFIG,
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ATTACHMENTS_FIELD,
@@ -43,20 +52,12 @@ import {
   SECTION_TYPE_NAME,
   shortElemIdHash,
   SUPPORT_ADDRESS_TYPE_NAME,
-  ThemeDirectory,
   TRANSLATIONS_FIELD,
   unzipFolderToElements,
   USER_SEGMENT_TYPE_NAME,
   VIEW_TYPE_NAME,
   ZENDESK,
-} from '@salto-io/zendesk-adapter'
-import _ from 'lodash'
-import { naclCase } from '@salto-io/adapter-utils'
-import { v4 as uuidv4 } from 'uuid'
-import * as fs from 'fs'
-import * as path from 'path'
-import { parserUtils } from '@salto-io/parser'
-import { mockDefaultValues } from './mock_elements'
+} = e2eUtils
 
 export const TYPES_NOT_TO_REMOVE = new Set<string>([
   SUPPORT_ADDRESS_TYPE_NAME, // this is usually the defult of the brand and zendesk does not allow deleting the default
@@ -107,7 +108,11 @@ const createInstanceElement = ({
   )
 }
 
-const createRootForTheme = async (buffer: Buffer, brand: InstanceElement, name: string): Promise<ThemeDirectory> => {
+const createRootForTheme = async (
+  buffer: Buffer,
+  brand: InstanceElement,
+  name: string,
+): Promise<e2eUtils.ThemeDirectory> => {
   const root = await unzipFolderToElements({
     buffer,
     currentBrandName: brand.value.name,

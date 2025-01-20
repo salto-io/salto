@@ -7,6 +7,7 @@
  */
 import { ElemID, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { SALESFORCE } from '../../src/constants'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import filterCreator from '../../src/filters/omit_standard_fields_non_deployable_values'
 import { STANDARD_VALUE_SET } from '../../src/filters/standard_value_sets'
 import { Types } from '../../src/transformers/transformer'
@@ -17,7 +18,14 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
   let filter: FilterWith<'onFetch'>
   beforeEach(() => {
     filter = filterCreator({
-      config: defaultFilterContext,
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({
+          fetchParams: {
+            optionalFeatures: { omitStandardFieldsNonDeployableValues: true },
+          },
+        }),
+      },
     }) as FilterWith<'onFetch'>
   })
   describe('onFetch', () => {
@@ -78,6 +86,26 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
       expect(standardValueSetField).toBeDefined()
       expect(standardValueSetField.annotations.valueSetName).toBeDefined()
       expect(standardValueSetField.annotations.referenceTo).toBeUndefined()
+    })
+
+    it('should do nothing when the feature is disabled', async () => {
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: {
+              optionalFeatures: {
+                omitStandardFieldsNonDeployableValues: false,
+              },
+            },
+          }),
+        },
+      }) as FilterWith<'onFetch'>
+      await filter.onFetch([testObject])
+      const standardPicklistField = testObject.fields[STANDARD_PICKLIST_FIELD]
+      expect(standardPicklistField).toBeDefined()
+      expect(standardPicklistField.annotations.valueSet).toBeDefined()
+      expect(standardPicklistField.annotations.referenceTo).toBeDefined()
     })
   })
 })

@@ -5,7 +5,3 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-
-export { adapter } from './src/adapter_creator'
-export { APP_MARKETPLACE_HEADERS as ZENDESK_SALTO_APP_MARKETPLACE_HEADERS } from './src/client/connection'
-export * as e2eUtils from './src/e2e_index'

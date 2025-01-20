@@ -1,8 +1,8 @@
 {
-  "name": "@salto-io/zendesk-adapter",
+  "name": "@salto-io/e2e-test-utils",
   "version": "0.5.0",
   "license": "SEE LICENSE IN LICENSE",
-  "description": "Salto Zendesk adapter",
+  "description": "Salto e2e utils",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto"
@@ -28,38 +28,22 @@
     "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
-  "dependencies": {
-    "@handlebars/parser": "^2.1.0",
+  "devDependencies": {
     "@salto-io/adapter-api": "0.5.0",
     "@salto-io/adapter-components": "0.5.0",
-    "@salto-io/adapter-utils": "0.5.0",
-    "@salto-io/dag": "0.5.0",
-    "@salto-io/logging": "0.5.0",
+    "@salto-io/core": "0.5.0",
+    "@salto-io/e2e-credentials-store": "0.5.0",
+    "@salto-io/file": "0.5.0",
+    "@salto-io/local-workspace": "0.5.0",
     "@salto-io/lowerdash": "0.5.0",
-    "@salto-io/parser": "0.5.0",
-    "acorn": "^8.11.3",
-    "acorn-walk": "^8.3.2",
-    "form-data": "^4.0.0",
-    "joi": "^17.4.0",
-    "jszip": "^3.10.1",
-    "lodash": "^4.17.21",
-    "moment-timezone": "^0.5.39",
-    "wu": "^2.1.0"
-  },
-  "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.0",
-    "@salto-io/test-utils": "0.5.0",
     "@salto-io/workspace": "0.5.0",
     "@types/jest": "^29.5.12",
-    "@types/jszip": "^3.4.0",
     "@types/lodash": "^4.14.168",
-    "axios": "^1.7.2",
-    "axios-mock-adapter": "^1.19.0",
-    "axios-retry": "^4.4.2",
     "eslint": "^9.16.0",
     "jest": "^29.7.0",
+    "lodash": "^4.17.21",
     "prettier": "3.2.5",
-    "ts-jest": "^29.2.0",
+    "tmp-promise": "^2.0.2",
     "tsc-watch": "^2.2.1",
     "turbo": "^2.0.6",
     "typescript": "4.8.4"

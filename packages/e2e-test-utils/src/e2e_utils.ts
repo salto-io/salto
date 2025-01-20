@@ -9,6 +9,7 @@ import { createElementSelectors, ValidationError, Workspace } from '@salto-io/wo
 import {
   addAdapter,
   deploy,
+  DeployError,
   fetch,
   fixElements,
   getDefaultAdapterConfig,
@@ -24,12 +25,10 @@ import {
   Element,
   ElemID,
   InstanceElement,
-  toChange,
   Adapter as AdapterType,
-  AdapterAuthentication,
   ChangeError,
+  ObjectType,
 } from '@salto-io/adapter-api'
-import { getDetailedChanges } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
@@ -37,56 +36,57 @@ const { awu } = collections.asynciterable
 const updateConfig = async ({
   workspace,
   adapterName,
-  fetchAddition,
+  configOverride,
   adapterCreators,
 }: {
   workspace: Workspace
   adapterName: string
-  fetchAddition: Record<string, unknown>
+  configOverride: Record<string, unknown>
   adapterCreators: Record<string, AdapterType>
 }): Promise<void> => {
   const defaultConfig = await getDefaultAdapterConfig({ adapterName, accountName: adapterName, adapterCreators })
   if (!_.isUndefined(defaultConfig)) {
-    defaultConfig[0].value.fetch = { ...defaultConfig[0].value.fetch, ...fetchAddition }
+    defaultConfig[0].value = { ...defaultConfig[0].value, ...configOverride }
     await workspace.updateAccountConfig(adapterName, defaultConfig, adapterName)
   }
 }
+
 export const initWorkspace = async <T extends {}>({
   envName,
   credLease,
   adapterName,
   configOverride,
   adapterCreators,
-  authMethods,
+  credentialsType,
 }: {
   envName: string
   credLease: CredsLease<T>
   adapterName: string
   configOverride?: Record<string, unknown>
   adapterCreators: Record<string, AdapterType>
-  authMethods: AdapterAuthentication
+  credentialsType: ObjectType
 }): Promise<Workspace> => {
   const baseDir = (await tmp.dir()).path
   const workspace = await initLocalWorkspace({ baseDir, envName, adapterCreators })
   await workspace.setCurrentEnv(envName, false)
-  const configType = authMethods.basic
-  const { credentialsType } = configType
   const newConfig = new InstanceElement(ElemID.CONFIG_NAME, credentialsType, credLease.value)
   await updateCredentials(workspace, newConfig, adapterName)
   await updateConfig({
     workspace,
     adapterName,
-    fetchAddition: configOverride ?? {},
+    configOverride: configOverride ?? {},
     adapterCreators,
   })
   await addAdapter({ workspace, adapterName, adapterCreators })
   await workspace.flush()
   return workspace
 }
+
 export const getElementsFromWorkspace = async (workspace: Workspace): Promise<Element[]> => {
   const elementsSource = await workspace.elements()
   return awu(await elementsSource.getAll()).toArray()
 }
+
 const updateWorkspace = async (
   workspace: Workspace,
   changes: DetailedChangeWithBaseChange[],
@@ -99,6 +99,7 @@ const updateWorkspace = async (
   expect(err.validation.filter(error => validationFilter(error))).toEqual([])
   await workspace.flush()
 }
+
 export const fetchWorkspace = async ({
   workspace,
   adapterCreators,
@@ -116,50 +117,27 @@ export const fetchWorkspace = async ({
     validationFilter,
   )
 }
-export const getAdditionDetailedChangesFromInstances = (
-  instances: InstanceElement[],
-): DetailedChangeWithBaseChange[] => {
-  const changes = instances.map(inst => toChange({ after: inst }))
-  return changes.flatMap(change => getDetailedChanges(change))
-}
-export const getDeletionDetailedChangesFromInstances = (
-  instances: InstanceElement[],
-): DetailedChangeWithBaseChange[] => {
-  const changes = instances.map(inst => toChange({ before: inst }))
-  return changes.flatMap(change => getDetailedChanges(change))
-}
 
 const runFixers = async ({
   workspace,
   adapterCreators,
   selectors,
+  expectedFixerErrors = [],
+  expectedFixerChanges = [],
 }: {
   workspace: Workspace
   adapterCreators: Record<string, AdapterType>
   selectors: string[]
+  expectedFixerErrors?: ChangeError[]
+  expectedFixerChanges?: DetailedChangeWithBaseChange[]
 }): Promise<void> => {
   const { validSelectors, invalidSelectors } = createElementSelectors(selectors)
   expect(invalidSelectors).toEqual([])
   const { changes, errors } = await fixElements(workspace, validSelectors, adapterCreators)
-  expect(errors).toEqual([])
-  expect(changes).toEqual([])
+  expect(errors).toEqual(expectedFixerErrors)
+  expect(changes).toEqual(expectedFixerChanges)
 }
 
-export const getCVErrors = async ({
-  workspace,
-  detailedChanges,
-  validationFilter,
-  adapterCreators,
-}: {
-  workspace: Workspace
-  detailedChanges: DetailedChangeWithBaseChange[]
-  validationFilter?: (error: ValidationError) => boolean
-  adapterCreators: Record<string, AdapterType>
-}): Promise<readonly ChangeError[]> => {
-  await updateWorkspace(workspace, detailedChanges, validationFilter)
-  const actionPlan = await preview({ workspace, adapterCreators })
-  return actionPlan.changeErrors
-}
 export const e2eDeploy = async ({
   workspace,
   detailedChanges,
@@ -167,6 +145,9 @@ export const e2eDeploy = async ({
   adapterCreators,
   changeErrorFilter = e => e.severity === 'Error',
   selectorsForFixers,
+  expectedChangeErrors = [],
+  expectedDeployErrors = [],
+  actionPlanAfterDeploySize = 0,
 }: {
   workspace: Workspace
   detailedChanges: DetailedChangeWithBaseChange[]
@@ -174,25 +155,28 @@ export const e2eDeploy = async ({
   adapterCreators: Record<string, AdapterType>
   changeErrorFilter?: (error: ChangeError) => boolean
   selectorsForFixers: string[]
+  expectedChangeErrors?: ChangeError[]
+  expectedDeployErrors?: DeployError[]
+  actionPlanAfterDeploySize?: number
 }): Promise<void | ChangeError[]> => {
   await updateWorkspace(workspace, detailedChanges, validationFilter)
   await runFixers({ workspace, adapterCreators, selectors: selectorsForFixers })
   const actionPlan = await preview({ workspace, adapterCreators })
   const errors = actionPlan.changeErrors.filter(changeErrorFilter)
-  expect(errors).toEqual([])
+  expect(errors).toEqual(expectedChangeErrors)
   const result = await deploy({
     workspace,
     actionPlan,
     reportProgress: () => {},
     adapterCreators,
   })
-  expect(result.errors).toEqual([])
+  expect(result.errors).toEqual(expectedDeployErrors)
   expect(result.changes).toBeDefined()
   await updateWorkspace(
     workspace,
     Array.from(result.changes ?? []).map(c => c.change),
     validationFilter,
   )
-  const actionPlan2 = await preview({ workspace, adapterCreators })
-  expect(actionPlan2.size).toEqual(0)
+  const actionPlanAfterDeploy = await preview({ workspace, adapterCreators })
+  expect(actionPlanAfterDeploy.size).toEqual(actionPlanAfterDeploySize)
 }

@@ -2,7 +2,7 @@
   "name": "@salto-io/zendesk-adapter-e2e",
   "version": "0.5.0",
   "license": "SEE LICENSE IN LICENSE",
-  "description": "Salto Zendesk adapter",
+  "description": "Salto Zendesk adapter e2e",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto"

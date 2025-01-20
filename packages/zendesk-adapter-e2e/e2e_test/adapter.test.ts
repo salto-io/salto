@@ -12,23 +12,19 @@ import { e2eUtils, adapter } from '@salto-io/zendesk-adapter'
 import { ValidationError, Workspace } from '@salto-io/workspace'
 import {
   ChangeError,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   InstanceElement,
   isInstanceElement,
   isObjectType,
   ReferenceExpression,
+  toChange,
   Value,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import {
-  e2eDeploy,
-  fetchWorkspace,
-  getAdditionDetailedChangesFromInstances,
-  getDeletionDetailedChangesFromInstances,
-  getElementsFromWorkspace,
-  initWorkspace,
-} from '@salto-io/e2e-test-utils'
+import { e2eDeploy, fetchWorkspace, getElementsFromWorkspace, initWorkspace } from '@salto-io/e2e-test-utils'
+import { getDetailedChanges } from '@salto-io/adapter-utils'
 import { credsLease } from './adapter'
 import {
   getAllInstancesToDeploy,
@@ -70,6 +66,16 @@ const FETCH_CONFIG_OVERRIDE = {
 
 const adapterCreators = {
   zendesk: adapter,
+}
+
+const getAdditionDetailedChangesFromInstances = (instances: InstanceElement[]): DetailedChangeWithBaseChange[] => {
+  const changes = instances.map(inst => toChange({ after: inst }))
+  return changes.flatMap(change => getDetailedChanges(change))
+}
+
+const getDeletionDetailedChangesFromInstances = (instances: InstanceElement[]): DetailedChangeWithBaseChange[] => {
+  const changes = instances.map(inst => toChange({ before: inst }))
+  return changes.flatMap(change => getDetailedChanges(change))
 }
 
 // we cannot remove support address as it is the default, therefore when we remove the brand the support address gets validation error
@@ -155,13 +161,14 @@ describe('Zendesk adapter E2E', () => {
     beforeAll(async () => {
       log.resetLogCount()
       credLease = await credsLease()
+      const { credentialsType } = adapter.authenticationMethods.basic
       workspace = await initWorkspace({
         envName: 'zendesk-env',
         adapterName: 'zendesk',
         credLease,
         configOverride: FETCH_CONFIG_OVERRIDE,
         adapterCreators,
-        authMethods: adapter.authenticationMethods,
+        credentialsType,
       })
       const { brandInstanceE2eHelpCenter, defaultGroup } = await fetchBaseInstances(workspace)
       if (brandInstanceE2eHelpCenter == null || defaultGroup == null) {

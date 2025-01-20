@@ -52,16 +52,18 @@ const {
 jest.setTimeout(1000 * 60 * 15)
 
 const FETCH_CONFIG_OVERRIDE = {
-  guide: {
-    brands: ['.*'],
-    themes: {
+  fetch: {
+    guide: {
       brands: ['.*'],
-      referenceOptions: {
-        enableReferenceLookup: false,
+      themes: {
+        brands: ['.*'],
+        referenceOptions: {
+          enableReferenceLookup: false,
+        },
       },
     },
+    exclude: [],
   },
-  exclude: [],
 }
 
 const adapterCreators = {
@@ -147,8 +149,6 @@ describe('Zendesk adapter E2E', () => {
     let guideThemeInstance: InstanceElement
     let workspace: Workspace
 
-    const getWorkspace = setupWorkspace()
-
     const getElementsAfterFetch = (
       originalInstances: InstanceElement[],
     ): Record<string, InstanceElement | undefined> => {
@@ -159,6 +159,17 @@ describe('Zendesk adapter E2E', () => {
         return val
       })
     }
+
+    afterAll(async () => {
+      await zendeskCleanUp(elements.filter(isInstanceElement), workspace)
+      if (credLease.return) {
+        await credLease.return()
+      }
+      log.info('Zendesk adapter E2E: Log counts = %o', log.getLogCount())
+    })
+
+    // need to be after the afterAll because setupWorkspace has an afterAll of itself which closes the workspace
+    const getWorkspace = setupWorkspace()
 
     beforeAll(async () => {
       log.resetLogCount()
@@ -194,14 +205,6 @@ describe('Zendesk adapter E2E', () => {
       })
       await fetchWorkspace({ workspace, validationFilter: zendeskValidationFilter, adapterCreators })
       elements = await getElementsFromWorkspace(workspace)
-    })
-
-    afterAll(async () => {
-      await zendeskCleanUp(elements.filter(isInstanceElement), workspace)
-      if (credLease.return) {
-        await credLease.return()
-      }
-      log.info('Zendesk adapter E2E: Log counts = %o', log.getLogCount())
     })
 
     it('should fetch the regular instances and types', async () => {

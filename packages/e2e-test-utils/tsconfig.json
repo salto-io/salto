@@ -11,7 +11,6 @@
     { "path": "../adapter-api" },
     { "path": "../local-workspace" },
     { "path": "../core" },
-    { "path": "../adapter-utils" },
     { "path": "../e2e-credentials-store" },
     { "path": "../lowerdash" },
     { "path": "../file" },

@@ -38,6 +38,7 @@ import {
   FileCustomizationInfo,
   FolderCustomizationInfo,
   ImportFileCabinetResult,
+  LargeFilesCountFolderWarning,
 } from '../types'
 import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from '../../constants'
 import { FileCabinetDeployGroup } from '../../group_changes'
@@ -178,7 +179,7 @@ type FileCabinetResults = {
   filesResults: ExtendedFileResult[]
   foldersResults: ExtendedFolderResult[]
   largeFilesCountFoldersError: string[]
-  largeFilesCountFolderWarnings: MaxFilesPerFileCabinetFolder[]
+  largeFilesCountFolderWarnings: LargeFilesCountFolderWarning[]
 }
 
 type FilesQueryParams = {
@@ -490,7 +491,7 @@ const getFolderMaxFilesPerFolderInfo = ({
   filesCountsPerFolder: Record<string, number>
   maxFilesPerFileCabinetFolder: MaxFilesPerFileCabinetFolder[]
   level: 'error' | 'warn'
-}): MaxFilesPerFileCabinetFolder | undefined => {
+}): LargeFilesCountFolderWarning | undefined => {
   const folderPath = fullPath(folder.path)
   const filesInFolder = filesCountsPerFolder[folder.id] ?? 0
 
@@ -505,7 +506,7 @@ const getFolderMaxFilesPerFolderInfo = ({
   }
 
   if (filesInFolder > maxFilesCountAllowedByLevel[level]) {
-    return { folderPath, limit }
+    return { folderPath, limit, current: filesInFolder }
   }
 
   return undefined
@@ -522,7 +523,7 @@ const filterFoldersByFilesCount = ({
 }): {
   foldersResults: ExtendedFolderResult[]
   largeFilesCountFoldersError: string[]
-  largeFilesCountFolderWarnings: MaxFilesPerFileCabinetFolder[]
+  largeFilesCountFolderWarnings: LargeFilesCountFolderWarning[]
 } => {
   // TODO: remove this condition
   if (maxFilesPerFileCabinetFolder.length === 0) {

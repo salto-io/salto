@@ -149,7 +149,7 @@ export const createLargeFilesCountFolderFetchWarnings = (
     const severity = 'Warning'
     const message = ERROR_MESSAGES.OTHER_ISSUES
     const detailedMessage =
-      `The File Cabinet folder "${folderPath}" is closed to exceed the limit of allowed amount of files in a folder, which is ${limit} files.` +
+      `The File Cabinet folder "${folderPath}" is close to exceed the limit of allowed amount of files in a folder, which is ${limit} files.` +
       ' The folder will be automatically excluded in case of reaching that limit.' +
       ' In order to keep managing this folder in Salto, add it to the `client.maxFilesPerFileCabinetFolder` config with a matching limit.' +
       ' To learn more visit https://github.com/salto-io/salto/blob/main/packages/netsuite-adapter/config_doc.md'

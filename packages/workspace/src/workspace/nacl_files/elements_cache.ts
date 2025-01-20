@@ -450,9 +450,9 @@ export const createMergeManager = async (
 
   const mergeManager: ElementMergeManager = {
     clear: ensureInitiated(() => lock.acquire(MERGER_LOCK, clearImpl)),
-    flush: ensureInitiated(
+    flush: ensureInitiated(() =>
       log.timeDebug(
-        () => async () =>
+        () =>
           lock.acquire(MERGER_LOCK, async () => {
             const timeoutId = setTimeout(
               () => {

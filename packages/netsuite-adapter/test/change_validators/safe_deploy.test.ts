@@ -29,7 +29,7 @@ import { NetsuiteConfig } from '../../src/config/types'
 const EMPTY_FETCH_RESULT: FetchByQueryReturnType = {
   failures: {
     failedToFetchAllAtOnce: false,
-    failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+    failedFilePaths: { lockedError: [], otherError: [], largeSizeFoldersError: [], largeFilesCountFoldersError: [] },
     failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
     failedCustomRecords: [],
   },
@@ -146,7 +146,12 @@ describe('safe deploy change validator', () => {
             Promise.resolve({
               failures: {
                 failedToFetchAllAtOnce: false,
-                failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+                failedFilePaths: {
+                  lockedError: [],
+                  otherError: [],
+                  largeSizeFoldersError: [],
+                  largeFilesCountFoldersError: [],
+                },
                 failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
                 failedCustomRecords: [],
                 largeSuiteQLTables: [],
@@ -190,7 +195,12 @@ describe('safe deploy change validator', () => {
             Promise.resolve({
               failures: {
                 failedToFetchAllAtOnce: false,
-                failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+                failedFilePaths: {
+                  lockedError: [],
+                  otherError: [],
+                  largeSizeFoldersError: [],
+                  largeFilesCountFoldersError: [],
+                },
                 failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
                 failedCustomRecords: [],
                 largeSuiteQLTables: [],

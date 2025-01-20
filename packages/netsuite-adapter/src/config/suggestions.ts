@@ -9,7 +9,6 @@ import _ from 'lodash'
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
-import { FailedFiles } from '../client/types'
 import { INACTIVE_FIELDS } from '../constants'
 import {
   FetchTypeQueryParams,
@@ -42,9 +41,13 @@ const DEPRECATED_CONFIGS_TO_REMOVE = [
 export const STOP_MANAGING_ITEMS_MSG =
   'Salto failed to fetch some items from NetSuite. Failed items must be excluded from the fetch.'
 
-export const toLargeFoldersExcludedMessage = (updatedLargeFolders: NetsuiteFilePathsQueryParams): string =>
+export const toLargeSizeFoldersExcludedMessage = (updatedLargeFolders: NetsuiteFilePathsQueryParams): string =>
   `The following File Cabinet folders exceed File Cabinet's size limitation: ${updatedLargeFolders.join(', ')}.` +
   " To include them, increase the File Cabinet's size limitation and remove their exclusion rules from the configuration file."
+
+export const toLargeFilesCountFoldersExcludedMessage = (updatedLargeFolders: NetsuiteFilePathsQueryParams): string =>
+  `The following File Cabinet folders exceed the limit of allowed amount of files in a folder: ${updatedLargeFolders.join(', ')}.` +
+  ' To include them, add them to the `client.maxFilesPerFileCabinetFolder` config with a matching limit and remove their exclusion rules from the configuration file.'
 
 export const toLargeTypesExcludedMessage = (updatedLargeTypes: string[]): string =>
   `The following types were excluded from the fetch as the elements of that type were too numerous: ${updatedLargeTypes.join(', ')}.` +
@@ -178,7 +181,7 @@ const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQu
 
 const updateConfigFromLargeFolders = (
   config: NetsuiteConfig,
-  { largeFolderError }: FailedFiles,
+  largeFolderError: NetsuiteFilePathsQueryParams,
 ): NetsuiteFilePathsQueryParams => {
   if (largeFolderError && !_.isEmpty(largeFolderError)) {
     const largeFoldersToExclude = convertToQueryParams({ filePaths: createFolderExclude(largeFolderError) })
@@ -260,14 +263,21 @@ export const getConfigFromConfigChanges = (
 ): { config: InstanceElement[]; message: string } | undefined => {
   const config = _.cloneDeep(currentConfig)
   const didUpdateFromFailures = updateConfigFromFailedFetch(config, failures)
-  const updatedLargeFolders = updateConfigFromLargeFolders(config, failures.failedFilePaths)
+  const updatedLargeSizeFolders = updateConfigFromLargeFolders(config, failures.failedFilePaths.largeSizeFoldersError)
+  const updatedLargeFilesCountFolders = updateConfigFromLargeFolders(
+    config,
+    failures.failedFilePaths.largeFilesCountFoldersError,
+  )
   const updatedLargeTypes = updateConfigFromLargeTypes(config, failures)
   const alignedInactiveCriterias = alignInactiveExclusionCriterias(config)
   const removedDeprecatedConfigs = removeDeprecatedConfigs(config)
 
   const messages = [
     didUpdateFromFailures ? STOP_MANAGING_ITEMS_MSG : undefined,
-    updatedLargeFolders.length > 0 ? toLargeFoldersExcludedMessage(updatedLargeFolders) : undefined,
+    updatedLargeSizeFolders.length > 0 ? toLargeSizeFoldersExcludedMessage(updatedLargeSizeFolders) : undefined,
+    updatedLargeFilesCountFolders.length > 0
+      ? toLargeFilesCountFoldersExcludedMessage(updatedLargeFilesCountFolders)
+      : undefined,
     updatedLargeTypes.length > 0 ? toLargeTypesExcludedMessage(updatedLargeTypes) : undefined,
     alignedInactiveCriterias ? ALIGNED_INACTIVE_CRITERIAS : undefined,
     removedDeprecatedConfigs.length > 0 ? toRemovedDeprecatedConfigsMessage(removedDeprecatedConfigs) : undefined,

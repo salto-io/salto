@@ -54,6 +54,12 @@ netsuite {
     maxItemsInImportObjectsRequest = 40
     sdfConcurrencyLimit = 4
     maxFileCabinetSizeInGB = 3
+    maxFilesPerFileCabinetFolder = [
+      {
+        folderPath = "/SuiteScripts.*"
+        limit = 2000
+      },
+    ]
   }
   suiteAppClient = {
    suiteAppConcurrencyLimit = 4
@@ -137,6 +143,7 @@ netsuite {
 | installedSuiteApps             | []                     | The SuiteApps ids to deploy and fetch elements from                                                                                     |
 | maxInstancesPerType            | 5000                   | Limits the amount of instances per type                                                                                                 |
 | maxFileCabinetSizeInGB         | 3                      | Limits the max size in GB of the fileCabinet size                                                                                       |
+| maxFilesPerFileCabinetFolder   | 1000                   | Limits the max files allowed in a single fileCabinet folder                                                                             |
 
 ### Salto SuiteApp client configuration options
 

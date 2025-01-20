@@ -36,7 +36,7 @@ const REQUEST_TYPE_REQUEST_FORM_ITEM_COMPONENT_SCHEME = Joi.object({
   .unknown(true)
   .required()
 
-const requestTypeRequestFormItemComponent = createSchemeGuard<requestTypeRequestFormItemComponent>(
+const isRequestTypeRequestFormItemComponent = createSchemeGuard<requestTypeRequestFormItemComponent>(
   REQUEST_TYPE_REQUEST_FORM_ITEM_COMPONENT_SCHEME,
 )
 
@@ -54,12 +54,14 @@ const deleteEmptyProperties = (fields: requestTypeRequestFormData[]): void => {
 const filterEmptyProperties = (elements: Element[]): void => {
   elements
     .filter(e => e.elemID.typeName === REQUEST_FORM_TYPE)
-    .filter(isInstanceElement)
+    .filter(isInstanceElement) 
     .forEach(instance => {
       if (Array.isArray(instance.value.issueLayoutConfig?.items)) {
-        deleteEmptyProperties(
-          instance.value.issueLayoutConfig.items.map((item: requestTypeRequestFormItemComponent) => item.data ?? {}),
-        )
+        instance.value.issueLayoutConfig.items
+          .filter(isRequestTypeRequestFormItemComponent) 
+          .forEach(item => {
+            deleteEmptyProperties([item.data])
+          })
       }
     })
 }

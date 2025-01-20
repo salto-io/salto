@@ -13,7 +13,7 @@ import { fetchRequestTypeDetails } from './layout_service_operations'
 
 const deleteEmptyProperties = (fields: Values[]): void => {
   fields.forEach(field => {
-    if (field.properties != null) {
+    if (field.properties !== undefined) {
       field.properties = Object.entries(field.properties).filter(([_key, value]) => value !== '')
       if (field.properties.length === 0) {
         delete field.properties

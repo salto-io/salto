@@ -128,13 +128,13 @@ const DEFAULT_FILTERS = [
   addAliasFilter, // TODO SALTO-5607 - move to infra
   // should run after fieldReferencesFilter and userFilter
   unorderedListsFilter,
-  brandCustomizationsFilter, // must run after fieldReferencesFilter
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,
   appDeploymentFilter,
   profileMappingRemovalFilter,
   // should run after fieldReferences
   ...Object.values(commonFilters),
+  brandCustomizationsFilter, // must run after fieldReferencesFilter and referencedInstanceNames (SALTO-7314) filter
   // should run last
   privateApiDeployFilter,
   defaultDeployFilter,

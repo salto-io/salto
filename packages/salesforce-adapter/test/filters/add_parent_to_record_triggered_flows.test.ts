@@ -16,15 +16,6 @@ import { FilterWith } from './mocks'
 import filterCreator from '../../src/filters/add_parent_to_record_triggered_flows'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
-const mockLogError = jest.fn()
-jest.mock('@salto-io/logging', () => ({
-  ...jest.requireActual<{}>('@salto-io/logging'),
-  logger: jest.fn().mockReturnValue({
-    warn: jest.fn((...args) => mockLogError(...args)),
-    debug: jest.fn((...args) => mockLogError(...args)),
-  }),
-}))
-
 describe('addParentToRecordTriggeredFlows', () => {
   describe('onFetch', () => {
     let elements: Element[]
@@ -78,7 +69,6 @@ describe('addParentToRecordTriggeredFlows', () => {
     })
     describe('when parent does not exist', () => {
       beforeEach(async () => {
-        jest.clearAllMocks()
         elementsSource = []
         elements = [
           (updateOpportunityFlow = createInstanceElement(

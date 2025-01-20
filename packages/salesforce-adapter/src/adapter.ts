@@ -143,6 +143,7 @@ import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import picklistReferences from './filters/picklist_references'
 import addParentToInstancesWithinFolderFilter from './filters/add_parent_to_instances_within_folder'
 import addParentToRecordTriggeredFlows from './filters/add_parent_to_record_triggered_flows'
+import addParentToApprovalProcess from './filters/add_parent_to_approval_process'
 import { getConfigFromConfigChanges } from './config_change'
 import { Filter, FilterContext, FilterCreator, FilterResult } from './filter'
 import {
@@ -265,6 +266,7 @@ export const allFilters: Array<FilterCreator> = [
   valueToStaticFileFilter,
   // addParentToRecordTriggeredFlows should run before fieldReferenceFilter
   addParentToRecordTriggeredFlows,
+  addParentToApprovalProcess,
   fieldReferencesFilter,
   // should run after customObjectsInstancesFilter for now
   referenceAnnotationsFilter,

@@ -20,12 +20,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
-import {
-  MaxFilesPerFileCabinetFolder,
-  NetsuiteFilePathsQueryParams,
-  NetsuiteTypesQueryParams,
-  ObjectID,
-} from '../config/types'
+import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../config/types'
 
 export interface CustomizationInfo {
   typeName: string
@@ -74,10 +69,16 @@ export type FailedFiles = {
   largeFilesCountFoldersError: NetsuiteFilePathsQueryParams
 }
 
+export type LargeFilesCountFolderWarning = {
+  folderPath: string
+  limit: number
+  current: number
+}
+
 export type ImportFileCabinetResult = {
   elements: FileCabinetCustomizationInfo[]
   failedPaths: FailedFiles
-  largeFilesCountFolderWarnings: MaxFilesPerFileCabinetFolder[]
+  largeFilesCountFolderWarnings: LargeFilesCountFolderWarning[]
 }
 
 export type FailedImport = {

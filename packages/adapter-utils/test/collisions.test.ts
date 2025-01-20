@@ -162,6 +162,7 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
 
       const errors = getCollisionWarnings({
         instances: [instance, collidedInstance],
+        adapterName: 'Salto',
       })
       expect(errors).toHaveLength(1)
       expect(errors[0]).toEqual({
@@ -181,6 +182,7 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
 
       const errors = getCollisionWarnings({
         instances: [instance, collidedInstance],
+        adapterName: 'Salto',
         addChildrenMessage: true,
       })
       expect(errors).toHaveLength(1)
@@ -202,6 +204,7 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
 
       const errors = getCollisionWarnings({
         instances: [instance, collidedInstance],
+        adapterName: 'Salto',
       })
       expect(errors).toHaveLength(1)
       expect(errors[0]).toEqual({
@@ -224,6 +227,7 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
 
       const errors = getCollisionWarnings({
         instances: [instance, collidedInstance],
+        adapterName: 'Salto',
       })
       expect(errors).toHaveLength(1)
       expect(errors[0]).toEqual({
@@ -235,6 +239,7 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
     it('should return no errors when there are no collided instances', async () => {
       const errors = getCollisionWarnings({
         instances: [instance, differentInstance],
+        adapterName: 'Salto',
       })
       expect(errors).toHaveLength(0)
     })
@@ -256,6 +261,7 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
 
       const errors = getCollisionWarnings({
         instances: [instance, instance.clone(), collidedInstance.clone(), differentInstance, differentInstance.clone()],
+        adapterName: 'Salto',
       })
       expect(errors).toHaveLength(2)
       expect(errors[0]).toEqual({

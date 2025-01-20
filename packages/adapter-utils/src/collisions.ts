@@ -163,15 +163,16 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
 // after SALTO-7088 is done, this function will replace getAndLogCollisionWarnings
 export const getCollisionWarnings = ({
   instances,
+  adapterName,
   addChildrenMessage,
 }: {
   instances: InstanceElement[]
+  adapterName: string
   addChildrenMessage?: boolean
 }): SaltoError[] => {
   if (instances.length === 0) {
     return []
   }
-  const adapterName = _.upperFirst(instances[0].elemID.adapter)
   const elemIDtoInstances = _.pickBy(
     _.groupBy(instances, instance => instance.elemID.getFullName()),
     collideInstances => collideInstances.length > 1,

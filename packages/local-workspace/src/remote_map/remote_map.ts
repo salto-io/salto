@@ -788,7 +788,7 @@ export const createRemoteMapCreator = (
             throw new Error('can not flush a non persistent remote map')
           }
 
-          log.debug('flushing %s', namespace, { wasClearCalled })
+          log.debug('flushing %s, wasClearCalled=%s', namespace, wasClearCalled)
           if (wasClearCalled) {
             await clearImpl(persistentDB, keyPrefix)
             log.debug('cleared persistent db %s', namespace)
@@ -798,7 +798,7 @@ export const createRemoteMapCreator = (
             awu(aggregatedIterable([createTempIterator({ keys: true, values: true })])),
             false,
           )
-          log.debug('finished writing to persistent db %s', namespace)
+          log.debug('finished writing to persistent db %s, writeRes=%s', namespace, writeRes)
           await clearImpl(tmpDB, tempKeyPrefix)
           log.debug('cleared temp db %s', namespace)
           const deleteRes = await batchUpdate(

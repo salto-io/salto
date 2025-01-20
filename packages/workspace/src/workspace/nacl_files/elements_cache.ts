@@ -462,23 +462,22 @@ export const createMergeManager = async (
             )
 
             try {
-              log.debug(`Started flushing hashes under namespace ${namespace}.`)
               await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
               await hashes.flush()
               const flushResults = await awu(flushables)
-                .map(async f => f.flush())
+                .map(f => f.flush())
                 .toArray()
               const hasChanged = flushResults.some(b => typeof b !== 'boolean' || b)
 
               await hashes.delete(MERGER_LOCK)
               await hashes.flush()
-              log.debug(`Successfully flushed hashes under namespace ${namespace}.`)
               return hasChanged
             } finally {
               clearTimeout(timeoutId)
             }
           }),
-        `flush ${namespace}`,
+        'mergeManager.flush %s',
+        namespace,
       ),
     ),
     mergeComponents: ensureInitiated(async (cacheUpdate: CacheChangeSetUpdate) =>

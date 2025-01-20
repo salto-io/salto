@@ -4339,9 +4339,11 @@ __metadata:
   resolution: "@salto-io/e2e-test-utils@workspace:packages/e2e-test-utils"
   dependencies:
     "@salto-io/adapter-api": 0.5.0
+    "@salto-io/adapter-components": 0.5.0
     "@salto-io/adapter-utils": 0.5.0
     "@salto-io/core": 0.5.0
     "@salto-io/e2e-credentials-store": 0.5.0
+    "@salto-io/file": 0.5.0
     "@salto-io/local-workspace": 0.5.0
     "@salto-io/lowerdash": 0.5.0
     "@salto-io/workspace": 0.5.0

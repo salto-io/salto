@@ -16,6 +16,7 @@ import {
   preview,
   updateCredentials,
 } from '@salto-io/core'
+import { definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import tmp from 'tmp-promise'
@@ -28,8 +29,11 @@ import {
   Adapter as AdapterType,
   ChangeError,
   ObjectType,
+  Value,
+  Values,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { rm } from '@salto-io/file'
 
 const { awu } = collections.asynciterable
 
@@ -41,17 +45,18 @@ const updateConfig = async ({
 }: {
   workspace: Workspace
   adapterName: string
-  configOverride: Record<string, unknown>
+  configOverride: Values
   adapterCreators: Record<string, AdapterType>
 }): Promise<void> => {
   const defaultConfig = await getDefaultAdapterConfig({ adapterName, accountName: adapterName, adapterCreators })
   if (!_.isUndefined(defaultConfig)) {
-    defaultConfig[0].value = { ...defaultConfig[0].value, ...configOverride }
+    const newValue = definitions.mergeWithDefaultConfig(defaultConfig[0].value, configOverride)
+    defaultConfig[0].value = newValue
     await workspace.updateAccountConfig(adapterName, defaultConfig, adapterName)
   }
 }
 
-export const initWorkspace = async <T extends {}>({
+export const setupWorkspace = (): (({
   envName,
   credLease,
   adapterName,
@@ -60,26 +65,39 @@ export const initWorkspace = async <T extends {}>({
   credentialsType,
 }: {
   envName: string
-  credLease: CredsLease<T>
+  credLease: CredsLease<Value>
   adapterName: string
-  configOverride?: Record<string, unknown>
+  configOverride?: Values
   adapterCreators: Record<string, AdapterType>
   credentialsType: ObjectType
-}): Promise<Workspace> => {
-  const baseDir = (await tmp.dir()).path
-  const workspace = await initLocalWorkspace({ baseDir, envName, adapterCreators })
-  await workspace.setCurrentEnv(envName, false)
-  const newConfig = new InstanceElement(ElemID.CONFIG_NAME, credentialsType, credLease.value)
-  await updateCredentials(workspace, newConfig, adapterName)
-  await updateConfig({
-    workspace,
-    adapterName,
-    configOverride: configOverride ?? {},
-    adapterCreators,
+}) => Promise<Workspace>) => {
+  let baseDir: string
+  let workspace: Workspace
+
+  beforeAll(async () => {
+    baseDir = (await tmp.dir()).path
   })
-  await addAdapter({ workspace, adapterName, adapterCreators })
-  await workspace.flush()
-  return workspace
+
+  afterAll(async () => {
+    await rm(baseDir)
+    await workspace.close()
+  })
+
+  return async ({ envName, credLease, adapterName, configOverride, adapterCreators, credentialsType }) => {
+    workspace = await initLocalWorkspace({ baseDir, envName, adapterCreators })
+    await workspace.setCurrentEnv(envName, false)
+    const newConfig = new InstanceElement(ElemID.CONFIG_NAME, credentialsType, credLease.value)
+    await updateCredentials(workspace, newConfig, adapterName)
+    await updateConfig({
+      workspace,
+      adapterName,
+      configOverride: configOverride ?? {},
+      adapterCreators,
+    })
+    await addAdapter({ workspace, adapterName, adapterCreators })
+    await workspace.flush()
+    return workspace
+  }
 }
 
 export const getElementsFromWorkspace = async (workspace: Workspace): Promise<Element[]> => {

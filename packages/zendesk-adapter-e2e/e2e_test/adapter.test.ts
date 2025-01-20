@@ -23,7 +23,7 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { e2eDeploy, fetchWorkspace, getElementsFromWorkspace, initWorkspace } from '@salto-io/e2e-test-utils'
+import { e2eDeploy, fetchWorkspace, getElementsFromWorkspace, setupWorkspace } from '@salto-io/e2e-test-utils'
 import { getDetailedChanges } from '@salto-io/adapter-utils'
 import { credsLease } from './adapter'
 import {
@@ -147,6 +147,8 @@ describe('Zendesk adapter E2E', () => {
     let guideThemeInstance: InstanceElement
     let workspace: Workspace
 
+    const getWorkspace = setupWorkspace()
+
     const getElementsAfterFetch = (
       originalInstances: InstanceElement[],
     ): Record<string, InstanceElement | undefined> => {
@@ -162,7 +164,7 @@ describe('Zendesk adapter E2E', () => {
       log.resetLogCount()
       credLease = await credsLease()
       const { credentialsType } = adapter.authenticationMethods.basic
-      workspace = await initWorkspace({
+      workspace = await getWorkspace({
         envName: 'zendesk-env',
         adapterName: 'zendesk',
         credLease,
@@ -196,7 +198,6 @@ describe('Zendesk adapter E2E', () => {
 
     afterAll(async () => {
       await zendeskCleanUp(elements.filter(isInstanceElement), workspace)
-      await workspace.close()
       if (credLease.return) {
         await credLease.return()
       }

@@ -348,6 +348,16 @@ export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
     })
   }, 'hideAndOmitFields')
 
+/**
+ * Get the field type of a deep-nested field in a given type.
+ *
+ * This function traverses the field path in the type and returns the type of the field at the end of the path.
+ *
+ * @param type  - the top level type to start the search from
+ * @param fieldPath - the path to the field in the top-level type
+ *
+ * @throws Error if any field in the path has an unresolved type reference
+ */
 export const getTypeInPath = (
   type: ObjectType | undefined,
   fieldPath: string[],
@@ -371,7 +381,12 @@ export const getTypeInPath = (
     return fieldType
   }
   if (isPrimitiveType(fieldType)) {
-    log.warn('field %s in type %s is a primitive type, cannot recurse further', fieldName, type.elemID.getFullName())
+    log.warn(
+      'field %s in type %s is a primitive type, but path still has elements (%s), cannot recurse further',
+      fieldName,
+      type.elemID.getFullName(),
+      restPath.join('.'),
+    )
     return undefined
   }
   return getTypeInPath(fieldType, restPath)
@@ -388,21 +403,18 @@ export const addImportantValues = <Options extends FetchApiDefinitionsOptions>({
     Object.entries(definedTypes).forEach(([typeName, type]) => {
       const { element: elementDef } = defQuery.query(typeName) ?? {}
 
+      // Only add important value definitions for fields that actually exist in the type. This is needed to support
+      // adapters defining default important values, and have them apply only when relevant to the type at hand.
       const importantValues = (elementDef?.topLevel?.importantValues ?? []).filter(
         ({ value }: ImportantValue) => getTypeInPath(type, value.split('.')) !== undefined,
       )
 
-      // Avoid creating unnecessary annotations for types that don't have important values and don't need an override.
-      if (
-        _.isEmpty(importantValues) &&
-        (type.annotations === undefined || type.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] === undefined)
-      ) {
+      // If there are no important values, avoid the assignment entirely to avoid creating empty `annotations` objects
+      // in NaCL files for types that don't have important values.
+      if (_.isEmpty(importantValues)) {
         return
       }
-
-      type.annotate({
-        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: _.isEmpty(importantValues) ? undefined : importantValues,
-      })
+      type.annotate({ [CORE_ANNOTATIONS.IMPORTANT_VALUES]: importantValues })
     })
   }, 'addImportantValues')
 

@@ -6,9 +6,65 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { fetchRequestTypeDetails } from './layout_service_operations'
+
+type requestTypeRequestFormData = {
+  properties?: Record<string, string>
+}
+
+type requestTypeRequestFormItemComponent = {
+  data: requestTypeRequestFormData
+}
+
+const REQUEST_TYPE_REQUEST_FORM_ITEM_COMPONENT_SCHEME = Joi.object({
+  data: Joi.object({
+    properties: Joi.array()
+      .items(
+        Joi.object({
+          key: Joi.string().required(),
+          value: Joi.string().required(),
+        }),
+      )
+      .required(),
+  }).unknown(true),
+})
+  .unknown(true)
+  .required()
+
+const isRequestTypeRequestFormItemComponent = createSchemeGuard<requestTypeRequestFormItemComponent>(
+  REQUEST_TYPE_REQUEST_FORM_ITEM_COMPONENT_SCHEME,
+)
+
+const deleteEmptyProperties = (fields: requestTypeRequestFormData[]): void => {
+  fields.forEach(field => {
+    if (field.properties) {
+      field.properties = Object.fromEntries(Object.entries(field.properties).filter(([_key, value]) => value !== ''))
+      if (Object.keys(field.properties).length === 0) {
+        delete field.properties
+      }
+    }
+  })
+}
+
+const filterEmptyProperties = (elements: Element[]): void => {
+  elements
+    .filter(e => e.elemID.typeName === REQUEST_FORM_TYPE)
+    .filter(isInstanceElement) 
+    .forEach(instance => {
+      if (Array.isArray(instance.value.issueLayoutConfig?.items)) {
+        instance.value.issueLayoutConfig.items
+          .filter(isRequestTypeRequestFormItemComponent) 
+          .forEach(item => {
+            deleteEmptyProperties([item.data])
+          })
+      }
+    })
+}
 
 const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) => ({
   name: 'requestTypeLayoutsFilter',
@@ -21,6 +77,7 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
       getElemIdFunc,
       typeName: REQUEST_FORM_TYPE,
     })
+    filterEmptyProperties(elements)
     await fetchRequestTypeDetails({
       elements,
       client,

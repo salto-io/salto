@@ -12,6 +12,7 @@ import {
   ElemID,
   createRefToElmWithValue,
   InstanceElement,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import {
   markServiceIdField,
@@ -20,6 +21,7 @@ import {
   recursiveNestedTypeName,
   toPrimitiveType,
   getReachableTypes,
+  getTypeInPath,
 } from '../../../src/fetch/element/type_utils'
 import { queryWithDefault } from '../../../src/definitions'
 import { InstanceFetchApiDefinitions } from '../../../src/definitions/system/fetch'
@@ -156,6 +158,64 @@ describe('type utils', () => {
         'typeB',
         'typeC',
       ])
+    })
+  })
+
+  describe('getTypeInPath', () => {
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        field1: { refType: BuiltinTypes.STRING },
+        field2: {
+          refType: new ObjectType({
+            elemID: new ElemID('adapter', 'nestedType'),
+            fields: {
+              nestedField1: { refType: BuiltinTypes.NUMBER },
+              nestedField2: { refType: BuiltinTypes.BOOLEAN },
+            },
+          }),
+        },
+        field3: { refType: new TypeReference(BuiltinTypes.BOOLEAN.elemID) },
+      },
+    })
+
+    it('should return the correct type for a top-level field', () => {
+      const result = getTypeInPath(type, ['field1'])
+      expect(result).toEqual(BuiltinTypes.STRING)
+    })
+
+    it('should return the correct type for a nested field', () => {
+      const result = getTypeInPath(type, ['field2', 'nestedField1'])
+      expect(result).toEqual(BuiltinTypes.NUMBER)
+    })
+
+    it('should return undefined for a non-existent field', () => {
+      const result = getTypeInPath(type, ['nonExistentField'])
+      expect(result).toBeUndefined()
+    })
+
+    it('should return undefined for a non-existent nested field', () => {
+      const result = getTypeInPath(type, ['field2', 'nonExistentNestedField'])
+      expect(result).toBeUndefined()
+    })
+
+    it('should return undefined for a primitive type field when trying to access nested fields', () => {
+      const result = getTypeInPath(type, ['field1', 'nestedField'])
+      expect(result).toBeUndefined()
+    })
+
+    it('should return undefined if the path is empty', () => {
+      const result = getTypeInPath(type, [])
+      expect(result).toBeUndefined()
+    })
+
+    it('should return undefined if the type is undefined', () => {
+      const result = getTypeInPath(undefined, ['field1'])
+      expect(result).toBeUndefined()
+    })
+
+    it('should throw an error if a field in the path has an unresolved type reference', () => {
+      expect(() => getTypeInPath(type, ['field3'])).toThrow()
     })
   })
 })

@@ -20,9 +20,8 @@ import {
   ReferenceExpression,
   isRemovalOrModificationChange,
   isAdditionOrModificationChange,
-  isObjectType,
-  getDeepInnerTypeSync,
   isReferenceExpression,
+  isPrimitiveType,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeDataSync, inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { types, collections } from '@salto-io/lowerdash'
@@ -30,6 +29,7 @@ import { logger } from '@salto-io/logging'
 import { createCheck } from './requester'
 import { ApiDefinitions, APIDefinitionsOptions, queryWithDefault } from '../../definitions'
 import { ChangeAndContext } from '../../definitions/system/deploy'
+import { getTypeInPath } from '../../fetch/element/type_utils'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -40,28 +40,9 @@ const { makeArray } = collections.array
  */
 const getSubResourceType = (instance: InstanceElement, path: string[], recurseIntoTypeName: string): ObjectType => {
   const topLevelType = instance.getTypeSync()
-  const getTypeInPath = (type: ObjectType | undefined, fieldPath: string[]): ObjectType | undefined => {
-    if (type === undefined || fieldPath.length === 0) {
-      return type
-    }
-    const field = Object.prototype.hasOwnProperty.call(type.fields, fieldPath[0])
-      ? type.fields[fieldPath[0]]
-      : undefined
-    if (field === undefined) {
-      log.warn('failed to find type for field %s in type %s', fieldPath[0], type.elemID.getFullName())
-      return undefined
-    }
-
-    const fieldType = getDeepInnerTypeSync(field.getTypeSync())
-    // TODO SALTO-7041 support primitive types
-    if (!isObjectType(fieldType)) {
-      log.warn('field %s in type %s is not an object type', fieldPath[0], type.elemID.getFullName())
-      return undefined
-    }
-    return getTypeInPath(fieldType, path.slice(1))
-  }
   const typeInPath = getTypeInPath(topLevelType, path)
-  if (typeInPath?.elemID?.name !== recurseIntoTypeName) {
+  // TODO SALTO-7041 support primitive types
+  if (typeInPath?.elemID?.name !== recurseIntoTypeName || isPrimitiveType(typeInPath)) {
     log.error(
       'type mismatch for path %s in type %s, expected %s, got %s, creating empty type',
       path.join('.'),

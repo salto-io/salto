@@ -229,9 +229,6 @@ export const generateType = <Options extends FetchApiDefinitionsOptions>(
     if (hide) {
       annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
     }
-    if (importantValues !== undefined) {
-      annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = importantValues
-    }
     return annotations
   }
 

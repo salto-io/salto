@@ -108,6 +108,7 @@ const OPTIONAL_FEATURES = [
   'packageVersionReference',
   'omitTotalTrustedRequestsUsageField',
   'disablePermissionsOmissions',
+  'omitStandardFieldsNonDeployableValues',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',
@@ -129,7 +130,6 @@ const DEPRECATED_OPTIONAL_FEATURES = [
   'indexedEmailTemplateAttachments',
   'lightningPageFieldItemReference',
   'logDiffsFromParsingXmlNumbers',
-  'omitStandardFieldsNonDeployableValues',
   'profilePaths',
   'removeReferenceFromFilterItemToRecordType',
   'sharingRulesMaps',

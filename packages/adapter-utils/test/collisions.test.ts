@@ -5,15 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  ObjectType,
-  ElemID,
-  InstanceElement,
-  ReferenceExpression,
-  SaltoError,
-  CORE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
-import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID, getCollisionWarnings } from '../src/collisions'
+import { ObjectType, ElemID, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { getInstancesWithCollidingElemID, getCollisionWarnings } from '../src/collisions'
 
 const COLLISION_MESSAGE = 'Some elements were not fetched due to Salto ID collisions'
 
@@ -57,98 +50,6 @@ describe('collisions', () => {
       const collidedElements = getInstancesWithCollidingElemID([instance, collidedInstance, differentInstance])
       expect(collidedElements).toHaveLength(2)
       expect(collidedElements).toEqual([instance, collidedInstance])
-    })
-  })
-  describe('getAndLogCollisionWarnings', () => {
-    const baseExpectedWarningMessage = `Omitted 2 instances of obj due to Salto ID collisions.
-Current Salto ID configuration for obj is defined as [title].
-
-Breakdown per colliding Salto ID:
-- test:
-\t* Instance with Id - test. View in the service - someUrl
-\t* Instance with Id - test. View in the service - someUrl
-
-To resolve these collisions please take one of the following actions and fetch again:
-\t1. Change obj's unique fields to include all fields that uniquely identify the type's instances.
-\t2. Delete duplicate instances from your salto account.
-
-Alternatively, you can exclude obj from the default configuration in salto.nacl`
-
-    it('should return the correct warning messages', async () => {
-      const errors = await getAndLogCollisionWarnings({
-        instances: [instance, instance.clone()],
-        adapterName: 'salto',
-        configurationName: 'default',
-        getInstanceName: async inst => inst.elemID.name,
-        getTypeName: async inst => inst.elemID.typeName,
-        getIdFieldsByType: () => ['title'],
-        idFieldsName: 'unique fields',
-      })
-      expect(errors).toHaveLength(1)
-      expect(errors[0]).toEqual({
-        severity: 'Warning',
-        message: COLLISION_MESSAGE,
-        detailedMessage: baseExpectedWarningMessage,
-      })
-    })
-
-    it('should return the correct warning messages when docsUrl is provided', async () => {
-      const docsUrl = 'https://help.salto.io/en/articles/6927217-salto-for-salesforce-cpq-support'
-      const errors = await getAndLogCollisionWarnings({
-        instances: [instance, instance.clone()],
-        adapterName: 'salto',
-        configurationName: 'default',
-        getInstanceName: async inst => inst.elemID.name,
-        getTypeName: async inst => inst.elemID.typeName,
-        getIdFieldsByType: () => ['title'],
-        idFieldsName: 'unique fields',
-        docsUrl,
-      })
-      expect(errors).toHaveLength(1)
-      expect(errors[0]).toEqual({
-        severity: 'Warning',
-        message: COLLISION_MESSAGE,
-        detailedMessage: `${baseExpectedWarningMessage}\n\nLearn more at: ${docsUrl}`,
-      })
-    })
-
-    it('should return no errors when there are no collided instances', async () => {
-      const errors = await getAndLogCollisionWarnings({
-        instances: [],
-        adapterName: 'salto',
-        configurationName: 'default',
-        getInstanceName: async inst => inst.elemID.name,
-        getTypeName: async inst => inst.elemID.typeName,
-        getIdFieldsByType: () => ['title'],
-        idFieldsName: 'unique fields',
-      })
-      expect(errors).toHaveLength(0)
-    })
-  })
-  describe('when collision occurs due to instances with empty name', () => {
-    let collisionWarnings: SaltoError[]
-    beforeEach(async () => {
-      const instanceWithEmptyName = new InstanceElement(ElemID.CONFIG_NAME, instType)
-      collisionWarnings = await getAndLogCollisionWarnings({
-        instances: [instanceWithEmptyName, instanceWithEmptyName.clone()],
-        adapterName: 'salto',
-        configurationName: 'default',
-        getInstanceName: async inst => inst.elemID.name,
-        getTypeName: async inst => inst.elemID.typeName,
-        getIdFieldsByType: () => ['title'],
-        idFieldsName: 'unique fields',
-      })
-    })
-    it('should create indicative warning', () => {
-      expect(collisionWarnings).toEqual([
-        expect.objectContaining({
-          severity: 'Warning',
-          message: expect.stringContaining(COLLISION_MESSAGE),
-          detailedMessage: expect.stringContaining(
-            'Instances with empty name (Due to no values in any of the provided ID fields)',
-          ),
-        }),
-      ])
     })
   })
   describe('getAndLogCollisionWarningsV2', () => {

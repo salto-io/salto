@@ -8,8 +8,8 @@
 import _ from 'lodash'
 import { isInstanceElement, Element, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID, filter } from '@salto-io/adapter-utils'
-import { APIDefinitionsOptions, queryWithDefault } from '../definitions'
+import { getInstancesWithCollidingElemID, filter, getCollisionWarnings } from '@salto-io/adapter-utils'
+import { APIDefinitionsOptions } from '../definitions'
 import { AdapterFilterCreator } from '../filter_utils'
 import { createParentChildGraph } from './query'
 
@@ -39,24 +39,16 @@ export const omitCollisionsFilterCreator =
   <TOptions extends APIDefinitionsOptions = {}>(
     adapterName: string,
   ): AdapterFilterCreator<{}, filter.FilterResult, {}, TOptions> =>
-  ({ definitions }) => ({
+  () => ({
     name: 'omitCollisionsFilter',
     onFetch: async (elements: Element[]) => {
-      const defQuery = queryWithDefault(definitions?.fetch?.instances ?? {})
       const collidingElements = getInstancesWithCollidingElemID(elements.filter(isInstanceElement))
       const collidingElemIds = new Set(collidingElements.map(elem => elem.elemID.getFullName()))
       removeChildElements(elements, collidingElements)
-      const collisionWarnings = await getAndLogCollisionWarnings({
-        adapterName,
-        configurationName: 'service',
+      const collisionWarnings = getCollisionWarnings({
         instances: collidingElements,
-        getTypeName: async instance => instance.elemID.typeName,
-        getInstanceName: async instance => instance.elemID.name,
-        getIdFieldsByType: typeName =>
-          defQuery.query(typeName)?.element?.topLevel?.elemID?.parts?.map(part => part.fieldName) ?? [],
-        idFieldsName: 'elemID configuration',
-        docsUrl: 'https://help.salto.io/en/articles/6927157-salto-id-collisions',
         addChildrenMessage: true,
+        adapterName,
       })
       _.remove(elements, e => collidingElemIds.has(e.elemID.getFullName()))
       return { errors: collisionWarnings }

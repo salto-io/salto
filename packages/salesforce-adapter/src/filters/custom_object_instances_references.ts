@@ -10,13 +10,13 @@ import { collections, values as lowerdashValues, promises } from '@salto-io/lowe
 import {
   transformValues,
   TransformFunc,
-  getAndLogCollisionWarnings,
   getInstanceDesc,
   createWarningFromMsg,
   getInstancesWithCollidingElemID,
   safeJsonStringify,
   inspectValue,
   ERROR_MESSAGES,
+  getCollisionWarnings,
 } from '@salto-io/adapter-utils'
 import { references } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -144,16 +144,9 @@ const createWarnings = async (
     })
   }
 
-  const collisionWarnings = await getAndLogCollisionWarnings({
-    adapterName: SALESFORCE,
-    baseUrl,
+  const collisionWarnings = getCollisionWarnings({
     instances: instancesWithCollidingElemID,
-    configurationName: 'data management',
-    getIdFieldsByType: dataManagement.getObjectIdsFields,
-    getTypeName: async instance => apiName(await instance.getType(), true),
-    idFieldsName: 'saltoIDSettings',
-    getInstanceName: instance => apiName(instance),
-    docsUrl: 'https://help.salto.io/en/articles/6927217-salto-for-salesforce-cpq-support',
+    adapterName: _.upperFirst(SALESFORCE),
   })
   const instanceWithEmptyIdWarnings = await awu(instancesWithEmptyIds)
     // In case of collisions, there's already a warning on the Element

@@ -201,6 +201,7 @@ describe('Zendesk adapter E2E', () => {
         detailedChanges,
         validationFilter: zendeskValidationFilter,
         adapterCreators,
+        changeErrorFilter: zendeskChangeErrorFilter,
       })
       await fetchWorkspace({ workspace, validationFilter: zendeskValidationFilter, adapterCreators })
       elements = await getElementsFromWorkspace(workspace)

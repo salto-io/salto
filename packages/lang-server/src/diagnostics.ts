@@ -44,7 +44,7 @@ export const getDiagnostics = async (workspace: EditorWorkspace): Promise<Worksp
           return {
             filename: range.filename,
             severity: err.severity,
-            msg: err.message,
+            msg: err.detailedMessage,
             range: {
               start: range.start,
               end: range.end,

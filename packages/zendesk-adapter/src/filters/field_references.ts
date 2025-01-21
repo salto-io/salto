@@ -72,7 +72,6 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   locale_id: 'locale',
   via_id: 'channel',
   current_via_id: 'channel',
-  recipient: SUPPORT_ADDRESS_TYPE_NAME,
   add_skills: 'routing_attribute_value',
   set_skills: 'routing_attribute_value',
   remove_skills: 'routing_attribute_value',
@@ -88,7 +87,6 @@ const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
   notification_sms_group: 'group',
   notification_webhook: 'webhook',
   via_id: 'channel',
-  recipient: SUPPORT_ADDRESS_TYPE_NAME,
   current_via_id: 'channel',
   current_tags: 'tag',
   set_tags: 'tag',
@@ -239,18 +237,6 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     lookup: val => val,
     lookupIndexName: 'value',
   },
-  localeId: {
-    serialize: ({ ref }) =>
-      // locale_id may be missing reference
-      isInstanceElement(ref.value) ? ref.value.value.locale_id?.value.value?.id : ref.value,
-    lookup: val => val,
-    lookupIndexName: 'locale',
-  },
-  ticketFieldOption: {
-    serialize: customFieldOptionSerialization,
-    lookup: val => val,
-    lookupIndexName: 'value',
-  },
   email: {
     serialize: ({ ref }) => {
       if (isInstanceElement(ref.value)) {
@@ -262,6 +248,18 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     },
     lookup: val => val,
     lookupIndexName: 'email',
+  },
+  localeId: {
+    serialize: ({ ref }) =>
+      // locale_id may be missing reference
+      isInstanceElement(ref.value) ? ref.value.value.locale_id?.value.value?.id : ref.value,
+    lookup: val => val,
+    lookupIndexName: 'locale',
+  },
+  ticketFieldOption: {
+    serialize: customFieldOptionSerialization,
+    lookup: val => val,
+    lookupIndexName: 'value',
   },
   userFieldOption: {
     serialize: customFieldOptionSerialization,
@@ -298,6 +296,7 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
 export type ReferenceContextStrategyName =
   | 'neighborField'
   | 'allowListedNeighborField'
+  | 'allowListedEmailNeighborField'
   | 'allowlistedNeighborSubject'
   | 'neighborType'
   | 'parentSubject'
@@ -315,6 +314,10 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
   // We use allow lists because there are types we don't support (such as organization or requester)
   // and they'll end up being false positives
   allowListedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: allowListLookupType }),
+  allowListedEmailNeighborField: neighborContextFunc({
+    contextFieldName: 'field',
+    contextValueMapper: val => (val === 'recipient' ? SUPPORT_ADDRESS_TYPE_NAME : undefined),
+  }),
   allowlistedNeighborSubject: neighborContextFunc({
     contextFieldName: 'subject',
     contextValueMapper: allowListLookupType,
@@ -652,6 +655,15 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   },
   {
     src: {
+      field: 'value',
+      parentTypes: ['trigger__conditions__all', 'trigger__conditions__any'],
+    },
+    serializationStrategy: 'email',
+    target: { typeContext: 'allowListedEmailNeighborField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
+  {
+    src: {
       field: 'subject',
       parentTypes: ['routing_attribute_value__conditions__all', 'routing_attribute_value__conditions__any'],
     },
@@ -950,15 +962,6 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'layout_uuid', parentTypes: ['workspace'] },
     serializationStrategy: 'id',
     target: { type: 'layout' },
-  },
-  {
-    src: {
-      field: 'value',
-      parentTypes: ['trigger__conditions__all', 'trigger__conditions__any'],
-    },
-    serializationStrategy: 'email',
-    target: { typeContext: 'allowListedNeighborField' },
-    zendeskMissingRefStrategy: 'typeAndValue',
   },
 ]
 

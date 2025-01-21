@@ -65,6 +65,8 @@ import {
   WalkOnFunc,
   walkOnValue,
   elementAnnotationTypes,
+  getDetailedChanges as getDetailedChangesFromChange,
+  ERROR_MESSAGES,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
@@ -81,6 +83,7 @@ import {
   isElementIdMatchSelectors,
   updateElementsWithAlternativeAccount,
   Workspace,
+  flags,
 } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
@@ -90,12 +93,14 @@ import { IDFilter } from './plan/plan'
 import { getAdaptersCreatorConfigs } from './adapters'
 import { mergeLists, mergeStaticFiles, mergeStrings } from './merge_content'
 import { FetchChange, FetchChangeMetadata } from '../types'
+import { calculateDiff } from './plan/diff'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { mapValuesAsync } = promises.object
 const { withLimitedConcurrency } = promises.array
 const { mergeElements } = merger
 const { isTypeOfOrUndefined } = types
+const { getSaltoFlagBool, WORKSPACE_FLAGS } = flags
 const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
@@ -137,19 +142,28 @@ export const getDetailedChanges = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
-): Promise<Iterable<DetailedChangeWithBaseChange>> =>
-  wu(
-    (
-      await getPlan({
-        before,
-        after,
-        dependencyChangers: [],
-        topLevelFilters,
-      })
-    ).itemsByEvalOrder(),
-  )
-    .map(item => item.detailedChanges())
-    .flatten()
+): Promise<DetailedChangeWithBaseChange[]> => {
+  if (getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch)) {
+    return wu(
+      (
+        await getPlan({
+          before,
+          after,
+          dependencyChangers: [],
+          topLevelFilters,
+        })
+      ).itemsByEvalOrder(),
+    )
+      .map(item => item.detailedChanges())
+      .flatten()
+      .toArray()
+  }
+  const changes = await calculateDiff({ before, after, topLevelFilters })
+  return awu(changes)
+    .map(change => getDetailedChangesFromChange(change))
+    .flat()
+    .toArray()
+}
 
 type WorkspaceDetailedChangeOrigin = 'service' | 'workspace'
 type WorkspaceDetailedChange = {
@@ -172,7 +186,7 @@ const getDetailedChangeTree = async (
   topLevelFilters: IDFilter[],
   origin: WorkspaceDetailedChangeOrigin,
 ): Promise<DetailedChangeTreeResult> => {
-  const changes = wu(await getDetailedChanges(before, after, topLevelFilters)).toArray()
+  const changes = await getDetailedChanges(before, after, topLevelFilters)
   const changesTree = new collections.treeMap.TreeMap(
     changes.map(change => [change.id.getFullName(), [{ change, origin }]]),
   )
@@ -377,6 +391,22 @@ const toFetchChanges = (
       }
 
       const elemId = ElemID.fromFullName(id)
+
+      const relatedChanges = getChangesNestedUnderID(elemId, serviceAndPendingChanges)
+      // Mark all changes that relate to the current ID as handled
+      relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
+
+      const [serviceChanges, pendingChanges] = _.partition(relatedChanges, change => change.origin === 'service').map(
+        changeList => changeList.map(change => change.change),
+      )
+      // Service-to-workspace diffs for a given element are only computed when pending changes exist for that element.
+      // When there are no pending changes, the state and workspace are already aligned, so we can reuse service changes
+      // as workspace changes. We are guaranteed no conflicts, so we can return early here. This reuse relies on the
+      // assumption that reference expressions in the state element source used to compute the diff are *not* resolved.
+      if (!getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) && pendingChanges.length === 0) {
+        return serviceChanges.map(change => ({ change, serviceChanges, pendingChanges: [] }))
+      }
+
       const wsChanges = getChangesNestedUnderID(elemId, workspaceToServiceChanges).map(({ change }) => change)
       if (!types.isNonEmptyArray(wsChanges)) {
         // If we get here it means there is a difference between the account and the state
@@ -387,14 +417,6 @@ const toFetchChanges = (
         log.debug('account change on %s already updated in workspace', id)
         return undefined
       }
-
-      // Find all changes that relate to the current ID and mark them as handled
-      const relatedChanges = getChangesNestedUnderID(elemId, serviceAndPendingChanges)
-      relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
-
-      const [serviceChanges, pendingChanges] = _.partition(relatedChanges, change => change.origin === 'service').map(
-        changeList => changeList.map(change => change.change),
-      )
 
       if (!types.isNonEmptyArray(serviceChanges)) {
         // If nothing changed in the account, we don't want to do anything
@@ -858,7 +880,7 @@ export const calcFetchChanges = async ({
       'calculate service-state changes',
     )
 
-    // We only care about conflicts with changes from the service, so for the next two comparisons
+    // We only care about conflicts with changes from the service, so for the next comparison
     // we only need to check elements for which we have service changes
     const serviceChangesTopLevelIDs = new Set(
       wu(serviceChanges.values()).map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName()),
@@ -877,13 +899,29 @@ export const calcFetchChanges = async ({
       'calculate pending changes',
     )
 
+    // Workspace to service changes are only interesting for the elements that have pending changes -
+    // otherwise the diff will be the same as the service-to-state diff, so we avoid recalculating it by only checking
+    // elements that have pending changes.
+    const pendingChangesTopLevelIDs = new Set(
+      wu(pendingChanges.values()).map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName()),
+    )
+    const pendingChangeIdsFilter: IDFilter = id => pendingChangesTopLevelIDs.has(id.getFullName())
+
     // Changes from the service that are not in the nacls
     const { changesTree: workspaceToServiceChanges } = await log.timeDebug(
       () =>
         getDetailedChangeTree(
           workspaceElements,
           partialFetchElementSource,
-          [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
+          [
+            accountFetchFilter,
+            partialFetchFilter,
+            // Computing a plan for fetch operations results in reference expressions being resolved, which doesn't
+            // allow us to use service-state diff to calculate workspace-service diff (as resolved values would be
+            // wrong), so we can't limit the diff to pending changes here if the flag is turned on.
+            // TODO: Remove when the new plan computation is stable in production.
+            getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) ? serviceChangeIdsFilter : pendingChangeIdsFilter,
+          ],
           'service',
         ),
       'calculate service-workspace changes',
@@ -984,7 +1022,7 @@ const createFetchChanges = async ({
 
   const errorMessages = await awu(configsMerge.errors.entries())
     .flatMap(err => err.value)
-    .map(err => err.message)
+    .map(err => err.detailedMessage)
     .toArray()
   if (errorMessages.length !== 0) {
     throw new Error(`Received configuration merge errors: ${errorMessages.join(', ')}`)
@@ -1080,7 +1118,7 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
     updatedConfig: {},
     errors: [
       {
-        message: errMsg,
+        message: ERROR_MESSAGES.OTHER_ISSUES,
         detailedMessage: errMsg,
         severity: 'Error',
       },
@@ -1154,14 +1192,11 @@ const fixStaticFilesForFromStateChanges = async (
     ...fetchChangesResult,
     changes: fetchChangesResult.changes.filter(change => !invalidChangeIDs.has(change.change.id.getFullName())),
     errors: fetchChangesResult.errors.concat(
-      Array.from(invalidChangeIDs).map(invalidChangeElemID => {
-        const message = `Dropping changes in element: ${invalidChangeElemID} due to static files hashes mismatch`
-        return {
-          message,
-          detailedMessage: message,
-          severity: 'Error',
-        }
-      }),
+      Array.from(invalidChangeIDs).map(invalidChangeElemID => ({
+        message: ERROR_MESSAGES.OTHER_ISSUES,
+        detailedMessage: `Dropping changes in element: ${invalidChangeElemID} due to static files hashes mismatch`,
+        severity: 'Error',
+      })),
     ),
   }
 }

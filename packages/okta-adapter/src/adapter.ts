@@ -32,7 +32,7 @@ import {
   restoreChangeElement,
   createChangeElementResolver,
 } from '@salto-io/adapter-components'
-import { logDuration } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
@@ -128,13 +128,13 @@ const DEFAULT_FILTERS = [
   addAliasFilter, // TODO SALTO-5607 - move to infra
   // should run after fieldReferencesFilter and userFilter
   unorderedListsFilter,
-  brandCustomizationsFilter, // must run after fieldReferencesFilter
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,
   appDeploymentFilter,
   profileMappingRemovalFilter,
   // should run after fieldReferences
   ...Object.values(commonFilters),
+  brandCustomizationsFilter, // must run after fieldReferencesFilter and referencedInstanceNames (SALTO-7314) filter
   // should run last
   privateApiDeployFilter,
   defaultDeployFilter,
@@ -194,6 +194,7 @@ export default class OktaAdapter implements AdapterOperations {
   private fixElementsFunc: FixElementsFunc
   private definitions: definitionsUtils.RequiredDefinitions<OktaOptions>
   private accountName?: string
+  private elementsSource: ReadOnlyElementsSource
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -212,6 +213,7 @@ export default class OktaAdapter implements AdapterOperations {
     this.client = client
     this.adminClient = adminClient
     this.isOAuthLogin = isOAuthLogin
+    this.elementsSource = elementsSource
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -294,13 +296,12 @@ export default class OktaAdapter implements AdapterOperations {
       log.warn(
         'Fetching private APIs is not supported for OAuth login, creating config suggestion to exclude private APIs',
       )
-      const message =
-        'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched'
       return {
         errors: [
           {
-            message,
-            detailedMessage: message,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage:
+              'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
             severity: 'Warning',
           },
         ],
@@ -423,7 +424,7 @@ export default class OktaAdapter implements AdapterOperations {
     const sourceChanges = _.keyBy(instanceChanges, change => getChangeData(change).elemID.getFullName())
     const runner = this.createFiltersRunner()
     const deployDefQuery = definitionsUtils.queryWithDefault(this.definitions.deploy.instances)
-    const changeResolver = createChangeElementResolver({ getLookUpName })
+    const changeResolver = createChangeElementResolver({ getLookUpName, elementSource: this.elementsSource })
     const resolvedChanges = await awu(instanceChanges)
       .map(async change =>
         deployDefQuery.query(getChangeData(change).elemID.typeName)?.referenceResolution?.when === 'early' &&

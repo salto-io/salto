@@ -119,7 +119,10 @@ describe('object type icon filter', () => {
       const res = (await filter.onFetch(elements)) as FilterResult
       expect(objectTypeIconInstance.value.icon).toBeUndefined()
       expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual('Failed to fetch object type icons because workspaceId is undefined')
+      expect(res.errors?.[0].message).toEqual('Other issues')
+      expect(res.errors?.[0].detailedMessage).toEqual(
+        'Failed to fetch object type icons because workspaceId is undefined',
+      )
     })
   })
   describe('on deploy', () => {

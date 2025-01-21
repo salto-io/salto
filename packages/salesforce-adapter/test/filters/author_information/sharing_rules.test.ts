@@ -12,7 +12,7 @@ import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
 import SalesforceClient from '../../../src/client/client'
 import { Filter, FilterResult } from '../../../src/filter'
-import sharingRules, { WARNING_MESSAGE } from '../../../src/filters/author_information/sharing_rules'
+import sharingRules from '../../../src/filters/author_information/sharing_rules'
 import { defaultFilterContext } from '../../utils'
 import { API_NAME } from '../../../src/constants'
 
@@ -74,8 +74,9 @@ describe('sharing rules author information test', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: WARNING_MESSAGE,
-        detailedMessage: WARNING_MESSAGE,
+        message: 'Other issues',
+        detailedMessage:
+          'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.',
       })
     })
   })

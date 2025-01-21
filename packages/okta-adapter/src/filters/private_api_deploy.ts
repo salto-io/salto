@@ -7,14 +7,8 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import {
-  Change,
-  createSaltoElementError,
-  getChangeData,
-  InstanceElement,
-  isAdditionChange,
-  isInstanceChange,
-} from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { createSaltoElementError } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { assignServiceIdToAdditionChange, deployChanges } from '../deprecated_deployment'

@@ -16,9 +16,9 @@ import {
   ReferenceExpression,
   CORE_ANNOTATIONS,
   getChangeData,
-  createSaltoElementError,
   BuiltinTypes,
 } from '@salto-io/adapter-api'
+import { createSaltoElementError } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import filterCreator, { LOGO_FIELD } from '../../src/filters/brand_logo'
 import ZendeskClient from '../../src/client/client'
@@ -134,8 +134,7 @@ describe('brand logo filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(res.errors).toEqual([
         {
-          message:
-            "Salto could not access the brand_logo resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          message: 'Other issues',
           detailedMessage:
             "Salto could not access the brand_logo resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
           severity: 'Info',

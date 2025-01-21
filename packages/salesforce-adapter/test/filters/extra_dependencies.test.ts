@@ -19,7 +19,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
-import filterCreator, { WARNING_MESSAGE } from '../../src/filters/extra_dependencies'
+import filterCreator from '../../src/filters/extra_dependencies'
 import mockClient from '../client'
 import { createMetadataTypeElement, defaultFilterContext } from '../utils'
 import {
@@ -400,8 +400,9 @@ describe('extra dependencies filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: WARNING_MESSAGE,
-        detailedMessage: WARNING_MESSAGE,
+        message: 'Other issues',
+        detailedMessage:
+          'Encountered an error while trying to query your salesforce account for additional configuration dependencies.',
       })
     })
   })

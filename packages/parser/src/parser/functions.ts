@@ -7,6 +7,7 @@
  */
 
 import { Value, SaltoError, SeverityLevel } from '@salto-io/adapter-api'
+import { ERROR_MESSAGES } from '@salto-io/adapter-utils'
 import { FunctionExpression } from './internal/functions'
 
 export { FunctionExpression } from './internal/functions'
@@ -23,16 +24,14 @@ export class MissingFunctionError implements SaltoError {
   public severity: SeverityLevel = 'Error'
   constructor(public funcName: string) {}
 
-  get message(): string {
-    return `Invalid function name '${this.funcName}'`
-  }
+  message = ERROR_MESSAGES.INVALID_NACL_CONTENT
 
   get detailedMessage(): string {
     return `Invalid function name '${this.funcName}'`
   }
 
   toString(): string {
-    return this.message
+    return this.detailedMessage
   }
 }
 

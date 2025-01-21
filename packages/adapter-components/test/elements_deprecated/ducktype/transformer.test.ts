@@ -929,7 +929,7 @@ describe('ducktype_transformer', () => {
         typeDefaults: typeDefaultConfig,
       })
       const { errors } = res
-      expect(errors).toEqual([{ message: 'singleton err', detailedMessage: 'singleton err', severity: 'Warning' }])
+      expect(errors).toEqual([{ message: 'Other issues', detailedMessage: 'singleton err', severity: 'Warning' }])
     })
     it('should return empty array if shouldIgnorePermissionsError is true and the error is a permission error', async () => {
       jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
@@ -994,7 +994,7 @@ describe('ducktype_transformer', () => {
           typeDefaults: typeDefaultConfig,
         })
         const { errors } = res
-        expect(errors).toEqual([{ message: 'fetch err', detailedMessage: 'fetch err', severity }])
+        expect(errors).toEqual([{ message: 'Other issues', detailedMessage: 'fetch err', severity }])
       },
     )
   })

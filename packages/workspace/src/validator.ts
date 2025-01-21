@@ -72,7 +72,7 @@ export abstract class ValidationError
   }
 
   toString(): string {
-    return this.message
+    return this.detailedMessage
   }
 }
 

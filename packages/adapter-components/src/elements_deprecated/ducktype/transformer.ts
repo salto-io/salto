@@ -15,7 +15,7 @@ import {
   ElemIdGetter,
   SaltoError,
 } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { Paginator, ResponseValue, ClientGetWithPaginationParams } from '../../client'
@@ -444,10 +444,9 @@ export const getAllElements = async ({
             log.debug(`Ignoring permissions error for ${args.typeName} type`)
             return { elements: [], errors: [] }
           }
-          const message = `Salto could not access the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`
           const newError: SaltoError = {
-            message,
-            detailedMessage: message,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage: `Salto could not access the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
             severity: 'Warning',
           }
           return { elements: [], errors: [newError] }
@@ -455,13 +454,13 @@ export const getAllElements = async ({
         if (e instanceof InvalidSingletonType) {
           return {
             elements: [],
-            errors: [{ message: e.message, detailedMessage: e.message, severity: 'Warning' }],
+            errors: [{ message: ERROR_MESSAGES.OTHER_ISSUES, detailedMessage: e.message, severity: 'Warning' }],
           }
         }
         if (e instanceof AdapterFetchError) {
           return {
             elements: [],
-            errors: [{ message: e.message, detailedMessage: e.message, severity: e.severity }],
+            errors: [{ message: ERROR_MESSAGES.OTHER_ISSUES, detailedMessage: e.message, severity: e.severity }],
           }
         }
         throw e

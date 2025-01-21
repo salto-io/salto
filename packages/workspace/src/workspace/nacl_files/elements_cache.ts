@@ -450,19 +450,35 @@ export const createMergeManager = async (
 
   const mergeManager: ElementMergeManager = {
     clear: ensureInitiated(() => lock.acquire(MERGER_LOCK, clearImpl)),
-    flush: ensureInitiated(async () =>
-      lock.acquire(MERGER_LOCK, async () => {
-        log.debug(`Started flushing hashes under namespace ${namespace}.`)
-        await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
-        await hashes.flush()
-        const hasChanged = (await Promise.all(flushables.map(async f => f.flush()))).some(
-          b => typeof b !== 'boolean' || b,
-        )
-        await hashes.delete(MERGER_LOCK)
-        await hashes.flush()
-        log.debug(`Successfully flushed hashes under namespace ${namespace}.`)
-        return hasChanged
-      }),
+    flush: ensureInitiated(() =>
+      log.timeDebug(
+        () =>
+          lock.acquire(MERGER_LOCK, async () => {
+            const timeoutId = setTimeout(
+              () => {
+                log.error('Flushing hashes under namespace %s is taking more than 10 minutes.', namespace)
+              },
+              10 * 60 * 1000, // 10 minutes
+            )
+
+            try {
+              await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
+              await hashes.flush()
+              const flushResults = await awu(flushables)
+                .map(f => f.flush())
+                .toArray()
+              const hasChanged = flushResults.some(b => typeof b !== 'boolean' || b)
+
+              await hashes.delete(MERGER_LOCK)
+              await hashes.flush()
+              return hasChanged
+            } finally {
+              clearTimeout(timeoutId)
+            }
+          }),
+        'mergeManager.flush %s',
+        namespace,
+      ),
     ),
     mergeComponents: ensureInitiated(async (cacheUpdate: CacheChangeSetUpdate) =>
       lock.acquire(MERGER_LOCK, async () => {

@@ -513,8 +513,7 @@ describe('adapter', () => {
         expect(fetchRes.errors).toHaveLength(1)
         expect(fetchRes.errors).toEqual([
           {
-            message:
-              'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
+            message: 'Other issues',
             detailedMessage:
               'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
             severity: 'Warning',

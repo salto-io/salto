@@ -5,13 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  ObjectType,
-  ElemID,
-  InstanceElement,
-  ReferenceExpression,
-  createSaltoElementError,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { createSaltoElementError } from '@salto-io/adapter-utils'
 import { filterUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../src/client/client'
 import { APP_INSTALLATION_TYPE_NAME, APP_OWNED_TYPE_NAME, ZENDESK } from '../../src/constants'

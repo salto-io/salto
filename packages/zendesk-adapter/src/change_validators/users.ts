@@ -20,7 +20,7 @@ import { resolvePath } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import {
   getUsers,
   MISSING_USERS_DOC_LINK,
@@ -29,7 +29,6 @@ import {
   User,
   VALID_USER_VALUES,
 } from '../user_utils'
-import { lookupFunc } from '../filters/field_references'
 import { paginate } from '../client/pagination'
 import ZendeskClient from '../client/client'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
@@ -107,7 +106,6 @@ export const usersValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchCo
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
-      .map(data => resolveValues(data, lookupFunc))
       .toArray()
 
     if (relevantInstances.length === 0 || fetchConfig.resolveUserIDs === false) {

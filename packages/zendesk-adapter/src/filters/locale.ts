@@ -13,28 +13,28 @@ import {
   InstanceElement,
   Change,
   isAdditionOrRemovalChange,
-  createSaltoElementErrorFromError,
   SeverityLevel,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
+import {
+  createSaltoElementErrorFromError,
+  ERROR_MESSAGES,
+  getInstancesFromElementSource,
+} from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { LOCALE_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
-const getWarningsForLocale = (): SaltoError[] => {
-  const message =
-    "Please be aware that your Zendesk account's default locale is not set to English (en-US), which may impact your ability to compare environments with different default locales"
-  return [
-    {
-      message,
-      detailedMessage: message,
-      severity: 'Warning',
-    },
-  ]
-}
+const getWarningsForLocale = (): SaltoError[] => [
+  {
+    message: ERROR_MESSAGES.OTHER_ISSUES,
+    detailedMessage:
+      "Please be aware that your Zendesk account's default locale is not set to English (en-US), which may impact your ability to compare environments with different default locales",
+    severity: 'Warning',
+  },
+]
 
 /**
  * This filter checks that the default locale is set to en-US, if not it will raise a warning. We have seen that the

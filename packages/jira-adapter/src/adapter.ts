@@ -33,7 +33,7 @@ import {
   fetch as fetchUtils,
   openapi,
 } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, ERROR_MESSAGES, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { objects, collections } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
@@ -201,7 +201,7 @@ import contextDefaultValueDeploymentFilter from './filters/fields/context_defaul
 import statusPropertiesReferencesFilter from './filters/workflowV2/status_properties_references'
 import enhancedSearchNoiseReductionFilter from './filters/script_runner/enhanced_search/enhanced_search_noise_filter'
 
-const { getAllElements, addRemainingTypes } = elementUtils.ducktype
+const { getAllElements, addRemainingTypes, restoreInstanceTypeFromDeploy } = elementUtils.ducktype
 const { findDataField } = elementUtils
 const { computeGetArgs } = fetchUtils.resource
 const { getAllInstances } = elementUtils.swagger
@@ -585,13 +585,13 @@ export default class JiraAdapter implements AdapterOperations {
     const isJsmEnabled = await isJsmEnabledInService(this.client)
     if (!isJsmEnabled) {
       log.debug('enableJSM set to true, but JSM is not enabled in the service, skipping fetching JSM elements')
-      const message = 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.'
       return {
         elements: [],
         errors: [
           {
-            message,
-            detailedMessage: message,
+            message: ERROR_MESSAGES.OTHER_ISSUES,
+            detailedMessage:
+              'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
             severity: 'Warning',
           },
         ],
@@ -781,11 +781,16 @@ export default class JiraAdapter implements AdapterOperations {
       deployResult: { appliedChanges, errors },
     } = await runner.deploy(changesToDeploy)
 
-    const changesToReturn = [...appliedChanges]
+    const changesToReturn = Array.from(appliedChanges)
     await runner.onDeploy(changesToReturn)
 
-    return {
+    const changesWithRestoredTypes = restoreInstanceTypeFromDeploy({
       appliedChanges: changesToReturn,
+      originalInstanceChanges: changesToDeploy,
+    })
+
+    return {
+      appliedChanges: changesWithRestoredTypes,
       errors,
     }
   }

@@ -8,8 +8,8 @@
 
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { Change, SaltoError, SaltoElementError, createSaltoElementError, getChangeData } from '@salto-io/adapter-api'
+import { createSchemeGuard, createSaltoElementError } from '@salto-io/adapter-utils'
+import { Change, SaltoError, SaltoElementError, getChangeData } from '@salto-io/adapter-api'
 import JiraClient from './client/client'
 import { JiraConfig } from './config/config'
 

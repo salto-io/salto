@@ -17,7 +17,7 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { createSchemeGuardForInstance, ERROR_MESSAGES } from '@salto-io/adapter-utils'
 import {
   client as clientUtils,
   definitions as definitionsUtils,
@@ -142,14 +142,11 @@ const appLogoFilter: FilterCreator = ({ definitions, getElemIdFunc }) => ({
 
     const [errors, appLogoInstances] = _.partition(allInstances, _.isError)
     appLogoInstances.forEach(logo => elements.push(logo))
-    const fetchError: SaltoError[] = errors.map(err => {
-      const message = `Failed to fetch App logo. ${err.message}`
-      return {
-        message,
-        detailedMessage: message,
-        severity: 'Warning',
-      }
-    })
+    const fetchError: SaltoError[] = errors.map(err => ({
+      message: ERROR_MESSAGES.OTHER_ISSUES,
+      detailedMessage: `Failed to fetch App logo. ${err.message}`,
+      severity: 'Warning',
+    }))
     return { errors: fetchError }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {

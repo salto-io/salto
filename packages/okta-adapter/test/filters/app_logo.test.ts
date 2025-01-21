@@ -101,7 +101,8 @@ describe('app logo filter', () => {
       const logo = instances.find(e => e.elemID.typeName === APP_LOGO_TYPE_NAME)
       expect(logo).toBeUndefined()
       expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual('Failed to fetch App logo. Failed to find content type for app1')
+      expect(res.errors?.[0].message).toEqual('Other issues')
+      expect(res.errors?.[0].detailedMessage).toEqual('Failed to fetch App logo. Failed to find content type for app1')
     })
     // Reproduce an issue where the filter does not give unique file names to AppLogo instances if their names only
     // differed by underscores.

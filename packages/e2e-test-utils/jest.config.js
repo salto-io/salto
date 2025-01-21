@@ -5,10 +5,3 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-
-export const ERROR_MESSAGES = {
-  OTHER_ISSUES: 'Other issues',
-  INVALID_NACL_CONTENT: 'Element has invalid NaCl content',
-  UNRESOLVED_REFERENCE: 'Element has unresolved references',
-  ID_COLLISION: 'Some elements were not fetched due to Salto ID collisions',
-}

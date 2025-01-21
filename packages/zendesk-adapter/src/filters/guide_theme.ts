@@ -28,6 +28,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
+  ERROR_MESSAGES,
   getInstancesFromElementSource,
   inspectValue,
   naclCase,
@@ -260,17 +261,14 @@ const getFullName = (instance: InstanceElement): string => instance.elemID.getFu
 const addDownloadErrors = (theme: InstanceElement, downloadErrors: string[]): SaltoError[] => {
   const messagePrefix = `Error fetching theme id ${theme.value.id},`
   return downloadErrors.length > 0
-    ? downloadErrors.map(e => {
-        const message = `${messagePrefix} ${e}`
-        return {
-          message,
-          detailedMessage: message,
-          severity: 'Warning',
-        }
-      })
+    ? downloadErrors.map(e => ({
+        message: ERROR_MESSAGES.OTHER_ISSUES,
+        detailedMessage: `${messagePrefix} ${e}`,
+        severity: 'Warning',
+      }))
     : [
         {
-          message: `${messagePrefix} no content returned from Zendesk API`,
+          message: ERROR_MESSAGES.OTHER_ISSUES,
           detailedMessage: `${messagePrefix} no content returned from Zendesk API`,
           severity: 'Warning',
         },
@@ -412,17 +410,16 @@ const filterCreator: FilterCreator = ({ config, client, elementSource }) => ({
             log.error('Error fetching theme id %s, %o', theme.value.id, e)
             const message = `Error fetching theme id ${theme.value.id}, ${e}`
             return {
-              errors: [{ message, detailedMessage: message, severity: 'Warning' }],
+              errors: [{ message: ERROR_MESSAGES.OTHER_ISSUES, detailedMessage: message, severity: 'Warning' }],
             }
           }
 
           remove(elements, element => element.elemID.isEqual(theme.elemID))
-          const message = `Error fetching theme id ${theme.value.id}, ${e.message}`
           return {
             errors: [
               {
-                message,
-                detailedMessage: message,
+                message: ERROR_MESSAGES.OTHER_ISSUES,
+                detailedMessage: `Error fetching theme id ${theme.value.id}, ${e.message}`,
                 severity: 'Warning',
               },
             ],

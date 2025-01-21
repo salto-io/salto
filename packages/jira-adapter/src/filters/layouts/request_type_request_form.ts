@@ -38,24 +38,22 @@ const isRequestTypeRequestFormItemsComponent = createSchemeGuard<requestTypeRequ
   'invalid request form items component',
 )
 
-const deleteEmptyProperties = (data: requestTypeRequestFormData): void => {
-  if (data.properties) {
-    data.properties = Object.fromEntries(Object.entries(data.properties).filter(([_key, value]) => value !== ''))
-    if (Object.keys(data.properties).length === 0) {
-      delete data.properties
-    }
-  }
-}
-
-const filterEmptyProperties = (elements: Element[]): void => {
+const removePropertiesWithEmptyValues = (elements: Element[]): void => {
   elements
     .filter(e => e.elemID.typeName === REQUEST_FORM_TYPE)
     .filter(isInstanceElement)
     .forEach(instance => {
       const items = instance.value.issueLayoutConfig?.items
       if (isRequestTypeRequestFormItemsComponent(items)) {
-        items.forEach(item => {
-          deleteEmptyProperties(item.data)
+        items.forEach(({ data }) => {
+          if (data.properties) {
+            data.properties = Object.fromEntries(
+              Object.entries(data.properties).filter(([_key, value]) => value !== ''),
+            )
+            if (Object.keys(data.properties).length === 0) {
+              delete data.properties
+            }
+          }
         })
       }
     })
@@ -72,7 +70,9 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
       getElemIdFunc,
       typeName: REQUEST_FORM_TYPE,
     })
-    filterEmptyProperties(elements)
+
+    removePropertiesWithEmptyValues(elements)
+
     await fetchRequestTypeDetails({
       elements,
       client,

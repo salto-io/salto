@@ -23,14 +23,14 @@ const { withLimitedConcurrency } = promises.array
 const CACHE_READ_CONCURRENCY = 100
 
 class StaticFileAccessDeniedError extends Error {
-  constructor(filepath: string) {
-    super(`access denied for ${filepath}`)
+  constructor(filepath: string, reason: string) {
+    super(`access denied for ${filepath}: ${reason}`)
   }
 }
 
 class MissingStaticFileError extends Error {
-  constructor(filepath: string) {
-    super(`missing static file ${filepath}`)
+  constructor(filepath: string, source: string) {
+    super(`missing static file ${filepath} from ${source}`)
   }
 }
 
@@ -81,8 +81,7 @@ export const buildStaticFilesSource = (
     let modified: number | undefined
     if (ignoreFileChanges) {
       if (cachedResult === undefined) {
-        log.warn('file %s is missing from static files cache', filepath)
-        throw new MissingStaticFileError(filepath)
+        throw new MissingStaticFileError(filepath, 'static files cache')
       }
       return {
         ...cachedResult,
@@ -93,12 +92,10 @@ export const buildStaticFilesSource = (
     try {
       modified = await staticFilesDirStore.mtimestamp(filepath)
     } catch (error) {
-      log.warn('failed to get the modification time of %s with error: %o', filepath, error)
-      throw new StaticFileAccessDeniedError(filepath)
+      throw new StaticFileAccessDeniedError(filepath, error.message)
     }
     if (modified === undefined) {
-      log.warn('failed to get the modification time of %s (result is undefined)', filepath)
-      throw new MissingStaticFileError(filepath)
+      throw new MissingStaticFileError(filepath, 'static files dir store (mtimestamp)')
     }
 
     const cacheModified = cachedResult ? cachedResult.modified : undefined
@@ -106,8 +103,7 @@ export const buildStaticFilesSource = (
     if (cachedResult === undefined || cacheModified === undefined || modified > cacheModified) {
       const file = await staticFilesDirStore.get(filepath)
       if (file === undefined) {
-        log.warn('file %s is missing from static files dir store', filepath)
-        throw new MissingStaticFileError(filepath)
+        throw new MissingStaticFileError(filepath, 'static files dir store')
       }
       const staticFileBuffer = file.buffer
       const hash = calculateStaticFileHash(staticFileBuffer)

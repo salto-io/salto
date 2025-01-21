@@ -16,7 +16,7 @@ import {
   buildElementsSourceForFetch,
   layoutObjAndName,
   isInstanceOfTypeSync,
-  isCustomObjectOrCustomMetadataSync,
+  isCustomObjectOrCustomMetadataRecordTypeSync,
 } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects_to_object_type'
@@ -60,7 +60,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const apiNameToCustomObject = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),
-      filter: isCustomObjectOrCustomMetadataSync,
+      filter: isCustomObjectOrCustomMetadataRecordTypeSync,
       key: async obj => [await apiName(obj)],
       map: obj => obj.elemID,
     })
@@ -69,7 +69,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       const [layoutObjName, layoutName] = layoutObjAndName(await apiName(layout))
       const layoutObjId = apiNameToCustomObject.get(layoutObjName)
       const layoutObj = layoutObjId !== undefined ? await referenceElements.get(layoutObjId) : undefined
-      if (layoutObj === undefined || !isCustomObjectOrCustomMetadataSync(layoutObj)) {
+      if (layoutObj === undefined || !isCustomObjectOrCustomMetadataRecordTypeSync(layoutObj)) {
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
         return
       }

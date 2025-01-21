@@ -82,8 +82,14 @@ describe('Test layout filter', () => {
       await filter.onFetch(elements)
 
       const instance = elements[1] as InstanceElement
-      expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(shortName)))
-      expect(instance.path).toEqual([...testSObjPath.slice(0, -1), 'Layout', pathNaclCase(instance.elemID.name)])
+      expect(instance.elemID).toEqual(
+        LAYOUT_TYPE_ID.createNestedID('instance', naclCase(opts.fixedName ? shortName : fullName)),
+      )
+      expect(instance.path).toEqual([
+        ...testSObjPath.slice(0, -1),
+        'Layout',
+        opts.fixedName ? pathNaclCase(instance.elemID.name) : shortName.replace(' ', '_'),
+      ])
 
       expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID, testSObj),
@@ -95,6 +101,9 @@ describe('Test layout filter', () => {
     })
     it('should add relation between layout to related custom sobject', async () => {
       await fetch('Test__c')
+    })
+    it('should add relation between layout to related custom Metadata sobject', async () => {
+      await fetch('Test__mdt', { fixedName: false })
     })
     it('should not transform instance name if it is already fixed', async () => {
       await fetch('Test', { fixedName: true })

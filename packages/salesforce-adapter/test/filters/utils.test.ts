@@ -63,7 +63,7 @@ import {
   isOrderedMapTypeOrRefType,
   isCustomMetadataRecordInstanceSync,
   metadataTypeOrUndefined,
-  isCustomObjectOrCustomMetadataSync,
+  isCustomObjectOrCustomMetadataRecordTypeSync,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -303,11 +303,11 @@ describe('filter utils', () => {
   })
   describe('isCustomObjectOrCustomMetadataSync', () => {
     it('should return true for customMetadataRecordType and customObject', () => {
-      expect(isCustomObjectOrCustomMetadataSync(mockTypes.CustomMetadataRecordType)).toBeTrue()
-      expect(isCustomObjectOrCustomMetadataSync(mockTypes.CustomObject)).toBeTrue()
+      expect(isCustomObjectOrCustomMetadataRecordTypeSync(mockTypes.CustomMetadataRecordType)).toBeTrue()
+      expect(isCustomObjectOrCustomMetadataRecordTypeSync(mockTypes.CustomObject)).toBeTrue()
     })
     it('should return false for non customMetadataRecordType and non customObject', () => {
-      expect(isCustomObjectOrCustomMetadataSync(mockTypes.Profile)).toBeFalse()
+      expect(isCustomObjectOrCustomMetadataRecordTypeSync(mockTypes.Profile)).toBeFalse()
     })
   })
 

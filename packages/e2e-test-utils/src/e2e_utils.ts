@@ -79,8 +79,8 @@ export const setupWorkspace = (): (({
   })
 
   afterAll(async () => {
-    await rm(baseDir)
     await workspace.close()
+    await rm(baseDir)
   })
 
   return async ({ envName, credLease, adapterName, configOverride, adapterCreators, credentialsType }) => {
@@ -161,24 +161,32 @@ export const e2eDeploy = async ({
   detailedChanges,
   validationFilter,
   adapterCreators,
-  changeErrorFilter = e => e.severity === 'Error',
-  selectorsForFixers,
+  changeErrorFilter = () => true,
   expectedChangeErrors = [],
   expectedDeployErrors = [],
   actionPlanAfterDeploySize = 0,
+  expectedFixerErrors,
+  expectedFixerChanges,
 }: {
   workspace: Workspace
   detailedChanges: DetailedChangeWithBaseChange[]
   validationFilter?: (error: ValidationError) => boolean
   adapterCreators: Record<string, AdapterType>
   changeErrorFilter?: (error: ChangeError) => boolean
-  selectorsForFixers: string[]
   expectedChangeErrors?: ChangeError[]
   expectedDeployErrors?: DeployError[]
   actionPlanAfterDeploySize?: number
+  expectedFixerErrors?: ChangeError[]
+  expectedFixerChanges?: DetailedChangeWithBaseChange[]
 }): Promise<void | ChangeError[]> => {
   await updateWorkspace(workspace, detailedChanges, validationFilter)
-  await runFixers({ workspace, adapterCreators, selectors: selectorsForFixers })
+  await runFixers({
+    workspace,
+    adapterCreators,
+    selectors: _.uniq(detailedChanges.map(change => change.id.createTopLevelParentID().parent.getFullName())),
+    expectedFixerErrors,
+    expectedFixerChanges,
+  })
   const actionPlan = await preview({ workspace, adapterCreators })
   const errors = actionPlan.changeErrors.filter(changeErrorFilter)
   expect(errors).toEqual(expectedChangeErrors)

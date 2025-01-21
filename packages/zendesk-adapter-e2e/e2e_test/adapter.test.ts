@@ -102,7 +102,6 @@ const zendeskCleanUp = async (instances: InstanceElement[], workspace: Workspace
       validationFilter: zendeskValidationFilter,
       adapterCreators,
       changeErrorFilter: zendeskChangeErrorFilter,
-      selectorsForFixers: instancesToClean.map(inst => inst.elemID.getFullName()),
     })
   }
 }
@@ -202,7 +201,6 @@ describe('Zendesk adapter E2E', () => {
         detailedChanges,
         validationFilter: zendeskValidationFilter,
         adapterCreators,
-        selectorsForFixers: instancesToDeploy.map(inst => inst.elemID.getFullName()),
       })
       await fetchWorkspace({ workspace, validationFilter: zendeskValidationFilter, adapterCreators })
       elements = await getElementsFromWorkspace(workspace)

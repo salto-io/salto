@@ -107,6 +107,7 @@ type ReferenceSerializationStrategyName =
   | 'fromDataInstance'
   | 'recordField'
   | 'assignToReferenceField'
+  | 'leftValue'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategy
@@ -175,6 +176,16 @@ export const ReferenceSerializationStrategyLookup: Record<
     lookup: (val, context) => {
       if (context !== undefined && _.isString(val) && val.startsWith('$Record.')) {
         return [context, val.split(API_NAME_SEPARATOR)[1]].join(API_NAME_SEPARATOR)
+      }
+      return val
+    },
+  },
+  leftValue: {
+    serialize: async ({ ref, path }) =>
+      `{!Record${API_NAME_SEPARATOR}${await safeApiName({ ref, path, relative: true })}}`,
+    lookup: (val, context) => {
+      if (context !== undefined && _.isString(val) && val.startsWith('{!Record.')) {
+        return [context, val.split(API_NAME_SEPARATOR)[1].replace(/}$/, '')].join(API_NAME_SEPARATOR)
       }
       return val
     },
@@ -997,6 +1008,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
       parentTypes: Object.values(FLOW_FIELD_TYPE_NAMES),
     },
     serializationStrategy: 'assignToReferenceField',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'leftValue', parentTypes: ['UiFormulaCriterion'] },
+    serializationStrategy: 'leftValue',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
 ]

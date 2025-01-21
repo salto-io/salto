@@ -241,6 +241,7 @@ export const mockTypes = {
   CustomObject: createMetadataObjectType({
     annotations: {
       metadataType: 'CustomObject',
+      [API_NAME]: 'mockCustomObject',
     },
     fields: {
       listViews: { refType: listViewType },

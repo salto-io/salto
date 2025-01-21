@@ -182,12 +182,15 @@ export const metadataTypeOrUndefined = (element: Readonly<Element>): string | un
 }
 
 export const isCustomObjectSync = (element: Readonly<Element>): element is ObjectType => {
+  const a = isObjectType(element)
+  const b = metadataTypeSync(element) === CUSTOM_OBJECT
+  const c = element.annotations[API_NAME] !== undefined
   const res =
-    isObjectType(element) &&
-    metadataTypeSync(element) === CUSTOM_OBJECT &&
+    a &&
+    b &&
     // The last part is so we can tell the difference between a custom object
     // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
-    element.annotations[API_NAME] !== undefined
+    c
   return res
 }
 
@@ -222,6 +225,9 @@ export const isCustomMetadataRecordTypeSync = (elem: Element): elem is ObjectTyp
   const elementApiName = apiNameSync(elem)
   return isObjectType(elem) && (elementApiName?.endsWith(CUSTOM_METADATA_SUFFIX) ?? false)
 }
+
+export const isCustomObjectOrCustomMetadataSync = (elem: Element): elem is ObjectType =>
+  isCustomObjectSync(elem) || isCustomMetadataRecordTypeSync(elem)
 
 /**
  * @deprecated use {@link isCustomMetadataRecordInstanceSync} instead.
@@ -493,7 +499,7 @@ export const instanceInternalId = (instance: InstanceElement): string =>
 export const hasApiName = (elem: Element): boolean => apiName(elem) !== undefined
 
 export const extractFlatCustomObjectFields = (elem: Element): Element[] =>
-  [elem].concat(isCustomObjectSync(elem) ? Object.values(elem.fields) : [])
+  [elem].concat(isCustomObjectOrCustomMetadataSync(elem) ? Object.values(elem.fields) : [])
 
 export type QueryOperator = '>' | '<' | '=' | 'IN' // 'IN' is for values that can be split across multiple queries
 export type SoqlQuery = {

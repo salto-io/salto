@@ -5,9 +5,16 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  TemplateExpression,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { WEBHOOK_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { BRAND_TYPE_NAME, WEBHOOK_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator, { AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA } from '../../src/filters/webhook'
 import { createFilterCreatorParams } from '../utils'
 
@@ -24,9 +31,10 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('webhook filter', () => {
-  type FilterType = filterUtils.FilterWith<'deploy'>
+  type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch' | 'onDeploy' | 'preDeploy'>
   let filter: FilterType
-  const webhook = new InstanceElement('test', new ObjectType({ elemID: new ElemID(ZENDESK, WEBHOOK_TYPE_NAME) }), {
+  const webhookType = new ObjectType({ elemID: new ElemID(ZENDESK, WEBHOOK_TYPE_NAME) })
+  const webhook = new InstanceElement('webhook1', webhookType, {
     name: 'test',
     description: 'desc',
     status: 'active',
@@ -39,29 +47,92 @@ describe('webhook filter', () => {
       add_position: 'header',
     },
   })
-  const webhookAPI = new InstanceElement(
-    'test-api auth',
-    new ObjectType({ elemID: new ElemID(ZENDESK, WEBHOOK_TYPE_NAME) }),
-    {
-      name: 'test',
-      description: 'desc',
-      status: 'active',
-      subscriptions: ['conditional_ticket_events'],
-      endpoint: 'https://www.example.com/token',
-      http_method: 'GET',
-      request_format: 'json',
-      authentication: {
-        type: 'api_key',
-        data: {
-          name: 'TEST',
-        },
-        add_position: 'header',
+  const webhookAPI = new InstanceElement('test-api auth', webhookType, {
+    name: 'test',
+    description: 'desc',
+    status: 'active',
+    subscriptions: ['conditional_ticket_events'],
+    endpoint: 'https://www.example.com/token',
+    http_method: 'GET',
+    request_format: 'json',
+    authentication: {
+      type: 'api_key',
+      data: {
+        name: 'TEST',
       },
+      add_position: 'header',
     },
-  )
-  beforeEach(async () => {
-    jest.clearAllMocks()
+  })
+
+  const brand = new InstanceElement('brand', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), {
+    brand_url: 'https://www.example.com',
+  })
+  const webhookAfterFetch = new InstanceElement('webhook1', webhookType, {
+    endpoint: new TemplateExpression({
+      parts: [new ReferenceExpression(brand.elemID.createNestedID('brand_url'), brand.value.brand_url), '/token'],
+    }),
+  })
+  const webhookOther = new InstanceElement('webhook2', webhookType, {
+    endpoint: 'https://www.not-example.com/token',
+  })
+  const webhookUndefined = new InstanceElement('webhook3', webhookType, {})
+
+  beforeAll(async () => {
     filter = filterCreator(createFilterCreatorParams({})) as FilterType
+  })
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  describe('onFetch', () => {
+    it('should turn endpoint to template expression with reference to brand subdomain', async () => {
+      const elements = [webhook, brand]
+      await filter.onFetch(elements)
+      expect(webhook.value.endpoint).toEqual(
+        new TemplateExpression({
+          parts: [new ReferenceExpression(brand.elemID.createNestedID('brand_url'), brand.value.brand_url), '/token'],
+        }),
+      )
+    })
+  })
+  describe('preDeploy', () => {
+    it('should turn zendesk emails from template expression to string', async () => {
+      const elements = [webhookAfterFetch, webhookOther, webhookUndefined].map(e => e.clone())
+      await filter.preDeploy(elements.map(elem => toChange({ after: elem })))
+      const zendeskWebhook = elements.find(e => e.elemID.name === 'webhook1')
+      const otherWebhook = elements.find(e => e.elemID.name === 'webhook2')
+      const undefinedWebhook = elements.find(e => e.elemID.name === 'webhook3')
+      expect(zendeskWebhook?.value.endpoint).toEqual('https://www.example.com/token')
+      expect(otherWebhook).toEqual(webhookOther)
+      expect(undefinedWebhook).toEqual(webhookUndefined)
+    })
+  })
+  describe('onDeploy', () => {
+    let elementsAfterFetch: (InstanceElement | ObjectType)[]
+    let elementsAfterOnDeploy: (InstanceElement | ObjectType)[]
+
+    beforeAll(async () => {
+      const elementsBeforeFetch = [webhook, webhookOther, webhookUndefined, brand]
+      elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
+      await filter.onFetch(elementsAfterFetch)
+      const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
+      await filter.preDeploy(elementsAfterPreDeploy.map(e => toChange({ before: e, after: e })))
+      elementsAfterOnDeploy = elementsAfterPreDeploy.map(e => e.clone())
+      await filter.onDeploy(elementsAfterOnDeploy.map(e => toChange({ before: e, after: e })))
+    })
+
+    it('Returns elements to after fetch state (with templates) after onDeploy', () => {
+      expect(elementsAfterOnDeploy).toEqual(elementsAfterFetch)
+    })
+    it('should not turn to template expression if it was not a template expression before', async () => {
+      const webhookInstance = new InstanceElement('address1', webhookType, {
+        endpoint: 'https://www.example.com',
+      })
+      const cloned = webhookInstance.clone()
+      await filter.preDeploy([toChange({ before: webhookInstance, after: webhookInstance })])
+      await filter.onDeploy([toChange({ before: webhookInstance, after: webhookInstance })])
+      expect(webhookInstance).toEqual(cloned)
+    })
   })
   describe('deploy', () => {
     it('should pass the correct params to deployChange on create - basic_auth', async () => {

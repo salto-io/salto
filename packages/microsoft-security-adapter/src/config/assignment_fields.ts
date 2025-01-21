@@ -27,8 +27,9 @@ export type AssignmentFieldRuleWithFallback =
       fallbackValue: unknown
     }
 
+export type IntuneAssignmentsField = typeof intuneConstants.ASSIGNMENTS_FIELD_NAME
 export type IntuneAssignmentsFieldNamesConfig = Partial<
-  Record<typeof intuneConstants.ASSIGNMENTS_FIELD_NAME, AssignmentFieldRuleWithoutFallback>
+  Record<IntuneAssignmentsField, AssignmentFieldRuleWithoutFallback>
 >
 export type ConditionalAccessPolicyAssignmentFieldNamesConfig = Partial<
   Record<ConditionalAccessPolicyAssignmentField, AssignmentFieldRuleWithFallback>

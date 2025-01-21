@@ -41,7 +41,7 @@ microsoft_security {
   deploy = {
     assignmentFieldsStrategy = {
       IntuneDeviceConfiguration = {
-        assignments: {
+        assignments = {
           strategy = "omit"
         }
       }

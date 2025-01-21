@@ -14,6 +14,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
   name: 'omitStandardFieldsNonDeployableValues',
   onFetch: ensureSafeFilterFetch({
     config,
+    filterName: 'omitStandardFieldsNonDeployableValues',
     warningMessage: 'Error occurred when attempting to omit standard fields non deployable values',
     fetchFilterFunc: async elements =>
       elements

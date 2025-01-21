@@ -26,6 +26,7 @@ import fieldPermissionsEnumFilter, {
 import { generateProfileType, defaultFilterContext, buildFilterContext } from '../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, SALESFORCE } from '../../src/constants'
 import { FilterWith } from './mocks'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 
@@ -205,7 +206,16 @@ describe('FieldPermissionsEnum filter', () => {
       describe('with disablePermissionsOmissions false', () => {
         beforeAll(async () => {
           filter = fieldPermissionsEnumFilter({
-            config: defaultFilterContext,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: {
+                  optionalFeatures: {
+                    disablePermissionsOmissions: false,
+                  },
+                },
+              }),
+            },
           }) as FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
           profileInstanceClone = profileInstance.clone()
           profileObjectClone = profileObj.clone()

@@ -16,15 +16,16 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   hideTypesFolder: true,
   metaTypes: false,
   picklistsAsMaps: false,
-  retrieveSettings: false,
+  retrieveSettings: true,
   genAiReferences: true,
-  networkReferences: false,
-  extendFetchTargets: false,
+  networkReferences: true,
+  extendFetchTargets: true,
   shouldPopulateInternalIdAfterDeploy: true,
-  addParentToInstancesWithinFolder: false,
-  packageVersionReference: false,
-  omitTotalTrustedRequestsUsageField: false,
-  disablePermissionsOmissions: false,
+  addParentToInstancesWithinFolder: true,
+  packageVersionReference: true,
+  omitTotalTrustedRequestsUsageField: true,
+  disablePermissionsOmissions: true,
+  omitStandardFieldsNonDeployableValues: true,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

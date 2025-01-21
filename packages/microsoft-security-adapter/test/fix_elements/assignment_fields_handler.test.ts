@@ -50,29 +50,32 @@ describe('replaceGroupsDomainHandler', () => {
           },
         }
       })
-      describe.each([undefined, []])('when the instance assignments field equals %s', assignments => {
+
+      describe('when the instance assignments field equals []', () => {
         it('should do nothing', async () => {
           const clonedInstance = intuneApplicationInstance.clone()
-          clonedInstance.value.assignments = assignments
+          clonedInstance.value.assignments = []
           const result = await handler([clonedInstance])
           expect(result).toEqual({ fixedElements: [], errors: [] })
         })
       })
 
       describe('when the instance assignments field is not empty', () => {
-        it('should omit the assignments field', async () => {
+        it('should replace the field value with an empty array', async () => {
           const clonedInstance = intuneApplicationInstance.clone()
           clonedInstance.value.assignments = [{ id: 'testAssignment' }]
+          const expectedInstance = intuneApplicationInstance.clone()
+          expectedInstance.value.assignments = []
           const result = await handler([clonedInstance])
           expect(result).toEqual({
-            fixedElements: [intuneApplicationInstance],
+            fixedElements: [expectedInstance],
             errors: [
               {
                 elemID: intuneApplicationInstance.elemID,
                 severity: 'Info',
                 message: 'Changes were made to assignment-related fields',
                 detailedMessage:
-                  'Changes were made to assignment-related fields according to the assignmentFieldsStrategy configuration:\n — Field "assignments" was omitted',
+                  'Changes were made to assignment-related fields according to the assignmentFieldsStrategy configuration:\n — Field "assignments" was replaced with []',
               },
             ],
           })
@@ -167,22 +170,33 @@ describe('replaceGroupsDomainHandler', () => {
             }
           })
 
-          it('should omit the field', async () => {
-            const expectedInstance = entraConditionalAccessPolicy.clone()
-            delete expectedInstance.value.conditions.applications.excludeApplications
+          describe.each([undefined, []])('when the field value is %o', value => {
+            it('should do nothing', async () => {
+              const clonedInstance = entraConditionalAccessPolicy.clone()
+              clonedInstance.value.conditions.applications.excludeApplications = value
+              const result = await handler([clonedInstance])
+              expect(result).toEqual({ fixedElements: [], errors: [] })
+            })
+          })
 
-            const result = await handler([entraConditionalAccessPolicy])
-            expect(result).toEqual({
-              fixedElements: [expectedInstance],
-              errors: [
-                {
-                  elemID: entraConditionalAccessPolicy.elemID,
-                  severity: 'Info',
-                  message: 'Changes were made to assignment-related fields',
-                  detailedMessage:
-                    'Changes were made to assignment-related fields according to the assignmentFieldsStrategy configuration:\n — Field "conditions.applications.excludeApplications" was omitted',
-                },
-              ],
+          describe('when the specified field is not empty', () => {
+            it('should omit the field', async () => {
+              const expectedInstance = entraConditionalAccessPolicy.clone()
+              delete expectedInstance.value.conditions.applications.excludeApplications
+
+              const result = await handler([entraConditionalAccessPolicy])
+              expect(result).toEqual({
+                fixedElements: [expectedInstance],
+                errors: [
+                  {
+                    elemID: entraConditionalAccessPolicy.elemID,
+                    severity: 'Info',
+                    message: 'Changes were made to assignment-related fields',
+                    detailedMessage:
+                      'Changes were made to assignment-related fields according to the assignmentFieldsStrategy configuration:\n — Field "conditions.applications.excludeApplications" was omitted',
+                  },
+                ],
+              })
             })
           })
         })

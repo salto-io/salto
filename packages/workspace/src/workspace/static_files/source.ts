@@ -10,7 +10,6 @@ import { StaticFile, StaticFileParameters, calculateStaticFileHash } from '@salt
 import wu from 'wu'
 import { values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import _ from 'lodash'
 import { StaticFilesCache, StaticFilesData } from './cache'
 import { DirectoryStore } from '../dir_store'
 
@@ -82,6 +81,7 @@ export const buildStaticFilesSource = (
     let modified: number | undefined
     if (ignoreFileChanges) {
       if (cachedResult === undefined) {
+        log.warn('file %s is missing from static files cache', filepath)
         throw new MissingStaticFileError(filepath)
       }
       return {
@@ -92,10 +92,12 @@ export const buildStaticFilesSource = (
 
     try {
       modified = await staticFilesDirStore.mtimestamp(filepath)
-    } catch {
+    } catch (error) {
+      log.warn('failed to get the modification time of %s with error: %o', filepath, error)
       throw new StaticFileAccessDeniedError(filepath)
     }
     if (modified === undefined) {
+      log.warn('failed to get the modification time of %s (result is undefined)', filepath)
       throw new MissingStaticFileError(filepath)
     }
 
@@ -104,6 +106,7 @@ export const buildStaticFilesSource = (
     if (cachedResult === undefined || cacheModified === undefined || modified > cacheModified) {
       const file = await staticFilesDirStore.get(filepath)
       if (file === undefined) {
+        log.warn('file %s is missing from static files dir store', filepath)
         throw new MissingStaticFileError(filepath)
       }
       const staticFileBuffer = file.buffer
@@ -160,6 +163,13 @@ export const buildStaticFilesSource = (
       try {
         const staticFileData = await getStaticFileData(args.filepath)
         if (args.hash !== undefined && staticFileData.hash !== args.hash) {
+          log.warn(
+            'received file with hash %s but expected hash to be %s - returning file %s without content (hash: %s)',
+            staticFileData.hash,
+            args.hash,
+            args.filepath,
+            args.hash,
+          )
           // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
           // in the elements cache between a file that was really missing when the cache was
           // written, and a file that existed but was modified since the cache was written,
@@ -189,12 +199,24 @@ export const buildStaticFilesSource = (
           staticFilesDirStore.getFullPath(args.filepath),
           // We use ignoreDeletionsCache to make sure that if the file was requested and then the content
           // was deleted, we will still lbe able to access the content
-          async () => (await staticFilesDirStore.get(args.filepath, { ignoreDeletionsCache: true }))?.buffer,
+          async () => {
+            const file = await staticFilesDirStore.get(args.filepath, { ignoreDeletionsCache: true })
+            if (file === undefined) {
+              log.warn('file %s is missing from static files dir store', args.filepath)
+              return undefined
+            }
+            if (file.buffer === undefined) {
+              log.warn('received file %s without buffer from static files dir store', args.filepath)
+            }
+            return file.buffer
+          },
           args.encoding,
-          _.isObject(args) ? args.isTemplate : undefined,
+          args.isTemplate,
         )
       } catch (e) {
+        log.warn('failed to get file %s with error: %o', args.filepath, e)
         if (args.hash !== undefined) {
+          log.warn('returning file %s without content (hash: %s)', args.filepath, args.hash)
           // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
           // in the elements cache between a file that was really missing when the cache was
           // written, and a file that existed but was removed since the cache was written,

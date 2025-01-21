@@ -182,15 +182,12 @@ export const metadataTypeOrUndefined = (element: Readonly<Element>): string | un
 }
 
 export const isCustomObjectSync = (element: Readonly<Element>): element is ObjectType => {
-  const a = isObjectType(element)
-  const b = metadataTypeSync(element) === CUSTOM_OBJECT
-  const c = element.annotations[API_NAME] !== undefined
   const res =
-    a &&
-    b &&
+    isObjectType(element) &&
+    metadataTypeSync(element) === CUSTOM_OBJECT &&
     // The last part is so we can tell the difference between a custom object
     // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
-    c
+    element.annotations[API_NAME] !== undefined
   return res
 }
 

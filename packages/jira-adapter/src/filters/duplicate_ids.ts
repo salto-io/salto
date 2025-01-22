@@ -44,7 +44,7 @@ const filter: FilterCreator = ({ config }) => ({
       elements,
       element =>
         duplicateIds.has(element.elemID.getFullName()) && isInstanceElement(element) && element.value.id !== undefined,
-    ).filter(isInstanceElement)
+    ) as InstanceElement[]
 
     duplicateInstances.filter(isInstanceElement).forEach(instance => {
       log.debug(
@@ -52,13 +52,11 @@ const filter: FilterCreator = ({ config }) => ({
       )
     })
 
-    const duplicateWarnings = getCollisionWarnings({
-      instances: duplicateInstances,
-      addChildrenMessage: true,
-      adapterName: _.upperFirst(JIRA),
-    })
-
     if (!config.fetch.fallbackToInternalId) {
+      const duplicateWarnings = getCollisionWarnings({
+        instances: duplicateInstances,
+        adapterName: _.upperFirst(JIRA),
+      })
       return {
         errors: duplicateWarnings,
       }

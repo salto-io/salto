@@ -156,7 +156,7 @@ describe('duplicateIdsFilter', () => {
       errors: [
         {
           message: 'Some elements were not fetched due to Salto ID collisions',
-          detailedMessage: `5 Jira elements and their child elements were not fetched, as they were mapped to a single ID jira.Status.instance.dup:
+          detailedMessage: `5 Jira elements were not fetched, as they were mapped to a single ID jira.Status.instance.dup:
 dup,
 dup,
 instance alias - open in Jira: https://dup_1_someurl.com,

@@ -17,6 +17,7 @@
     { "path": "../adapter-components" },
     { "path": "../parser" },
     { "path": "../test-utils" },
+    { "path": "../element-test-utils" },
     { "path": "../workspace" }
   ]
 }

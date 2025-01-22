@@ -90,7 +90,6 @@ Usually, this happens because of duplicate configuration names in the service. M
 Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`,
   )
 
-// after SALTO-7088 is done, this function will replace getAndLogCollisionWarnings
 export const getCollisionWarnings = ({
   instances,
   adapterName,

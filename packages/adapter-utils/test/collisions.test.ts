@@ -52,7 +52,7 @@ describe('collisions', () => {
       expect(collidedElements).toEqual([instance, collidedInstance])
     })
   })
-  describe('getAndLogCollisionWarningsV2', () => {
+  describe('getCollisionWarnings', () => {
     it('should return the correct warning messages', async () => {
       const detailedMessage = `2 Salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
 aliasName - open in Salto: someUrl,

@@ -10,7 +10,14 @@ import { decorators, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
-import { SaltoError, Element, InstanceElement, CORE_ANNOTATIONS, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import {
+  SaltoError,
+  InstanceElement,
+  CORE_ANNOTATIONS,
+  ReadOnlyElementsSource,
+  Element,
+  ElemID,
+} from '@salto-io/adapter-api'
 import {
   ENOTFOUND,
   ERROR_HTTP_502,
@@ -239,9 +246,14 @@ const getValidationRulesMessages = (error: SaltoError): string[] => {
 }
 
 const createValidationRulesIndex = async (
-  elementSource: ReadOnlyElementsSource,
+  elementsSource: ReadOnlyElementsSource,
+  groupTypeName: string,
 ): Promise<Map<string, ValidationRule[]>> => {
-  const validationRules = await awu(await elementSource.getAll())
+  const isGroupValidationRule = (id: ElemID): boolean =>
+    id.typeName === VALIDATION_RULES_METADATA_TYPE && id.name.includes(groupTypeName)
+  const validationRules = await awu(await elementsSource.list())
+    .filter(isGroupValidationRule)
+    .map(elementsSource.get)
     .filter(isValidationRule)
     .toArray()
   return validationRules.reduce(
@@ -260,11 +272,15 @@ const getValidationRulesUrls = (validationRules: ValidationRule[]): string[] =>
 
 export const enrichSaltoDeployErrors = async (
   errors: readonly SaltoError[],
-  elementSource: ReadOnlyElementsSource,
+  elementsSource: ReadOnlyElementsSource,
+  groupTypeName: string,
 ): Promise<readonly SaltoError[]> => {
   if (!errors.some(error => error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION)))
     return errors
-  const validationRulesIndex: Map<string, ValidationRule[]> = await createValidationRulesIndex(elementSource)
+  const validationRulesIndex: Map<string, ValidationRule[]> = await createValidationRulesIndex(
+    elementsSource,
+    groupTypeName,
+  )
   return errors.map(error =>
     error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION)
       ? {

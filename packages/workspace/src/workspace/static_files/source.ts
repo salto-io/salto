@@ -159,7 +159,7 @@ export const buildStaticFilesSource = (
       try {
         const staticFileData = await getStaticFileData(args.filepath)
         if (args.hash !== undefined && staticFileData.hash !== args.hash) {
-          log.warn(
+          log.trace(
             'received file with hash %s but expected hash to be %s - returning file %s without content (hash: %s)',
             staticFileData.hash,
             args.hash,
@@ -212,7 +212,7 @@ export const buildStaticFilesSource = (
       } catch (e) {
         log.warn('failed to get file %s with error: %o', args.filepath, e)
         if (args.hash !== undefined) {
-          log.warn('returning file %s without content (hash: %s)', args.filepath, args.hash)
+          log.trace('returning file %s without content (hash: %s)', args.filepath, args.hash)
           // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
           // in the elements cache between a file that was really missing when the cache was
           // written, and a file that existed but was removed since the cache was written,

@@ -8,7 +8,7 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  displayName: 'salto',
+  displayName: 'e2e-test-utils',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
   coverageThreshold: {
@@ -20,5 +20,5 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
       statements: 78.26,
     },
   },
-  setupFilesAfterEnv: ['jest-extended/all'],
+  setupFilesAfterEnv: ['@salto-io/element-test-utils/all'],
 })

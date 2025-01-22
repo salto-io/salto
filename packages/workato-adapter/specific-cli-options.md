@@ -4,7 +4,8 @@
 
 Supprted parameters are:
 
-- `username`
+- `username` (optional)
+- `baseUrl` (optional)
 - `token`
 
 ### Example

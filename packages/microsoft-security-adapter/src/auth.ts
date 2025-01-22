@@ -30,6 +30,7 @@ export const SCOPE_MAPPING: Record<AvailableMicrosoftSecurityServices, string[]>
   Entra: [
     'AdministrativeUnit.ReadWrite.All',
     'Application.ReadWrite.All',
+    'AppRoleAssignment.ReadWrite.All',
     'CustomSecAttributeDefinition.ReadWrite.All',
     'Directory.ReadWrite.All',
     'Domain.ReadWrite.All',

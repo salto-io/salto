@@ -138,6 +138,7 @@ describe('referenced instances', () => {
       new InstanceElement('recipe123', recipeType, {
         name: 'recipe123',
         book_id: new ReferenceExpression(rootBook.elemID, rootBook),
+        ingredients: [],
       }),
       new InstanceElement('recipe456', recipeType, {
         name: 'recipe456',
@@ -388,6 +389,7 @@ describe('referenced instances', () => {
             element: {
               topLevel: {
                 isTopLevel: true,
+                allowEmptyArrays: true,
                 elemID: {
                   parts: [
                     {
@@ -916,6 +918,12 @@ describe('referenced instances', () => {
       expect(recipeWithNullBookRes.elemID.getFullName()).toEqual(
         'myAdapter.recipe.instance.recipe123_123_ROOT__recipeWithNullBook',
       )
+    })
+    it('should not remove empty arrays', async () => {
+      const result = (await addReferencesToInstanceNames(elements, defQuery)).filter(isInstanceElement)
+      const resultRecipe = result.find(e => e.elemID.name === 'recipe123_123_ROOT')
+      expect(resultRecipe).toBeDefined()
+      expect(resultRecipe?.value.ingredients).toEqual([])
     })
   })
 })

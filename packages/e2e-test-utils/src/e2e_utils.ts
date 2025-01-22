@@ -37,7 +37,7 @@ import { rm } from '@salto-io/file'
 
 const { awu } = collections.asynciterable
 
-const updateConfig = async ({
+export const updateConfig = async ({
   workspace,
   adapterName,
   configOverride,

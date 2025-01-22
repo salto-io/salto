@@ -10,6 +10,7 @@ import { FetchChange } from '@salto-io/core'
 import { Workspace, state } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { EventEmitter } from 'pietile-eventemitter'
+import { mockErrors } from '@salto-io/e2e-test-utils'
 import {
   validateWorkspace,
   updateWorkspace,
@@ -17,7 +18,7 @@ import {
   updateStateOnly,
   applyChangesToWorkspace,
 } from '../../src/workspace/workspace'
-import { MockWriteStream, dummyChanges, detailedChange, mockErrors, getMockTelemetry } from '../mocks'
+import { MockWriteStream, dummyChanges, detailedChange, getMockTelemetry } from '../mocks'
 import { getCliTelemetry } from '../../src/telemetry'
 
 const mockWsFunctions = {

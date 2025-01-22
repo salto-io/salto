@@ -6,9 +6,11 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { loadLocalWorkspace, locateWorkspaceRoot } from '@salto-io/local-workspace'
+import { MockWorkspace, mockWorkspace } from '@salto-io/e2e-test-utils'
+
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
-import { createAction, setAction, currentAction, listAction, deleteAction, renameAction } from '../../src/commands/env'
+import { createAction, currentAction, deleteAction, listAction, renameAction, setAction } from '../../src/commands/env'
 import { CliExitCode } from '../../src/types'
 
 jest.mock('@salto-io/local-workspace', () => ({
@@ -35,7 +37,7 @@ describe('env command group', () => {
   describe('create command', () => {
     const commandName = 'create'
     it('should create a new environment', async () => {
-      mockLoadLocalWorkspace.mockResolvedValue(mocks.mockWorkspace({}))
+      mockLoadLocalWorkspace.mockResolvedValue(mockWorkspace({}))
       await createAction({
         ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: {
@@ -47,9 +49,9 @@ describe('env command group', () => {
     })
 
     describe('create multiple environments', () => {
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       beforeEach(() => {
-        workspace = mocks.mockWorkspace({ envs: ['me1'] })
+        workspace = mockWorkspace({ envs: ['me1'] })
         mockLoadLocalWorkspace.mockResolvedValue(workspace)
         jest.spyOn(callbacks, 'cliApproveIsolateBeforeMultiEnv').mockImplementation(() => Promise.resolve(false))
       })
@@ -158,7 +160,7 @@ describe('env command group', () => {
       })
 
       it('should not prompt on 3rd environment creation', async () => {
-        const newWorkspace = mocks.mockWorkspace({ envs: ['me1', 'me2'] })
+        const newWorkspace = mockWorkspace({ envs: ['me1', 'me2'] })
         mockLoadLocalWorkspace.mockResolvedValue(newWorkspace)
 
         await createAction({
@@ -183,7 +185,7 @@ describe('env command group', () => {
         input: {
           envName: 'active',
         },
-        workspace: mocks.mockWorkspace({}),
+        workspace: mockWorkspace({}),
       })
       expect(output.stdout.content.search('active')).toBeGreaterThan(0)
     })
@@ -195,7 +197,7 @@ describe('env command group', () => {
       await currentAction({
         ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: {},
-        workspace: mocks.mockWorkspace({}),
+        workspace: mockWorkspace({}),
       })
       expect(output.stdout.content.search('active')).toBeGreaterThan(0)
     })
@@ -207,7 +209,7 @@ describe('env command group', () => {
       await listAction({
         ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: {},
-        workspace: mocks.mockWorkspace({}),
+        workspace: mockWorkspace({}),
       })
       expect(output.stdout.content.search('active')).toBeGreaterThan(0)
       expect(output.stdout.content.search('inactive')).toBeGreaterThan(0)
@@ -222,7 +224,7 @@ describe('env command group', () => {
         input: {
           envName: 'inactive',
         },
-        workspace: mocks.mockWorkspace({}),
+        workspace: mockWorkspace({}),
       })
       expect(output.stdout.content.search('inactive')).toBeGreaterThan(0)
     })
@@ -233,7 +235,7 @@ describe('env command group', () => {
           envName: 'inactive',
           keepNacls: true,
         },
-        workspace: mocks.mockWorkspace({}),
+        workspace: mockWorkspace({}),
       })
       expect(output.stdout.content.search('inactive')).toBeGreaterThan(0)
     })
@@ -248,7 +250,7 @@ describe('env command group', () => {
           oldName: 'inactive',
           newName: 'new-inactive',
         },
-        workspace: mocks.mockWorkspace({}),
+        workspace: mockWorkspace({}),
       })
       expect(result).toBe(CliExitCode.Success)
       expect(output.stdout.content.search('inactive')).toBeGreaterThan(0)

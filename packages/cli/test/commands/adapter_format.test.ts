@@ -10,6 +10,7 @@ import { detailedCompare } from '@salto-io/adapter-utils'
 import { calculatePatch, initFolder, isInitializedFolder, syncWorkspaceToFolder } from '@salto-io/core'
 import { merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
 import { loadLocalWorkspace } from '@salto-io/local-workspace'
+import { MockWorkspace, mockWorkspace, elements } from '@salto-io/e2e-test-utils'
 import * as mocks from '../mocks'
 import { applyPatchAction, syncWorkspaceToFolderAction } from '../../src/commands/adapter_format'
 import { CliExitCode } from '../../src/types'
@@ -41,18 +42,18 @@ const mockLoadLocalWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof 
 
 describe('apply-patch command', () => {
   const commandName = 'apply-patch'
-  let workspace: mocks.MockWorkspace
+  let workspace: MockWorkspace
   let baseElements: Element[]
   let cliCommandArgs: mocks.MockCommandArgs
   beforeEach(async () => {
     jest.resetAllMocks()
 
-    baseElements = mocks.elements()
+    baseElements = elements()
     await updateElementsWithAlternativeAccount(baseElements, 'salesforce', 'salto')
 
     const cliArgs = mocks.mockCliArgs()
     cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
-    workspace = mocks.mockWorkspace({
+    workspace = mockWorkspace({
       envs: ['env1', 'env2'],
       accounts: ['salesforce'],
       getElements: () => baseElements,
@@ -123,8 +124,8 @@ describe('apply-patch command', () => {
     let originalInstance: InstanceElement
     let updatedInstance: InstanceElement
     let newInstance: InstanceElement
-    let mockToWorkspace: mocks.MockWorkspace
-    let mockFromWorkspace: mocks.MockWorkspace
+    let mockToWorkspace: MockWorkspace
+    let mockFromWorkspace: MockWorkspace
 
     beforeEach(async () => {
       const type = baseElements[3] as ObjectType
@@ -151,8 +152,8 @@ describe('apply-patch command', () => {
         partiallyFetchedAccounts: new Set(['salesforce']),
       })
 
-      mockFromWorkspace = mocks.mockWorkspace({})
-      mockToWorkspace = mocks.mockWorkspace({})
+      mockFromWorkspace = mockWorkspace({})
+      mockToWorkspace = mockWorkspace({})
       mockLoadLocalWorkspace.mockResolvedValueOnce(mockToWorkspace).mockResolvedValueOnce(mockFromWorkspace)
 
       exitCode = await applyPatchAction({
@@ -199,7 +200,7 @@ describe('apply-patch command', () => {
       expect(workspace.flush).not.toHaveBeenCalled()
     })
     it('should fail if second workspace is invalid', async () => {
-      mockLoadLocalWorkspace.mockRejectedValueOnce(new Error('Error!')).mockResolvedValueOnce(mocks.mockWorkspace({}))
+      mockLoadLocalWorkspace.mockRejectedValueOnce(new Error('Error!')).mockResolvedValueOnce(mockWorkspace({}))
       const exitCode = await applyPatchAction({
         ...cliCommandArgs,
         input: {
@@ -346,13 +347,13 @@ describe('apply-patch command', () => {
 
 describe('sync-to-workspace command', () => {
   const commandName = 'sync-to-workspace'
-  let workspace: mocks.MockWorkspace
+  let workspace: MockWorkspace
   let cliCommandArgs: mocks.MockCommandArgs
 
   beforeEach(async () => {
     const cliArgs = mocks.mockCliArgs()
     cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
-    workspace = mocks.mockWorkspace({
+    workspace = mockWorkspace({
       accounts: ['salesforce'],
     })
   })
@@ -490,7 +491,7 @@ describe('sync-to-workspace command', () => {
     let result: CliExitCode
     beforeEach(async () => {
       mockIsInitializedFolder.mockResolvedValueOnce({ result: true, errors: [] })
-      mockLoadLocalWorkspace.mockResolvedValueOnce(mocks.mockWorkspace({}))
+      mockLoadLocalWorkspace.mockResolvedValueOnce(mockWorkspace({}))
       mockSyncWorkspaceToFolder.mockResolvedValueOnce({ errors: [] })
       result = await syncWorkspaceToFolderAction({
         ...cliCommandArgs,

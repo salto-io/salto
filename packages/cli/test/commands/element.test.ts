@@ -7,35 +7,35 @@
  */
 import open from 'open'
 import {
+  CORE_ANNOTATIONS,
   Element,
   ElemID,
-  ObjectType,
-  CORE_ANNOTATIONS,
-  isInstanceElement,
   InstanceElement,
+  isInstanceElement,
   isObjectType,
+  ObjectType,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
+import { createElementSelector, errors, UnresolvedElemIDs } from '@salto-io/workspace'
+import { MockWorkspace, mockWorkspace, mockErrors, elements as elementsUtil } from '@salto-io/e2e-test-utils'
 import { collections } from '@salto-io/lowerdash'
-import { SelectorsError, fixElements } from '@salto-io/core'
+import { fixElements, SelectorsError } from '@salto-io/core'
 import { CliExitCode } from '../../src/types'
 import {
   cloneAction,
-  moveToEnvsAction,
-  moveToCommonAction,
-  listUnresolvedAction,
-  openAction,
-  listAction,
-  renameAction,
-  printElementAction,
   fixElementsAction,
+  listAction,
+  listUnresolvedAction,
+  moveToCommonAction,
+  moveToEnvsAction,
+  openAction,
+  printElementAction,
+  renameAction,
 } from '../../src/commands/element'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
 import Prompts from '../../src/prompts'
 import { formatTargetEnvRequired } from '../../src/formatter'
-import { MockWorkspace } from '../mocks'
 
 const { awu } = collections.asynciterable
 
@@ -62,9 +62,9 @@ describe('Element command group', () => {
     describe('with errored workspace', () => {
       let result: CliExitCode
       beforeAll(async () => {
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         workspace.errors.mockResolvedValue(
-          mocks.mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
+          mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
         )
         result = await cloneAction({
           ...mocks.mockCliCommandArgs(cloneName),
@@ -90,7 +90,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([new ElemID('salto', 'Account')]))
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
@@ -118,14 +118,14 @@ describe('Element command group', () => {
 
     describe('with invalid element selectors', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let telemetry: mocks.MockTelemetry
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         telemetry = cliArgs.telemetry
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         result = await cloneAction({
           ...mocks.mockCliCommandArgs(cloneName, cliArgs),
           input: {
@@ -168,13 +168,13 @@ describe('Element command group', () => {
 
     describe('when user answer no', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       const selector = new ElemID('salto', 'Account')
       beforeAll(async () => {
         jest.spyOn(callbacks, 'getUserBooleanInput').mockImplementationOnce(() => Promise.resolve(false))
 
         const cliArgs = mocks.mockCliArgs()
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await cloneAction({
@@ -201,13 +201,13 @@ describe('Element command group', () => {
 
     describe('valid clone', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       const selector = new ElemID('salto', 'Account')
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await cloneAction({
@@ -260,7 +260,7 @@ Cloning the specified elements to inactive.
             force: true,
             allowElementDeletions: false,
           },
-          workspace: mocks.mockWorkspace({}),
+          workspace: mockWorkspace({}),
         })
       })
 
@@ -289,7 +289,7 @@ Cloning the specified elements to inactive.
             force: true,
             allowElementDeletions: false,
           },
-          workspace: mocks.mockWorkspace({}),
+          workspace: mockWorkspace({}),
         })
       })
 
@@ -317,7 +317,7 @@ Cloning the specified elements to inactive.
             force: true,
             allowElementDeletions: false,
           },
-          workspace: mocks.mockWorkspace({}),
+          workspace: mockWorkspace({}),
         })
       })
 
@@ -345,7 +345,7 @@ Cloning the specified elements to inactive.
             force: true,
             allowElementDeletions: false,
           },
-          workspace: mocks.mockWorkspace({}),
+          workspace: mockWorkspace({}),
         })
       })
 
@@ -381,7 +381,7 @@ Cloning the specified elements to inactive.
             force: true,
             allowElementDeletions: false,
           },
-          workspace: workspace || mocks.mockWorkspace({}),
+          workspace: workspace || mockWorkspace({}),
         })
         return { result, output }
       }
@@ -403,7 +403,7 @@ Cloning the specified elements to inactive.
       })
 
       it('should fail running toAllEnvs with only current env', async () => {
-        const workspace = mocks.mockWorkspace({ envs: ['active'] })
+        const workspace = mockWorkspace({ envs: ['active'] })
         const { result, output } = await runClone({ toAllEnvs: true, workspace })
         expect(result).toBe(CliExitCode.UserInputError)
         expect(output.stderr.content).toContain('The target environments cannot be empty')
@@ -411,7 +411,7 @@ Cloning the specified elements to inactive.
 
       it('should succeed cloning to all envs', async () => {
         const envsToCloneTo = ['env1', 'env2', 'env3']
-        const workspace = mocks.mockWorkspace({ envs: ['active', ...envsToCloneTo] })
+        const workspace = mockWorkspace({ envs: ['active', ...envsToCloneTo] })
         const selector = new ElemID('salto', 'Account')
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
 
@@ -423,7 +423,7 @@ Cloning the specified elements to inactive.
 
     describe('allowElementDeletions', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let cliArgs: mocks.MockCliArgs
       let output: mocks.MockCliOutput
 
@@ -431,7 +431,7 @@ Cloning the specified elements to inactive.
       const elemToRemoveFromEnv2 = new ElemID('salto', 'elemToRemoveFromEnv2')
       const elemToRemoveFromEnv3 = new ElemID('salto', 'elemToRemoveFromEnv3')
       beforeEach(() => {
-        workspace = mocks.mockWorkspace({
+        workspace = mockWorkspace({
           envs: ['env1', 'env2', 'env3'],
         })
         cliArgs = mocks.mockCliArgs()
@@ -618,7 +618,7 @@ Nothing to do.
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([new ElemID('salto', 'Account')]))
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
         result = await moveToEnvsAction({
@@ -643,12 +643,12 @@ Nothing to do.
 
     describe('with invalid element selectors', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         result = await moveToEnvsAction({
           ...mocks.mockCliCommandArgs(moveToEnvsName, cliArgs),
@@ -679,12 +679,12 @@ Nothing to do.
 
     describe('when user answer no', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       const selector = new ElemID('salto', 'Account')
       beforeAll(async () => {
         jest.spyOn(callbacks, 'getUserBooleanInput').mockImplementationOnce(() => Promise.resolve(false))
         const cliArgs = mocks.mockCliArgs()
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
         result = await moveToEnvsAction({
@@ -709,13 +709,13 @@ Nothing to do.
 
     describe('valid move to envs', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       const selector = new ElemID('salto', 'Account')
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
         result = await moveToEnvsAction({
@@ -759,7 +759,7 @@ Moving the specified elements to envs.
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([new ElemID('salto', 'Account')]))
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
@@ -785,12 +785,12 @@ Moving the specified elements to envs.
 
     describe('with invalid element selectors', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         result = await moveToCommonAction({
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
@@ -821,13 +821,13 @@ Moving the specified elements to envs.
 
     describe('Without env option', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       const selector = new ElemID('salto', 'Account')
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await moveToCommonAction({
@@ -859,13 +859,13 @@ Moving the specified elements to envs.
 
     describe('With env option', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       const selector = new ElemID('salto', 'Account')
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await moveToCommonAction({
@@ -903,7 +903,7 @@ Moving the specified elements to common.
 
     describe('allowElementDeletions', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       const elemToAdd = new ElemID('salto', 'elemToAdd')
       const elemToRemoveFromEnv2 = new ElemID('salto', 'elemToRemoveFromEnv2')
       const elemToRemoveFromEnv3 = new ElemID('salto', 'elemToRemoveFromEnv3')
@@ -911,7 +911,7 @@ Moving the specified elements to common.
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({
+        workspace = mockWorkspace({
           envs: ['env1', 'env2', 'env3'],
         })
         workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([elemToAdd]))
@@ -971,7 +971,7 @@ Moving the specified elements to common.
 
     describe('success - all unresolved references are found in complete-from', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let userBooleanInput: jest.SpiedFunction<(typeof callbacks)['getUserBooleanInput']>
       let output: mocks.MockCliOutput
       beforeAll(async () => {
@@ -979,7 +979,7 @@ Moving the specified elements to common.
         output = cliArgs.output
         userBooleanInput = jest.spyOn(callbacks, 'getUserBooleanInput')
         userBooleanInput.mockRestore()
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         // Should ignore unresolved reference errors
         workspace.errors.mockResolvedValue(
@@ -1030,12 +1030,12 @@ Moving the specified elements to common.
 
     describe('success - no unresolved references', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementationOnce(() =>
           Promise.resolve({
             found: [],
@@ -1064,12 +1064,12 @@ Moving the specified elements to common.
 
     describe('success - some references do not exist', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementationOnce(() =>
           Promise.resolve({
             found: [new ElemID('salesforce', 'aaa'), new ElemID('salesforce', 'bbb', 'instance', 'ccc')],
@@ -1104,12 +1104,12 @@ Moving the specified elements to common.
 
     describe('failure - unexpected error', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementationOnce(() => {
           throw new Error('oh no')
         })
@@ -1143,7 +1143,7 @@ Moving the specified elements to common.
           input: {
             completeFrom: 'invalid',
           },
-          workspace: mocks.mockWorkspace({}),
+          workspace: mockWorkspace({}),
         })
       })
 
@@ -1155,9 +1155,9 @@ Moving the specified elements to common.
   describe('open command', () => {
     const commandName = 'open'
     const serviceUrlAccount = 'http://acme.com'
-    let workspace: mocks.MockWorkspace
+    let workspace: MockWorkspace
     beforeEach(() => {
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
     })
 
     const getMockElement = (url?: string, parentElemIDs?: ElemID[]): ObjectType =>
@@ -1385,7 +1385,7 @@ Moving the specified elements to common.
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([new ElemID('salto', 'Account')]))
         workspace.errors.mockRejectedValue(new Error('Oy Vey Zmir'))
@@ -1410,12 +1410,12 @@ Moving the specified elements to common.
 
     describe('with invalid element selectors', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         result = await listAction({
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
           input: {
@@ -1440,7 +1440,7 @@ Moving the specified elements to common.
 
     describe('successful list cmd', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       const stringSelector = 'salto.Account'
       const elemID = new ElemID('salto', 'Account')
       let output: mocks.MockCliOutput
@@ -1448,7 +1448,7 @@ Moving the specified elements to common.
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([elemID]))
         result = await listAction({
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
@@ -1479,9 +1479,9 @@ Moving the specified elements to common.
     describe('with errored workspace', () => {
       let result: CliExitCode
       beforeAll(async () => {
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         workspace.errors.mockResolvedValue(
-          mocks.mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
+          mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
         )
         const cliArgs = mocks.mockCliArgs()
         result = await renameAction({
@@ -1500,12 +1500,12 @@ Moving the specified elements to common.
     })
     describe('with invalid element ids', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         result = await renameAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
@@ -1522,12 +1522,12 @@ Moving the specified elements to common.
     })
     describe('when RenameElementIdError is throwen', () => {
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         result = await renameAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
@@ -1543,11 +1543,11 @@ Moving the specified elements to common.
       })
     })
     describe('when other error throwen', () => {
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let cliArgs: mocks.MockCliArgs
       beforeAll(async () => {
         cliArgs = mocks.mockCliArgs()
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         workspace.getValue.mockRejectedValue(new Error('some error'))
       })
       it('should fail', async () =>
@@ -1565,14 +1565,14 @@ Moving the specified elements to common.
     describe('valid rename', () => {
       let output: mocks.MockCliOutput
       let result: CliExitCode
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let allElements: Element[]
       let sourceElement: InstanceElement
 
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
 
         allElements = await awu(await (await workspace.elements()).getAll()).toArray()
         sourceElement = allElements.find(isInstanceElement) as InstanceElement
@@ -1604,7 +1604,7 @@ Moving the specified elements to common.
       let result: CliExitCode
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         result = await printElementAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
@@ -1626,7 +1626,7 @@ Moving the specified elements to common.
       beforeEach(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         const elements = await workspace.elements()
         await elements.set(new ObjectType({ elemID: new ElemID('test', 'type') }))
         result = await printElementAction({
@@ -1652,7 +1652,7 @@ Moving the specified elements to common.
       beforeEach(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         await workspace.state().set(new ObjectType({ elemID: new ElemID('test', 'type') }))
         result = await printElementAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),
@@ -1677,7 +1677,7 @@ Moving the specified elements to common.
       beforeEach(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         result = await printElementAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
@@ -1692,8 +1692,7 @@ Moving the specified elements to common.
         expect(result).toEqual(CliExitCode.Success)
       })
       it('should print the element without the ID as a prefix', () => {
-        const fieldsWithLabel = mocks
-          .elements()
+        const fieldsWithLabel = elementsUtil()
           .filter(isObjectType)
           .flatMap(objType => Object.values(objType.fields))
           .filter(field => field.annotations.label !== undefined)
@@ -1717,7 +1716,7 @@ Moving the specified elements to common.
         elemID: new ElemID('salto', 'type'),
       })
       cliArgs = mocks.mockCliArgs()
-      workspace = mocks.mockWorkspace({ getElements: () => [type] })
+      workspace = mockWorkspace({ getElements: () => [type] })
       workspace.getValue.mockResolvedValue(type)
       fixElementsMock = fixElements as jest.Mock
       fixElementsMock.mockClear()

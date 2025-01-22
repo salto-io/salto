@@ -7,9 +7,10 @@
  */
 import * as core from '@salto-io/core'
 import { adapterCreators } from '@salto-io/adapter-creators'
+import { MockWorkspace, mockWorkspace } from '@salto-io/e2e-test-utils'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
-import { cleanAction, cacheUpdateAction, setStateProviderAction, wsValidateAction } from '../../src/commands/workspace'
+import { cacheUpdateAction, cleanAction, setStateProviderAction, wsValidateAction } from '../../src/commands/workspace'
 import { CliExitCode, Spinner } from '../../src/types'
 import * as workspaceFunctions from '../../src/workspace/workspace'
 
@@ -63,7 +64,7 @@ describe('workspace command group', () => {
               credentials: false,
               accountConfig: false,
             },
-            workspace: mocks.mockWorkspace({}),
+            workspace: mockWorkspace({}),
           }),
         ).toBe(CliExitCode.UserInputError)
         expect(output.stdout.content).toContain('Nothing to do.')
@@ -85,7 +86,7 @@ describe('workspace command group', () => {
               credentials: true,
               accountConfig: true,
             },
-            workspace: mocks.mockWorkspace({}),
+            workspace: mockWorkspace({}),
           }),
         ).toBe(CliExitCode.Success)
         expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
@@ -105,7 +106,7 @@ describe('workspace command group', () => {
               credentials: false,
               accountConfig: false,
             },
-            workspace: mocks.mockWorkspace({}),
+            workspace: mockWorkspace({}),
           }),
         ).toBe(CliExitCode.Success)
         expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
@@ -124,7 +125,7 @@ describe('workspace command group', () => {
               credentials: true,
               accountConfig: true,
             },
-            workspace: mocks.mockWorkspace({}),
+            workspace: mockWorkspace({}),
           }),
         ).toBe(CliExitCode.UserInputError)
         expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
@@ -134,7 +135,7 @@ describe('workspace command group', () => {
       })
 
       it('should prompt user and continue if yes', async () => {
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         expect(
           await cleanAction({
             ...cliCommandArgs,
@@ -183,7 +184,7 @@ describe('workspace command group', () => {
               credentials: true,
               accountConfig: true,
             },
-            workspace: mocks.mockWorkspace({}),
+            workspace: mockWorkspace({}),
           }),
         ).toBe(CliExitCode.AppError)
 
@@ -195,7 +196,7 @@ describe('workspace command group', () => {
     describe('with force flag', () => {
       it('should clean without prompting user', async () => {
         jest.spyOn(callbacks, 'getUserBooleanInput').mockImplementationOnce(() => Promise.resolve(false))
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         expect(
           await cleanAction({
             ...cliCommandArgs,
@@ -234,12 +235,12 @@ describe('workspace command group', () => {
     describe('cache update command', () => {
       const commandName = 'update'
       let cliCommandArgs: mocks.MockCommandArgs
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       let result: CliExitCode
 
       beforeEach(async () => {
         cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         result = await cacheUpdateAction({
           ...cliCommandArgs,
           input: {},
@@ -259,10 +260,10 @@ describe('workspace command group', () => {
   describe('set state provider', () => {
     const commandName = 'set-state-provider'
     let cliCommandArgs: mocks.MockCommandArgs
-    let workspace: mocks.MockWorkspace
+    let workspace: MockWorkspace
     beforeEach(async () => {
       cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
     })
 
     describe('when provider is undefined', () => {
@@ -330,14 +331,14 @@ describe('workspace command group', () => {
   describe('validate command', () => {
     const commandName = 'validate'
     let cliCommandArgs: mocks.MockCommandArgs
-    let workspace: mocks.MockWorkspace
+    let workspace: MockWorkspace
     let spinner: Spinner
     let spinnerOutput: string[]
 
     beforeEach(() => {
       spinnerOutput = []
       cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
       spinner = {
         succeed: (text: string) => spinnerOutput.push(text),
         fail: (text: string) => spinnerOutput.push(text),

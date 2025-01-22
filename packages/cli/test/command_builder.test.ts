@@ -7,17 +7,18 @@
  */
 import { logger, LogLevel } from '@salto-io/logging'
 import { loadLocalWorkspace } from '@salto-io/local-workspace'
+import { MockWorkspace, mockWorkspace } from '@salto-io/e2e-test-utils'
 import { mockFunction } from '@salto-io/test-utils'
 import { adapterCreators } from '@salto-io/adapter-creators'
 import * as mocks from './mocks'
 import {
-  createPublicCommandDef,
-  CommandDefAction,
-  WorkspaceCommandAction,
-  createWorkspaceCommand,
   CommandDef,
+  CommandDefAction,
+  createPublicCommandDef,
+  createWorkspaceCommand,
+  WorkspaceCommandAction,
 } from '../src/command_builder'
-import { SpinnerCreator, CliExitCode, CliError } from '../src/types'
+import { CliError, CliExitCode, SpinnerCreator } from '../src/types'
 import {
   CONFIG_OVERRIDE_OPTION,
   ConfigOverrideArg,
@@ -230,10 +231,10 @@ describe('Command builder', () => {
     })
     describe('action', () => {
       let cliArgs: mocks.MockCliArgs
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       beforeEach(() => {
         cliArgs = mocks.mockCliArgs()
-        workspace = mocks.mockWorkspace({ uid: 'test' })
+        workspace = mockWorkspace({ uid: 'test' })
 
         const loadWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
         loadWorkspace.mockClear()
@@ -322,7 +323,7 @@ describe('Command builder', () => {
       }) as CommandDef<unknown>
 
       const cliArgs = mocks.mockCliArgs()
-      const workspace = mocks.mockWorkspace({ uid: 'test' })
+      const workspace = mockWorkspace({ uid: 'test' })
       const loadWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
       loadWorkspace.mockResolvedValue(workspace)
 

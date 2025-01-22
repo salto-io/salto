@@ -17,6 +17,7 @@ import {
   StaticFile,
   ListType,
 } from '@salto-io/adapter-api'
+import { elements } from '@salto-io/e2e-test-utils'
 import { EOL } from 'os'
 import { DeployError, FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
@@ -31,7 +32,7 @@ import {
   formatShouldChangeFetchModeToAlign,
   deployErrorsOutput,
 } from '../src/formatter'
-import { elements, preview, detailedChange } from './mocks'
+import { preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
 describe('formatter', () => {

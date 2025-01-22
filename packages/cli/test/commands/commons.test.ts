@@ -6,13 +6,13 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { DetailedChange, ElemID, Value } from '@salto-io/adapter-api'
-import * as mocks from '../mocks'
+import { mockWorkspace as mockWorkspaceUtil, MockWorkspace } from '@salto-io/e2e-test-utils'
 import { getAndValidateActiveAccounts, getTagsForAccounts } from '../../src/commands/common/accounts'
 import { getConfigOverrideChanges } from '../../src/commands/common/config_override'
 
 describe('Commands commons tests', () => {
   describe('getAndValidateActiveAccounts with workspace with services', () => {
-    const mockWorkspace = mocks.mockWorkspace({ accounts: ['service1', 'service2', 'service3'] })
+    const mockWorkspace = mockWorkspaceUtil({ accounts: ['service1', 'service2', 'service3'] })
 
     it("Should return the workspaces' accounts if no input accounts provided", () => {
       const result = getAndValidateActiveAccounts(mockWorkspace, undefined)
@@ -37,7 +37,7 @@ describe('Commands commons tests', () => {
     })
   })
   describe('getAndValidateActiveAccounts with workspace with no accounts', () => {
-    const mockWorkspace = mocks.mockWorkspace({ accounts: [] })
+    const mockWorkspace = mockWorkspaceUtil({ accounts: [] })
     it('Should throw an error if no input accounts provided', () => {
       expect(() => getAndValidateActiveAccounts(mockWorkspace, undefined)).toThrow()
     })
@@ -47,10 +47,10 @@ describe('Commands commons tests', () => {
     })
   })
   describe('getTagsForAccounts', () => {
-    let workspace: mocks.MockWorkspace
+    let workspace: MockWorkspace
 
     beforeEach(() => {
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspaceUtil({})
       workspace.accounts = jest
         .fn()
         .mockImplementation((env?: string): string[] => (env ? ['workato'] : ['salesforce', 'netsuite']))

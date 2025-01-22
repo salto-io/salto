@@ -8,11 +8,12 @@
 import { EventEmitter } from 'pietile-eventemitter'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { adapterCreators } from '@salto-io/adapter-creators'
-import { fetch, fetchFromWorkspace, FetchProgressEvents, StepEmitter, FetchFunc } from '@salto-io/core'
+import { MockWorkspace, mockWorkspace, elements, mockErrors } from '@salto-io/e2e-test-utils'
+import { fetch, fetchFromWorkspace, FetchFunc, FetchProgressEvents, StepEmitter } from '@salto-io/core'
 import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { createElementSelector, Workspace } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
-import { CliExitCode, CliTelemetry, CliError } from '../../src/types'
+import { CliError, CliExitCode, CliTelemetry } from '../../src/types'
 import { action, fetchCommand, FetchCommandArgs } from '../../src/commands/fetch'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
@@ -43,7 +44,7 @@ jest.mock('@salto-io/core', () => ({
 
 jest.mock('@salto-io/local-workspace', () => ({
   ...jest.requireActual<{}>('@salto-io/local-workspace'),
-  loadLocalWorkspace: jest.fn().mockImplementation(() => mocks.mockWorkspace({})),
+  loadLocalWorkspace: jest.fn().mockImplementation(() => mockWorkspace({})),
 }))
 describe('fetch command', () => {
   const accounts = ['salesforce']
@@ -65,9 +66,9 @@ describe('fetch command', () => {
     let result: number
     describe('with errored workspace', () => {
       beforeEach(async () => {
-        const workspace = mocks.mockWorkspace({})
+        const workspace = mockWorkspace({})
         workspace.errors.mockResolvedValue(
-          mocks.mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some detailed error' }]),
+          mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some detailed error' }]),
         )
         result = await action({
           ...cliCommandArgs,
@@ -90,9 +91,9 @@ describe('fetch command', () => {
     })
 
     describe('with valid workspace and no changes', () => {
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
       beforeEach(async () => {
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         result = await action({
           ...cliCommandArgs,
           input: {
@@ -119,10 +120,10 @@ describe('fetch command', () => {
     })
 
     describe('when using implicit all accounts', () => {
-      let workspace: mocks.MockWorkspace
+      let workspace: MockWorkspace
 
       beforeEach(async () => {
-        workspace = mocks.mockWorkspace({})
+        workspace = mockWorkspace({})
         result = await action({
           ...cliCommandArgs,
           input: {
@@ -141,7 +142,7 @@ describe('fetch command', () => {
       })
     })
     describe('when passing regenerate salto ids for selectors', () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
 
       it('should exit with user error when regenerate salto ids flag is not passed', async () => {
         result = await action({
@@ -223,7 +224,7 @@ describe('fetch command', () => {
         )
         beforeEach(async () => {
           await fetchCommand({
-            workspace: mocks.mockWorkspace({}),
+            workspace: mockWorkspace({}),
             force: true,
             output,
             cliTelemetry,
@@ -254,7 +255,7 @@ describe('fetch command', () => {
       describe('with no upstream changes', () => {
         let workspace: Workspace
         beforeEach(async () => {
-          workspace = mocks.mockWorkspace({})
+          workspace = mockWorkspace({})
           await fetchCommand({
             workspace,
             force: true,
@@ -291,7 +292,7 @@ describe('fetch command', () => {
             mergeErrors: [],
             success: true,
           })
-          const workspace = mocks.mockWorkspace({})
+          const workspace = mockWorkspace({})
           fetchArgs = {
             workspace,
             force: false,
@@ -333,7 +334,7 @@ describe('fetch command', () => {
         describe('when called with force', () => {
           let workspace: Workspace
           beforeEach(async () => {
-            workspace = mocks.mockWorkspace({})
+            workspace = mockWorkspace({})
             result = await fetchCommand({
               workspace,
               force: true,
@@ -361,7 +362,7 @@ describe('fetch command', () => {
         describe('when called with isolated', () => {
           let workspace: Workspace
           beforeEach(async () => {
-            workspace = mocks.mockWorkspace({})
+            workspace = mockWorkspace({})
             result = await fetchCommand({
               workspace,
               force: true,
@@ -389,7 +390,7 @@ describe('fetch command', () => {
         describe('when called with align', () => {
           let workspace: Workspace
           beforeEach(async () => {
-            workspace = mocks.mockWorkspace({})
+            workspace = mockWorkspace({})
             result = await fetchCommand({
               workspace,
               force: true,
@@ -417,7 +418,7 @@ describe('fetch command', () => {
         describe('when called with override', () => {
           let workspace: Workspace
           beforeEach(async () => {
-            workspace = mocks.mockWorkspace({})
+            workspace = mockWorkspace({})
             result = await fetchCommand({
               workspace,
               force: true,
@@ -447,7 +448,7 @@ describe('fetch command', () => {
             it('should throw an error', () =>
               expect(
                 fetchCommand({
-                  workspace: mocks.mockWorkspace({}),
+                  workspace: mockWorkspace({}),
                   force: true,
                   accounts,
                   cliTelemetry,
@@ -466,7 +467,7 @@ describe('fetch command', () => {
           describe('when state is updated', () => {
             let workspace: Workspace
             beforeEach(async () => {
-              workspace = mocks.mockWorkspace({})
+              workspace = mockWorkspace({})
               result = await fetchCommand({
                 workspace,
                 force: true,
@@ -495,9 +496,9 @@ describe('fetch command', () => {
             })
           })
           describe('when state failed to update', () => {
-            let workspace: mocks.MockWorkspace
+            let workspace: MockWorkspace
             beforeEach(async () => {
-              workspace = mocks.mockWorkspace({})
+              workspace = mockWorkspace({})
               workspace.flush.mockImplementation(() => {
                 throw new Error('failed to flush')
               })
@@ -523,9 +524,9 @@ describe('fetch command', () => {
           })
         })
         describe('when initial workspace is empty', () => {
-          let workspace: mocks.MockWorkspace
+          let workspace: MockWorkspace
           beforeEach(async () => {
-            workspace = mocks.mockWorkspace({})
+            workspace = mockWorkspace({})
             workspace.isEmpty.mockResolvedValue(true)
             await fetchCommand({
               workspace,
@@ -555,7 +556,7 @@ describe('fetch command', () => {
             const mockSingleChangeApprove = jest.fn().mockImplementation(cs => Promise.resolve([cs[0]]))
 
             it('should update workspace only with approved changes', async () => {
-              const workspace = mocks.mockWorkspace({})
+              const workspace = mockWorkspace({})
               await fetchCommand({
                 workspace,
                 force: false,
@@ -578,13 +579,11 @@ describe('fetch command', () => {
               const abortIfErrorCallback = jest.spyOn(callbacks, 'shouldAbortWorkspaceInCaseOfValidationError')
               abortIfErrorCallback.mockResolvedValue(true)
 
-              const workspace = mocks.mockWorkspace({})
+              const workspace = mockWorkspace({})
               workspace.updateNaclFiles.mockImplementation(async () => {
                 // Make the workspace errored after updateNaclFiles is called
                 workspace.errors.mockResolvedValue(
-                  mocks.mockErrors([
-                    { severity: 'Error', message: 'BLA Error', detailedMessage: 'detailed BLA Error' },
-                  ]),
+                  mockErrors([{ severity: 'Error', message: 'BLA Error', detailedMessage: 'detailed BLA Error' }]),
                 )
                 return { naclFilesChangesCount: 0, stateOnlyChangesCount: 0 }
               })
@@ -610,13 +609,11 @@ describe('fetch command', () => {
               abortIfErrorCallback.mockRestore()
             })
             it('should not exit if warning identified in workspace after update', async () => {
-              const workspace = mocks.mockWorkspace({})
+              const workspace = mockWorkspace({})
               workspace.updateNaclFiles.mockImplementation(async () => {
                 // Make the workspace errored after updateNaclFiles is called
                 workspace.errors.mockResolvedValue(
-                  mocks.mockErrors([
-                    { severity: 'Warning', message: 'BLA Error', detailedMessage: 'detailed BLA Error' },
-                  ]),
+                  mockErrors([{ severity: 'Warning', message: 'BLA Error', detailedMessage: 'detailed BLA Error' }]),
                 )
                 return { naclFilesChangesCount: 0, stateOnlyChangesCount: 0 }
               })
@@ -648,9 +645,9 @@ describe('fetch command', () => {
           fetchErrors: [],
           mergeErrors: [
             {
-              elements: mocks.elements().slice(0, 2),
+              elements: elements().slice(0, 2),
               error: {
-                elemID: mocks.elements()[0].elemID,
+                elemID: elements()[0].elemID,
                 error: 'test',
                 message: 'test merge error',
                 detailedMessage: 'detailed test merge error',
@@ -663,7 +660,7 @@ describe('fetch command', () => {
           partiallyFetchedAccounts: new Set(['salesforce']),
         })
         beforeEach(async () => {
-          const workspace = mocks.mockWorkspace({})
+          const workspace = mockWorkspace({})
           result = await fetchCommand({
             workspace,
             force: true,
@@ -684,7 +681,7 @@ describe('fetch command', () => {
           expect(result).toBe(CliExitCode.Success)
         })
         it('should print merge errors', () => {
-          expect(output.stderr.content).toContain(mocks.elements()[0].elemID.getFullName())
+          expect(output.stderr.content).toContain(elements()[0].elemID.getFullName())
           expect(output.stderr.content).toContain('test merge error')
         })
       })
@@ -693,7 +690,7 @@ describe('fetch command', () => {
 
   describe('Verify using env command', () => {
     it('should use current env when env is not provided', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       await action({
         ...cliCommandArgs,
         input: {
@@ -709,7 +706,7 @@ describe('fetch command', () => {
       expect(workspace.setCurrentEnv).not.toHaveBeenCalled()
     })
     it('should use provided env', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       await action({
         ...cliCommandArgs,
         input: {
@@ -738,7 +735,7 @@ describe('fetch command', () => {
             env: 'envThatDoesNotExist',
             regenerateSaltoIds: false,
           },
-          workspace: mocks.mockWorkspace({}),
+          workspace: mockWorkspace({}),
         }),
       ).rejects.toThrow(new CliError(CliExitCode.AppError))
     })
@@ -761,8 +758,8 @@ describe('fetch command', () => {
     describe('success', () => {
       describe('when called with fromState false', () => {
         it('should invoke the fetch from workspace method with fromState false', async () => {
-          const workspace = mocks.mockWorkspace({ uid: 'target' })
-          const sourceWS = mocks.mockWorkspace({ uid: 'source' })
+          const workspace = mockWorkspace({ uid: 'target' })
+          const sourceWS = mockWorkspace({ uid: 'source' })
           const sourcePath = 'path/to/source'
           const env = 'sourceEnv'
           mockLoadLocalWorkspace.mockResolvedValueOnce(sourceWS)
@@ -793,8 +790,8 @@ describe('fetch command', () => {
 
       describe('when called with fromState true', () => {
         it('should invoke the fetch from workspace method with fromState false', async () => {
-          const workspace = mocks.mockWorkspace({ uid: 'target' })
-          const sourceWS = mocks.mockWorkspace({ uid: 'source' })
+          const workspace = mockWorkspace({ uid: 'target' })
+          const sourceWS = mockWorkspace({ uid: 'source' })
           const sourcePath = 'path/to/source'
           const env = 'sourceEnv'
           mockLoadLocalWorkspace.mockResolvedValueOnce(sourceWS)
@@ -828,7 +825,7 @@ describe('fetch command', () => {
       it('should throw an informative error if the workspace failed to load', async () => {
         const errMsg = 'All your base are belong to us'
         mockLoadLocalWorkspace.mockRejectedValueOnce(errMsg)
-        const workspace = mocks.mockWorkspace({ uid: 'target' })
+        const workspace = mockWorkspace({ uid: 'target' })
         await expect(() =>
           action({
             ...cliCommandArgs,
@@ -848,7 +845,7 @@ describe('fetch command', () => {
       })
 
       it('should return user input error if the from env argument is provided without the from workspace argument', async () => {
-        const workspace = mocks.mockWorkspace({ uid: 'target' })
+        const workspace = mockWorkspace({ uid: 'target' })
         const retValue = await action({
           ...cliCommandArgs,
           input: {
@@ -866,7 +863,7 @@ describe('fetch command', () => {
       })
 
       it('should return user input error if the from fromWorkspace argument is provided without the from fromEnv argument', async () => {
-        const workspace = mocks.mockWorkspace({ uid: 'target' })
+        const workspace = mockWorkspace({ uid: 'target' })
         const retValue = await action({
           ...cliCommandArgs,
           input: {

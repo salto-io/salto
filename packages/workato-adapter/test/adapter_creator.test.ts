@@ -29,7 +29,7 @@ describe('adapter creator', () => {
     const config = adapter.configType as ObjectType
     expect(Object.keys(config?.fields)).toEqual(Object.keys(configType.fields))
   })
-  it('should use username+token as the basic auth method', () => {
+  it('should use username+token+baseUrl as the basic auth method', () => {
     expect(Object.keys(adapter.authenticationMethods.basic.credentialsType.fields)).toEqual(
       Object.keys(usernameTokenCredentialsType.fields),
     )

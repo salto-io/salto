@@ -110,5 +110,37 @@ describe('client connection', () => {
       expect(res.status).toEqual(200)
       expect(mockAxiosAdapter.history.get.length).toBe(2)
     })
+
+    it('should make get requests with correct params when provided with base URL', async () => {
+      const conn = createConnection({ retries: 3 })
+      mockAxiosAdapter
+        .onGet('/users/me')
+        .reply(200, {
+          id: 'user123',
+        })
+        .onGet('/a/b')
+        .reply(200, {
+          something: 'bla',
+        })
+      const apiConn = await conn.login({ token: 'token123', baseUrl: 'https://app.eu.workato.com' })
+      expect(apiConn.accountInfo).toEqual({ accountId: '' })
+      expect(mockAxiosAdapter.history.get.length).toBe(1)
+      expect(mockAxiosAdapter.history.get[0]).toEqual(
+        expect.objectContaining({
+          baseURL: 'https://app.eu.workato.com/api/',
+        }),
+      )
+
+      const getRes = apiConn.get('/a/b')
+      const res = await getRes
+      expect(res.data).toEqual({ something: 'bla' })
+      expect(res.status).toEqual(200)
+      expect(mockAxiosAdapter.history.get.length).toBe(2)
+      expect(mockAxiosAdapter.history.get[1]).toEqual(
+        expect.objectContaining({
+          baseURL: 'https://app.eu.workato.com/api/',
+        }),
+      )
+    })
   })
 })

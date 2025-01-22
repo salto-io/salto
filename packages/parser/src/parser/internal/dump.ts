@@ -43,8 +43,12 @@ const separateByCommas = (items: string[][]): string[][] => {
 
 const isMultilineString = (prim: string): boolean => _.isString(prim) && prim.includes('\n')
 
-// Double escaping happens when we stringify after escaping.
-const fixDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\\\$\{/g, '\\${')
+// Double escaping happens when we stringify after escaping, see escapeTemplateMarker
+const fixDoubleTemplateMarkerEscaping = (prim: string): string =>
+  prim.replace(/(\\*)(\\\\\$\{)/g, (_match, backslashes, ending) =>
+    // Halve the leading backslashes before the escaped ${
+    `${backslashes}${ending}`.replace(/\\\\/g, '\\'),
+  )
 
 const escapeMultilineMarker = (prim: string): string => prim.replace(/'''/g, "\\'''")
 
@@ -93,7 +97,11 @@ const dumpExpression = (exp: Value, indentationLevel = 0): string[] => {
   return [
     dumpString(
       parts
-        .map(part => (isExpression(part) ? `\${ ${dumpExpression(part).join('\n')} }` : escapeTemplateMarker(part)))
+        .map((part, idx) =>
+          isExpression(part)
+            ? `\${ ${dumpExpression(part).join('\n')} }`
+            : escapeTemplateMarker(part, { isLastPart: idx === parts.length - 1 }),
+        )
         .join(''),
       indentationLevel,
     ),

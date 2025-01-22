@@ -18,12 +18,12 @@ import { logger } from '@salto-io/logging'
 import { Consumer, ParseContext, ConsumerReturnType } from '../types'
 import {
   createReferenceExpression,
-  unescapeTemplateMarker,
   addValuePromiseWatcher,
   registerRange,
   positionAtStart,
   positionAtEnd,
 } from '../helpers'
+import { unescapeTemplateMarker } from '../../utils'
 import { TOKEN_TYPES, LexerToken, TRUE, FALSE, stringLexer } from '../lexer'
 import {
   missingComma,
@@ -63,7 +63,9 @@ const createSimpleStringValue = (
   tokens: Required<Token>[],
 ): string => {
   try {
-    return JSON.parse(`"${unescapeTemplateMarker(tokens.map(token => token.text).join(''))}"`)
+    return JSON.parse(
+      `"${unescapeTemplateMarker(tokens.map(token => token.text).join(''), { unescapeLeadingBackslashes: false })}"`,
+    )
   } catch (e) {
     context.errors.push(
       invalidStringChar(
@@ -85,15 +87,17 @@ const createTemplateExpressions = (
   createSimpleStringValueFunc: (
     context: Pick<ParseContext, 'errors' | 'filename'>,
     tokens: Required<Token>[],
+    isLastPart?: boolean,
   ) => string,
 ): TemplateExpression =>
   createTemplateExpression({
-    parts: tokens.map(token => {
+    parts: tokens.map((token, idx) => {
       if (token.type === TOKEN_TYPES.REFERENCE) {
         const ref = createReferenceExpression(token.value)
         return ref instanceof IllegalReference ? token.text : ref
       }
-      return createSimpleStringValueFunc(context, [token])
+      const isLastPart = idx === tokens.length - 1
+      return createSimpleStringValueFunc(context, [token], isLastPart)
     }),
   })
 
@@ -243,10 +247,8 @@ const consumeArrayItems = (context: ParseContext, closingTokenType: string, idPr
 
 const unescapeMultilineMarker = (prim: string): string => prim.replace(/\\'''/g, "'''")
 
-const unescapeMultilineString = (text: string): string => unescapeMultilineMarker(unescapeTemplateMarker(text))
-
-const createMultilineSimpleStringValue = (_context: unknown, tokens: Required<Token>[]): string =>
-  unescapeMultilineString(tokens.map(token => token.text).join(''))
+const createMultilineSimpleStringValue = (_context: unknown, tokens: Required<Token>[], isLastPart = true): string =>
+  unescapeMultilineMarker(unescapeTemplateMarker(tokens.map(token => token.text).join(''), { isLastPart }))
 
 const consumeMultilineString: Consumer<string | TemplateExpression> = context => {
   // Getting the position of the start marker

@@ -204,6 +204,15 @@ export const buildStaticFilesSource = (
             if (file.buffer === undefined) {
               log.warn('received file %s without buffer from static files dir store', args.filepath)
             }
+            const bufferHash = calculateStaticFileHash(file.buffer)
+            if (bufferHash !== staticFileData.hash) {
+              log.warn(
+                'received file %s with hash %s but expected hash to be %s',
+                args.filepath,
+                bufferHash,
+                staticFileData.hash,
+              )
+            }
             return file.buffer
           },
           args.encoding,

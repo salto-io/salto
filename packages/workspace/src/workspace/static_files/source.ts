@@ -10,6 +10,7 @@ import { StaticFile, StaticFileParameters, calculateStaticFileHash } from '@salt
 import wu from 'wu'
 import { values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { getSaltoFlagBool, WORKSPACE_FLAGS } from '../../flags'
 import { StaticFilesCache, StaticFilesData } from './cache'
 import { DirectoryStore } from '../dir_store'
 
@@ -204,14 +205,16 @@ export const buildStaticFilesSource = (
             if (file.buffer === undefined) {
               log.warn('received file %s without buffer from static files dir store', args.filepath)
             }
-            const bufferHash = calculateStaticFileHash(file.buffer)
-            if (bufferHash !== staticFileData.hash) {
-              log.warn(
-                'received file %s with hash %s but expected hash to be %s',
-                args.filepath,
-                bufferHash,
-                staticFileData.hash,
-              )
+            if (getSaltoFlagBool(WORKSPACE_FLAGS.verifyStaticFileContentHash)) {
+              const bufferHash = calculateStaticFileHash(file.buffer)
+              if (bufferHash !== staticFileData.hash) {
+                log.warn(
+                  'received file %s with hash %s but expected hash to be %s',
+                  args.filepath,
+                  bufferHash,
+                  staticFileData.hash,
+                )
+              }
             }
             return file.buffer
           },
@@ -219,7 +222,7 @@ export const buildStaticFilesSource = (
           args.isTemplate,
         )
       } catch (e) {
-        log.warn('failed to get file %s with error: %o', args.filepath, e)
+        log.trace('failed to get file %s with error: %o', args.filepath, e)
         if (args.hash !== undefined) {
           log.trace('returning file %s without content (hash: %s)', args.filepath, args.hash)
           // We return a StaticFile in this case and not a MissingStaticFile to be able to differ

@@ -40,6 +40,7 @@ import {
   BOT_BUILDER_ANSWER,
   CONVERSATION_BOT,
   SUPPORT_ADDRESS_TYPE_NAME,
+  BUSINESS_HOUR_SCHEDULE,
 } from '../constants'
 import { FETCH_CONFIG } from '../config'
 import {
@@ -609,6 +610,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'nodeSetId', parentTypes: [`${BOT_BUILDER_NODE}__data`] },
     serializationStrategy: 'id',
     target: { type: BOT_BUILDER_ANSWER },
+  },
+  {
+    src: { field: 'scheduleId', parentTypes: [`${BOT_BUILDER_NODE}__data__parameters`] },
+    serializationStrategy: 'id',
+    target: { type: BUSINESS_HOUR_SCHEDULE },
   },
   {
     src: { field: 'custom_field_options', parentTypes: [TICKET_FIELD_TYPE_NAME] },

@@ -28,6 +28,7 @@ const filterCreators: Record<string, FilterCreator> = {
     ],
   }),
   addAlias: filters.addAliasFilterCreator(), // should run after fieldReferencesFilter
+  sortLists: filters.sortListsFilterCreator(),
 }
 
 export default filterCreators

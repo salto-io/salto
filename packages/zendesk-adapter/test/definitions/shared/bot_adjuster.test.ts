@@ -5,13 +5,14 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { getFullLanguageName } from '../../../src/definitions/shared/transforms/bot_adjuster'
 
-export {
-  transformRequest as transformReqGraphQLItem,
-  transformResponse as transformResGraphQLItem,
-} from './graphql_adjuster'
-export {
-  transformRequest as transformNodeRequest,
-  transformResponse as transformNodeResponse,
-} from './bot_builder_node_adjuster'
-export { transformResponse as transformBotResponse } from './bot_adjuster'
+describe('getFullLanguageName', () => {
+  it('should return the full language name', () => {
+    expect(getFullLanguageName('en')).toEqual('English')
+  })
+
+  it('should return the language code if the language is not found', () => {
+    expect(getFullLanguageName('zz')).toEqual('zz')
+  })
+})

@@ -92,10 +92,9 @@ describe('Profile Instance Split filter', () => {
       ),
     ]
 
-    beforeAll(async () => {
-      profileObj = generateProfileType(true)
-    })
+    beforeAll(async () => {})
     beforeEach(async () => {
+      profileObj = generateProfileType(true)
       profileInstances = createProfileInstances(profileObj)
       jest.clearAllMocks()
     })
@@ -130,6 +129,8 @@ describe('Profile Instance Split filter', () => {
       })
       describe('when supportProfileTabVisibilities is enabled', () => {
         beforeEach(async () => {
+          profileObj = generateProfileType(true, false, true)
+          profileInstances = createProfileInstances(profileObj)
           Object.assign(profileInstances[0].value, {
             tabVisibilities: {
               app1: { application: 'app1', default: true, visible: false },

@@ -31,7 +31,12 @@ import { FIELD_ANNOTATIONS, SYSTEM_FIELDS } from '../src/constants'
 import { annotationsFileName, customFieldsFileName, standardFieldsFileName } from '../src/filters/custom_type_split'
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
-import { CustomReferencesSettings, LastChangeDateOfTypesWithNestedInstances, OptionalFeatures } from '../src/types'
+import {
+  CustomReferencesSettings,
+  FetchProfile,
+  LastChangeDateOfTypesWithNestedInstances,
+  OptionalFeatures,
+} from '../src/types'
 import { createDeployProgressReporter, DeployProgressReporter } from '../src/adapter_creator'
 import { SalesforceClient } from '../index'
 // import { isFeatureEnabled } from '../src/fetch_profile/optional_features'
@@ -178,7 +183,7 @@ export const findFullCustomObject = (elements: Element[], name: string): ObjectT
   })
 }
 
-export const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => {
+export const generateProfileType = (useMaps = false, preDeploy = false, addTabVisibilities = false): ObjectType => {
   const ProfileApplicationVisibility = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'ProfileApplicationVisibility'),
     fields: {
@@ -249,9 +254,13 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
       fieldPermissions: {
         refType: useMaps ? new MapType(new MapType(ProfileFieldLevelSecurity)) : fieldPermissionsNonMapType,
       },
-      tabVisibilities: {
-        refType: useMaps ? new MapType(ProfileTabVisibilities) : ProfileTabVisibilities,
-      },
+      ...(addTabVisibilities
+        ? {
+            tabVisibilities: {
+              refType: useMaps ? new MapType(ProfileTabVisibilities) : ProfileTabVisibilities,
+            },
+          }
+        : {}),
     },
     annotations: {
       [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,

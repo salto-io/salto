@@ -31,15 +31,9 @@ import { FIELD_ANNOTATIONS, SYSTEM_FIELDS } from '../src/constants'
 import { annotationsFileName, customFieldsFileName, standardFieldsFileName } from '../src/filters/custom_type_split'
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
-import {
-  CustomReferencesSettings,
-  FetchProfile,
-  LastChangeDateOfTypesWithNestedInstances,
-  OptionalFeatures,
-} from '../src/types'
+import { CustomReferencesSettings, LastChangeDateOfTypesWithNestedInstances, OptionalFeatures } from '../src/types'
 import { createDeployProgressReporter, DeployProgressReporter } from '../src/adapter_creator'
 import { SalesforceClient } from '../index'
-// import { isFeatureEnabled } from '../src/fetch_profile/optional_features'
 
 export const findElements = (elements: ReadonlyArray<Element>, ...name: ReadonlyArray<string>): Element[] => {
   const expectedElemId =

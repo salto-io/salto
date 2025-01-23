@@ -34,7 +34,7 @@ import { logger } from '@salto-io/logging'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getLocalStoragePath } from './app_config'
 import { loadState } from './state'
-import { workspaceConfigSource } from './workspace_config'
+import { WorkspaceConfigSource, workspaceConfigSource as getWorkspaceConfigSource } from './workspace_config'
 import { createRemoteMapCreator } from './remote_map'
 import { buildLocalAdaptersConfigSource } from './adapters_config'
 import { WorkspaceMetadataConfig } from './workspace_config_types'
@@ -204,9 +204,16 @@ export const loadLocalElementsSources = async ({
   },
 })
 
-export const locateWorkspaceRoot = async (lookupDir: string): Promise<string | undefined> => {
+export const locateWorkspaceRoot = async (
+  lookupDir: string,
+  allowWorkspaceRootLookup = true,
+): Promise<string | undefined> => {
   if (await exists(path.join(lookupDir, CONFIG_DIR_NAME))) {
     return lookupDir
+  }
+
+  if (!allowWorkspaceRootLookup) {
+    return undefined
   }
   const parentDir = lookupDir.substr(0, lookupDir.lastIndexOf(path.sep))
   return parentDir ? locateWorkspaceRoot(parentDir) : undefined
@@ -223,29 +230,33 @@ const credentialsSource = (localStorage: string): cs.ConfigSource =>
 
 type LoadLocalWorkspaceArgs = {
   path: string
+  allowWorkspaceRootLookup?: boolean
   configOverrides?: DetailedChange[]
   persistent?: boolean
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   credentialSource?: cs.ConfigSource
   ignoreFileChanges?: boolean
   adapterCreators: Record<string, Adapter>
+  workspaceConfigSource?: WorkspaceConfigSource
 }
 
 export async function loadLocalWorkspace({
   path: lookupDir,
+  allowWorkspaceRootLookup = true,
   configOverrides,
   persistent = true,
   credentialSource,
   stateStaticFilesSource,
   ignoreFileChanges = false,
   adapterCreators,
+  workspaceConfigSource,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
-  const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
+  const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir), allowWorkspaceRootLookup)
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
   }
 
-  const workspaceConfigSrc = await workspaceConfigSource(baseDir, undefined)
+  const workspaceConfigSrc = workspaceConfigSource ?? (await getWorkspaceConfigSource(baseDir, undefined))
   const workspaceConfig = await workspaceConfigSrc.getWorkspaceConfig()
   const cacheDirName = path.join(workspaceConfigSrc.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
@@ -342,7 +353,7 @@ export async function initLocalWorkspace({
     throw new errors.InvalidEnvNameError(envName)
   }
 
-  const workspaceConfigSrc = await workspaceConfigSource(baseDir, localStorage)
+  const workspaceConfigSrc = await getWorkspaceConfigSource(baseDir, localStorage)
   const remoteMapCreator = createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
   try {
     const persistentMode = true

@@ -304,7 +304,7 @@ describe('filter utils', () => {
   describe('isCustomObjectOrCustomMetadataSync', () => {
     it('should return true for customMetadataRecordType and customObject', () => {
       expect(isCustomObjectOrCustomMetadataRecordTypeSync(mockTypes.CustomMetadataRecordType)).toBeTrue()
-      expect(isCustomObjectOrCustomMetadataRecordTypeSync(mockTypes.CustomObject)).toBeTrue()
+      expect(isCustomObjectOrCustomMetadataRecordTypeSync(createCustomObjectType('customObject', {}))).toBeTrue()
     })
     it('should return false for non customMetadataRecordType and non customObject', () => {
       expect(isCustomObjectOrCustomMetadataRecordTypeSync(mockTypes.Profile)).toBeFalse()

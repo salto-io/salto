@@ -5,22 +5,42 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import WorkatoAdapter from './adapter'
-import { Credentials, usernameTokenCredentialsType } from './auth'
+import { Credentials, usernameTokenCredentialsType, workatoBaseUrlOptions } from './auth'
 import { DEFAULT_CONFIG, WorkatoUserConfig, configType } from './user_config'
 import WorkatoClient from './client/client'
 import { createConnection } from './client/connection'
 import { configCreator } from './config_creator'
 
+const log = logger(module)
 const { validateCredentials } = clientUtils
 const { adapterConfigFromConfig } = definitions
 
-const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
-  username: config.value.username,
-  token: config.value.token,
-})
+const validateBaseUrl = (baseUrl: unknown): void => {
+  if (typeof baseUrl !== 'string') {
+    throw new Error('Invalid base URL, value must be string')
+  }
+  if (!workatoBaseUrlOptions.includes(baseUrl)) {
+    log.error('received invalid Workato base URL: %s', baseUrl)
+    throw new Error('Received invalid Workato base URL')
+  }
+}
+
+const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
+  const baseUrl = !_.isEmpty(config.value.baseUrl) ? config.value.baseUrl : undefined
+  if (baseUrl !== undefined) {
+    validateBaseUrl(baseUrl)
+  }
+  return {
+    username: config.value.username,
+    baseUrl,
+    token: config.value.token,
+  }
+}
 
 export const adapter: Adapter = {
   operations: context => {

@@ -30,8 +30,15 @@ import {
   isPrimitiveType,
   isTypeReference,
   isElement,
+  getDeepInnerTypeSync,
 } from '@salto-io/adapter-api'
-import { TransformFuncSync, getSubtypes, inspectValue, transformValuesSync } from '@salto-io/adapter-utils'
+import {
+  TransformFuncSync,
+  getSubtypes,
+  inspectValue,
+  transformValuesSync,
+  ImportantValue,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
@@ -340,6 +347,76 @@ export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
       })
     })
   }, 'hideAndOmitFields')
+
+/**
+ * Get the field type of a deep-nested field in a given type.
+ *
+ * This function traverses the field path in the type and returns the type of the field at the end of the path.
+ *
+ * @param type  - the top level type to start the search from
+ * @param fieldPath - the path to the field in the top-level type
+ *
+ * @throws Error if any field in the path has an unresolved type reference
+ */
+export const getTypeInPath = (
+  type: ObjectType | undefined,
+  fieldPath: string[],
+): ObjectType | PrimitiveType | undefined => {
+  if (type === undefined || fieldPath.length === 0) {
+    return undefined
+  }
+  const [fieldName, ...restPath] = fieldPath
+  const field = Object.prototype.hasOwnProperty.call(type.fields, fieldName) ? type.fields[fieldName] : undefined
+  if (field === undefined) {
+    log.warn('failed to find type for field %s in type %s', fieldName, type.elemID.getFullName())
+    return undefined
+  }
+
+  const fieldType = getDeepInnerTypeSync(field.getTypeSync())
+  if (fieldType === undefined) {
+    log.warn('field %s in type %s is undefined', fieldName, type.elemID.getFullName())
+    return undefined
+  }
+  if (restPath.length === 0) {
+    return fieldType
+  }
+  if (isPrimitiveType(fieldType)) {
+    log.warn(
+      'field %s in type %s is a primitive type, but path still has elements (%s), cannot recurse further',
+      fieldName,
+      type.elemID.getFullName(),
+      restPath.join('.'),
+    )
+    return undefined
+  }
+  return getTypeInPath(fieldType, restPath)
+}
+
+export const addImportantValues = <Options extends FetchApiDefinitionsOptions>({
+  definedTypes,
+  defQuery,
+}: {
+  definedTypes: Record<string, ObjectType>
+  defQuery: ElementAndResourceDefFinder<Options>
+}): void =>
+  log.timeTrace(() => {
+    Object.entries(definedTypes).forEach(([typeName, type]) => {
+      const { element: elementDef } = defQuery.query(typeName) ?? {}
+
+      // Only add important value definitions for fields that actually exist in the type. This is needed to support
+      // adapters defining default important values, and have them apply only when relevant to the type at hand.
+      const importantValues = (elementDef?.topLevel?.importantValues ?? []).filter(
+        ({ value }: ImportantValue) => getTypeInPath(type, value.split('.')) !== undefined,
+      )
+
+      // If there are no important values, avoid the assignment entirely to avoid creating empty `annotations` objects
+      // in NaCL files for types that don't have important values.
+      if (_.isEmpty(importantValues)) {
+        return
+      }
+      type.annotate({ [CORE_ANNOTATIONS.IMPORTANT_VALUES]: importantValues })
+    })
+  }, 'addImportantValues')
 
 /**
  * Filter for types that are either used by instance or defined in fetch definitions

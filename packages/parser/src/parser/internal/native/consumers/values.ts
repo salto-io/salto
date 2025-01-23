@@ -64,7 +64,7 @@ const createSimpleStringValue = (
 ): string => {
   try {
     return JSON.parse(
-      `"${unescapeTemplateMarker(tokens.map(token => token.text).join(''), { unescapeLeadingBackslashes: false })}"`,
+      `"${unescapeTemplateMarker(tokens.map(token => token.text).join(''), { unescapeStrategy: 'markerOnly' })}"`,
     )
   } catch (e) {
     context.errors.push(

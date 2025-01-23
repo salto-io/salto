@@ -125,7 +125,6 @@ const extractStandaloneInstancesFromField =
           toPath,
           defaultName: `${invertNaclCase(parent.elemID.name)}__unnamed_${index}`,
           parent: standaloneDef.addParentAnnotation !== false ? parent : undefined,
-          allowEmptyArrays: defQuery.query(standaloneDef.typeName)?.element?.topLevel?.allowEmptyArrays,
         }),
       )
       .filter(isDefined)

@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import _ from 'lodash'
+import _, { isEmpty } from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, strings, promises } from '@salto-io/lowerdash'
 import {
@@ -470,6 +470,9 @@ const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, eleme
           (attachment: ReferenceExpression) => getInline(attachmentByName[attachment.elemID.name]),
         ])
         article.value.attachments = sortedAttachments
+        if (isEmpty(article.value.attachments)) {
+          delete article.value.attachments
+        }
       })
       return { errors: attachmentErrors }
     },

@@ -5,17 +5,16 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-
 import { definitions } from '@salto-io/adapter-components'
-import { transformGraphQLItem } from '.'
+import { transformResGraphQLItem } from '.'
 import { getFullLanguageName } from '../../shared/transforms/bot_adjuster'
 
-export const transform: definitions.AdjustFunctionMulti = async item => {
-  const values = await transformGraphQLItem('flows')(item)
-  return values.map(({ value }) => {
-    if (value?.enabledLanguages) {
-      value.enabledLanguages = value.enabledLanguages.map(getFullLanguageName)
-    }
-    return { value }
-  })
+export const transformResponse: (
+  innerRoot: string,
+) => definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndExtendedContext> = innerRoot => async item => {
+  const { value } = await transformResGraphQLItem(innerRoot)(item)
+  if (value?.enabledLanguages) {
+    value.enabledLanguages = value.enabledLanguages.map(getFullLanguageName)
+  }
+  return { value }
 }

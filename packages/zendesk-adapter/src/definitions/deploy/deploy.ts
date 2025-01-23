@@ -14,6 +14,7 @@ import {
   createSubFlowMutation,
   deleteFlowMutation,
   deleteSubFlowMutation,
+  updateFlowLanguages,
   updateFlowName,
   updateSubFlowMutation,
 } from './graphql_schemas'
@@ -71,6 +72,20 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
               copyFromResponse: {
                 additional: { adjust: transformResGraphQLItem('updateFlowName') },
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/api/admin/private/answer_bot/graphql',
+                  method: 'post',
+                },
+                transformation: {
+                  adjust: transformReqGraphQLItem(updateFlowLanguages, 'updateLanguageSettings', ['id', 'name']),
+                },
+              },
+              copyFromResponse: {
+                additional: { adjust: transformResGraphQLItem('updateLanguageSettings') },
               },
             },
           ],
@@ -148,6 +163,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
     },
     [BOT_BUILDER_NODE]: {
+      concurrency: 1,
       requestsByAction: {
         customizations: {
           add: [

@@ -16,7 +16,7 @@ import {
   EVERYONE_USER_TYPE,
 } from '../../constants'
 import {
-  transformGraphQLItem,
+  transformBotItem,
   transformGuideItem,
   transformQueueItem,
   transformSectionItem,
@@ -2104,7 +2104,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             query: flowsQuery,
           },
         },
-        transformation: { root: '.', adjust: transformGraphQLItem('flows') },
+        transformation: { root: '.', adjust: transformBotItem },
       },
     ],
     resource: {
@@ -2131,6 +2131,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         id: { hide: true },
         brandId: { fieldType: 'string' },
         subflows: {
+          sort: {
+            properties: [{ path: 'name' }],
+          },
           standalone: {
             typeName: BOT_BUILDER_ANSWER,
             addParentAnnotation: true,
@@ -2160,6 +2163,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       fieldCustomizations: {
         id: { hide: true },
         nodes: {
+          sort: {
+            properties: [{ path: 'id' }],
+          },
           standalone: {
             typeName: BOT_BUILDER_NODE,
             addParentAnnotation: true,

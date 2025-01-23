@@ -297,6 +297,7 @@ const filterCreator: FilterCreator = () => ({
     articles.forEach(instance => {
       const sectionName = instance.value.section_id?.elemID?.getFullName()
       if (sectionName === undefined) {
+        // this shouldn't happen if it does we should understand why an article doesn't have a section_id
         log.warn(`article ${instance.elemID.getFullName()} does not have a section_id, cannot determine path`)
       }
       const parentId = nameByIdParents[sectionName]

@@ -167,7 +167,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     // omit fields based on the adjusted types
     omitAllInstancesValues({ instances, defQuery })
     hideAndOmitFields({ definedTypes, defQuery, finalTypeNames })
-    addImportantValues({ definedTypes, defQuery, finalTypeNames })
+    addImportantValues({ definedTypes, defQuery })
 
     // only return types that are reachable from instances or definitions
     const filteredTypes = getReachableTypes({ instances, types: Object.values(definedTypes), defQuery })

@@ -15,6 +15,7 @@ import {
   isInstanceElement,
   isObjectType,
   CORE_ANNOTATIONS,
+  BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getElementGenerator } from '../../../src/fetch/element/element'
@@ -148,8 +149,17 @@ describe('element', () => {
       ).toBeTruthy()
     })
     it('should create instances and matching type based on defined customizations', () => {
+      const objInnerType = new ObjectType({
+        elemID: new ElemID('myAdapter', 'myType__obj'),
+        fields: {
+          inner: { refType: BuiltinTypes.STRING },
+        },
+        annotations: {
+          makeSureThisIsNotDeleted: true,
+        },
+      })
       const entries = [
-        { str: 'A', otherField: 'B', num: 2, arr: [{ st: 'X', unknown: true }] },
+        { str: 'A', otherField: 'B', num: 2, arr: [{ st: 'X', unknown: true }], obj: { inner: 'innerVal' } },
         { str: 'CCC', otherField: 'DDD', arr: [{ unknown: 'text' }] },
       ]
       const generator = getElementGenerator({
@@ -158,6 +168,16 @@ describe('element', () => {
           InstanceFetchApiDefinitions<{ customNameMappingOptions: 'firstCustom' | 'secondCustom' }>,
           string
         >({
+          default: {
+            element: {
+              topLevel: {
+                importantValues: [
+                  { value: 'inner', indexed: true, highlighted: false },
+                  { value: 'nonExistent', indexed: true, highlighted: false },
+                ],
+              },
+            },
+          },
           customizations: {
             myType: {
               resource: {
@@ -176,6 +196,8 @@ describe('element', () => {
                   importantValues: [
                     { value: 'str', indexed: true, highlighted: false },
                     { value: 'nonExistentField', indexed: true, highlighted: false },
+                    { value: 'obj.inner', indexed: true, highlighted: true },
+                    { value: 'obj.nonExistentInner', indexed: true, highlighted: true },
                   ],
                 },
               },
@@ -195,6 +217,7 @@ describe('element', () => {
           firstCustom: name => `${name}CustomTest`,
           secondCustom: name => `Second${name}`,
         },
+        predefinedTypes: { myType__obj: objInnerType },
       })
       generator.pushEntries({
         entries,
@@ -202,12 +225,13 @@ describe('element', () => {
       })
       const res = generator.generate()
       expect(res.errors).toEqual([])
-      expect(res.elements).toHaveLength(4)
+      expect(res.elements).toHaveLength(5)
       expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual([
         'myAdapter.myType',
         'myAdapter.myType.instance.ACustomTest_SecondB',
         'myAdapter.myType.instance.CCCCustomTest_SecondDDD',
         'myAdapter.myType__arr',
+        'myAdapter.myType__obj',
       ])
       const objType = res.elements
         .filter(isObjectType)
@@ -218,6 +242,7 @@ describe('element', () => {
         num: 'number',
         otherField: 'string',
         arr: 'List<myAdapter.myType__arr>',
+        obj: 'myType__obj',
       })
       expect(_.mapValues(subType?.fields, f => f.getTypeSync().elemID.name)).toEqual({
         st: 'string',
@@ -237,7 +262,12 @@ describe('element', () => {
       ).toBeTruthy()
       expect(objType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]).toEqual([
         { value: 'str', indexed: true, highlighted: false },
+        { value: 'obj.inner', indexed: true, highlighted: true },
       ])
+      expect(objInnerType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]).toEqual([
+        { value: 'inner', indexed: true, highlighted: false },
+      ])
+      expect(objInnerType.annotations.makeSureThisIsNotDeleted).toBeTruthy()
     })
 
     describe('handleError', () => {

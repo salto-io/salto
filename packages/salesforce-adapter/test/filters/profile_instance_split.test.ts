@@ -19,7 +19,6 @@ import filterCreator from '../../src/filters/profile_instance_split'
 import { generateProfileType, defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 import mockClient from '../client'
-import * as optionalFeatures from '../../src/fetch_profile/optional_features'
 
 describe('Profile Instance Split filter', () => {
   describe('Map profile instances', () => {
@@ -95,6 +94,8 @@ describe('Profile Instance Split filter', () => {
 
     beforeAll(async () => {
       profileObj = generateProfileType(true)
+    })
+    beforeEach(async () => {
       profileInstances = createProfileInstances(profileObj)
       jest.clearAllMocks()
     })
@@ -108,12 +109,6 @@ describe('Profile Instance Split filter', () => {
 
       describe('when supportProfileTabVisibilities is disabled', () => {
         beforeEach(async () => {
-          jest.spyOn(optionalFeatures, 'isFeatureEnabled').mockImplementation(feature => {
-            if (feature === 'supportProfileTabVisibilities') {
-              return false
-            }
-            return jest.requireActual<typeof optionalFeatures>('./myModule').isFeatureEnabled(feature)
-          })
           elements = [profileObj, ...profileInstances.map(e => e.clone())]
           await filter.onFetch(elements)
         })
@@ -135,14 +130,6 @@ describe('Profile Instance Split filter', () => {
       })
       describe('when supportProfileTabVisibilities is enabled', () => {
         beforeEach(async () => {
-          jest.spyOn(optionalFeatures, 'isFeatureEnabled').mockImplementation(feature => {
-            if (feature === 'supportProfileTabVisibilities') {
-              return true
-            }
-            return jest.requireActual<typeof optionalFeatures>('./myModule').isFeatureEnabled(feature)
-          })
-          profileObj = generateProfileType(true)
-          profileInstances = createProfileInstances(profileObj)
           Object.assign(profileInstances[0].value, {
             tabVisibilities: {
               app1: { application: 'app1', default: true, visible: false },

@@ -59,7 +59,6 @@ import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { FetchProfile } from '../types'
 import { apiNameSync, isOrderedMapTypeOrRefType, metadataTypeSync } from './utils'
-import { isFeatureEnabled } from '../fetch_profile/optional_features'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -152,7 +151,6 @@ export const PERMISSIONS_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
 export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   // sharing map field def with permission set
   ...PERMISSIONS_SET_MAP_FIELD_DEF,
-  ...(isFeatureEnabled('supportProfileTabVisibilities') ? { tabVisibilities: { key: 'tab' } } : {}),
 
   // Non-unique maps (multiple values can have the same key)
   categoryGroupVisibilities: { key: 'dataCategoryGroup', mapToList: true },
@@ -188,7 +186,9 @@ export const getMetadataTypeToFieldToMapDef: (
 ) => Record<string, Record<string, MapDef>> = fetchProfile => ({
   [BUSINESS_HOURS_METADATA_TYPE]: BUSINESS_HOURS_MAP_FIELD_DEF,
   [EMAIL_TEMPLATE_METADATA_TYPE]: EMAIL_TEMPLATE_MAP_FIELD_DEF,
-  [PROFILE_METADATA_TYPE]: PROFILE_MAP_FIELD_DEF,
+  [PROFILE_METADATA_TYPE]: fetchProfile.isFeatureEnabled('supportProfileTabVisibilities')
+    ? { ...PROFILE_MAP_FIELD_DEF, ...{ tabVisibilities: { key: 'tab' } } }
+    : PROFILE_MAP_FIELD_DEF,
   [PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [MUTING_PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [SHARING_RULES_TYPE]: SHARING_RULES_MAP_FIELD_DEF,

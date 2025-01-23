@@ -34,7 +34,7 @@ import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { CustomReferencesSettings, LastChangeDateOfTypesWithNestedInstances, OptionalFeatures } from '../src/types'
 import { createDeployProgressReporter, DeployProgressReporter } from '../src/adapter_creator'
 import { SalesforceClient } from '../index'
-import { isFeatureEnabled } from '../src/fetch_profile/optional_features'
+// import { isFeatureEnabled } from '../src/fetch_profile/optional_features'
 
 export const findElements = (elements: ReadonlyArray<Element>, ...name: ReadonlyArray<string>): Element[] => {
   const expectedElemId =
@@ -249,13 +249,9 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
       fieldPermissions: {
         refType: useMaps ? new MapType(new MapType(ProfileFieldLevelSecurity)) : fieldPermissionsNonMapType,
       },
-      ...(isFeatureEnabled('supportProfileTabVisibilities')
-        ? {
-            tabVisibilities: {
-              refType: useMaps ? new MapType(ProfileTabVisibilities) : ProfileTabVisibilities,
-            },
-          }
-        : {}),
+      tabVisibilities: {
+        refType: useMaps ? new MapType(ProfileTabVisibilities) : ProfileTabVisibilities,
+      },
     },
     annotations: {
       [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,

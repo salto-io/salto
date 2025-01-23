@@ -10,6 +10,7 @@ import { StaticFile, StaticFileParameters, calculateStaticFileHash } from '@salt
 import wu from 'wu'
 import { values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { getSaltoFlagBool, WORKSPACE_FLAGS } from '../../flags'
 import { StaticFilesCache, StaticFilesData } from './cache'
 import { DirectoryStore } from '../dir_store'
 
@@ -204,15 +205,25 @@ export const buildStaticFilesSource = (
             if (file.buffer === undefined) {
               log.warn('received file %s without buffer from static files dir store', args.filepath)
             }
+            if (getSaltoFlagBool(WORKSPACE_FLAGS.verifyStaticFileContentHash)) {
+              const bufferHash = calculateStaticFileHash(file.buffer)
+              if (bufferHash !== staticFileData.hash) {
+                log.warn(
+                  'received file %s with hash %s but expected hash to be %s',
+                  args.filepath,
+                  bufferHash,
+                  staticFileData.hash,
+                )
+              }
+            }
             return file.buffer
           },
           args.encoding,
           args.isTemplate,
         )
       } catch (e) {
-        log.warn('failed to get file %s with error: %o', args.filepath, e)
+        log.trace('failed to get file %s (hash: %s) with error: %o', args.filepath, args.hash ?? 'not-given', e)
         if (args.hash !== undefined) {
-          log.trace('returning file %s without content (hash: %s)', args.filepath, args.hash)
           // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
           // in the elements cache between a file that was really missing when the cache was
           // written, and a file that existed but was removed since the cache was written,

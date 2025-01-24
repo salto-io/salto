@@ -217,6 +217,8 @@ export const DEFAULT_FILTERS = [
   organizationsFilter,
   tagsFilter,
   localeFilter,
+  // supportAddress should run before referencedIdFieldsFilter
+  supportAddress,
   customStatus,
   guideAddBrandToArticleTranslation,
   macroFilter,
@@ -247,8 +249,6 @@ export const DEFAULT_FILTERS = [
   // fieldReferencesFilter should be after:
   // usersFilter, macroAttachmentsFilter, tagsFilter, guideLocalesFilter, customObjectFilter, customObjectFieldFilter
   fieldReferencesFilter,
-  // supportAddress should run before referencedIdFieldsFilter and after fieldReferencesFilter
-  supportAddress,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appInstallationsFilter,

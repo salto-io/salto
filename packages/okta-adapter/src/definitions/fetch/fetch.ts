@@ -609,6 +609,7 @@ const createCustomizations = ({
         settings: { fieldType: 'unknown' },
         profileEnrollment: { fieldType: 'string' },
         accessPolicy: { fieldType: 'string' },
+        features: { sort: { properties: [] } },
         ApplicationGroupAssignment: {
           standalone: {
             typeName: 'ApplicationGroupAssignment',

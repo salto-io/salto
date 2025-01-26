@@ -84,10 +84,10 @@ const createWarningMessages = ({
       elemId,
       collideInstances,
     ]) => `${collideInstances.length} ${adapterName} elements ${addChildrenMessage ? 'and their child elements ' : ''}were not fetched, as they were mapped to a single ID ${elemId}:
-${getInstancesWithLinksToService(collideInstances, adapterName)}.
+${getInstancesWithLinksToService(collideInstances, adapterName)} .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`,
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`,
   )
 
 export const getCollisionWarnings = ({

@@ -56,10 +56,10 @@ describe('collisions', () => {
     it('should return the correct warning messages', async () => {
       const detailedMessage = `2 Salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
 aliasName - open in Salto: someUrl,
-QuackAliasName - open in Salto: QuackUrl.
+QuackAliasName - open in Salto: QuackUrl .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`
 
       const errors = getCollisionWarnings({
         instances: [instance, collidedInstance],
@@ -76,10 +76,10 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
     it('should add children message when addChildrenMessage is true', async () => {
       const detailedMessage = `2 Salto elements and their child elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
 aliasName - open in Salto: someUrl,
-QuackAliasName - open in Salto: QuackUrl.
+QuackAliasName - open in Salto: QuackUrl .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`
 
       const errors = getCollisionWarnings({
         instances: [instance, collidedInstance],
@@ -98,10 +98,10 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
       instance.annotations[CORE_ANNOTATIONS.ALIAS] = undefined
       const detailedMessage = `2 Salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
 test - open in Salto: someUrl,
-QuackAliasName - open in Salto: QuackUrl.
+QuackAliasName - open in Salto: QuackUrl .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`
 
       const errors = getCollisionWarnings({
         instances: [instance, collidedInstance],
@@ -121,10 +121,10 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
 
       const detailedMessage = `2 Salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
 aliasName,
-QuackAliasName.
+QuackAliasName .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`
 
       const errors = getCollisionWarnings({
         instances: [instance, collidedInstance],
@@ -148,17 +148,17 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
       const firstDetailedMessage = `3 Salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
 aliasName - open in Salto: someUrl,
 aliasName - open in Salto: someUrl,
-QuackAliasName - open in Salto: QuackUrl.
+QuackAliasName - open in Salto: QuackUrl .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`
 
       const secondDetailedMessage = `2 Salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test1:
 anotherAliasName - open in Salto: anotherUrl,
-anotherAliasName - open in Salto: anotherUrl.
+anotherAliasName - open in Salto: anotherUrl .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`
 
       const errors = getCollisionWarnings({
         instances: [instance, instance.clone(), collidedInstance.clone(), differentInstance, differentInstance.clone()],

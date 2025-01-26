@@ -6,12 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { collections } from '@salto-io/lowerdash'
 import {
   ElemID,
   getChangeData,
   InstanceElement,
-  isInstanceElement,
   isReferenceExpression,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
@@ -19,8 +17,6 @@ import { definitions } from '@salto-io/adapter-components'
 import { getInstancesFromElementSource, validatePlainObject } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { BRAND_TYPE_NAME, EMAIL_DOMAIN_TYPE_NAME } from '../../../constants'
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -30,16 +26,11 @@ const log = logger(module)
 export const findReferencingBrands = async (
   emailDomainElemId: ElemID,
   elementsSource: ReadOnlyElementsSource,
-): Promise<InstanceElement[]> => {
-  const all = await awu(await elementsSource.getAll()).toArray()
-  log.info('all elements: %o', all)
-  return (await getInstancesFromElementSource(elementsSource, [BRAND_TYPE_NAME])).filter(
-    brandInstance =>
-      (isReferenceExpression(brandInstance.value.emailDomainId) ||
-        isInstanceElement(brandInstance.value.emailDomainId)) &&
-      brandInstance.value.emailDomainId.elemID.isEqual(emailDomainElemId),
-  )
-}
+): Promise<InstanceElement[]> =>
+  (await getInstancesFromElementSource(elementsSource, [BRAND_TYPE_NAME]))
+    .filter(brandInstance => isReferenceExpression(brandInstance.value.emailDomainId))
+    .filter(brandInstance => brandInstance.value.emailDomainId.elemID.isEqual(emailDomainElemId))
+
 
 /**
  * Adds a single brand ID that references the added email domain to the request value as required by Okta.

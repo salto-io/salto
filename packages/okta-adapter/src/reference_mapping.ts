@@ -40,7 +40,6 @@ type OktaReferenceSerializationStrategyName =
   | 'mappingRuleId'
   | 'kid'
   | 'credentials.oauthClient.client_id'
-  | 'emailDomainId'
 type OktaReferenceIndexName = OktaReferenceSerializationStrategyName
 const OktaReferenceSerializationStrategyLookup: Record<
   OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
@@ -66,18 +65,6 @@ const OktaReferenceSerializationStrategyLookup: Record<
     lookup: val => val,
     lookupIndexName: 'credentials.oauthClient.client_id',
     getReferenceId: topLevelId => topLevelId.createNestedID('credentials', 'oauthClient', 'client_id'),
-  },
-  // Handle a special case when adding a new brand with an email domain in the same deployment. The email domain
-  // creation API requires the brand ID to be set, but the brand ID is not known until the brand is created. In these
-  // cases we reverse the dependency between the changes, but the emailDomainId serialization in the Brand instance
-  // can't be resolves (because the email domain doesn't exist yet) and so it gets set as undefined and then cannot be
-  // restored back to a reference for the email domain addition. This strategy serializes it as the full instance if the
-  // email domain ID isn't available (i.e., on additions), so that the email domain addition can search for a brand that
-  // references the newly created email domain.
-  emailDomainId: {
-    serialize: ({ ref }) => ref.value.value?.id ?? ref.value,
-    lookup: val => val,
-    lookupIndexName: 'emailDomainId',
   },
 }
 
@@ -262,9 +249,14 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     missingRefStrategy: 'typeAndValue',
     target: { type: 'DeviceAssurance' },
   },
+  // When adding an email domain alongside the brand that uses it, we reverse the dependencies so that create the brand
+  // first, then the email domain. This is because Okta requires the brand ID to be added to the email domain request.
+  // This means we can't use the `id` strategy as the email domain doesn't have an ID when the brand is created. Instead,
+  // we use `fullValue` and ignore it if no ID is present. Then the reference can be safely restored, and it's
+  // available for the email domain code to search for the brand that references it.
   {
     src: { field: 'emailDomainId', parentTypes: ['Brand'] },
-    serializationStrategy: 'emailDomainId',
+    serializationStrategy: 'fullValue',
     missingRefStrategy: 'typeAndValue',
     target: { type: 'EmailDomain' },
   },

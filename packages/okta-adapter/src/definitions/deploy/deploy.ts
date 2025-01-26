@@ -876,10 +876,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 transformation: {
                   adjust: async ({ value }) => {
                     validatePlainObject(value, BRAND_TYPE_NAME)
+                    validatePlainObject(value.emailDomainId, "emailDomainId")
                     return {
                       value: {
                         ...value,
-                        emailDomainId: _.isString(value.emailDomainId) ? value.emailDomainId : undefined,
+                        // emailDomainId is a reference that's serialized as "full value", but we only need its id.
+                        emailDomainId: value.emailDomainId?.id
                       },
                     }
                   },

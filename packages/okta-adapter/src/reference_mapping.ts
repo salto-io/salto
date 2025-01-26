@@ -35,11 +35,7 @@ import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
 
-type OktaReferenceSerializationStrategyName =
-  | 'key'
-  | 'mappingRuleId'
-  | 'kid'
-  | 'credentials.oauthClient.client_id'
+type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId' | 'kid' | 'credentials.oauthClient.client_id'
 type OktaReferenceIndexName = OktaReferenceSerializationStrategyName
 const OktaReferenceSerializationStrategyLookup: Record<
   OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,

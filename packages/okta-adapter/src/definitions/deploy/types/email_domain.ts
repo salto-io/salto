@@ -31,7 +31,6 @@ export const findReferencingBrands = async (
     .filter(brandInstance => isReferenceExpression(brandInstance.value.emailDomainId))
     .filter(brandInstance => brandInstance.value.emailDomainId.elemID.isEqual(emailDomainElemId))
 
-
 /**
  * Adds a single brand ID that references the added email domain to the request value as required by Okta.
  *

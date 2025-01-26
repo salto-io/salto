@@ -204,10 +204,14 @@ export const loadLocalElementsSources = async ({
   },
 })
 
-export const locateWorkspaceRoot = async (
-  lookupDir: string,
+type LocateWorkspaceRootArgs = {
+  lookupDir: string
+  allowWorkspaceRootLookup?: boolean
+}
+export const locateWorkspaceRootImpl = async ({
+  lookupDir,
   allowWorkspaceRootLookup = true,
-): Promise<string | undefined> => {
+}: LocateWorkspaceRootArgs): Promise<string | undefined> => {
   if (await exists(path.join(lookupDir, CONFIG_DIR_NAME))) {
     return lookupDir
   }
@@ -216,7 +220,18 @@ export const locateWorkspaceRoot = async (
     return undefined
   }
   const parentDir = lookupDir.substr(0, lookupDir.lastIndexOf(path.sep))
-  return parentDir ? locateWorkspaceRoot(parentDir) : undefined
+  return parentDir ? locateWorkspaceRootImpl({ lookupDir: parentDir }) : undefined
+}
+
+export async function locateWorkspaceRoot(args: LocateWorkspaceRootArgs): Promise<string | undefined>
+// @deprecated use args object instead
+export async function locateWorkspaceRoot(lookupDir: string): Promise<string | undefined>
+export async function locateWorkspaceRoot(args: string | LocateWorkspaceRootArgs): Promise<string | undefined> {
+  if (_.isString(args)) {
+    return locateWorkspaceRootImpl({ lookupDir: args })
+  }
+
+  return locateWorkspaceRootImpl(args)
 }
 
 const credentialsSource = (localStorage: string): cs.ConfigSource =>
@@ -251,7 +266,7 @@ export async function loadLocalWorkspace({
   adapterCreators,
   workspaceConfigSource,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
-  const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir), allowWorkspaceRootLookup)
+  const baseDir = await locateWorkspaceRoot({ lookupDir: path.resolve(lookupDir), allowWorkspaceRootLookup })
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
   }
@@ -343,7 +358,7 @@ export async function initLocalWorkspace({
 }: InitLocalWorkspaceParams): Promise<Workspace> {
   const uid = uuidv4()
   const localStorage = getLocalStoragePath(uid)
-  if (await locateWorkspaceRoot(path.resolve(baseDir))) {
+  if (await locateWorkspaceRoot({ lookupDir: path.resolve(baseDir) })) {
     throw new ExistingWorkspaceError()
   }
   if (await exists(localStorage)) {

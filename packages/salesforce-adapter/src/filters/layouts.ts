@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { logger } from '@salto-io/logging'
-import { Element, InstanceElement, ObjectType, ElemID, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { multiIndex, collections } from '@salto-io/lowerdash'
 import { apiName } from '../transformers/transformer'
@@ -49,10 +49,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const layouts = await awu(elements)
-      .filter(isInstanceElement)
-      .filter(isInstanceOfTypeSync(LAYOUT_TYPE_ID_METADATA_TYPE))
-      .toArray()
+    const layouts = elements.filter(isInstanceOfTypeSync(LAYOUT_TYPE_ID_METADATA_TYPE))
     if (layouts.length === 0) {
       return
     }

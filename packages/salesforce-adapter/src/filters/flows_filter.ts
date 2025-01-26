@@ -139,8 +139,9 @@ const getFlowVersionsByApiName = async ({
 }
 
 type versionSelector = (versions: FlowVersionProperties[]) => FlowVersionProperties | undefined
-const selectActiveVersion: versionSelector = versions => versions.find(version => version.status === 'Active')
 const selectLatestVersion: versionSelector = versions => _.maxBy(versions, 'version')
+const selectActiveVersion: versionSelector = versions =>
+  versions.find(version => version.status === 'Active') ?? selectLatestVersion(versions)
 
 const createSelectedVersionFileProperties = async ({
   flowsFileProps,

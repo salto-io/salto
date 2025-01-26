@@ -43,7 +43,11 @@ import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
 import { BEHAVIOR_TYPE } from '../src/constants'
-import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../src/filters/fields/constants'
+import {
+  FIELD_CONTEXT_OPTION_TYPE_NAME,
+  FIELD_CONTEXT_TYPE_NAME,
+  FIELD_TYPE_NAME,
+} from '../src/filters/fields/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
@@ -299,6 +303,7 @@ each([
             instance.elemID.typeName !== FIELD_CONTEXT_TYPE_NAME ||
             instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0].value.isLocked === false,
         ) // do not delete contexts of locked fields
+        .filter(instance => instance.elemID.typeName !== FIELD_CONTEXT_OPTION_TYPE_NAME) // do not delete options, they will be deleted with their contexts
         .map(instance => toChange({ before: instance }))
 
       if (!isDataCenter) {

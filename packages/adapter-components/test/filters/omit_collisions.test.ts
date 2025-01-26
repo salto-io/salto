@@ -55,10 +55,10 @@ describe('omitCollisionsFilter', () => {
           message: 'Some elements were not fetched due to Salto ID collisions',
           detailedMessage: `2 myAdapter elements and their child elements were not fetched, as they were mapped to a single ID myAdapter.t1.instance.A:
 A,
-A.
+A .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`,
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`,
         },
       ],
     })
@@ -80,10 +80,10 @@ Learn about additional ways to resolve this issue at https://help.salto.io/en/ar
           message: expect.stringContaining('Some elements were not fetched due to Salto ID collisions'),
           detailedMessage: `2 myAdapter elements and their child elements were not fetched, as they were mapped to a single ID myAdapter.t1.instance.A:
 A,
-A.
+A .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`,
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`,
         },
       ],
     })

@@ -161,10 +161,10 @@ dup,
 dup,
 instance alias - open in Jira: https://dup_1_someurl.com,
 another instance alias - open in Jira: https://dup_2_someurl.com,
-instance alias.
+instance alias .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`,
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`,
           severity: 'Warning',
         },
       ],

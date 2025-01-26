@@ -42,10 +42,10 @@ describe('collision errors', () => {
         message: 'Some elements were not fetched due to Salto ID collisions',
         detailedMessage: `2 Zendesk elements and their child elements were not fetched, as they were mapped to a single ID zendesk.obj.instance.inst1:
 inst1,
-inst1 - open in Zendesk: someUrl.
+inst1 - open in Zendesk: someUrl .
 
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
-Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions.`,
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`,
       })
     })
     it('should return no errors if there were no collisions', async () => {

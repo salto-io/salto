@@ -268,7 +268,7 @@ const createValidationRulesIndex = async (
 const getValidationRulesUrls = (validationRules: ValidationRule[]): string[] =>
   validationRules.map(validationRule => validationRule.annotations[CORE_ANNOTATIONS.SERVICE_URL]).filter(_.isString)
 
-const enrichValidationRuleDeployErrors = async (
+const enrichValidationRulesDeployErrors = async (
   errors: readonly SaltoError[],
   elementsSource: ReadOnlyElementsSource,
   groupTypeName: string,
@@ -305,6 +305,6 @@ export const enrichSaltoDeployErrors = async (
   groupTypeName: string,
 ): Promise<readonly SaltoError[]> => {
   if (!errors.some(error => error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION)))
-    await enrichValidationRuleDeployErrors(errors, elementsSource, groupTypeName)
+    await enrichValidationRulesDeployErrors(errors, elementsSource, groupTypeName)
   return errors
 }

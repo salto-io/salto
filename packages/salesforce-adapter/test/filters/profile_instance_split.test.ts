@@ -92,7 +92,6 @@ describe('Profile Instance Split filter', () => {
       ),
     ]
 
-    beforeAll(async () => {})
     beforeEach(async () => {
       profileObj = generateProfileType(true)
       profileInstances = createProfileInstances(profileObj)

@@ -266,17 +266,13 @@ const createValidationRulesIndex = async (
 }
 
 const getValidationRulesUrls = (validationRules: ValidationRule[]): string[] =>
-  validationRules
-    .map(validationRule => validationRule.annotations[CORE_ANNOTATIONS.SERVICE_URL])
-    .filter(url => _.isString(url))
+  validationRules.map(validationRule => validationRule.annotations[CORE_ANNOTATIONS.SERVICE_URL]).filter(_.isString)
 
-export const enrichSaltoDeployErrors = async (
+const enrichValidationRuleDeployErrors = async (
   errors: readonly SaltoError[],
   elementsSource: ReadOnlyElementsSource,
   groupTypeName: string,
 ): Promise<readonly SaltoError[]> => {
-  if (!errors.some(error => error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION)))
-    return errors
   const validationRulesIndex: Map<string, ValidationRule[]> = await createValidationRulesIndex(
     elementsSource,
     groupTypeName,
@@ -301,4 +297,14 @@ export const enrichSaltoDeployErrors = async (
         }
       : error,
   )
+}
+
+export const enrichSaltoDeployErrors = async (
+  errors: readonly SaltoError[],
+  elementsSource: ReadOnlyElementsSource,
+  groupTypeName: string,
+): Promise<readonly SaltoError[]> => {
+  if (!errors.some(error => error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION)))
+    await enrichValidationRuleDeployErrors(errors, elementsSource, groupTypeName)
+  return errors
 }

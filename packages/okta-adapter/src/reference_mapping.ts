@@ -35,7 +35,12 @@ import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
 
-type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId' | 'kid' | 'credentials.oauthClient.client_id'
+type OktaReferenceSerializationStrategyName =
+  | 'key'
+  | 'mappingRuleId'
+  | 'kid'
+  | 'credentials.oauthClient.client_id'
+  | 'emailDomainId'
 type OktaReferenceIndexName = OktaReferenceSerializationStrategyName
 const OktaReferenceSerializationStrategyLookup: Record<
   OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
@@ -61,6 +66,18 @@ const OktaReferenceSerializationStrategyLookup: Record<
     lookup: val => val,
     lookupIndexName: 'credentials.oauthClient.client_id',
     getReferenceId: topLevelId => topLevelId.createNestedID('credentials', 'oauthClient', 'client_id'),
+  },
+  // Handle a special case when adding a new brand with an email domain in the same deployment. The email domain
+  // creation API requires the brand ID to be set, but the brand ID is not known until the brand is created. In these
+  // cases we reverse the dependency between the changes, but the emailDomainId serialization in the Brand instance
+  // can't be resolves (because the email domain doesn't exist yet) and so it gets set as undefined and then cannot be
+  // restored back to a reference for the email domain addition. This strategy serializes it as the full instance if the
+  // email domain ID isn't available (i.e., on additions), so that the email domain addition can search for a brand that
+  // references the newly created email domain.
+  emailDomainId: {
+    serialize: ({ ref }) => ref.value.value?.id ?? ref.value,
+    lookup: val => val,
+    lookupIndexName: 'emailDomainId',
   },
 }
 
@@ -247,7 +264,7 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'emailDomainId', parentTypes: ['Brand'] },
-    serializationStrategy: 'id',
+    serializationStrategy: 'emailDomainId',
     missingRefStrategy: 'typeAndValue',
     target: { type: 'EmailDomain' },
   },

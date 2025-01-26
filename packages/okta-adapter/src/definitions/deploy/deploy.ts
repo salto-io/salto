@@ -873,6 +873,17 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/brands/{id}', method: 'put' },
+                transformation: {
+                  adjust: async ({ value }) => {
+                    validatePlainObject(value, BRAND_TYPE_NAME)
+                    return {
+                      value: {
+                        ...value,
+                        emailDomainId: _.isString(value.emailDomainId) ? value.emailDomainId : undefined,
+                      },
+                    }
+                  },
+                },
               },
             },
           ],

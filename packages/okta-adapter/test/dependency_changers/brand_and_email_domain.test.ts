@@ -1,5 +1,12 @@
-import { addedEmailDomainAfterAddedBrand } from '../../src/dependency_changers/brand_and_email_domain'
+/*
+ * Copyright 2025 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
+ *
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
+ */
 import { Change, ChangeDataType, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { addedEmailDomainAfterAddedBrand } from '../../src/dependency_changers/brand_and_email_domain'
 import { BRAND_TYPE_NAME, EMAIL_DOMAIN_TYPE_NAME, OKTA } from '../../src/constants'
 
 describe('addedEmailDomainAfterAddedBrand', () => {

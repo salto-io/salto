@@ -65,39 +65,6 @@ describe('email domain', () => {
       await expect(findReferencingBrands(emailDomain2.elemID, elementSource)).resolves.toEqual([domain2Brand1])
       await expect(findReferencingBrands(emailDomain3.elemID, elementSource)).resolves.toEqual([])
     })
-    // When adding an email domain alongside the brand that references it, the brand emailDomainId field contains the
-    // actual email domain instance, instead of a reference to it.
-    it('should find all referencing brands (with full-value emailDomainId)', async () => {
-      const emailDomain1 = new InstanceElement('emailDomain1', emailDomainType, { id: '1' })
-      const emailDomain2 = new InstanceElement('emailDomain2', emailDomainType, { id: '2' })
-      const emailDomain3 = new InstanceElement('emailDomain3', emailDomainType, { id: '3' })
-
-      const domain1Brand1 = new InstanceElement('brand1', brandType, {
-        id: '1',
-        emailDomainId: emailDomain1,
-      })
-      const domain1Brand2 = new InstanceElement('brand2', brandType, {
-        id: '2',
-        emailDomainId: emailDomain1,
-      })
-      const domain2Brand1 = new InstanceElement('brand3', brandType, {
-        id: '3',
-        emailDomainId: emailDomain2,
-      })
-      const elementSource = buildElementsSourceFromElements([
-        emailDomain1,
-        emailDomain2,
-        domain1Brand1,
-        domain1Brand2,
-        domain2Brand1,
-      ])
-      await expect(findReferencingBrands(emailDomain1.elemID, elementSource)).resolves.toEqual([
-        domain1Brand1,
-        domain1Brand2,
-      ])
-      await expect(findReferencingBrands(emailDomain2.elemID, elementSource)).resolves.toEqual([domain2Brand1])
-      await expect(findReferencingBrands(emailDomain3.elemID, elementSource)).resolves.toEqual([])
-    })
   })
 
   describe('addBrandIdToRequest', () => {

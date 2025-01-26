@@ -57,28 +57,6 @@ const updatePropertyIfExist = (instanceValue: Value, property: string, responseV
 }
 
 export const listenersAuditSetter = (instance: InstanceElement, response: Value): void => {
-  updatePropertyIfExist(instance.value, CREATED_TIMESTAMP, response)
-  updatePropertyIfExist(instance.value, UPDATED_TIMESTAMP, response)
-}
-
-export const scriptRunnerAuditSetter = (instance: InstanceElement, response: clientUtils.ResponseValue): void => {
-  if (AUDIT_SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName) && response.auditData != null) {
-    if (instance.value.auditData === undefined) {
-      instance.value.auditData = {}
-    }
-    updatePropertyIfExist(instance.value.auditData, CREATED_TIMESTAMP, response.auditData)
-    updatePropertyIfExist(instance.value.auditData, UPDATED_TIMESTAMP, response.auditData)
-  }
-}
-
-const updatePropertyIfExist = (instanceValue: Value, property: string, responseValue: Value): void => {
-  if (responseValue[property] != null) {
-    // not undefined or null
-    instanceValue[property] = responseValue[property]
-  }
-}
-
-export const listenersAuditSetter = (instance: InstanceElement, response: Value): void => {
   updatePropertyIfExist(instance.value, 'createdTimestamp', response)
   updatePropertyIfExist(instance.value, 'updatedTimestamp', response)
 }

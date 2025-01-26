@@ -308,6 +308,15 @@ describe('sortListsFilter', () => {
       await filter.onFetch?.([workflowInstance])
       expect(workflowInstance.value).toEqual(sortedWorkflowValues)
     })
+    it('should sort workflows with missing fields', async () => {
+      delete workflowInstance.value.transitions[0].links[0].fromStatusReference
+      delete workflowInstance.value.transitions[0].links[1].fromPort
+      delete sortedWorkflowValues.transitions[0].links[1].fromStatusReference
+      delete sortedWorkflowValues.transitions[0].links[0].fromPort
+
+      await filter.onFetch?.([workflowInstance])
+      expect(workflowInstance.value).toEqual(sortedWorkflowValues)
+    })
 
     it('should sort inner lists', async () => {
       const type = new ObjectType({

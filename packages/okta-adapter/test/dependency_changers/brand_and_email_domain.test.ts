@@ -14,7 +14,7 @@ describe('addedEmailDomainAfterAddedBrand', () => {
   const emailDomain = new InstanceElement('emailDomain', emailDomainType)
   const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
   const brand = new InstanceElement('brand', brandType, {
-    emailDomainId: new ReferenceExpression(emailDomain.elemID)
+    emailDomainId: new ReferenceExpression(emailDomain.elemID),
   })
   const unrelatedBrand = new InstanceElement('unrelatedBrand', brandType)
 
@@ -26,7 +26,10 @@ describe('addedEmailDomainAfterAddedBrand', () => {
     ])
     const dependencyChanges = await addedEmailDomainAfterAddedBrand(changes, new Map())
     expect(dependencyChanges).toHaveLength(2)
-    expect(dependencyChanges).toContainEqual({ action: 'remove', dependency: { source: 'brand', target: 'emailDomain' } })
+    expect(dependencyChanges).toContainEqual({
+      action: 'remove',
+      dependency: { source: 'brand', target: 'emailDomain' },
+    })
     expect(dependencyChanges).toContainEqual({ action: 'add', dependency: { source: 'emailDomain', target: 'brand' } })
   })
 
@@ -39,5 +42,4 @@ describe('addedEmailDomainAfterAddedBrand', () => {
     const dependencyChanges = await addedEmailDomainAfterAddedBrand(changes, new Map())
     expect(dependencyChanges).toHaveLength(0)
   })
-
 })

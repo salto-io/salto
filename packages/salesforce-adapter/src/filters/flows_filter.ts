@@ -47,23 +47,46 @@ import { SalesforceRecord } from '../client/types'
 const { isDefined } = lowerdashValues
 
 const log = logger(module)
+const { DefaultMap } = collections.map
 const { toArrayAsync } = collections.asynciterable
 
 const DEFAULT_CHUNK_SIZE = 500
 
-const fixFilePropertiesName = (props: FileProperties, activeVersions: Map<string, string>): FileProperties => ({
-  ...props,
-  fullName: activeVersions.get(`${props.fullName}`) ?? `${props.fullName}`,
-})
-
-type FlowDefinitionViewRecord = SalesforceRecord & {
-  ActiveVersionId: string | null
-  ApiName: string
+type FlowVersionRecord = SalesforceRecord & {
+  DefinitionId: string
+  VersionNumber: number
+  Status: string
+  CreatedDate: string
+  CreatedBy: {
+    Name: string
+  }
+  LastModifiedDate: string
+  LastModifiedBy: {
+    Name: string
+  }
 }
-const isFlowDefinitionViewRecord = (record: SalesforceRecord): record is FlowDefinitionViewRecord =>
-  (record.ActiveVersionId === null || _.isString(record.ActiveVersionId)) && _.isString(record.ApiName)
+const isFlowVersionRecord = (record: SalesforceRecord): record is FlowVersionRecord =>
+  _.isString(record.DefinitionId) &&
+  _.isString(record.Status) &&
+  _.isNumber(record.VersionNumber) &&
+  _.isString(record.CreatedDate) &&
+  _.isPlainObject(record.CreatedBy) &&
+  _.isString(record.CreatedBy.Name) &&
+  _.isString(record.LastModifiedDate) &&
+  _.isPlainObject(record.LastModifiedBy) &&
+  _.isString(record.LastModifiedBy.Name)
 
-const getActiveFlowVersionIdByApiName = async ({
+type FlowVersionProperties = {
+  id: string
+  version: number
+  status: string
+  createdByName: string
+  createdDate: string
+  lastModifiedByName: string
+  lastModifiedDate: string
+}
+
+const getFlowVersionsByApiName = async ({
   client,
   flowDefinitions,
   chunkSize,
@@ -71,38 +94,55 @@ const getActiveFlowVersionIdByApiName = async ({
   client: SalesforceClient
   flowDefinitions: InstanceElement[]
   chunkSize: number
-}): Promise<Record<string, string>> => {
-  const flowDefinitionsIds = flowDefinitions.map(flow => flow.value[INTERNAL_ID_FIELD])
+}): Promise<Map<string, FlowVersionProperties[]>> => {
+  const flowDefinitionsIdsToApiNames = Object.fromEntries(
+    flowDefinitions.map(flow => [flow.value[INTERNAL_ID_FIELD], flow.value[INSTANCE_FULL_NAME_FIELD]]),
+  )
   const records = _.flatten(
     await Promise.all(
-      _.chunk(flowDefinitionsIds, chunkSize).map(async chunk => {
-        const query = `SELECT Id, ApiName, ActiveVersionId FROM FlowDefinitionView WHERE Id IN ('${chunk.join("','")}')`
-        return (await toArrayAsync(await client.queryAll(query))).flat()
+      _.chunk(Object.keys(flowDefinitionsIdsToApiNames), chunkSize).map(async chunk => {
+        const query = `SELECT Id, DefinitionId, VersionNumber, Status, CreatedDate, CreatedBy.Name, LastModifiedDate, LastModifiedBy.Name FROM Flow WHERE DefinitionId IN ('${chunk.join("','")}')`
+        return (await toArrayAsync(await client.queryAll(query, true))).flat()
       }),
     ),
   )
-  const [validRecords, invalidRecords] = _.partition(records, isFlowDefinitionViewRecord)
+  const [validRecords, invalidRecords] = _.partition(records, isFlowVersionRecord)
   if (invalidRecords.length > 0) {
     log.error(
-      'Some FlowDefinitionView records are invalid. Records are: %s',
+      'Some Flow version records are invalid. Records are: %s',
       inspectValue(invalidRecords, { maxArrayLength: 10 }),
     )
     if (invalidRecords.length > 10) {
-      log.trace(
-        'All Invalid FlowDefinitionView records are: %s',
-        inspectValue(invalidRecords, { maxArrayLength: null }),
-      )
+      log.trace('All invalid Flow version records are: %s', inspectValue(invalidRecords, { maxArrayLength: null }))
     }
   }
-  return validRecords.reduce<Record<string, string>>((acc, record) => {
-    if (record.ActiveVersionId !== null) {
-      acc[record.ApiName] = record.ActiveVersionId
-    }
-    return acc
-  }, {})
+  return validRecords.reduce<Map<string, FlowVersionProperties[]>>(
+    (acc, record) => {
+      const apiName = flowDefinitionsIdsToApiNames[record.DefinitionId]
+      if (apiName === undefined) {
+        log.warn('Got flow version with unrecognized flow definition ID: %s', inspectValue(record))
+        return acc
+      }
+      acc.get(apiName)?.push({
+        id: record.Id,
+        version: record.VersionNumber,
+        status: record.Status,
+        createdByName: record.CreatedBy.Name,
+        createdDate: record.CreatedDate,
+        lastModifiedByName: record.LastModifiedBy.Name,
+        lastModifiedDate: record.LastModifiedDate,
+      })
+      return acc
+    },
+    new DefaultMap(() => []),
+  )
 }
 
-export const createActiveVersionFileProperties = async ({
+type versionSelector = (versions: FlowVersionProperties[]) => FlowVersionProperties | undefined
+const selectActiveVersion: versionSelector = versions => versions.find(version => version.status === 'Active')
+const selectLatestVersion: versionSelector = versions => _.maxBy(versions, 'version')
+
+const createSelectedVersionFileProperties = async ({
   flowsFileProps,
   flowDefinitions,
   client,
@@ -113,28 +153,38 @@ export const createActiveVersionFileProperties = async ({
   client: SalesforceClient
   fetchProfile: FetchProfile
 }): Promise<FileProperties[]> => {
-  const activeVersions = new Map<string, string>()
-  const activeFlowVersionIdByApiName = await getActiveFlowVersionIdByApiName({
+  const flowVersionsByApiName = await getFlowVersionsByApiName({
     client,
     flowDefinitions,
     chunkSize: fetchProfile.limits?.flowDefinitionsQueryChunkSize ?? DEFAULT_CHUNK_SIZE,
   })
-  flowDefinitions.forEach(flow =>
-    activeVersions.set(
-      `${flow.value.fullName}`,
-      `${flow.value.fullName}${isDefined(flow.value[ACTIVE_VERSION_NUMBER]) ? `-${flow.value[ACTIVE_VERSION_NUMBER]}` : ''}`,
-    ),
-  )
-  return flowsFileProps.map(prop => ({
-    ...fixFilePropertiesName(prop, activeVersions),
-    id: activeFlowVersionIdByApiName[prop.fullName] ?? prop.id,
-  }))
+  const versionSelector = fetchProfile.preferActiveFlowVersions ? selectActiveVersion : selectLatestVersion
+  const selectedVersions = new Map<string, FlowVersionProperties | undefined>()
+  flowVersionsByApiName.forEach((versions, apiName) => {
+    selectedVersions.set(apiName, versionSelector(versions))
+  })
+  return flowsFileProps.map(prop => {
+    const selectedVersion = selectedVersions.get(prop.fullName)
+    if (selectedVersion === undefined) {
+      return prop
+    }
+    return {
+      ...prop,
+      ...selectedVersion,
+      fullName: `${prop.fullName}-${selectedVersion.version}`,
+    }
+  })
 }
 
-const getFlowWithoutVersion = (element: InstanceElement, flowType: ObjectType): InstanceElement => {
+const getFlowWithoutVersion = (element: InstanceElement): InstanceElement => {
   const prevFullName = element.value.fullName
   const flowName = prevFullName.includes('-') ? prevFullName.split('-').slice(0, -1).join('-') : prevFullName
-  return createInstanceElement({ ...element.value, fullName: flowName }, flowType, undefined, element.annotations)
+  return createInstanceElement(
+    { ...element.value, fullName: flowName },
+    element.getTypeSync(),
+    undefined,
+    element.annotations,
+  )
 }
 
 const createDeactivatedFlowDefinitionChange = (
@@ -163,10 +213,12 @@ const getFlowInstances = async (
 ): Promise<FetchElements<InstanceElement[]>> => {
   const { elements: flowsFileProps, configChanges } = await listMetadataObjects(client, FLOW_METADATA_TYPE)
 
-  const flowsVersionProps = fetchProfile.preferActiveFlowVersions
-    ? await createActiveVersionFileProperties({ flowsFileProps, flowDefinitions, client, fetchProfile })
-    : flowsFileProps
-
+  const flowsVersionProps = await createSelectedVersionFileProperties({
+    flowsFileProps,
+    flowDefinitions,
+    client,
+    fetchProfile,
+  })
   const instances = await fetchMetadataInstances({
     client,
     fileProps: flowsVersionProps,
@@ -176,9 +228,7 @@ const getFlowInstances = async (
   })
   return {
     configChanges: instances.configChanges.concat(configChanges),
-    elements: instances.elements.map(e =>
-      fetchProfile.preferActiveFlowVersions ? getFlowWithoutVersion(e, flowType) : e,
-    ),
+    elements: instances.elements.map(getFlowWithoutVersion),
   }
 }
 
@@ -188,12 +238,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     if (client === undefined) {
       return {}
     }
-    // Hide the FlowDefinition type and its instances
-    const flowDefinitionType = findObjectType(elements, FLOW_DEFINITION_METADATA_TYPE)
     const flowDefinitions = elements.filter(isInstanceOfTypeSync(FLOW_DEFINITION_METADATA_TYPE))
-    if (flowDefinitionType !== undefined) {
-      flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-    }
     flowDefinitions.forEach(flowDefinition => {
       flowDefinition.annotations[CORE_ANNOTATIONS.HIDDEN] = true
     })

@@ -36,15 +36,17 @@ const getTimeNowAsSeconds = (): number => Math.floor(Date.now() / 1000)
 const AUDIT_SCRIPT_RUNNER_TYPES = SCRIPT_RUNNER_TYPES.filter(
   type => ![SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_FRAGMENT_TYPE].includes(type),
 )
+const CREATED_TIMESTAMP = 'createdTimestamp'
+const UPDATED_TIMESTAMP = 'updatedTimestamp'
 
 const addCreatedChanges = (value: Value, currentUserInfo: UserInfo | undefined, timeStampAsString: boolean): void => {
   value.createdByAccountId = currentUserInfo?.userId ?? ''
-  value.createdTimestamp = timeStampAsString ? getTimeNowAsSeconds().toString() : getTimeNowAsSeconds()
+  value[CREATED_TIMESTAMP] = timeStampAsString ? getTimeNowAsSeconds().toString() : getTimeNowAsSeconds()
 }
 
 const addUpdatedChanges = (value: Value, currentUserInfo: UserInfo | undefined, timeStampAsString: boolean): void => {
   value.updatedByAccountId = currentUserInfo?.userId ?? ''
-  value.updatedTimestamp = timeStampAsString ? getTimeNowAsSeconds().toString() : getTimeNowAsSeconds()
+  value[UPDATED_TIMESTAMP] = timeStampAsString ? getTimeNowAsSeconds().toString() : getTimeNowAsSeconds()
 }
 
 const updatePropertyIfExist = (instanceValue: Value, property: string, responseValue: Value): void => {
@@ -55,8 +57,8 @@ const updatePropertyIfExist = (instanceValue: Value, property: string, responseV
 }
 
 export const listenersAuditSetter = (instance: InstanceElement, response: Value): void => {
-  updatePropertyIfExist(instance.value, 'createdTimestamp', response)
-  updatePropertyIfExist(instance.value, 'updatedTimestamp', response)
+  updatePropertyIfExist(instance.value, CREATED_TIMESTAMP, response)
+  updatePropertyIfExist(instance.value, UPDATED_TIMESTAMP, response)
 }
 
 export const scriptRunnerAuditSetter = (instance: InstanceElement, response: clientUtils.ResponseValue): void => {
@@ -64,8 +66,8 @@ export const scriptRunnerAuditSetter = (instance: InstanceElement, response: cli
     if (instance.value.auditData === undefined) {
       instance.value.auditData = {}
     }
-    updatePropertyIfExist(instance.value.auditData, 'createdTimestamp', response.auditData)
-    updatePropertyIfExist(instance.value.auditData, 'updatedTimestamp', response.auditData)
+    updatePropertyIfExist(instance.value.auditData, CREATED_TIMESTAMP, response.auditData)
+    updatePropertyIfExist(instance.value.auditData, UPDATED_TIMESTAMP, response.auditData)
   }
 }
 

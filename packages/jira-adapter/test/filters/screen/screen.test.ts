@@ -309,5 +309,16 @@ describe('screenFilter', () => {
         },
       })
     })
+    it('should not fail when deploying a screen with an empty tab', async () => {
+      screenInstance.value.tabs.tab2 = {
+        name: 'tab2',
+        position: 1,
+      }
+      await filter.onDeploy?.([toChange({ after: screenInstance })])
+      expect(screenInstance.value.tabs.tab2).toEqual({
+        name: 'tab2',
+        position: 1,
+      })
+    })
   })
 })

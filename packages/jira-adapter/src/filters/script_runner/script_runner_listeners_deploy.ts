@@ -51,9 +51,7 @@ const isListenersResponse = createSchemeGuard<ListenersResponse>(
 
 const updateAuditData = (changes: Change<InstanceElement>[], response: ListenersResponse): void => {
   const uuidToResponse = Object.fromEntries(
-    response.values
-      .filter(value => Object.prototype.hasOwnProperty.call(value, 'uuid'))
-      .map(value => [value.uuid, value]),
+    response.values.filter(value => value.uuid !== undefined).map(value => [value.uuid, value]),
   )
   changes
     .map(getChangeData)

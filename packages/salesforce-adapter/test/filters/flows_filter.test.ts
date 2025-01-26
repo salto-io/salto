@@ -8,6 +8,7 @@
 import {
   Change,
   CORE_ANNOTATIONS,
+  Element,
   ElemID,
   getChangeData,
   InstanceElement,
@@ -19,8 +20,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import { defaultFilterContext } from '../utils'
 import mockClient from '../client'
-import filterCreator, { createActiveVersionFileProperties } from '../../src/filters/flows_filter'
-import * as filterModule from '../../src/filters/flows_filter'
+import filterCreator from '../../src/filters/flows_filter'
 import {
   ACTIVE_VERSION_NUMBER,
   APEX_CLASS_METADATA_TYPE,
@@ -36,22 +36,103 @@ import { mockFileProperties } from '../connection'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { createFlowChange, mockTypes } from '../mock_elements'
 import * as fetchModule from '../../src/fetch'
+import * as filterUtils from '../../src/filters/utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from './mocks'
 import { SalesforceClient } from '../../index'
 import { apiNameSync, getMetadataIncludeFromFetchTargets, isInstanceOfTypeSync } from '../../src/filters/utils'
 import Connection from '../../src/client/jsforce'
-import { SalesforceRecord } from '../../src/client/types'
 import { buildMetadataQuery } from '../../src/fetch_profile/metadata_query'
+import { SalesforceRecord } from '../../src/client/types'
 
 describe('flows filter', () => {
   let client: SalesforceClient
   let connection: MockInterface<Connection>
   let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  let listMetadataObjectsSpy: jest.SpyInstance
   let fetchMetadataInstancesSpy: jest.SpyInstance
   let flowType: ObjectType
   let flowDefinitionType: ObjectType
-  let flowDefinitionInstance: InstanceElement
+  let flowDefinitionInstances: InstanceElement[]
+
+  const FLOW1_API_NAME = 'flow1'
+  const FLOW2_API_NAME = 'flow2'
+  const FLOW1_INTERNAL_ID = 'flow1-internal-id'
+  const FLOW2_INTERNAL_ID = 'flow2-internal-id'
+  const FLOW1_DEFINITION_INTERNAL_ID = 'flow1-definition-internal-id'
+  const FLOW2_DEFINITION_INTERNAL_ID = 'flow2-definition-internal-id'
+  const FLOW_VERSION_RECORDS: SalesforceRecord[] = [
+    {
+      Id: FLOW1_INTERNAL_ID,
+      DefinitionId: FLOW1_DEFINITION_INTERNAL_ID,
+      VersionNumber: 0,
+      Status: 'Obsolete',
+      CreatedDate: '2025-01-01T01:00:00.000Z',
+      CreatedBy: {
+        Name: 'Flow1 version 0 creator',
+      },
+      LastModifiedDate: '2025-01-02T01:00:00.000Z',
+      LastModifiedBy: {
+        Name: 'Flow1 version 0 modifier',
+      },
+    },
+    {
+      Id: FLOW1_INTERNAL_ID,
+      DefinitionId: FLOW1_DEFINITION_INTERNAL_ID,
+      VersionNumber: 1,
+      Status: 'Active',
+      CreatedDate: '2025-01-01T01:01:00.000Z',
+      CreatedBy: {
+        Name: 'Flow1 version 1 creator',
+      },
+      LastModifiedDate: '2025-01-02T01:01:00.000Z',
+      LastModifiedBy: {
+        Name: 'Flow1 version 1 modifier',
+      },
+    },
+    {
+      Id: FLOW1_INTERNAL_ID,
+      DefinitionId: FLOW1_DEFINITION_INTERNAL_ID,
+      VersionNumber: 2,
+      Status: 'Draft',
+      CreatedDate: '2025-01-01T01:02:00.000Z',
+      CreatedBy: {
+        Name: 'Flow1 version 2 creator',
+      },
+      LastModifiedDate: '2025-01-02T01:02:00.000Z',
+      LastModifiedBy: {
+        Name: 'Flow1 version 2 modifier',
+      },
+    },
+    {
+      Id: FLOW2_INTERNAL_ID,
+      DefinitionId: FLOW2_DEFINITION_INTERNAL_ID,
+      VersionNumber: 0,
+      Status: 'Obsolete',
+      CreatedDate: '2025-01-01T02:00:00.000Z',
+      CreatedBy: {
+        Name: 'Flow2 version 0 creator',
+      },
+      LastModifiedDate: '2025-01-02T02:00:00.000Z',
+      LastModifiedBy: {
+        Name: 'Flow2 version 0 modifier',
+      },
+    },
+    {
+      Id: FLOW2_INTERNAL_ID,
+      DefinitionId: FLOW2_DEFINITION_INTERNAL_ID,
+      VersionNumber: 1,
+      Status: 'Active',
+      CreatedDate: '2025-01-01T02:01:00.000Z',
+      CreatedBy: {
+        Name: 'Flow2 version 1 creator',
+      },
+      LastModifiedDate: '2025-01-02T02:01:00.000Z',
+      LastModifiedBy: {
+        Name: 'Flow2 version 1 modifier',
+      },
+    },
+  ]
 
   beforeEach(() => {
     ;({ client, connection } = mockClient())
@@ -60,7 +141,6 @@ describe('flows filter', () => {
       done: true,
       totalSize: 0,
     })
-    jest.spyOn(filterModule, 'createActiveVersionFileProperties')
     flowType = new ObjectType({
       elemID: new ElemID(SALESFORCE, FLOW_METADATA_TYPE),
       annotations: { [METADATA_TYPE]: FLOW_METADATA_TYPE },
@@ -69,14 +149,65 @@ describe('flows filter', () => {
       elemID: new ElemID(SALESFORCE, FLOW_DEFINITION_METADATA_TYPE),
       annotations: { [METADATA_TYPE]: FLOW_DEFINITION_METADATA_TYPE },
     })
-    flowDefinitionInstance = createInstanceElement(
-      {
-        [INSTANCE_FULL_NAME_FIELD]: 'flow1',
-        [ACTIVE_VERSION_NUMBER]: 0,
-      },
-      flowDefinitionType,
-    )
+    flowDefinitionInstances = [
+      createInstanceElement(
+        {
+          [INSTANCE_FULL_NAME_FIELD]: FLOW1_API_NAME,
+          [INTERNAL_ID_FIELD]: FLOW1_DEFINITION_INTERNAL_ID,
+          [ACTIVE_VERSION_NUMBER]: 1,
+        },
+        flowDefinitionType,
+      ),
+      createInstanceElement(
+        {
+          [INSTANCE_FULL_NAME_FIELD]: FLOW2_API_NAME,
+          [INTERNAL_ID_FIELD]: FLOW2_DEFINITION_INTERNAL_ID,
+          [ACTIVE_VERSION_NUMBER]: 1,
+        },
+        flowDefinitionType,
+      ),
+    ]
+    listMetadataObjectsSpy = jest.spyOn(filterUtils, 'listMetadataObjects')
+    listMetadataObjectsSpy.mockReturnValueOnce({
+      configChanges: [],
+      elements: [
+        mockFileProperties({
+          type: FLOW_METADATA_TYPE,
+          fullName: FLOW1_API_NAME,
+        }),
+        mockFileProperties({
+          type: FLOW_METADATA_TYPE,
+          fullName: FLOW2_API_NAME,
+        }),
+      ],
+    })
     fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
+    fetchMetadataInstancesSpy.mockImplementation(
+      async ({
+        fileProps,
+      }: {
+        fileProps: FileProperties[]
+      }): ReturnType<typeof fetchModule.fetchMetadataInstances> => ({
+        configChanges: [],
+        elements: fileProps.map(
+          props =>
+            new InstanceElement(props.fullName, flowType, { [INSTANCE_FULL_NAME_FIELD]: props.fullName }, undefined, {
+              [CORE_ANNOTATIONS.CREATED_BY]: props.createdByName,
+              [CORE_ANNOTATIONS.CREATED_AT]: props.createdDate,
+              [CORE_ANNOTATIONS.CHANGED_BY]: props.lastModifiedByName,
+              [CORE_ANNOTATIONS.CHANGED_AT]: props.lastModifiedDate,
+            }),
+        ),
+      }),
+    )
+    connection.tooling.query.mockImplementation(async query => {
+      const records = FLOW_VERSION_RECORDS.filter(record => query.includes(record.DefinitionId))
+      return {
+        records,
+        done: true,
+        totalSize: records.length,
+      }
+    })
   })
 
   afterEach(() => {
@@ -84,11 +215,11 @@ describe('flows filter', () => {
   })
 
   describe('onFetch', () => {
-    let elements: (InstanceElement | ObjectType)[]
+    let elements: Element[]
 
     describe('when Flow MetadataType is not in the fetch targets', () => {
       beforeEach(async () => {
-        elements = [flowType, flowDefinitionType, flowDefinitionInstance]
+        elements = [flowType, flowDefinitionType, ...flowDefinitionInstances]
         filter = filterCreator({
           config: {
             ...defaultFilterContext,
@@ -107,13 +238,18 @@ describe('flows filter', () => {
         }) as typeof filter
         await filter.onFetch(elements)
       })
+
       it('should not fetch the Flow instances', async () => {
+        expect(listMetadataObjectsSpy).not.toHaveBeenCalled()
         expect(fetchMetadataInstancesSpy).not.toHaveBeenCalled()
+        expect(connection.tooling.query).not.toHaveBeenCalled()
+        expect(elements.filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))).toBeEmpty()
       })
     })
+
     describe('when Flow MetadataType is in the fetch targets', () => {
       beforeEach(async () => {
-        elements = [flowType, flowDefinitionType, flowDefinitionInstance]
+        elements = [flowType, flowDefinitionType, ...flowDefinitionInstances]
         filter = filterCreator({
           config: {
             ...defaultFilterContext,
@@ -132,13 +268,17 @@ describe('flows filter', () => {
         }) as typeof filter
         await filter.onFetch(elements)
       })
+
       it('should fetch the Flow instances', async () => {
+        expect(listMetadataObjectsSpy).toHaveBeenCalled()
         expect(fetchMetadataInstancesSpy).toHaveBeenCalled()
+        expect(elements.filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))).toHaveLength(2)
       })
     })
+
     describe('with preferActiveFlowVersions true', () => {
       beforeEach(async () => {
-        elements = [flowType, flowDefinitionType, flowDefinitionInstance]
+        elements = [flowType, flowDefinitionType, ...flowDefinitionInstances]
         filter = filterCreator({
           config: {
             ...defaultFilterContext,
@@ -151,137 +291,145 @@ describe('flows filter', () => {
         await filter.onFetch(elements)
       })
 
-      it('should hide the FlowDefinition metadata type and instances', async () => {
-        expect(flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
-        expect(flowDefinitionInstance.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
+      it('should hide FlowDefinition instances', async () => {
+        expect(flowDefinitionInstances).toSatisfyAll(inst => inst.annotations[CORE_ANNOTATIONS.HIDDEN])
       })
 
-      it('Should call fetchMetadataInstances once', async () => {
+      it('should call client methods once', async () => {
+        expect(listMetadataObjectsSpy).toHaveBeenCalledTimes(1)
         expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(1)
+        expect(connection.tooling.query).toHaveBeenCalledTimes(1)
       })
-      it('should invoke createActiveVersionFileProperties with the FlowDefinition instances', async () => {
-        expect(createActiveVersionFileProperties).toHaveBeenCalledWith({
-          flowsFileProps: [],
-          flowDefinitions: [flowDefinitionInstance],
-          client,
-          fetchProfile: expect.anything(),
-        })
+
+      it('should populate flows with the active version information', () => {
+        expect(elements.filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))).toIncludeAllPartialMembers([
+          {
+            value: {
+              [INSTANCE_FULL_NAME_FIELD]: FLOW1_API_NAME,
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.CREATED_BY]: 'Flow1 version 1 creator',
+              [CORE_ANNOTATIONS.CREATED_AT]: '2025-01-01T01:01:00.000Z',
+              [CORE_ANNOTATIONS.CHANGED_BY]: 'Flow1 version 1 modifier',
+              [CORE_ANNOTATIONS.CHANGED_AT]: '2025-01-02T01:01:00.000Z',
+            },
+          },
+          {
+            value: {
+              [INSTANCE_FULL_NAME_FIELD]: FLOW2_API_NAME,
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.CREATED_BY]: 'Flow2 version 1 creator',
+              [CORE_ANNOTATIONS.CREATED_AT]: '2025-01-01T02:01:00.000Z',
+              [CORE_ANNOTATIONS.CHANGED_BY]: 'Flow2 version 1 modifier',
+              [CORE_ANNOTATIONS.CHANGED_AT]: '2025-01-02T02:01:00.000Z',
+            },
+          },
+        ])
       })
     })
+
     describe('with preferActiveFlowVersions false', () => {
       beforeEach(async () => {
-        elements = [flowType, flowDefinitionType]
+        elements = [flowType, flowDefinitionType, ...flowDefinitionInstances]
         fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
         filter = filterCreator({
-          config: { ...defaultFilterContext },
+          config: defaultFilterContext,
           client,
         }) as typeof filter
         await filter.onFetch(elements)
       })
 
-      it('Should call fetchMetadataInstances once', async () => {
+      it('should hide FlowDefinition instances', async () => {
+        expect(flowDefinitionInstances).toSatisfyAll(inst => inst.annotations[CORE_ANNOTATIONS.HIDDEN])
+      })
+
+      it('should call client methods once', async () => {
+        expect(listMetadataObjectsSpy).toHaveBeenCalledTimes(1)
         expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(1)
+        expect(connection.tooling.query).toHaveBeenCalledTimes(1)
+      })
+
+      it('should populate flows with the active version information', () => {
+        expect(elements.filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))).toIncludeAllPartialMembers([
+          {
+            value: {
+              [INSTANCE_FULL_NAME_FIELD]: FLOW1_API_NAME,
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.CREATED_BY]: 'Flow1 version 2 creator',
+              [CORE_ANNOTATIONS.CREATED_AT]: '2025-01-01T01:02:00.000Z',
+              [CORE_ANNOTATIONS.CHANGED_BY]: 'Flow1 version 2 modifier',
+              [CORE_ANNOTATIONS.CHANGED_AT]: '2025-01-02T01:02:00.000Z',
+            },
+          },
+          {
+            value: {
+              [INSTANCE_FULL_NAME_FIELD]: FLOW2_API_NAME,
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.CREATED_BY]: 'Flow2 version 1 creator',
+              [CORE_ANNOTATIONS.CREATED_AT]: '2025-01-01T02:01:00.000Z',
+              [CORE_ANNOTATIONS.CHANGED_BY]: 'Flow2 version 1 modifier',
+              [CORE_ANNOTATIONS.CHANGED_AT]: '2025-01-02T02:01:00.000Z',
+            },
+          },
+        ])
       })
     })
-    describe('find the active versions of the flows', () => {
-      const FLOW2_ACTIVE_VERSION_INTERANL_ID = 'flow2-internal-id'
-      const FLOW1_INTERNAL_ID = 'flow1-internal-id'
-      const FLOW1_API_NAME = 'flow1'
-      const FLOW2_API_NAME = 'flow2'
 
-      const FLOW_DEFINITION1_INTERNAL_ID = 'flow-definition1-internal-id'
-      const FLOW_DEFINITION2_INTERNAL_ID = 'flow-definition2-internal-id'
-      let flowsFileProps: FileProperties[]
-      let flowDefinitions: InstanceElement[]
+    describe('with more flow definitions than the chunk size', () => {
+      beforeEach(async () => {
+        elements = [flowType, flowDefinitionType, ...flowDefinitionInstances]
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: { limits: { flowDefinitionsQueryChunkSize: 1 } },
+            }),
+          },
+          client,
+        }) as typeof filter
+        await filter.onFetch(elements)
+      })
 
-      beforeEach(() => {
-        flowsFileProps = [
-          mockFileProperties({
-            fullName: FLOW1_API_NAME,
-            type: 'flow',
-            createdByName: 'Ruler',
-            createdDate: 'created_date',
-            lastModifiedByName: 'Ruler',
-            lastModifiedDate: '2021-10-19T06:30:10.000Z',
-            id: FLOW1_INTERNAL_ID,
-          }),
-          mockFileProperties({
-            fullName: FLOW2_API_NAME,
-            type: 'flow',
-            createdByName: 'Ruler',
-            createdDate: 'created_date',
-            lastModifiedByName: 'Ruler',
-            lastModifiedDate: '2021-10-19T06:30:10.000Z',
-          }),
-        ]
-        flowDefinitions = [
-          createInstanceElement(
-            { fullName: 'flow1', [INTERNAL_ID_FIELD]: FLOW_DEFINITION1_INTERNAL_ID },
-            mockTypes.FlowDefinition,
-          ),
-          createInstanceElement(
-            { fullName: 'flow2', activeVersionNumber: 2, [INTERNAL_ID_FIELD]: FLOW_DEFINITION2_INTERNAL_ID },
-            mockTypes.FlowDefinition,
-          ),
-        ]
-        connection.query.mockImplementation(async query => {
-          const records: SalesforceRecord[] = []
-          if (query.includes(FLOW_DEFINITION1_INTERNAL_ID)) {
-            records.push({
-              Id: FLOW_DEFINITION1_INTERNAL_ID,
-              ActiveVersionId: null,
-              ApiName: FLOW1_API_NAME,
-            })
-          }
-          if (query.includes(FLOW_DEFINITION2_INTERNAL_ID)) {
-            records.push({
-              Id: FLOW_DEFINITION2_INTERNAL_ID,
-              ActiveVersionId: FLOW2_ACTIVE_VERSION_INTERANL_ID,
-              ApiName: FLOW2_API_NAME,
-            })
-          }
-          return { records, done: true, totalSize: records.length }
-        })
+      it('should call client methods the right number of times', async () => {
+        expect(listMetadataObjectsSpy).toHaveBeenCalledTimes(1)
+        expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(1)
+        expect(connection.tooling.query).toHaveBeenCalledTimes(2)
       })
-      it('Should fetch the active flows with correct internal IDs', async () => {
-        const result = await createActiveVersionFileProperties({
-          flowsFileProps,
-          flowDefinitions,
-          client,
-          fetchProfile: defaultFilterContext.fetchProfile,
-        })
-        expect(connection.query).toHaveBeenCalledTimes(1)
-        expect(connection.query).toHaveBeenCalledWith(
-          expect.stringContaining(`Id IN ('${FLOW_DEFINITION1_INTERNAL_ID}','${FLOW_DEFINITION2_INTERNAL_ID}')`),
-        )
-        expect(result[0].fullName).toEqual('flow1')
-        expect(result[0].id).toEqual(FLOW1_INTERNAL_ID)
-        expect(result[1].fullName).toEqual('flow2-2')
-        expect(result[1].id).toEqual(FLOW2_ACTIVE_VERSION_INTERANL_ID)
-      })
-      it('should send multiple queries when the number of flow definitions exceeds the chunk size and return correct file properties', async () => {
-        const result = await createActiveVersionFileProperties({
-          flowsFileProps,
-          flowDefinitions,
-          client,
-          fetchProfile: buildFetchProfile({ fetchParams: { limits: { flowDefinitionsQueryChunkSize: 1 } } }),
-        })
-        expect(connection.query).toHaveBeenCalledTimes(2)
-        expect(connection.query).toHaveBeenCalledWith(
-          expect.stringContaining(`Id IN ('${FLOW_DEFINITION1_INTERNAL_ID}')`),
-        )
-        expect(connection.query).toHaveBeenCalledWith(
-          expect.stringContaining(`Id IN ('${FLOW_DEFINITION2_INTERNAL_ID}')`),
-        )
-        expect(result[0].fullName).toEqual('flow1')
-        expect(result[0].id).toEqual(FLOW1_INTERNAL_ID)
-        expect(result[1].fullName).toEqual('flow2-2')
-        expect(result[1].id).toEqual(FLOW2_ACTIVE_VERSION_INTERANL_ID)
+
+      it('should populate flows with the active version information', () => {
+        expect(elements.filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))).toIncludeAllPartialMembers([
+          {
+            value: {
+              [INSTANCE_FULL_NAME_FIELD]: FLOW1_API_NAME,
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.CREATED_BY]: 'Flow1 version 2 creator',
+              [CORE_ANNOTATIONS.CREATED_AT]: '2025-01-01T01:02:00.000Z',
+              [CORE_ANNOTATIONS.CHANGED_BY]: 'Flow1 version 2 modifier',
+              [CORE_ANNOTATIONS.CHANGED_AT]: '2025-01-02T01:02:00.000Z',
+            },
+          },
+          {
+            value: {
+              [INSTANCE_FULL_NAME_FIELD]: FLOW2_API_NAME,
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.CREATED_BY]: 'Flow2 version 1 creator',
+              [CORE_ANNOTATIONS.CREATED_AT]: '2025-01-01T02:01:00.000Z',
+              [CORE_ANNOTATIONS.CHANGED_BY]: 'Flow2 version 1 modifier',
+              [CORE_ANNOTATIONS.CHANGED_AT]: '2025-01-02T02:01:00.000Z',
+            },
+          },
+        ])
       })
     })
+
     describe('when Flows are excluded', () => {
       beforeEach(async () => {
-        elements = [flowDefinitionType, flowDefinitionInstance]
+        elements = [flowDefinitionType, ...flowDefinitionInstances]
         filter = filterCreator({
           config: {
             ...defaultFilterContext,
@@ -296,9 +444,9 @@ describe('flows filter', () => {
         }) as typeof filter
         await filter.onFetch(elements)
       })
-      it('should hide the FlowDefinition type and its instances', () => {
-        expect(flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
-        expect(flowDefinitionInstance.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
+
+      it('should hide FlowDefinition instances', () => {
+        expect(flowDefinitionInstances).toSatisfyAll(inst => inst.annotations[CORE_ANNOTATIONS.HIDDEN])
       })
     })
   })
@@ -312,6 +460,7 @@ describe('flows filter', () => {
     let newInactiveFlowChange: Change<InstanceElement>
     let deactivatedFlowChangeWithAdditionalChanges: Change<InstanceElement>
     let workflowChange: Change<InstanceElement>
+
     beforeEach(() => {
       filter = filterCreator({
         config: {
@@ -373,6 +522,7 @@ describe('flows filter', () => {
         deactivatedFlowChangeWithAdditionalChanges,
       ]
     })
+
     it('should add FlowDefinition for flows that had been deactivated on preDeploy and remove them on onDeploy', async () => {
       await filter.preDeploy(changes)
       expect(changes).toIncludeSameMembers([
@@ -401,6 +551,7 @@ describe('flows filter', () => {
         deactivatedFlowChangeWithAdditionalChanges,
       ])
     })
+
     describe('when the FlowDefinition MetadataType does not exist in the Elements source', () => {
       beforeEach(() => {
         filter = filterCreator({
@@ -411,6 +562,7 @@ describe('flows filter', () => {
           client,
         }) as typeof filter
       })
+
       it('should not add FlowDefinition for deactivatedFlows on preDeploy', async () => {
         await filter.preDeploy(changes)
         expect(changes).toIncludeSameMembers([

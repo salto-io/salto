@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-GENERATED_DIR=./src/generated
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+GENERATED_DIR="${SCRIPT_DIR}/src/generated"
 
-rm -rf ${GENERATED_DIR}
-mkdir -p ${GENERATED_DIR}
-. ./version_json.sh > ./src/generated/version.json
+rm -rf "${GENERATED_DIR}"
+mkdir -p "${GENERATED_DIR}"
+. "${SCRIPT_DIR}/version_json.sh" > "${GENERATED_DIR}/version.json"

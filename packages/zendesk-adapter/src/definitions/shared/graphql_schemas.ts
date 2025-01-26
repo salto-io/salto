@@ -57,8 +57,7 @@ fragment TrainingPhraseFields on TrainingPhraseType {
 }
 `
 
-export const flowFields = `
-fragment FlowFields on FlowType {
+export const basicFlowFields = `
   id
   name
   botAvatarUrl
@@ -78,6 +77,11 @@ fragment FlowFields on FlowType {
   previewFlowId
   smallTalkReplyStatus
   hasBeenPublished
+`
+
+export const flowFields = `
+fragment FlowFields on FlowType {
+  ${basicFlowFields}
   subflows {
     ...SubflowFields
   }

@@ -81,6 +81,7 @@ import {
   CUSTOM_OBJECT_META_TYPE,
   CUSTOM_SETTINGS_META_TYPE,
   CUSTOM_FIELD_DEPLOYABLE_TYPES,
+  DESCRIPTION,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
@@ -126,6 +127,7 @@ import {
   isInstanceOfTypeChangeSync,
   apiNameSync,
   findObjectType,
+  addDescription,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -493,10 +495,12 @@ export const createCustomTypeFromCustomObjectInstance = async ({
     [API_NAME]: name,
     [METADATA_TYPE]: CUSTOM_OBJECT,
   }
+  const description = instance.value[DESCRIPTION]
   const object = Types.createObjectType(name, true, false, serviceIds, metaType)
   addApiName(object, name)
   addMetadataType(object, objectMetadataType)
   addLabel(object, label)
+  addDescription(object, description)
   if (pluralLabel !== undefined) {
     addPluralLabel(object, pluralLabel)
   }

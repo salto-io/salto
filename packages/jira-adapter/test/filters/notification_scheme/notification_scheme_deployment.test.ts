@@ -305,7 +305,7 @@ describe('notificationSchemeDeploymentFilter', () => {
         expect(deployResult.appliedChanges).toHaveLength(1)
         expect(deployResult.errors).toHaveLength(0)
         const inst = getChangeData(deployResult.appliedChanges[0]) as InstanceElement
-        expect(inst.value.id).toEqual('1')
+        expect(inst.value.id).toEqual(1)
         expect(inst.value.notificationIds['3-EmailAddress-email']).toEqual('123')
       })
       it('should throw if recived unexpected response when trying to set notificaitonIds', async () => {

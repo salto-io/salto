@@ -288,6 +288,46 @@ describe('script_runner_listeners_deploy', () => {
       ],
     })
   })
+  it('should update the creation and update time from the response', async () => {
+    mockPut.mockResolvedValueOnce({
+      status: 200,
+      data: {
+        values: [
+          {
+            uuid: '5',
+            name: 'n5',
+            createdTimestamp: '100',
+            updatedTimestamp: '110',
+          },
+          {
+            uuid: '6',
+            name: 'n6',
+            createdTimestamp: '106',
+            updatedTimestamp: '116',
+          },
+          {
+            uuid: '7',
+            name: 'n7',
+            createdTimestamp: '107',
+            updatedTimestamp: '117',
+          },
+        ],
+      },
+    })
+    const scriptInstanceAdd2 = new InstanceElement('instance22', type, {
+      uuid: '7',
+      name: 'n7',
+      createdTimestamp: '-1',
+      updatedTimestamp: '-11',
+    })
+    const res = await filter.deploy([toChange({ after: scriptInstanceAdd }), toChange({ after: scriptInstanceAdd2 })])
+    expect(res.deployResult.errors).toEqual([])
+    expect(res.leftoverChanges).toEqual([])
+    expect(scriptInstanceAdd.value.createdTimestamp).toEqual('100')
+    expect(scriptInstanceAdd.value.updatedTimestamp).toEqual('110')
+    expect(scriptInstanceAdd2.value.createdTimestamp).toEqual('107')
+    expect(scriptInstanceAdd2.value.updatedTimestamp).toEqual('117')
+  })
   it('should return the proper error if put fails', async () => {
     mockPut.mockReset()
     mockPut.mockRejectedValueOnce(new Error('error'))

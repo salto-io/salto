@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { namespaceNormalizer, toHexColor } from '../../src/internal/namespace'
+import { namespaceNormalizer, toHexColor } from '../src/namespace'
 
 describe('namespace', () => {
   describe('toHexColor', () => {
@@ -26,28 +26,26 @@ describe('namespace', () => {
    * from "dist" while the tests use the typescript modules.
    */
   describe('namespaceNormalizer', () => {
-    const LAST_LIBRARY_FILENAME = 'logging/src/internal/namespace'
+    const LAST_LIBRARY_FILENAME = 'logging/src/namespace'
     const normalizeNamespace = namespaceNormalizer(LAST_LIBRARY_FILENAME)
     describe('when a module is specified', () => {
       describe('when the id property is a string', () => {
         it('should return the correct namespace', () => {
-          expect(normalizeNamespace(module)).toEqual('packages/logging/test/internal/namespace.test')
+          expect(normalizeNamespace(module)).toEqual('packages/logging/test/namespace.test')
         })
         it('should return the correct namespace with extra fragments', () => {
-          expect(normalizeNamespace(module, ['foo', 'bar'])).toEqual(
-            'packages/logging/test/internal/namespace.test/foo/bar',
-          )
+          expect(normalizeNamespace(module, ['foo', 'bar'])).toEqual('packages/logging/test/namespace.test/foo/bar')
         })
       })
 
       describe('when the id property is a number', () => {
         describe('when the lastLibraryFilename is found in the stack', () => {
           it('should return the correct namespace', () => {
-            expect(normalizeNamespace({ id: 12 })).toEqual('packages/logging/test/internal/namespace.test')
+            expect(normalizeNamespace({ id: 12 })).toEqual('packages/logging/test/namespace.test')
           })
           it('should return the correct namespace with extra fragments', () => {
             expect(normalizeNamespace({ id: 12 }, ['foo', 'bar'])).toEqual(
-              'packages/logging/test/internal/namespace.test/foo/bar',
+              'packages/logging/test/namespace.test/foo/bar',
             )
           })
         })

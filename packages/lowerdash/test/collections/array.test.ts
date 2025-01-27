@@ -6,9 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { collections } from '../../src'
-
-const { makeArray, arrayOf, findDuplicates, splitDuplicates } = collections.array
+import { makeArray, arrayOf, findDuplicates, splitDuplicates } from '../../src/collections/array'
 
 describe('array', () => {
   describe('makeArray', () => {

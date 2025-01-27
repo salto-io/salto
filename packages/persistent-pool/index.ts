@@ -5,7 +5,6 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-export * from './mock'
-export * from './promise'
-export * from './setup_envvar'
-export * from './setup_tmpdir'
+export { repo as dynamoDbRepo, DynamoRepoOpts as DynamoDbRepoOpts } from './src/lib/dynamodb/dynamodb_repo'
+export * from './src/types'
+export { default as RenewedLease, RenewedLeaseOpts } from './src/lib/renewed_lease'

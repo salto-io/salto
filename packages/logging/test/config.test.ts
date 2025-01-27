@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { LogLevel } from '../../src/internal/level'
+import { LogLevel } from '../src/level'
 import {
   mergeConfigs,
   DEFAULT_CONFIG,
@@ -13,7 +13,7 @@ import {
   cloneConfig,
   NamespaceFilter,
   stringToNamespaceFilter,
-} from '../../src/internal/config'
+} from '../src/config'
 
 describe('config', () => {
   describe('mergeConfigs', () => {

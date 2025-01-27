@@ -762,8 +762,7 @@ const getDomain = (url: string): string => {
   return match ? match[1] : ''
 }
 
-// eslint-disable-next-line jest/no-disabled-tests
-describe.skip('Okta adapter E2E', () => {
+describe('Okta adapter E2E', () => {
   describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
     let adapterAttr: Reals

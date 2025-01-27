@@ -5,11 +5,11 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { streams } from '../src/index'
+import { hasColors, MaybeTty } from '../src/streams'
 
 describe('streams', () => {
   describe('hasColors', () => {
-    let stream: streams.MaybeTty
+    let stream: MaybeTty
 
     describe('when a stream has no isTTY property', () => {
       beforeEach(() => {
@@ -17,7 +17,7 @@ describe('streams', () => {
       })
 
       it('returns false', () => {
-        expect(streams.hasColors(stream)).toBe(false)
+        expect(hasColors(stream)).toBe(false)
       })
     })
 
@@ -27,7 +27,7 @@ describe('streams', () => {
       })
 
       it('returns false', () => {
-        expect(streams.hasColors(stream)).toBe(false)
+        expect(hasColors(stream)).toBe(false)
       })
     })
 
@@ -38,7 +38,7 @@ describe('streams', () => {
 
       describe('and has no getColorDepth func', () => {
         it('returns false', () => {
-          expect(streams.hasColors(stream)).toBe(false)
+          expect(hasColors(stream)).toBe(false)
         })
       })
 
@@ -49,7 +49,7 @@ describe('streams', () => {
           })
 
           it('returns false', () => {
-            expect(streams.hasColors(stream)).toBe(false)
+            expect(hasColors(stream)).toBe(false)
           })
         })
 
@@ -59,7 +59,7 @@ describe('streams', () => {
           })
 
           it('returns true', () => {
-            expect(streams.hasColors(stream)).toBe(true)
+            expect(hasColors(stream)).toBe(true)
           })
         })
       })

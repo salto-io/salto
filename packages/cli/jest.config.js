@@ -12,7 +12,7 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   rootDir: `${__dirname}`,
   collectCoverageFrom: [
     '!<rootDir>/src/callbacks.ts',
-    '!<rootDir>/src/index.ts',
+    '!<rootDir>/index.ts',
     '!<rootDir>/package_native.ts',
     '!<rootDir>/bundle.ts',
   ],

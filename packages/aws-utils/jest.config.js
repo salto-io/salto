@@ -10,7 +10,7 @@ const deepMerge = require('../../build_utils/deep_merge')
 module.exports = deepMerge(require('../../jest.base.config.js'), {
   displayName: 'aws-utils',
   rootDir: `${__dirname}`,
-  collectCoverageFrom: ['!<rootDir>/index.ts', '!<rootDir>/src/index.ts'],
+  collectCoverageFrom: ['!<rootDir>/index.ts', '!<rootDir>/index.ts'],
   coverageThreshold: {
     global: {
       branches: 90,

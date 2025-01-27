@@ -5,12 +5,12 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import * as pino from '../src/internal/pino'
-import * as env from '../src/internal/env'
-import * as logger from '../src/internal/logger'
-import * as config from '../src/internal/config'
+import * as pino from '../src/pino'
+import * as env from '../src/env'
+import * as logger from '../src/logger'
+import * as config from '../src/config'
 
-const INDEX_PATH = '../src/index'
+const INDEX_PATH = '../index'
 
 describe('index', () => {
   const mockConfig = { ...config.DEFAULT_CONFIG }
@@ -49,7 +49,7 @@ describe('index', () => {
 
   test('compareLogLevels', () => {
     // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
-    const { compareLogLevels } = require('../src')
+    const { compareLogLevels } = require('..')
     expect(compareLogLevels('info', 'debug')).toBeLessThan(0)
   })
 })

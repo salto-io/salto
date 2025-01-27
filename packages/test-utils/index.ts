@@ -5,15 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import * as lowerdash from '../src'
-
-describe('index.ts', () => {
-  it('should define the namespaces', () => {
-    expect(lowerdash.collections).toBeDefined()
-    expect(lowerdash.promises).toBeDefined()
-
-    // test import of type SetId
-    const t: lowerdash.collections.set.SetId = 1
-    expect(t).toBe(1)
-  })
-})
+export * from './src/mock'
+export * from './src/promise'
+export * from './src/setup_envvar'
+export * from './src/setup_tmpdir'

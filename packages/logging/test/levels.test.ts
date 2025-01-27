@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { pad, toHexColor, compare, LOG_LEVELS, LogLevel } from '../../src/internal/level'
+import { pad, toHexColor, compare, LOG_LEVELS, LogLevel } from '../src/level'
 
 describe('levels', () => {
   describe('pad', () => {

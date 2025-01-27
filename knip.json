@@ -32,7 +32,7 @@
       "ignoreDependencies": ["@types/leveldown", "@types/webpack-env"]
     },
     "packages/persistent-pool": {
-      "entry": ["src/index.ts", "test/lib/dynamodb/environment/index.ts"],
+      "entry": ["index.ts", "test/lib/dynamodb/environment/index.ts"],
       "ignore": ["jest-dynalite-config.js"]
     },
     "packages/vscode": {

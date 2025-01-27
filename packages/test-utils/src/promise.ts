@@ -11,15 +11,13 @@ export type Resolvable<T> = {
 }
 
 export const makeResolvablePromise = <T>(resolveValue: T): Resolvable<T> => {
-  // istanbul ignore next (the default function will always be overwritten in the Promise ctor)
   let resolve: () => void = () => {}
-  // Unsafe assumption - promise constructor calls the paramter function synchronously
+  // Unsafe assumption - promise constructor calls the parameter function synchronously
   let promiseCtorRan = false
   const promise = new Promise<T>(resolveFunc => {
     resolve = () => resolveFunc(resolveValue)
     promiseCtorRan = true
   })
-  // istanbul ignore if (no way to make this happen)
   if (!promiseCtorRan) {
     throw new Error('Cannot create resolvable promise. constructor did not run synchronously')
   }

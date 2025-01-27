@@ -5,10 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { functions, validators as validatorUtils } from '../../src/index'
-
-const { validators } = validatorUtils
-const { defaultOpts } = functions
+import { validators } from '../../src/validators'
+import { defaultOpts } from '../../src/functions'
 
 describe('defaultOpts', () => {
   describe('with no required args', () => {

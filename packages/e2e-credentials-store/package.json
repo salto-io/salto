@@ -5,7 +5,7 @@
   "description": "Salto E2E tests credentials store",
   "repository": {
     "type": "git",
-    "url": "https://github.com/salto-io/salto_monorepo"
+    "url": "https://github.com/salto-io/salto"
   },
   "publishConfig": {
     "access": "public"

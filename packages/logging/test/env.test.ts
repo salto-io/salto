@@ -5,8 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { config } from '../../src/internal/env'
-import { ValidationError } from '../../src/internal/common'
+import { config } from '../src/env'
+import { ValidationError } from '../src/common'
 
 describe('env', () => {
   describe('config', () => {

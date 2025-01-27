@@ -1611,6 +1611,7 @@ Moving the specified elements to common.
             selectors: ['a.b.c.d'],
             source: 'nacl',
             onlyValue: false,
+            format: 'nacl',
           },
           workspace,
         })
@@ -1635,6 +1636,7 @@ Moving the specified elements to common.
             selectors: ['test.type'],
             source: 'nacl',
             onlyValue: false,
+            format: 'nacl',
           },
           workspace,
         })
@@ -1660,6 +1662,7 @@ Moving the specified elements to common.
             selectors: ['test.*'],
             source: 'state',
             onlyValue: true,
+            format: 'nacl',
           },
           workspace,
         })
@@ -1684,6 +1687,7 @@ Moving the specified elements to common.
             selectors: ['salto.*.field.*.label'],
             source: 'state',
             onlyValue: false,
+            format: 'nacl',
           },
           workspace,
         })

@@ -738,7 +738,7 @@ type PrintElementArgs = {
   selectors: string[]
   source: 'nacl' | 'state'
   onlyValue: boolean
-  format?: 'nacl' | 'inspect' | 'serialize'
+  format: 'nacl' | 'inspect' | 'serialize'
 } & EnvArg
 const formatValue = async (value: Value, format: PrintElementArgs['format']): Promise<string> => {
   if (format === undefined || format === 'nacl') {

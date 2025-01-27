@@ -11,7 +11,7 @@ import wu from 'wu'
 import { values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { StaticFilesCache, StaticFilesData } from './cache'
-import { DirectoryStore } from '../dir_store'
+import { DirectoryStore, FlushResult } from '../dir_store'
 
 import { InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile } from './common'
 
@@ -124,6 +124,23 @@ export const buildStaticFilesSource = (
       ...cachedResult,
       hasChanged: false,
     }
+  }
+
+  const updateCacheWithFlushResult = async (flushResult: FlushResult<Buffer>): Promise<void> => {
+    const { updates, deletions } = flushResult
+    const cacheUpdates = updates.flatMap(file => {
+      if (file.timestamp === undefined) {
+        log.warn('received undefined timestamp for file %s', file.filename)
+        return []
+      }
+      return {
+        filepath: file.filename,
+        hash: calculateStaticFileHash(file.buffer),
+        modified: file.timestamp,
+      }
+    })
+    await staticFilesCache.putMany(cacheUpdates)
+    await staticFilesCache.deleteMany(deletions)
   }
 
   const staticFilesSource: Required<StaticFilesSource> = {
@@ -243,15 +260,12 @@ export const buildStaticFilesSource = (
       return staticFilesDirStore.set({ filename: staticFile.filepath, buffer })
     },
     flush: async () => {
-      const { updates, deletions } = (await staticFilesDirStore.flush()) ?? { updates: [], deletions: [] }
-      await staticFilesCache.putMany(
-        updates.map(file => ({
-          filepath: file.filename,
-          hash: calculateStaticFileHash(file.buffer),
-          modified: file.timestamp,
-        })),
-      )
-      await staticFilesCache.deleteMany(deletions)
+      const flushResult = await staticFilesDirStore.flush()
+      if (flushResult !== undefined) {
+        await updateCacheWithFlushResult(flushResult)
+      } else {
+        log.warn('received void flush result - skipping static files cache update')
+      }
       await staticFilesCache.flush()
     },
     clear: async () => {

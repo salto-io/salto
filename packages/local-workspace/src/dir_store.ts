@@ -77,8 +77,8 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
           .then(entries => entries.map(e => e.fullPath).map(x => getRelativeFileName(x)))
       : []
 
-  const getFileTimestamp = async (filename: string): Promise<number> =>
-    (await fileUtils.stat(getAbsFileName(filename))).mtimeMs
+  const getFileTimestamp = async (filename: string): Promise<number | undefined> =>
+    (await fileUtils.stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs
 
   const readFile = async (filename: string): Promise<dirStore.File<T> | undefined> => {
     const absFileName = getAbsFileName(filename)
@@ -91,7 +91,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       : undefined
   }
 
-  const writeFile = async (file: dirStore.File<T>): Promise<Required<dirStore.File<T>>> => {
+  const writeFile = async (file: dirStore.File<T>): Promise<dirStore.File<T>> => {
     const absFileName = getAbsFileName(file.filename)
     if (!(await fileUtils.exists(path.dirname(absFileName)))) {
       await fileUtils.mkdirp(path.dirname(absFileName))
@@ -163,6 +163,12 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
         Object.keys(updated).length,
       )
     }
+    // NOTE - this is NOT the desired behavior:
+    // if there are files that are in both `deletesToHandle` and `updatesToHandle`
+    // it means that `set` was called and then `delete` was called for the same filename.
+    // we should avoid writing those files (that are in both `deletesToHandle` and `updatesToHandle`)
+    // but since we do write them, we return them as part of the `updates` list and filter them out
+    // from the `deletions` list.
     const deletions = deletesToHandle.filter(f => updatesToHandle[f] === undefined)
     return { updates, deletions }
   }
@@ -245,7 +251,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
         return updated[relFilename].timestamp
       }
 
-      return (await fileUtils.stat.notFoundAsUndefined(getAbsFileName(relFilename)))?.mtimeMs
+      return getFileTimestamp(relFilename)
     },
 
     flush,

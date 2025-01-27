@@ -18,7 +18,7 @@ export type GetFileOptions = {
 }
 
 export type FlushResult<T extends ContentType> = {
-  updates: Required<File<T>>[]
+  updates: File<T>[]
   deletions: string[]
 }
 

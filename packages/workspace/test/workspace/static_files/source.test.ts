@@ -293,26 +293,67 @@ describe('Static Files', () => {
             .catch(e => expect(e.message).toEqual('Missing content on static file: path')))
       })
       describe('Flush', () => {
-        beforeEach(async () => {
-          mockDirStore.flush = jest.fn().mockResolvedValue({
-            updates: [{ filename: 'file.txt', buffer: Buffer.from('hello'), timestamp: 1234 }],
-            deletions: ['file2.txt'],
+        describe('with valid flush result', () => {
+          beforeEach(async () => {
+            mockDirStore.flush = jest.fn().mockResolvedValue({
+              updates: [{ filename: 'file.txt', buffer: Buffer.from('hello'), timestamp: 1234 }],
+              deletions: ['file2.txt'],
+            })
+            await staticFilesSource.flush()
           })
-          await staticFilesSource.flush()
+          it('should flush all directory stores', async () => {
+            expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
+            expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
+          })
+          it('should update the static files cache with the dirStore flush result', () => {
+            expect(mockCacheStore.putMany).toHaveBeenCalledWith([
+              {
+                filepath: 'file.txt',
+                hash: calculateStaticFileHash(Buffer.from('hello')),
+                modified: 1234,
+              },
+            ])
+            expect(mockCacheStore.deleteMany).toHaveBeenCalledWith(['file2.txt'])
+          })
         })
-        it('should flush all directory stores', async () => {
-          expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
-          expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
+        describe('with void flush result', () => {
+          beforeEach(async () => {
+            await staticFilesSource.flush()
+          })
+          it('should flush all directory stores', async () => {
+            expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
+            expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
+          })
+          it('should not update the static files cache with the flush result', () => {
+            expect(mockCacheStore.putMany).not.toHaveBeenCalled()
+            expect(mockCacheStore.deleteMany).not.toHaveBeenCalled()
+          })
         })
-        it('should update the static files cache with the dirStore flush result', () => {
-          expect(mockCacheStore.putMany).toHaveBeenCalledWith([
-            {
-              filepath: 'file.txt',
-              hash: calculateStaticFileHash(Buffer.from('hello')),
-              modified: 1234,
-            },
-          ])
-          expect(mockCacheStore.deleteMany).toHaveBeenCalledWith(['file2.txt'])
+        describe('with some invalid items in the flush result', () => {
+          beforeEach(async () => {
+            mockDirStore.flush = jest.fn().mockResolvedValue({
+              updates: [
+                { filename: 'file1.txt', buffer: Buffer.from('hello') },
+                { filename: 'file2.txt', buffer: Buffer.from('world'), timestamp: 1234 },
+              ],
+              deletions: ['file3.txt'],
+            })
+            await staticFilesSource.flush()
+          })
+          it('should flush all directory stores', async () => {
+            expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
+            expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
+          })
+          it('should update the static files cache with the valid results', () => {
+            expect(mockCacheStore.putMany).toHaveBeenCalledWith([
+              {
+                filepath: 'file2.txt',
+                hash: calculateStaticFileHash(Buffer.from('world')),
+                modified: 1234,
+              },
+            ])
+            expect(mockCacheStore.deleteMany).toHaveBeenCalledWith(['file3.txt'])
+          })
         })
       })
       describe('isPathIncluded', () => {

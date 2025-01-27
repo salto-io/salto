@@ -14,6 +14,7 @@ import {
   CORE_ANNOTATIONS,
   isModificationChange,
   ReferenceExpression,
+  Value,
 } from '@salto-io/adapter-api'
 import { adapterCreators } from '@salto-io/adapter-creators'
 import {
@@ -24,10 +25,11 @@ import {
   selectElementIdsByTraversal,
   nacl,
   staticFiles,
+  serialization,
 } from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements, SelectorsError } from '@salto-io/core'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParents, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
@@ -736,7 +738,29 @@ type PrintElementArgs = {
   selectors: string[]
   source: 'nacl' | 'state'
   onlyValue: boolean
+  format: 'nacl' | 'inspect' | 'serialize'
 } & EnvArg
+const formatValue = async (value: Value, format: PrintElementArgs['format']): Promise<string> => {
+  if (format === undefined || format === 'nacl') {
+    // We build a new static files source each time to avoid having to keep
+    // all the static files loaded in memory
+    const functions = nacl.getFunctions(staticFiles.buildInMemStaticFilesSource())
+    const dumpedValue = isElement(value)
+      ? await parser.dumpElements([value], functions)
+      : await parser.dumpValues(value, functions)
+    return dumpedValue
+  }
+  if (format === 'inspect') {
+    const dumpedValue = inspectValue(value)
+    return dumpedValue
+  }
+  if (format === 'serialize') {
+    const dumpedValue = await serialization.serialize([value])
+    // Slice off the [] around the value
+    return dumpedValue.slice(1, -1)
+  }
+  return 'unknown format'
+}
 export const printElementAction: WorkspaceCommandAction<PrintElementArgs> = async ({ workspace, input, output }) => {
   const { validSelectors, invalidSelectors } = createElementSelectors(input.selectors)
   if (!_.isEmpty(invalidSelectors)) {
@@ -755,12 +779,7 @@ export const printElementAction: WorkspaceCommandAction<PrintElementArgs> = asyn
 
   await awu(relevantIds).forEach(async id => {
     const value = await elementSource.get(id)
-    // We build a new static files source each time to avoid having to keep
-    // all the static files loaded in memory
-    const functions = nacl.getFunctions(staticFiles.buildInMemStaticFilesSource())
-    const dumpedValue = isElement(value)
-      ? await parser.dumpElements([value], functions)
-      : await parser.dumpValues(value, functions)
+    const dumpedValue = await formatValue(value, input.format)
     const outputStr = input.onlyValue ? dumpedValue : `${id.getFullName()}: ${dumpedValue}`
     outputLine(outputStr, output)
   })
@@ -786,6 +805,14 @@ const printElementDef = createWorkspaceCommand({
         type: 'boolean',
         default: false,
         description: 'Print only matching values without their ID',
+      },
+      {
+        name: 'format',
+        alias: 'r',
+        type: 'string',
+        default: 'nacl',
+        description: 'Format for the value',
+        choices: ['nacl', 'inspect', 'serialize'],
       },
       ENVIRONMENT_OPTION,
     ],

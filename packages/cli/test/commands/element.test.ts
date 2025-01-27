@@ -1733,7 +1733,7 @@ Moving the specified elements to common.
         expect(result).toEqual(CliExitCode.Success)
       })
       it('should print the element in JSON like format', async () => {
-        const [parsed] = await serialization.deserialize(output.stdout.content)
+        const [parsed] = await serialization.deserialize(`[${output.stdout.content}]`)
         expect(parsed).toEqual(element)
       })
     })

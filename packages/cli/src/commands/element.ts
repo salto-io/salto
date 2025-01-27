@@ -756,7 +756,8 @@ const formatValue = async (value: Value, format: PrintElementArgs['format']): Pr
   }
   if (format === 'serialize') {
     const dumpedValue = await serialization.serialize([value])
-    return dumpedValue
+    // Slice off the [] around the value
+    return dumpedValue.slice(1, -1)
   }
   return 'unknown format'
 }

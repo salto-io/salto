@@ -881,7 +881,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                         ...value,
                         // When adding an email domain alongside its brand, the brand is added first, in which case the
                         // email domain ID won't be available in this request.
-                        emailDomainId: _.isString(value.emailDomainId) ? value.emailDomainId : undefined
+                        emailDomainId: _.isString(value.emailDomainId) ? value.emailDomainId : undefined,
                       },
                     }
                   },

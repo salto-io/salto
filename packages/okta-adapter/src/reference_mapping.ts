@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { isReferenceExpression } from '@salto-io/adapter-api'
+import { cloneDeepWithoutRefs, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -35,7 +35,12 @@ import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
 
-type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId' | 'kid' | 'credentials.oauthClient.client_id'
+type OktaReferenceSerializationStrategyName =
+  | 'key'
+  | 'mappingRuleId'
+  | 'kid'
+  | 'credentials.oauthClient.client_id'
+  | 'emailDomainId'
 type OktaReferenceIndexName = OktaReferenceSerializationStrategyName
 const OktaReferenceSerializationStrategyLookup: Record<
   OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
@@ -61,6 +66,11 @@ const OktaReferenceSerializationStrategyLookup: Record<
     lookup: val => val,
     lookupIndexName: 'credentials.oauthClient.client_id',
     getReferenceId: topLevelId => topLevelId.createNestedID('credentials', 'oauthClient', 'client_id'),
+  },
+  emailDomainId: {
+    serialize: ({ ref }) => cloneDeepWithoutRefs(isInstanceElement(ref.value) ? ref.value.value : ref.value),
+    lookup: val => val,
+    lookupIndexName: 'id',
   },
 }
 
@@ -252,7 +262,7 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
   // available for the email domain code to search for the brand that references it.
   {
     src: { field: 'emailDomainId', parentTypes: ['Brand'] },
-    serializationStrategy: 'fullValue',
+    serializationStrategy: 'emailDomainId',
     missingRefStrategy: 'typeAndValue',
     target: { type: 'EmailDomain' },
   },

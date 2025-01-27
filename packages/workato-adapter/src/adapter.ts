@@ -51,7 +51,7 @@ import { WorkatoUserConfig, ENABLE_DEPLOY_SUPPORT_FLAG } from './user_config'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-export const DEFAULT_FILTERS = [
+const DEFAULT_FILTERS = [
   addRootFolderFilter,
   jiraProjectIssueTypeFilter,
   // fieldReferencesFilter should run after all element manipulations are done
@@ -62,7 +62,7 @@ export const DEFAULT_FILTERS = [
   ...Object.values(commonFilters),
 ]
 
-export interface WorkatoAdapterParams {
+interface WorkatoAdapterParams {
   filterCreators?: FilterCreator[]
   client: WorkatoClient
   config: WorkatoUserConfig

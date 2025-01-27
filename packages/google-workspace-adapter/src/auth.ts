@@ -11,7 +11,7 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { OauthAccessTokenCredentials, oauthAccessTokenCredentialsType } from './client/oauth'
 import * as constants from './constants'
 
-export type BasicCredentials = {
+type BasicCredentials = {
   accessToken: string
 }
 

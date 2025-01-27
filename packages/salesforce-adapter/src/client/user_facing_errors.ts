@@ -69,7 +69,7 @@ export type ErrorMappers = {
   [SALESFORCE_ERRORS.INSUFFICIENT_ACCESS]: ErrorMapper<Error>
 }
 
-export const withSalesforceError = (salesforceError: string, saltoErrorMessage: string): string =>
+const withSalesforceError = (salesforceError: string, saltoErrorMessage: string): string =>
   `${saltoErrorMessage}\n\nUnderlying Error: ${salesforceError}`
 
 export const ERROR_MAPPERS: ErrorMappers = {
@@ -150,17 +150,17 @@ export type DeployProblemMappers = {
   [SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME]: DeployProblemMapper
 }
 
-export const SCHEDULABLE_CLASS_MESSAGE =
+const SCHEDULABLE_CLASS_MESSAGE =
   'This deployment contains a scheduled Apex class (or a class related to one).' +
   ' By default, Salesforce does not allow changes to scheduled apex.' +
   ' Please follow the instructions here: https://help.salesforce.com/s/articleView?id=000384960&type=1'
 
-export const MAX_METADATA_DEPLOY_LIMIT_MESSAGE =
+const MAX_METADATA_DEPLOY_LIMIT_MESSAGE =
   'The metadata deployment exceeded the maximum allowed size of 50MB.' +
   ' To avoid this issue, please split your deployment to smaller chunks.' +
   ' For more info you may refer to: https://help.salto.io/en/articles/8263355-the-metadata-deployment-exceeded-the-maximum-allowed-size-of-50mb'
 
-export const INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE =
+const INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE =
   "Please make sure you're managing Dashboards in your Salto environment and that your deployment contains the referenced Dashboard instance.\n" +
   'For more information, please refer to: https://help.salto.io/en/articles/7439350-supported-salesforce-types'
 

@@ -8,7 +8,7 @@
 import { elements, definitions } from '@salto-io/adapter-components'
 import { FetchCriteria } from './definitions/types'
 
-export type UserFetchConfig = definitions.UserFetchConfig<{
+type UserFetchConfig = definitions.UserFetchConfig<{
   customNameMappingOptions: never
   fetchCriteria: FetchCriteria
 }> & { managePagesForSpaces?: string[] }

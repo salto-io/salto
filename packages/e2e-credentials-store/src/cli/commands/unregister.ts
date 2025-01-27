@@ -12,7 +12,7 @@ import { Adapter, GlobalArgs, PoolOpts } from '../../types'
 import { AsyncCommandHandler } from '../types'
 import { writeLine } from '../stream'
 
-export type UnregisterArgs = GlobalArgs & { adapter: string; id: string }
+type UnregisterArgs = GlobalArgs & { adapter: string; id: string }
 
 type Opts = {
   adapters: Record<string, Adapter>

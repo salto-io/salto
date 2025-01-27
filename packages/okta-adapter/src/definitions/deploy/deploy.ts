@@ -74,7 +74,7 @@ import { adjustBrandCustomizationContent } from './types/brand'
 const log = logger(module)
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
-export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
+type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
 
 const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => {
   const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<

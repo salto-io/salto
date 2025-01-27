@@ -212,7 +212,7 @@ const { query: queryFilter, hideTypes: hideTypesFilter, ...otherCommonFilters } 
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
-export const DEFAULT_FILTERS = [
+const DEFAULT_FILTERS = [
   asyncApiCallsFilter,
   accountInfoFilter,
   storeUsersFilter,

@@ -15,9 +15,9 @@ import { CliReturnCode } from './types'
 import commands from './commands'
 import REPO_PARAMS from '../repo_params'
 
-export type Parser = (argv: string[]) => Promise<CliReturnCode>
+type Parser = (argv: string[]) => Promise<CliReturnCode>
 
-export type ParserOpts = {
+type ParserOpts = {
   adapters: Record<string, Adapter>
   stdout: Writable
   stderr: Writable

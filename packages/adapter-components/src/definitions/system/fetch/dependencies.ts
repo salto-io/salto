@@ -20,9 +20,7 @@ type ConditionByContext = ConditionBase & {
   fromContext: string
 }
 
-export type Condition = ConditionByField | ConditionByContext
-
-export const isConditionByField = (condition: Condition): condition is ConditionByField => 'fromField' in condition
+type Condition = ConditionByField | ConditionByContext
 
 type RecurseIntoContextParamDefinition<TContext = ContextParams> = TransformDefinition<TContext, unknown>
 

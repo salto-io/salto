@@ -22,7 +22,6 @@ export const TYPE = '@_type'
 // const strings
 export const ROOT = 'root'
 export const DEFINITION = 'definition'
-export const MAPPING = 'mapping'
 export const ITEM = '_ITEM_'
 export const TRUE = 'true'
 export const FALSE = 'false'
@@ -164,9 +163,6 @@ export type Condition = {
 export type ConditionOrFilter = {
   condition?: Condition
   filter?: Filter
-}
-export type workbookListsElement = {
-  [SCRIPT_ID]: string
 }
 
 export type AnalyticOriginalFields = {

@@ -45,7 +45,7 @@ const shouldHaveInternalId = (element: Element): boolean => {
   return false
 }
 
-export const getIdsForType = async (client: SalesforceClient, type: string): Promise<Record<string, string>> => {
+const getIdsForType = async (client: SalesforceClient, type: string): Promise<Record<string, string>> => {
   const { result, errors } = await client.listMetadataObjects({ type })
   if (errors && errors.length > 0) {
     log.debug(`Encountered errors while listing ${type}: ${errors}`)

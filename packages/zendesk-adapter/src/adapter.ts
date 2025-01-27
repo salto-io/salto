@@ -188,7 +188,7 @@ const { awu } = collections.asynciterable
 const { concatObjects } = objects
 const SECTIONS_TYPE_NAME = 'sections'
 
-export const DEFAULT_FILTERS = [
+const DEFAULT_FILTERS = [
   addRecurseIntoFieldFilter,
   ticketStatusCustomStatusDeployFilter,
   ticketFieldFilter,

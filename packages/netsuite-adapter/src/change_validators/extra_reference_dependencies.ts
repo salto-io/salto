@@ -22,7 +22,7 @@ type ElementToReferenceElements = {
   referencesNumber: number
 }
 
-export const getReferencedElementsForReferrers = async (
+const getReferencedElementsForReferrers = async (
   elements: ChangeDataType[],
   config: NetsuiteConfig,
 ): Promise<ElementToReferenceElements[]> => {

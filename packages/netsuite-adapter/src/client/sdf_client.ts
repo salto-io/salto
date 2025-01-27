@@ -148,7 +148,7 @@ const logDecorator = decorators.wrapMethodWith(async ({ call }: decorators.Origi
   }
 })
 
-export type SdfClientOpts = {
+type SdfClientOpts = {
   credentials: SdfCredentials
   config?: ClientConfig
   globalLimiter: Bottleneck

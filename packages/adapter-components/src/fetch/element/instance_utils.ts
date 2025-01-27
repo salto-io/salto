@@ -112,7 +112,7 @@ export const omitAllInstancesValues = <Options extends FetchApiDefinitionsOption
     })
   }, 'omitAllInstancesValues')
 
-export type InstanceCreationParams = {
+type InstanceCreationParams = {
   entry: Values
   type: ObjectType
   defaultName: string

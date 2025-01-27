@@ -21,7 +21,7 @@ export type FilterContext = {
   lastChangeDateOfTypesWithNestedInstances?: LastChangeDateOfTypesWithNestedInstances
 }
 
-export type FilterOpts = {
+type FilterOpts = {
   client?: SalesforceClient
   config: FilterContext
 }

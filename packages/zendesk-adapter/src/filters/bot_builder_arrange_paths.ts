@@ -21,8 +21,8 @@ import { FilterCreator } from '../filter'
 const { RECORDS_PATH } = elementsUtils
 const log = logger(module)
 
-export const UNSORTED = 'unsorted'
-export const BOT_BUILDER_PATH = [ZENDESK, RECORDS_PATH, CONVERSATION_BOT]
+const UNSORTED = 'unsorted'
+const BOT_BUILDER_PATH = [ZENDESK, RECORDS_PATH, CONVERSATION_BOT]
 
 const BOT_BUILDER_ELEMENT_DIRECTORY: Record<string, string> = {
   [CONVERSATION_BOT]: 'bots',

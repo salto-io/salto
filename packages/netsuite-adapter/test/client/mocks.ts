@@ -20,7 +20,7 @@ export const MOCK_FILE_WITHOUT_ATTRIBUTES_PATH = `${MOCK_FOLDER_PATH}${osPath.se
 export const MOCK_FOLDER_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}${FOLDER_ATTRIBUTES_FILE_SUFFIX}`
 export const TIME_DATE_FORMAT = 'YYYY-MM-DD h:mm a'
 
-export const MOCK_MANIFEST_INVALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
+const MOCK_MANIFEST_INVALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
 <projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
 <frameworkversion>1.0</frameworkversion>
 <dependencies>
@@ -82,7 +82,7 @@ export const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTC
 export const MOCK_FEATURES_XML =
   '<features><feature><id>SUITEAPPCONTROLCENTER</id><status>ENABLED</status></feature></features>'
 
-export const MOCK_ORIGINAL_DEPLOY_XML = `<deploy>
+const MOCK_ORIGINAL_DEPLOY_XML = `<deploy>
     <configuration>
         <path>~/AccountConfiguration/*</path>
     </configuration>

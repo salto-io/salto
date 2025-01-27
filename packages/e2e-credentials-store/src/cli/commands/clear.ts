@@ -10,7 +10,7 @@ import { Argv, CommandModule } from 'yargs'
 import { Adapter, PoolOpts, GlobalArgs } from '../../types'
 import { AsyncCommandHandler } from '../types'
 
-export type ClearArgs = GlobalArgs & { adapter: string; id: string }
+type ClearArgs = GlobalArgs & { adapter: string; id: string }
 
 type Opts = {
   adapters: Record<string, Adapter>

@@ -18,9 +18,9 @@ export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
-export type SAPClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
+type SAPClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
 
-export type SAPFetchConfig = definitions.UserFetchConfig
+type SAPFetchConfig = definitions.UserFetchConfig
 
 export type SAPApiConfig = configUtils.AdapterSwaggerApiConfig
 
@@ -31,7 +31,7 @@ export type SAPConfig = {
 }
 
 const DEFAULT_ID_FIELDS = ['name']
-export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = []
+const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = []
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: SAPApiConfig['types'] = {
   MCMService_MCMFormulas: {

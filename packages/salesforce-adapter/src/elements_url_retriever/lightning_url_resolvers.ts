@@ -26,11 +26,7 @@ const { isDefined } = values
 
 export type ElementIDResolver = (id: ElemID) => Promise<Element | undefined>
 
-export type UrlResolver = (
-  element: Element,
-  baseUrl: URL,
-  elementIDResolver: ElementIDResolver,
-) => Promise<URL | undefined>
+type UrlResolver = (element: Element, baseUrl: URL, elementIDResolver: ElementIDResolver) => Promise<URL | undefined>
 
 export const FLOW_URL_SUFFIX = 'lightning/setup/Flows/home'
 

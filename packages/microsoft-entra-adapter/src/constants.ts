@@ -18,16 +18,12 @@ export const APP_ROLES_FIELD_NAME = 'appRoles'
 export const AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME = 'authenticationMethodConfigurations'
 export const CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_FIELD_NAME = 'allowedValues'
 export const DELEGATED_PERMISSION_CLASSIFICATIONS_FIELD_NAME = 'delegatedPermissionClassifications'
-export const DELEGATED_PERMISSION_IDS_FIELD_NAME = 'delegatedPermissionIds'
 export const DOMAIN_NAME_REFERENCES_FIELD_NAME = 'domainNameReferences'
 export const GROUP_ADDITIONAL_DATA_FIELD_NAME = 'additionalData'
 export const GROUP_LIFE_CYCLE_POLICY_FIELD_NAME = 'lifeCyclePolicy'
 export const IDENTIFIER_URIS_FIELD_NAME = 'identifierUris'
-export const INCLUDE_USERS_FIELD_NAME = 'includeUsers'
-export const EXCLUDE_USERS_FIELD_NAME = 'excludeUsers'
 export const MEMBERS_FIELD_NAME = 'members'
 export const PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME = 'preAuthorizedApplications'
-export const TOKEN_ISSUANCE_POLICY_FIELD_NAME = 'tokenIssuancePolicies'
 // Used for service id purpose, when the id of the child is not globally unique
 export const PARENT_ID_FIELD_NAME = 'parent_id'
 
@@ -43,9 +39,8 @@ export const AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME = toNestedTypeName(
   AUTHENTICATION_METHOD_POLICY_TYPE_NAME,
   AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME,
 )
-export const CLAIM_MAPPING_POLICY_TYPE_NAME = 'claimMappingPolicy'
 export const CONDITIONAL_ACCESS_POLICY_TYPE_NAME = 'conditionalAccessPolicy'
-export const CONDITIONAL_ACCESS_POLICY_CONDITIONS_TYPE_NAME = toNestedTypeName(
+const CONDITIONAL_ACCESS_POLICY_CONDITIONS_TYPE_NAME = toNestedTypeName(
   CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
   'conditions',
 )
@@ -78,7 +73,6 @@ export const GROUP_TYPE_NAME = 'group'
 export const GROUP_ADDITIONAL_DATA_TYPE_NAME = toNestedTypeName(GROUP_TYPE_NAME, GROUP_ADDITIONAL_DATA_FIELD_NAME)
 export const GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME = toNestedTypeName(GROUP_TYPE_NAME, APP_ROLE_ASSIGNMENT_FIELD_NAME)
 export const GROUP_LIFE_CYCLE_POLICY_TYPE_NAME = toNestedTypeName(GROUP_TYPE_NAME, GROUP_LIFE_CYCLE_POLICY_FIELD_NAME)
-export const HOME_REALM_DISCOVERY_POLICY_TYPE_NAME = 'homeRealmDiscoveryPolicy'
 export const LIFE_CYCLE_POLICY_TYPE_NAME = 'groupLifeCyclePolicy'
 export const OAUTH2_PERMISSION_GRANT_TYPE_NAME = 'oauth2PermissionGrant'
 export const PERMISSION_GRANT_POLICY_TYPE_NAME = 'permissionGrantPolicy'
@@ -92,8 +86,6 @@ export const DELEGATED_PERMISSION_CLASSIFICATION_TYPE_NAME = toNestedTypeName(
   SERVICE_PRINCIPAL_TYPE_NAME,
   DELEGATED_PERMISSION_CLASSIFICATIONS_FIELD_NAME,
 )
-export const TOKEN_ISSUANCE_POLICY_TYPE_NAME = toNestedTypeName(APPLICATION_TYPE_NAME, TOKEN_ISSUANCE_POLICY_FIELD_NAME)
-export const TOKEN_LIFETIME_POLICY_TYPE_NAME = 'tokenLifetimePolicy'
 
 // OData fields
 export const ODATA_ID_FIELD = '@odata.id'
@@ -102,7 +94,7 @@ export const ODATA_TYPE_FIELD = '@odata.type'
 export const ODATA_TYPE_FIELD_NACL_CASE = naclCase(ODATA_TYPE_FIELD)
 
 export const ODATA_PREFIX = '#microsoft.graph.'
-export const SUPPORTED_DIRECTORY_OBJECT_TYPE_NAME_TO_ODATA_TYPE_NAME: Record<string, string> = {
+const SUPPORTED_DIRECTORY_OBJECT_TYPE_NAME_TO_ODATA_TYPE_NAME: Record<string, string> = {
   [ADMINISTRATIVE_UNIT_TYPE_NAME]: `${ODATA_PREFIX}administrativeUnit`,
   [APPLICATION_TYPE_NAME]: `${ODATA_PREFIX}application`,
   [GROUP_TYPE_NAME]: `${ODATA_PREFIX}group`,

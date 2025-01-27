@@ -33,7 +33,7 @@ type IgnoreError = {
   action: 'ignoreError'
 }
 
-export type OnErrorHandlerAction = FailEntireFetch | CustomSaltoError | ConfigSuggestion | IgnoreError | undefined
+type OnErrorHandlerAction = FailEntireFetch | CustomSaltoError | ConfigSuggestion | IgnoreError | undefined
 
 type OnErrorHandler = ArgsWithCustomizer<OnErrorHandlerAction, OnErrorHandlerAction, { error: Error; typeName: string }>
 

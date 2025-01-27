@@ -32,7 +32,7 @@ export const action: CommandDefAction<InitArgs> = async ({
   cliTelemetry.start()
   try {
     const baseDir = path.resolve(workspacePath)
-    const existingWorkspacePath = await locateWorkspaceRoot(baseDir)
+    const existingWorkspacePath = await locateWorkspaceRoot({ lookupDir: baseDir })
     if (existingWorkspacePath !== undefined) {
       errorOutputLine(Prompts.initFailed(`existing salto workspace in ${existingWorkspacePath}`), output)
       return CliExitCode.AppError

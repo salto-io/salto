@@ -127,23 +127,28 @@ describe('local workspace', () => {
   describe('locateWorkspaceRoot', () => {
     it('should return undefined if no workspaceRoot exists in path', async () => {
       mockExists.mockResolvedValue(false)
-      const workspacePath = await locateWorkspaceRoot('/some/path')
+      const workspacePath = await locateWorkspaceRoot({ lookupDir: '/some/path' })
       expect(workspacePath).toEqual(undefined)
     })
     it('should return current folder if salto.config exists in it', async () => {
       mockExists.mockResolvedValue(true)
-      const workspacePath = await locateWorkspaceRoot('/some/path')
+      const workspacePath = await locateWorkspaceRoot({ lookupDir: '/some/path' })
       expect(workspacePath).toEqual('/some/path')
     })
     it('should find the corret folder in which salto.config exists in path', async () => {
       mockExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
-      const workspacePath = await locateWorkspaceRoot('/some/path')
+      const workspacePath = await locateWorkspaceRoot({ lookupDir: '/some/path' })
       expect(workspacePath).toEqual('/some')
     })
     it('should only check the provided path if allowWorkspaceRootLookup is false', async () => {
       mockExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
-      const workspacePath = await locateWorkspaceRoot('/some/path', false)
+      const workspacePath = await locateWorkspaceRoot({ lookupDir: '/some/path', allowWorkspaceRootLookup: false })
       expect(workspacePath).toEqual(undefined)
+    })
+    it('should support deprecated string argument', async () => {
+      mockExists.mockResolvedValue(true)
+      const workspacePath = await locateWorkspaceRoot('/some/path')
+      expect(workspacePath).toEqual('/some/path')
     })
   })
 

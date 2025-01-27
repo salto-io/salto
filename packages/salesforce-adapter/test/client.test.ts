@@ -603,12 +603,11 @@ describe('salesforce client', () => {
       validationRuleInstance = createInstanceElement(
         {
           fullName: `${SALESFORCE}.${groupTypeName}.${VALIDATION_RULES_METADATA_TYPE}`,
-          annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: url },
-          fields: {
-            errorMessage,
-          },
+          errorMessage,
         },
         validationRule,
+        undefined,
+        { [CORE_ANNOTATIONS.SERVICE_URL]: url },
       )
       elementsSource = buildElementsSourceFromElements([validationRuleInstance])
     })
@@ -623,7 +622,7 @@ describe('salesforce client', () => {
         ]
       })
       it('should return errors unchanged', async () => {
-        const result = enrichSaltoDeployErrors(errors, elementsSource, groupTypeName)
+        const result = await enrichSaltoDeployErrors(errors, elementsSource, groupTypeName)
         expect(result).toEqual(errors)
       })
     })
@@ -647,7 +646,8 @@ describe('salesforce client', () => {
         expect(result[0]).toEqual(expectedResult)
       })
     })
-    
+  })
+
   describe('with jsforce returns invalid response', () => {
     let testClient: SalesforceClient
     let testConnection: MockInterface<Connection>

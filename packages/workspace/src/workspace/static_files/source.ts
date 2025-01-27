@@ -243,7 +243,15 @@ export const buildStaticFilesSource = (
       return staticFilesDirStore.set({ filename: staticFile.filepath, buffer })
     },
     flush: async () => {
-      await staticFilesDirStore.flush()
+      const { updates, deletions } = (await staticFilesDirStore.flush()) ?? { updates: [], deletions: [] }
+      await staticFilesCache.putMany(
+        updates.map(file => ({
+          filepath: file.filename,
+          hash: calculateStaticFileHash(file.buffer),
+          modified: file.timestamp,
+        })),
+      )
+      await staticFilesCache.deleteMany(deletions)
       await staticFilesCache.flush()
     },
     clear: async () => {

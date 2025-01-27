@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import { hash } from '@salto-io/lowerdash'
-import { StaticFile } from '@salto-io/adapter-api'
+import { calculateStaticFileHash, StaticFile } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { mockStaticFilesCache } from '../../common/static_files_cache'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
@@ -294,10 +294,20 @@ describe('Static Files', () => {
       })
       describe('Flush', () => {
         it('should flush all directory stores', async () => {
-          mockDirStore.flush = jest.fn().mockResolvedValue(Promise.resolve())
-          mockCacheStore.flush = jest.fn().mockResolvedValue(Promise.resolve())
+          mockDirStore.flush = jest.fn().mockResolvedValue({
+            updates: [{ filename: 'file.txt', buffer: Buffer.from('hello'), timestamp: 1234 }],
+            deletions: ['file2.txt'],
+          })
           await staticFilesSource.flush()
           expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
+          expect(mockCacheStore.putMany).toHaveBeenCalledWith([
+            {
+              filepath: 'file.txt',
+              hash: calculateStaticFileHash(Buffer.from('hello')),
+              modified: 1234,
+            },
+          ])
+          expect(mockCacheStore.deleteMany).toHaveBeenCalledWith(['file2.txt'])
           expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
         })
       })

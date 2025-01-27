@@ -14,6 +14,9 @@ export type StaticFilesData = {
 export type StaticFilesCache = {
   get(filepath: string): Promise<StaticFilesData | undefined>
   put(item: StaticFilesData): Promise<void>
+  putMany(item: StaticFilesData[]): Promise<void>
+  delete(filepath: string): Promise<void>
+  deleteMany(filepaths: string[]): Promise<void>
   flush(): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>

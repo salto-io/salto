@@ -113,13 +113,19 @@ describe('adapters config', () => {
   describe('initialization', () => {
     it('when cache is invalid should recalculate errors', async () => {
       mockNaclFilesSource.load.mockResolvedValue({ changes: [], cacheValid: false })
+      const elemID = new ElemID('someID')
       jest.spyOn(validator, 'validateElements').mockResolvedValue([
-        new validator.InvalidValueValidationError({
-          elemID: new ElemID('someID'),
-          value: 'val',
-          fieldName: 'field',
-          expectedValue: 'expVal',
-        }),
+        {
+          key: elemID.getFullName(),
+          value: [
+            new validator.InvalidValueValidationError({
+              elemID,
+              value: 'val',
+              fieldName: 'field',
+              expectedValue: 'expVal',
+            }),
+          ],
+        },
       ])
 
       configSource = await buildAdaptersConfigSource({
@@ -134,13 +140,19 @@ describe('adapters config', () => {
     })
 
     it('when cache is valid should not recalculate errors', async () => {
+      const elemID = new ElemID('someID')
       jest.spyOn(validator, 'validateElements').mockResolvedValue([
-        new validator.InvalidValueValidationError({
-          elemID: new ElemID('someID'),
-          value: 'val',
-          fieldName: 'field',
-          expectedValue: 'expVal',
-        }),
+        {
+          key: elemID.getFullName(),
+          value: [
+            new validator.InvalidValueValidationError({
+              elemID,
+              value: 'val',
+              fieldName: 'field',
+              expectedValue: 'expVal',
+            }),
+          ],
+        },
       ])
 
       configSource = await buildAdaptersConfigSource({
@@ -304,13 +316,19 @@ describe('adapters config', () => {
     })
 
     it('setNaclFile should recalculate errors', async () => {
+      const elemID = new ElemID('someID')
       jest.spyOn(validator, 'validateElements').mockResolvedValue([
-        new validator.InvalidValueValidationError({
-          elemID: new ElemID('someID'),
-          value: 'val',
-          fieldName: 'field',
-          expectedValue: 'expVal',
-        }),
+        {
+          key: elemID.getFullName(),
+          value: [
+            new validator.InvalidValueValidationError({
+              elemID,
+              value: 'val',
+              fieldName: 'field',
+              expectedValue: 'expVal',
+            }),
+          ],
+        },
       ])
 
       await configSource.setNaclFiles([])

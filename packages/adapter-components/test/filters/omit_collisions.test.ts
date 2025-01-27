@@ -52,10 +52,13 @@ describe('omitCollisionsFilter', () => {
       errors: [
         {
           severity: 'Warning',
-          detailedMessage: expect.stringContaining(
-            'Omitted 2 instances and all their child instances of t1 due to Salto ID collisions.\nCurrent Salto ID configuration for t1 is defined as [name, status].',
-          ),
           message: 'Some elements were not fetched due to Salto ID collisions',
+          detailedMessage: `2 myAdapter elements and their child elements were not fetched, as they were mapped to a single ID myAdapter.t1.instance.A:
+A,
+A .
+
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`,
         },
       ],
     })
@@ -74,10 +77,13 @@ describe('omitCollisionsFilter', () => {
       errors: [
         {
           severity: 'Warning',
-          detailedMessage: expect.stringContaining(
-            'Omitted 2 instances and all their child instances of t1 due to Salto ID collisions.\nCurrent Salto ID configuration for t1 is defined as [name, status].',
-          ),
           message: expect.stringContaining('Some elements were not fetched due to Salto ID collisions'),
+          detailedMessage: `2 myAdapter elements and their child elements were not fetched, as they were mapped to a single ID myAdapter.t1.instance.A:
+A,
+A .
+
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`,
         },
       ],
     })

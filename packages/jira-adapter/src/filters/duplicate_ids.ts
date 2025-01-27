@@ -6,10 +6,11 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { naclCase, inspectValue, ERROR_MESSAGES } from '@salto-io/adapter-utils'
+import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { naclCase, inspectValue, ERROR_MESSAGES, getCollisionWarnings } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
+import { JIRA } from '../constants'
 
 const log = logger(module)
 
@@ -43,7 +44,7 @@ const filter: FilterCreator = ({ config }) => ({
       elements,
       element =>
         duplicateIds.has(element.elemID.getFullName()) && isInstanceElement(element) && element.value.id !== undefined,
-    )
+    ) as InstanceElement[]
 
     duplicateInstances.filter(isInstanceElement).forEach(instance => {
       log.debug(
@@ -51,32 +52,13 @@ const filter: FilterCreator = ({ config }) => ({
       )
     })
 
-    const getServiceUrl = (instance: InstanceElement): string =>
-      instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined
-        ? `. View in the service - ${instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]}`
-        : ''
-    const prettifiesName = (instance: InstanceElement): string =>
-      instance.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
-        ? instance.annotations[CORE_ANNOTATIONS.ALIAS]
-        : instance.elemID.name
-    const duplicateInstanceNames = _.uniq(
-      duplicateInstances
-        .filter(isInstanceElement)
-        .flatMap(
-          instance => `${prettifiesName(instance)} (${instance.elemID.getFullName()})${getServiceUrl(instance)}`,
-        ),
-    )
     if (!config.fetch.fallbackToInternalId) {
+      const duplicateWarnings = getCollisionWarnings({
+        instances: duplicateInstances,
+        adapterName: _.upperFirst(JIRA),
+      })
       return {
-        errors: [
-          {
-            message: ERROR_MESSAGES.ID_COLLISION,
-            detailedMessage: `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
-If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
-${duplicateInstanceNames.join(',\n')}`,
-            severity: 'Warning',
-          },
-        ],
+        errors: duplicateWarnings,
       }
     }
 

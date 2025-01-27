@@ -40,21 +40,12 @@ describe('collision errors', () => {
       expect(filterResult.errors?.[0]).toEqual({
         severity: 'Warning',
         message: 'Some elements were not fetched due to Salto ID collisions',
-        detailedMessage: `Omitted 2 instances and all their child instances of obj due to Salto ID collisions.
-Current Salto ID configuration for obj is defined as [name].
+        detailedMessage: `2 Zendesk elements and their child elements were not fetched, as they were mapped to a single ID zendesk.obj.instance.inst1:
+inst1,
+inst1 - open in Zendesk: someUrl .
 
-Breakdown per colliding Salto ID:
-- inst1:
-\t* Instance with Id - inst1
-\t* Instance with Id - inst1. View in the service - someUrl
-
-To resolve these collisions please take one of the following actions and fetch again:
-\t1. Change obj's idFields to include all fields that uniquely identify the type's instances.
-\t2. Delete duplicate instances from your zendesk account.
-
-Alternatively, you can exclude obj from the service configuration in zendesk.nacl
-
-Learn more at: https://help.salto.io/en/articles/6927157-salto-id-collisions`,
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`,
       })
     })
     it('should return no errors if there were no collisions', async () => {

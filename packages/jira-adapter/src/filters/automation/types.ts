@@ -188,6 +188,7 @@ export const createAutomationTypes = (): {
       templateFormsConfig: { refType: templateFormsConfigType },
       requestType: { refType: BuiltinTypes.UNKNOWN }, // can be string or { type: string; value: string }
       cmdbField: { refType: BuiltinTypes.UNKNOWN },
+      customFieldId: { refType: BuiltinTypes.UNKNOWN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_VALUE_TYPE],
   })

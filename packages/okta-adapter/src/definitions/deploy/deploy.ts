@@ -876,6 +876,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 transformation: {
                   adjust: async ({ value }) => {
                     validatePlainObject(value, BRAND_TYPE_NAME)
+                    if (value.emailDomainId !== undefined && !_.isString(value.emailDomainId)) {
+                      log.debug(
+                        'Email domain ID is not a string, this is expected when an email domain is added alongside its brand. Removing email domain ID from request',
+                      )
+                    }
                     return {
                       value: {
                         ...value,

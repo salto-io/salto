@@ -46,7 +46,7 @@ export const addedEmailDomainAfterAddedBrand: DependencyChanger = async changes 
   return emailDomainAdditions.flatMap(emailDomain => {
     const emailDomainElemID = getChangeData(emailDomain.change).elemID
     const referencingAddedBrands = brandAdditions.filter(brand =>
-      getChangeData(brand.change).value?.emailDomainId?.elemID.isEqual(emailDomainElemID),
+      getChangeData(brand.change).value.emailDomainId?.elemID.isEqual(emailDomainElemID),
     )
     if (referencingAddedBrands.length === 0) {
       return []

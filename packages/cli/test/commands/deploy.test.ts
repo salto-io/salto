@@ -5,8 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { DeployResult, GroupProperties } from '@salto-io/core'
 import * as saltoCoreModule from '@salto-io/core'
+import { DeployResult, GroupProperties } from '@salto-io/core'
+import { MockWorkspace, mockWorkspace, mockErrors } from '@salto-io/e2e-test-utils'
 import { Workspace } from '@salto-io/workspace'
 import * as saltoFileModule from '@salto-io/file'
 import { Artifact, Change } from '@salto-io/adapter-api'
@@ -15,8 +16,8 @@ import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
-import { action } from '../../src/commands/deploy'
 import * as deployModule from '../../src/commands/deploy'
+import { action } from '../../src/commands/deploy'
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -57,7 +58,7 @@ const mockedSaltoFile = jest.mocked(saltoFileModule)
 const commandName = 'deploy'
 
 describe('deploy command', () => {
-  let workspace: mocks.MockWorkspace
+  let workspace: MockWorkspace
   let output: mocks.MockCliOutput
   let cliCommandArgs: mocks.MockCommandArgs
   const accounts = ['salesforce']
@@ -70,7 +71,7 @@ describe('deploy command', () => {
     const cliArgs = mocks.mockCliArgs()
     cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
     output = cliArgs.output
-    workspace = mocks.mockWorkspace({})
+    workspace = mockWorkspace({})
     mockGetUserBooleanInput.mockReset()
     mockShouldCancel.mockReset()
     jest.spyOn(deployModule, 'shouldDeploy')
@@ -358,7 +359,7 @@ describe('deploy command', () => {
   describe('invalid deploy', () => {
     it('should fail gracefully', async () => {
       workspace.errors.mockResolvedValue(
-        mocks.mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
+        mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
       )
       const result = await action({
         ...cliCommandArgs,
@@ -375,7 +376,7 @@ describe('deploy command', () => {
     })
     it('should allow the user to cancel when there are warnings', async () => {
       workspace.errors.mockResolvedValue(
-        mocks.mockErrors([{ severity: 'Warning', message: 'some warning', detailedMessage: 'some warning' }]),
+        mockErrors([{ severity: 'Warning', message: 'some warning', detailedMessage: 'some warning' }]),
       )
       mockGetUserBooleanInput.mockResolvedValue(false)
       const result = await action({
@@ -397,9 +398,7 @@ describe('deploy command', () => {
     beforeEach(() => {
       workspace.updateNaclFiles.mockImplementationOnce(async () => {
         // Make the workspace errored after the call to updateNaclFiles
-        workspace.errors.mockResolvedValueOnce(
-          mocks.mockErrors([{ severity: 'Error', message: '', detailedMessage: '' }]),
-        )
+        workspace.errors.mockResolvedValueOnce(mockErrors([{ severity: 'Error', message: '', detailedMessage: '' }]))
         return { naclFilesChangesCount: 0, stateOnlyChangesCount: 0 }
       })
       mockGetUserBooleanInput.mockReturnValue(true)

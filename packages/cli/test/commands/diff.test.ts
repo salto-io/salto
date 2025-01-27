@@ -6,6 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { diff } from '@salto-io/core'
+import { MockWorkspace, mockWorkspace } from '@salto-io/e2e-test-utils'
+
 import { CliExitCode } from '../../src/types'
 import { diffAction } from '../../src/commands/env'
 import { expectElementSelector } from '../utils'
@@ -20,7 +22,7 @@ jest.mock('@salto-io/core', () => ({
 describe('diff command', () => {
   describe('with invalid source environment', () => {
     it('should throw Error', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       const result = await diffAction({
         ...mocks.mockCliCommandArgs(commandName),
         input: {
@@ -38,7 +40,7 @@ describe('diff command', () => {
 
   describe('with invalid destination environment', () => {
     it('should throw Error', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       const result = await diffAction({
         ...mocks.mockCliCommandArgs(commandName),
         input: {
@@ -56,9 +58,9 @@ describe('diff command', () => {
 
   describe('with valid workspace', () => {
     let result: CliExitCode
-    let workspace: mocks.MockWorkspace
+    let workspace: MockWorkspace
     beforeAll(async () => {
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
       result = await diffAction({
         ...mocks.mockCliCommandArgs(commandName),
         input: {
@@ -82,9 +84,9 @@ describe('diff command', () => {
 
   describe('with show hidden types flag', () => {
     let result: CliExitCode
-    let workspace: mocks.MockWorkspace
+    let workspace: MockWorkspace
     beforeAll(async () => {
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
       result = await diffAction({
         ...mocks.mockCliCommandArgs(commandName),
         input: {
@@ -108,9 +110,9 @@ describe('diff command', () => {
 
   describe('with state only flag', () => {
     let result: CliExitCode
-    let workspace: mocks.MockWorkspace
+    let workspace: MockWorkspace
     beforeAll(async () => {
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
       result = await diffAction({
         ...mocks.mockCliCommandArgs(commandName),
         input: {
@@ -134,10 +136,10 @@ describe('diff command', () => {
 
   describe('with id filters', () => {
     let result: CliExitCode
-    let workspace: mocks.MockWorkspace
+    let workspace: MockWorkspace
     const regex = 'account.*'
     beforeAll(async () => {
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
       result = await diffAction({
         ...mocks.mockCliCommandArgs(commandName),
         input: {
@@ -170,10 +172,10 @@ describe('diff command', () => {
 
   describe('with invalid id filters', () => {
     let result: CliExitCode
-    let workspace: mocks.MockWorkspace
+    let workspace: MockWorkspace
     const regex = '['
     beforeAll(async () => {
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
       result = await diffAction({
         ...mocks.mockCliCommandArgs(commandName),
         input: {

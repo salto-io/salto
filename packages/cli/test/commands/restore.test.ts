@@ -7,6 +7,7 @@
  */
 import { restore, restorePaths } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
+import { mockWorkspace, mockErrors } from '@salto-io/e2e-test-utils'
 import { DetailedChangeWithBaseChange, ElemID, ModificationChange, StaticFile, Values } from '@salto-io/adapter-api'
 import { getUserBooleanInput } from '../../src/callbacks'
 import { CliExitCode } from '../../src/types'
@@ -63,9 +64,9 @@ describe('restore command', () => {
   describe('with errored workspace', () => {
     let result: number
     beforeEach(async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       workspace.errors.mockResolvedValue(
-        mocks.mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
+        mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
       )
       result = await action({
         ...cliCommandArgs,
@@ -91,7 +92,7 @@ describe('restore command', () => {
     let result: number
     let workspace: Workspace
     beforeEach(async () => {
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
       jest.spyOn(workspace, 'updateNaclFiles').mockResolvedValue({
         naclFilesChangesCount: 2,
         stateOnlyChangesCount: 0,
@@ -143,7 +144,7 @@ describe('restore command', () => {
   })
   describe('Verify using env command', () => {
     it('should use current env when env is not provided', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       await action({
         ...cliCommandArgs,
         input: {
@@ -159,7 +160,7 @@ describe('restore command', () => {
       expect(workspace.setCurrentEnv).not.toHaveBeenCalled()
     })
     it('should use provided env', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       await action({
         ...cliCommandArgs,
         input: {
@@ -181,7 +182,7 @@ describe('restore command', () => {
     let result: number
     let workspace: Workspace
     beforeEach(async () => {
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
       result = await action({
         ...cliCommandArgs,
         input: {
@@ -217,7 +218,7 @@ describe('restore command', () => {
   describe('when prompting whether to perform the restore', () => {
     let workspace: Workspace
     beforeEach(async () => {
-      workspace = mocks.mockWorkspace({})
+      workspace = mockWorkspace({})
     })
 
     describe('when user input is y', () => {
@@ -333,10 +334,10 @@ describe('restore command', () => {
   })
 
   it('should return error when update workspace fails', async () => {
-    const workspace = mocks.mockWorkspace({})
+    const workspace = mockWorkspace({})
     workspace.updateNaclFiles.mockImplementation(async () => {
       workspace.errors.mockResolvedValue(
-        mocks.mockErrors([{ severity: 'Error', message: 'some error ', detailedMessage: 'some error ' }]),
+        mockErrors([{ severity: 'Error', message: 'some error ', detailedMessage: 'some error ' }]),
       )
       return { naclFilesChangesCount: 0, stateOnlyChangesCount: 0 }
     })
@@ -367,7 +368,7 @@ describe('restore command', () => {
           accounts,
           elementSelectors: ['++'],
         },
-        workspace: mocks.mockWorkspace({}),
+        workspace: mockWorkspace({}),
       })
       expect(result).toBe(CliExitCode.UserInputError)
     })
@@ -383,14 +384,14 @@ describe('restore command', () => {
           accounts,
           elementSelectors: ['salto.*'],
         },
-        workspace: mocks.mockWorkspace({}),
+        workspace: mockWorkspace({}),
       })
       expect(result).toBe(CliExitCode.Success)
     })
   })
   describe('restoring modified static files', () => {
     it('should not print about removal changes of static files', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
         { change: mocks.staticFileChange('remove'), serviceChanges: [mocks.staticFileChange('add')] },
       ])
@@ -413,7 +414,7 @@ describe('restore command', () => {
     })
 
     it('should warn of unrestoring modified static files without content', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
         { change: mocks.staticFileChange('modify'), serviceChanges: [mocks.staticFileChange('modify')] },
       ])
@@ -436,7 +437,7 @@ describe('restore command', () => {
     })
 
     it('should warn of inner unrestoring modified static files without content', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       const change: ModificationChange<Values> & DetailedChangeWithBaseChange = {
         data: {
           before: {
@@ -481,7 +482,7 @@ describe('restore command', () => {
     })
 
     it('should not warn about modified static files with content', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
         { change: mocks.staticFileChange('modify', true), serviceChanges: [mocks.staticFileChange('modify', true)] },
       ])
@@ -504,7 +505,7 @@ describe('restore command', () => {
     })
 
     it('should warn of unrestoring added static files', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
         { change: mocks.staticFileChange('add'), serviceChanges: [mocks.staticFileChange('remove')] },
       ])
@@ -527,7 +528,7 @@ describe('restore command', () => {
     })
 
     it('should not warn of added static files with content', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
         { change: mocks.staticFileChange('add', true), serviceChanges: [mocks.staticFileChange('remove', true)] },
       ])
@@ -552,7 +553,7 @@ describe('restore command', () => {
 
   describe('restore paths', () => {
     it('should call the restorePaths api', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
 
       const result = await action({
         ...cliCommandArgs,
@@ -577,7 +578,7 @@ describe('restore command', () => {
     })
 
     it('should fail when requesting to restore paths with specific selectors', async () => {
-      const workspace = mocks.mockWorkspace({})
+      const workspace = mockWorkspace({})
 
       const result = await action({
         ...cliCommandArgs,

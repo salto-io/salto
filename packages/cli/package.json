@@ -63,6 +63,7 @@
   },
   "devDependencies": {
     "@salto-io/e2e-credentials-store": "0.5.0",
+    "@salto-io/e2e-test-utils": "0.5.0",
     "@salto-io/element-test-utils": "0.5.0",
     "@salto-io/test-utils": "0.5.0",
     "@types/express": "^4.17.7",

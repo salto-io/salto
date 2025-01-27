@@ -5,18 +5,19 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { AdapterAuthentication, ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
-import { addAdapter, installAdapter, LoginStatus, verifyCredentials, updateCredentials } from '@salto-io/core'
+import { AdapterAuthentication, BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { addAdapter, installAdapter, LoginStatus, updateCredentials, verifyCredentials } from '@salto-io/core'
 import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { Workspace } from '@salto-io/workspace'
+import { MockWorkspace, mockWorkspace } from '@salto-io/e2e-test-utils'
 import { getPrivateAdaptersNames } from '../../src/formatter'
 import {
   accountAddDef,
+  accountLoginDef,
   addAction,
+  createConfigFromLoginParameters,
   listAction,
   loginAction,
-  accountLoginDef,
-  createConfigFromLoginParameters,
 } from '../../src/commands/account'
 import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
@@ -103,7 +104,7 @@ jest.mock('@salto-io/adapter-creators', () => {
 describe('account command group', () => {
   let cliArgs: mocks.MockCliArgs
   let output: mocks.MockCliOutput
-  let workspace: mocks.MockWorkspace
+  let workspace: MockWorkspace
   const mockGetCredentialsFromUser = mocks.createMockGetCredentialsFromUser({
     username: 'test@test',
     password: 'test',
@@ -118,7 +119,7 @@ describe('account command group', () => {
   beforeEach(() => {
     cliArgs = mocks.mockCliArgs()
     output = cliArgs.output
-    workspace = mocks.mockWorkspace({ accounts: ['salesforce', 'netsuite', 'oauthAdapter'] })
+    workspace = mockWorkspace({ accounts: ['salesforce', 'netsuite', 'oauthAdapter'] })
   })
   describe('list command', () => {
     let cliCommandArgs: mocks.MockCommandArgs
@@ -197,7 +198,7 @@ describe('account command group', () => {
         telemetry = cliArgs.telemetry
 
         const loadWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
-        loadWorkspace.mockResolvedValue(mocks.mockWorkspace({ uid: 'test' }))
+        loadWorkspace.mockResolvedValue(mockWorkspace({ uid: 'test' }))
       })
 
       describe('when using correct parameters', () => {
@@ -681,7 +682,7 @@ describe('account command group', () => {
         telemetry = cliArgs.telemetry
 
         const loadWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
-        loadWorkspace.mockResolvedValue(mocks.mockWorkspace({ uid: 'test' }))
+        loadWorkspace.mockResolvedValue(mockWorkspace({ uid: 'test' }))
       })
 
       describe('when using correct parameters', () => {

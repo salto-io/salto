@@ -6,8 +6,9 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import * as core from '@salto-io/core'
+import { mockWorkspace } from '@salto-io/e2e-test-utils'
 import { action, CancelTaskInput } from '../../src/commands/cancel_task'
-import { mockCliArgs, mockCliCommandArgs, mockWorkspace } from '../mocks'
+import { mockCliArgs, mockCliCommandArgs } from '../mocks'
 import { CliExitCode } from '../../src/types'
 import * as outputer from '../../src/outputer'
 import { WorkspaceCommandArgs } from '../../src/command_builder'

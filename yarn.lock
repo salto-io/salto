@@ -4153,6 +4153,7 @@ __metadata:
     "@salto-io/core": 0.5.0
     "@salto-io/dag": 0.5.0
     "@salto-io/e2e-credentials-store": 0.5.0
+    "@salto-io/e2e-test-utils": 0.5.0
     "@salto-io/element-test-utils": 0.5.0
     "@salto-io/file": 0.5.0
     "@salto-io/local-workspace": 0.5.0
@@ -4344,9 +4345,12 @@ __metadata:
     "@salto-io/adapter-components": 0.5.0
     "@salto-io/core": 0.5.0
     "@salto-io/e2e-credentials-store": 0.5.0
+    "@salto-io/element-test-utils": 0.5.0
     "@salto-io/file": 0.5.0
     "@salto-io/local-workspace": 0.5.0
     "@salto-io/lowerdash": 0.5.0
+    "@salto-io/parser": 0.5.0
+    "@salto-io/test-utils": 0.5.0
     "@salto-io/workspace": 0.5.0
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4355,6 +4359,7 @@ __metadata:
     lodash: ^4.17.21
     prettier: 3.2.5
     tmp-promise: ^2.0.2
+    ts-jest: ^29.2.0
     tsc-watch: ^2.2.1
     turbo: ^2.0.6
     typescript: 4.8.4

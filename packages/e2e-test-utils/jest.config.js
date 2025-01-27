@@ -5,3 +5,20 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+const deepMerge = require('../../build_utils/deep_merge')
+
+module.exports = deepMerge(require('../../jest.base.config.js'), {
+  displayName: 'e2e-test-utils',
+  rootDir: `${__dirname}`,
+  collectCoverageFrom: ['!<rootDir>/index.ts'],
+  coverageThreshold: {
+    // Slowly start increasing here, never decrease!
+    global: {
+      branches: 58.33,
+      functions: 50,
+      lines: 77.45,
+      statements: 78.26,
+    },
+  },
+  setupFilesAfterEnv: ['@salto-io/element-test-utils/all'],
+})

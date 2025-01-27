@@ -5,15 +5,15 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import * as lowerdash from '../src'
+import { set, map, array, iterable, asynciterable, treeMap } from '../../src/collections'
 
 describe('index.ts', () => {
-  it('should define the namespaces', () => {
-    expect(lowerdash.collections).toBeDefined()
-    expect(lowerdash.promises).toBeDefined()
-
-    // test import of type SetId
-    const t: lowerdash.collections.set.SetId = 1
-    expect(t).toBe(1)
+  it('should export all modules', () => {
+    expect(set).toBeDefined()
+    expect(map).toBeDefined()
+    expect(array).toBeDefined()
+    expect(iterable).toBeDefined()
+    expect(asynciterable).toBeDefined()
+    expect(treeMap).toBeDefined()
   })
 })

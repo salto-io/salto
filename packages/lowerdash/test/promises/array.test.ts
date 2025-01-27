@@ -5,10 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { promises, collections } from '../../src'
+import { partition, removeAsync, series, withLimitedConcurrency } from '../../src/promises/array'
+import { arrayOf } from '../../src/collections/array'
 import { MaxCounter, maxCounter } from '../max_counter'
-
-const { arrayOf } = collections.array
 
 describe('array', () => {
   describe('series and withLimitedConcurrency', () => {
@@ -34,7 +33,6 @@ describe('array', () => {
     })
 
     describe('series', () => {
-      const { series } = promises.array
       beforeEach(async () => {
         output = await series(input)
       })
@@ -59,7 +57,6 @@ describe('array', () => {
     })
 
     describe('withLimitedConcurrency', () => {
-      const { withLimitedConcurrency } = promises.array
       const MAX_CONCURRENCY = 2
 
       beforeEach(async () => {
@@ -77,7 +74,6 @@ describe('array', () => {
   })
 
   describe('partition', () => {
-    const { partition } = promises.array
     const predicate = async (v: number): Promise<boolean> => v % 2 === 0
 
     describe('when given an empty input iterable', () => {
@@ -97,7 +93,6 @@ describe('array', () => {
   })
 
   describe('removeAsync', () => {
-    const { removeAsync } = promises.array
     const predicate = async (v: number): Promise<boolean> => v % 2 === 0
 
     describe('when given an empty input iterable', () => {

@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { formatPrimitiveLogTagValue, formatTextFormatLogTags } from '../../src/internal/log-tags'
+import { formatPrimitiveLogTagValue, formatTextFormatLogTags } from '../src/log-tags'
 
 describe('logTags', () => {
   // The rest of the coverage is covered in pino_logger.test.ts

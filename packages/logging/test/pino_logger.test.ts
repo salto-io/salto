@@ -8,13 +8,13 @@
 import * as fs from 'fs'
 import * as tmp from 'tmp-promise'
 import { EOL } from 'os'
-import { LogTags } from '../../src'
-import { mockConsoleStream, MockWritableStream } from '../console'
-import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
-import { Config, mergeConfigs } from '../../src/internal/config'
-import { loggerRepo, Logger, LoggerRepo } from '../../src/internal/logger'
-import { loggerRepo as pinoLoggerRepo } from '../../src/internal/pino'
-import '../matchers'
+import { LogTags } from '../src/log-tags'
+import { mockConsoleStream, MockWritableStream } from './console'
+import { LogLevel, LOG_LEVELS } from '../src/level'
+import { Config, mergeConfigs } from '../src/config'
+import { loggerRepo, Logger, LoggerRepo } from '../src/logger'
+import { loggerRepo as pinoLoggerRepo } from '../src/pino'
+import './matchers'
 
 const TIMESTAMP_REGEX = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/
 
@@ -638,7 +638,7 @@ describe('pino based logger', () => {
       })
 
       it('should write the message with the child namespace as string', () => {
-        expect(line).toContain('logging/test/internal/pino_logger.test')
+        expect(line).toContain('logging/test/pino_logger.test')
       })
 
       describe('when getting the same logger again', () => {

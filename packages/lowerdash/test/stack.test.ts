@@ -5,11 +5,10 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { stack } from '../src'
+import { extractCallerFilename } from '../src/stack'
 
 describe('stack', () => {
   describe('extractCallerFilename', () => {
-    const { extractCallerFilename } = stack
     const partialFilename = 'lowerdash/test/stack.test.'
 
     describe('when called with an error with no stack', () => {

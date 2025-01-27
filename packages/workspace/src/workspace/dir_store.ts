@@ -30,7 +30,8 @@ export type DirectoryStore<T extends ContentType> = {
   clear(): Promise<void>
   rename(name: string): Promise<void>
   renameFile(name: string, newName: string): Promise<void>
-  flush(): Promise<FlushResult<T> | void>
+  flush(withFlushResult?: false): Promise<void>
+  flush(withFlushResult: true): Promise<FlushResult<T>>
   mtimestamp(filename: string): Promise<number | undefined>
   getFiles(filenames: string[], options?: GetFileOptions): Promise<(File<T> | undefined)[]>
   getTotalSize(): Promise<number>

@@ -71,9 +71,6 @@ export const buildHistoryStateStaticFilesSource = (dirStore: StateStaticFilesSto
       log.debug('clear ignored in history state static files source')
     },
 
-    flush: () =>
-      log.timeTrace(async () => {
-        await dirStore.flush()
-      }, 'Flushing history static state files source'),
+    flush: () => log.timeTrace(async () => dirStore.flush(), 'Flushing history static state files source'),
   }
 }

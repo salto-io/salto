@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import { hash } from '@salto-io/lowerdash'
 import { calculateStaticFileHash, StaticFile } from '@salto-io/adapter-api'
-import { mockFunction } from '@salto-io/test-utils'
+import { mockFunction, setupEnvVar } from '@salto-io/test-utils'
 import { mockStaticFilesCache } from '../../common/static_files_cache'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 import {
@@ -32,6 +32,7 @@ import {
   defaultBuffer,
   defaultFile,
 } from '../../utils'
+import { WORKSPACE_FLAGS } from '../../../src/flags'
 
 describe('Static Files', () => {
   describe('Static Files Source', () => {
@@ -316,7 +317,8 @@ describe('Static Files', () => {
             expect(mockCacheStore.deleteMany).toHaveBeenCalledWith(['file2.txt'])
           })
         })
-        describe('with void flush result', () => {
+        describe('with skipStaticFilesCacheUpdate flag', () => {
+          setupEnvVar(`SALTO_${WORKSPACE_FLAGS.skipStaticFilesCacheUpdate}`, 'true', 'each')
           beforeEach(async () => {
             await staticFilesSource.flush()
           })

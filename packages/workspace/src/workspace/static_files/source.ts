@@ -14,6 +14,7 @@ import { StaticFilesCache, StaticFilesData } from './cache'
 import { DirectoryStore, FlushResult } from '../dir_store'
 
 import { InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile } from './common'
+import { getSaltoFlagBool, WORKSPACE_FLAGS } from '../../flags'
 
 const log = logger(module)
 
@@ -260,11 +261,13 @@ export const buildStaticFilesSource = (
       return staticFilesDirStore.set({ filename: staticFile.filepath, buffer })
     },
     flush: async () => {
-      const flushResult = await staticFilesDirStore.flush()
-      if (flushResult !== undefined) {
-        await updateCacheWithFlushResult(flushResult)
+      const skipStaticFilesCacheUpdate = getSaltoFlagBool(WORKSPACE_FLAGS.skipStaticFilesCacheUpdate)
+      if (skipStaticFilesCacheUpdate) {
+        log.info('skipping static files cache update from dirStore flush')
+        await staticFilesDirStore.flush()
       } else {
-        log.warn('received void flush result - skipping static files cache update')
+        const flushResult = await staticFilesDirStore.flush(true)
+        await updateCacheWithFlushResult(flushResult)
       }
       await staticFilesCache.flush()
     },

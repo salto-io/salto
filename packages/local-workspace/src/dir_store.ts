@@ -91,13 +91,16 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       : undefined
   }
 
-  const writeFile = async (file: dirStore.File<T>): Promise<dirStore.File<T>> => {
+  const writeFile = async (file: dirStore.File<T>, calculateTimestamp?: boolean): Promise<dirStore.File<T>> => {
     const absFileName = getAbsFileName(file.filename)
     if (!(await fileUtils.exists(path.dirname(absFileName)))) {
       await fileUtils.mkdirp(path.dirname(absFileName))
     }
     await fileUtils.replaceContents(absFileName, file.buffer, encoding)
-    return { ...file, timestamp: await getFileTimestamp(file.filename) }
+    if (calculateTimestamp) {
+      return { ...file, timestamp: await getFileTimestamp(file.filename) }
+    }
+    return file
   }
 
   const removeDirIfEmpty = async (dirPath: string): Promise<void> => {
@@ -141,7 +144,9 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
   const isEmpty = async (): Promise<boolean> => (await list()).length === 0
 
-  const flush = async (): Promise<dirStore.FlushResult<T>> => {
+  async function flush(withFlushResult?: false): Promise<void>
+  async function flush(withFlushResult: true): Promise<dirStore.FlushResult<T>>
+  async function flush(withFlushResult?: boolean): Promise<dirStore.FlushResult<T> | void> {
     const deletesToHandle = Array.from(deleted)
     deleted = new Set()
     const updatesToHandle = updated
@@ -153,7 +158,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       DELETE_CONCURRENCY,
     )
     const updates = await withLimitedConcurrency(
-      Object.values(updatesToHandle).map(f => () => writeFile(f)),
+      Object.values(updatesToHandle).map(f => () => writeFile(f, withFlushResult)),
       WRITE_CONCURRENCY,
     )
     if (deleted.size > 0 || Object.keys(updated).length > 0) {
@@ -162,6 +167,9 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
         deleted.size,
         Object.keys(updated).length,
       )
+    }
+    if (!withFlushResult) {
+      return undefined
     }
     // NOTE - this is NOT the desired behavior:
     // if there are files that are in both `deletesToHandle` and `updatesToHandle`

@@ -879,8 +879,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     return {
                       value: {
                         ...value,
-                        // emailDomainId is a reference that's serialized as "full value", but we only need its id.
-                        emailDomainId: value.emailDomainId?.id,
+                        // When adding an email domain alongside its brand, the brand is added first, in which case the
+                        // email domain ID won't be available in this request.
+                        emailDomainId: _.isString(value.emailDomainId) ? value.emailDomainId : undefined
                       },
                     }
                   },

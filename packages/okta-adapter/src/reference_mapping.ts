@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { cloneDeepWithoutRefs, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -68,7 +68,7 @@ const OktaReferenceSerializationStrategyLookup: Record<
     getReferenceId: topLevelId => topLevelId.createNestedID('credentials', 'oauthClient', 'client_id'),
   },
   emailDomainId: {
-    serialize: ({ ref }) => cloneDeepWithoutRefs(isInstanceElement(ref.value) ? ref.value.value : ref.value),
+    serialize: ({ ref }) => ref.value?.value?.id ?? ref.value,
     lookup: val => val,
     lookupIndexName: 'id',
   },

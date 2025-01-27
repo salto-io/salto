@@ -471,6 +471,8 @@ describe('localDirectoryStore', () => {
 
   describe('flush', () => {
     let dirStore: workspaceDirStore.DirectoryStore<workspaceDirStore.ContentType>
+    let flushResult: workspaceDirStore.FlushResult<workspaceDirStore.ContentType> | void
+
     const buffer = Buffer.from('bla')
     const removedFlat = 'a'
     const createdNested = 'a/a'
@@ -512,7 +514,6 @@ describe('localDirectoryStore', () => {
     })
 
     describe('without flush result', () => {
-      let flushResult: void
       beforeEach(async () => {
         await dirStore.set({ filename: createdNested, buffer })
         await dirStore.set({ filename: createdFlat, buffer })
@@ -529,7 +530,6 @@ describe('localDirectoryStore', () => {
     })
 
     describe('with flush result', () => {
-      let flushResult: workspaceDirStore.FlushResult<workspaceDirStore.ContentType>
       beforeEach(async () => {
         mockStatOrUndefined.mockResolvedValueOnce({ mtimeMs: 7 })
         await dirStore.set({ filename: createdNested, buffer })

@@ -144,9 +144,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
   const isEmpty = async (): Promise<boolean> => (await list()).length === 0
 
-  async function flush(withFlushResult?: false): Promise<void>
-  async function flush(withFlushResult: true): Promise<dirStore.FlushResult<T>>
-  async function flush(withFlushResult?: boolean): Promise<dirStore.FlushResult<T> | void> {
+  const flush = async (withFlushResult?: boolean): Promise<dirStore.FlushResult<T> | void> => {
     const deletesToHandle = Array.from(deleted)
     deleted = new Set()
     const updatesToHandle = updated

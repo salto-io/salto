@@ -141,7 +141,7 @@ type ConfigSuggestionCreator = {
   create: CreateConfigSuggestionFunc
 }
 
-export const createSocketTimeoutConfigSuggestion: CreateConfigSuggestionFunc = (
+const createSocketTimeoutConfigSuggestion: CreateConfigSuggestionFunc = (
   input: ConfigSuggestionsCreatorInput,
 ): MetadataConfigSuggestion => ({
   type: 'metadataExclude',
@@ -149,7 +149,7 @@ export const createSocketTimeoutConfigSuggestion: CreateConfigSuggestionFunc = (
   reason: `${input.metadataType} with name ${input.name} exceeded fetch timeout`,
 })
 
-export const createInvalidCrossReferenceKeyConfigSuggestion: CreateConfigSuggestionFunc = (
+const createInvalidCrossReferenceKeyConfigSuggestion: CreateConfigSuggestionFunc = (
   input: ConfigSuggestionsCreatorInput,
 ): MetadataConfigSuggestion => ({
   type: 'metadataExclude',
@@ -157,7 +157,7 @@ export const createInvalidCrossReferenceKeyConfigSuggestion: CreateConfigSuggest
   reason: `${input.metadataType} with name ${input.name} failed due to INVALID_CROSS_REFERENCE_KEY`,
 })
 
-export const createNonTransientSalesforceErrorConfigSuggestion: CreateConfigSuggestionFunc = (
+const createNonTransientSalesforceErrorConfigSuggestion: CreateConfigSuggestionFunc = (
   input: ConfigSuggestionsCreatorInput,
 ): MetadataConfigSuggestion => ({
   type: 'metadataExclude',

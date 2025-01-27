@@ -47,7 +47,7 @@ type AllCredentials = SdfTokenBasedCredentials & SdfOAuthCredentials & SuiteAppC
 const configID = new ElemID(NETSUITE)
 
 // The SuiteApp fields are commented out until we will be ready to expose them to the user
-export const defaultCredentialsType = new ObjectType({
+const defaultCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
     accountId: {

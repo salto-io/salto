@@ -12,13 +12,13 @@ import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
 import createClient from './client'
 
-export type Mocks = {
+type Mocks = {
   connection: MockInterface<Connection>
   client: SalesforceClient
   adapter: SalesforceAdapter
 }
 
-export type Opts = {
+type Opts = {
   adapterParams?: Partial<SalesforceAdapterParams>
 }
 

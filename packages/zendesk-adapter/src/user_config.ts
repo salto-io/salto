@@ -56,7 +56,7 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
   fetchBotBuilder?: boolean
 }
 
-export type ZendeskClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }
+type ZendeskClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }
 
 export type ZendeskClientConfig = definitions.ClientBaseConfig<ZendeskClientRateLimitConfig> & {
   unassociatedAttachmentChunkSize: number

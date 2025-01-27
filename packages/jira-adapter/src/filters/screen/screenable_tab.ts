@@ -39,7 +39,6 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const SCREEN_TAB_TYPE_NAME = 'ScreenableTab'
-export const SCREEN_TAB_FIELD_TYPE_NAME = 'ScreenableField'
 
 type ScreenTabError = {
   data: {

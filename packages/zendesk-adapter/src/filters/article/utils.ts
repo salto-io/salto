@@ -112,7 +112,7 @@ const EXPECTED_ATTACHMENT_RESPONSE_SCHEMA = Joi.array()
   )
   .required()
 
-export const isAttachmentsResponse = (value: unknown): value is AttachmentResponse[] => {
+const isAttachmentsResponse = (value: unknown): value is AttachmentResponse[] => {
   const { error } = EXPECTED_ATTACHMENT_RESPONSE_SCHEMA.validate(value)
   if (error !== undefined) {
     log.error(`Received an invalid response for the attachments values: ${error.message}, ${inspectValue(value)}`)

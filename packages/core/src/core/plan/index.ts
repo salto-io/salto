@@ -5,5 +5,5 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-export { Plan, getPlan, AdditionalResolveContext } from './plan'
+export { Plan, getPlan } from './plan'
 export { PlanItem, PlanItemId, ChangeWithDetails } from './plan_item'

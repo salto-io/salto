@@ -175,7 +175,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   return adapterConfig
 }
 
-export const createUrlFromUserInput = (value: Values): string => {
+const createUrlFromUserInput = (value: Values): string => {
   const endpoint = value.sandbox ? 'test' : 'login'
   return `https://${endpoint}.salesforce.com/services/oauth2/authorize?response_type=token&client_id=${value.consumerKey}&scope=refresh_token%20full&redirect_uri=http://localhost:${value.port}&prompt=login%20consent`
 }

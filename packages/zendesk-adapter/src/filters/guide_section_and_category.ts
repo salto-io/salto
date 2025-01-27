@@ -16,7 +16,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Joi from 'joi'
-import { createSchemeGuard, createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -38,14 +38,6 @@ export type TranslationType = {
   locale: ReferenceExpression | string
 }
 
-type ParentType = InstanceElement & {
-  value: {
-    source_locale: string
-    name?: string
-    description?: string
-  }
-}
-
 const TRANSLATION_SCHEMA = Joi.object({
   locale: Joi.required(),
   body: [Joi.string(), Joi.object()],
@@ -54,22 +46,9 @@ const TRANSLATION_SCHEMA = Joi.object({
   .unknown(true)
   .required()
 
-const PARENT_SCHEMA = Joi.object({
-  source_locale: Joi.string().required(),
-  name: Joi.string(),
-  description: Joi.string().allow(''),
-})
-  .unknown(true)
-  .required()
-
 export const isTranslation = createSchemeGuard<TranslationType>(
   TRANSLATION_SCHEMA,
   'Received an invalid value for translation',
-)
-
-export const isParent = createSchemeGuardForInstance<ParentType>(
-  PARENT_SCHEMA,
-  'Received an invalid value for section/category',
 )
 
 /**

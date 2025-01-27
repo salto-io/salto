@@ -36,7 +36,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-export const configType = new ObjectType({
+const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
   fields: {
     ..._.mapValues(defaultParams, defValue => ({

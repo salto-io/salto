@@ -15,12 +15,12 @@ import { credsSpec } from './jest_environment'
 
 const log = logger(module)
 
-export type Reals = {
+type Reals = {
   client: ZuoraClient
   adapter: ZuoraAdapter
 }
 
-export type Opts = {
+type Opts = {
   adapterParams?: Partial<ZuoraAdapterParams>
   credentials: Credentials
 }

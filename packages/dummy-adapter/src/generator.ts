@@ -288,7 +288,7 @@ const defaultObj = new ObjectType({
   path: [DUMMY_ADAPTER, 'Default', 'Default'],
 })
 
-export const generateExtraElementsFromPaths = async (
+const generateExtraElementsFromPaths = async (
   naclDirs: string[],
   refElementSource: ReadOnlyElementsSource,
 ): Promise<Element[]> => {

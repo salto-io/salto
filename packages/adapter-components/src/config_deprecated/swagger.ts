@@ -36,11 +36,6 @@ import { UserFetchConfig, UserFetchConfigOptions } from '../definitions/user'
 const { isDefined } = lowerDashValues
 const { findDuplicates } = collections.array
 
-export type FieldOverrideConfig = {
-  type?: string
-  list?: boolean
-}
-
 export type TypeNameOverrideConfig = {
   originalName: string
   newName: string

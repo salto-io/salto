@@ -31,7 +31,7 @@ type AllElementsTypes = [
   InstanceElement,
   Field,
 ]
-export const getAllElements = (accountName = 'salto'): AllElementsTypes => {
+const getAllElements = (accountName = 'salto'): AllElementsTypes => {
   const addrElemID = new ElemID(accountName, 'address')
   const saltoAddr = new ObjectType({
     elemID: addrElemID,

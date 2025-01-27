@@ -80,7 +80,6 @@ export const { createClientAsync } = soap
 
 const log = logger(module)
 
-export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 const REQUEST_MAX_RETRIES = 5
 const REQUEST_RETRY_DELAY = 5000
 const LOCKED_FIELDS_MAX_DEPLOYS = 6

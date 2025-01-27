@@ -149,7 +149,7 @@ export const createRetryOptions = (
   shouldResetTimeout: timeoutOptions?.retryOnTimeout,
 })
 
-export type ConnectionParams<TCredentials> = {
+type ConnectionParams<TCredentials> = {
   connection?: Connection<TCredentials>
   retryOptions?: RetryOptions
   timeout?: number

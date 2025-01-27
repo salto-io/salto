@@ -33,7 +33,7 @@ export const oauthClientCredentialsType = new ObjectType({
   },
 })
 
-export type OAuthClientCredentials = authUtils.OAuthClientCredentialsArgs & {
+type OAuthClientCredentials = authUtils.OAuthClientCredentialsArgs & {
   authUrl: string
   baseUrl: string
 }

@@ -16,7 +16,7 @@ import { credsSpec } from './jest_environment'
 
 const log = logger(module)
 
-export type Opts = {
+type Opts = {
   credentials: Credentials
   elementsSource: ReadOnlyElementsSource
 }

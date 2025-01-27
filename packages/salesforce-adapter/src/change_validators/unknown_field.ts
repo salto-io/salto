@@ -16,7 +16,7 @@ import {
 } from '@salto-io/adapter-api'
 import { Types } from '../transformers/transformer'
 
-export const isUnknownField = (changedElement: ChangeDataType): changedElement is Field =>
+const isUnknownField = (changedElement: ChangeDataType): changedElement is Field =>
   isField(changedElement) && changedElement.refType.elemID.isEqual(Types.primitiveDataTypes.Unknown.elemID)
 
 const createChangeError = (field: Field): ChangeError => ({

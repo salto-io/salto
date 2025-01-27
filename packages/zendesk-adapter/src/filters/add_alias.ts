@@ -13,7 +13,7 @@ import { THEME_SETTINGS_TYPE_NAME } from '../constants'
 
 const THEME_SETTINGS = 'Theme settings'
 
-export const aliasMap: Record<string, AliasData> = {
+const aliasMap: Record<string, AliasData> = {
   [THEME_SETTINGS_TYPE_NAME]: {
     aliasComponents: [
       {

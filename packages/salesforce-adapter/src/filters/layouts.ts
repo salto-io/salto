@@ -18,7 +18,7 @@ import {
   isInstanceOfTypeSync,
   isCustomObjectOrCustomMetadataRecordTypeSync,
 } from './utils'
-import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
+import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects_to_object_type'
 
 const { awu } = collections.asynciterable
@@ -26,7 +26,6 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
-export const WEBLINK_TYPE_ID = new ElemID(SALESFORCE, WEBLINK_METADATA_TYPE)
 
 const fixLayoutPath = async (layout: InstanceElement, customObject: ObjectType, layoutName: string): Promise<void> => {
   layout.path = [

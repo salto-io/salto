@@ -30,9 +30,9 @@ import { accountIdInfoType, accountIdInfoListType } from './types'
 const { awu } = collections.asynciterable
 
 export const OWNER_STYLE_TYPES = ['Filter', 'Dashboard']
-export const NON_DEPLOYABLE_TYPES = ['Board']
+const NON_DEPLOYABLE_TYPES = ['Board']
 export const PARAMETER_STYLE_TYPES = ['PermissionScheme', 'NotificationScheme', 'SecurityLevel']
-export const DEPLOYABLE_TYPES = [
+const DEPLOYABLE_TYPES = [
   ...PARAMETER_STYLE_TYPES,
   'Automation',
   'Project',

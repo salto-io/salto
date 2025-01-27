@@ -19,14 +19,6 @@ type GroupPushEntry = {
   ruleId: string
 }
 
-type PushRuleEntry = {
-  mappingRuleId: string
-  status: string
-  name: string
-  searchExpression: string
-  searchExpressionType: string
-}
-
 const GROUP_PUSH_SCHEMA = Joi.object({
   mappingId: Joi.string().required(),
   status: Joi.string().required(),
@@ -35,22 +27,9 @@ const GROUP_PUSH_SCHEMA = Joi.object({
   ruleId: Joi.string().allow(null),
 }).unknown(true)
 
-const PUSH_RULE_SCHEMA = Joi.object({
-  mappingRuleId: Joi.string().required(),
-  status: Joi.string().required(),
-  name: Joi.string().required(),
-  searchExpression: Joi.string(),
-  searchExpressionType: Joi.string().required(),
-}).unknown(true)
-
 export const isGroupPushEntry = createSchemeGuard<GroupPushEntry>(
   GROUP_PUSH_SCHEMA,
   'Received an invalid group push entry',
-)
-
-export const isGroupPushRuleEntry = createSchemeGuard<PushRuleEntry>(
-  PUSH_RULE_SCHEMA,
-  'Received an invalid group push rule entry',
 )
 
 export const isAppSupportsGroupPush = (instance: InstanceElement): boolean =>

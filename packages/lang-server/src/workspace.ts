@@ -217,7 +217,9 @@ export class EditorWorkspace {
     const elementsToValidate = (
       await Promise.all([...ids].map(async id => elements.get(ElemID.fromFullName(id))))
     ).filter(values.isDefined)
-    return validateElements(elementsToValidate, elements)
+    return awu(await validateElements(elementsToValidate, elements))
+      .flatMap(({ value }) => value)
+      .toArray()
   }
 
   private async getValidationErrors(files: string[], changes: Change[]): Promise<errors.ValidationError[]> {

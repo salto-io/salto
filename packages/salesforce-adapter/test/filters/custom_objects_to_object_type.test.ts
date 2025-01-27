@@ -170,7 +170,7 @@ describe('Custom Objects to Object Type filter', () => {
       caseInstance = new InstanceElement('Case', customObjectType, {
         [INSTANCE_FULL_NAME_FIELD]: 'Case',
         [LABEL]: 'Case',
-        [DESCRIPTION]: 'Descriptosourus',
+        [DESCRIPTION]: 'Description test',
         fields: [
           {
             [INSTANCE_FULL_NAME_FIELD]: 'ExtraSalt',
@@ -385,7 +385,7 @@ describe('Custom Objects to Object Type filter', () => {
             [METADATA_TYPE]: CUSTOM_OBJECT,
             [LABEL]: 'Case',
             [CORE_ANNOTATIONS.ALIAS]: 'Case',
-            [DESCRIPTION]: 'Descriptosourus',
+            [DESCRIPTION]: 'Description test',
           }),
         )
       })

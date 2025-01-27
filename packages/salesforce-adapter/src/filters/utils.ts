@@ -310,10 +310,8 @@ export const addLabel = (elem: TypeElement | Field, label?: string): void => {
   setAnnotationDefault(elem, LABEL, label ?? name, BuiltinTypes.STRING)
 }
 
-export const addDescription = (elem: TypeElement | Field, description?: string): void => {
-  const { name } = elem.elemID
-  setAnnotationDefault(elem, DESCRIPTION, description ?? name, BuiltinTypes.STRING)
-}
+export const addDescription = (elem: TypeElement | Field, description?: string): void =>
+  setAnnotationDefault(elem, DESCRIPTION, description ?? '', BuiltinTypes.STRING)
 
 export const addPluralLabel = (elem: ObjectType, pluralLabel: string): void => {
   setAnnotationDefault(elem, PLURAL_LABEL, pluralLabel, BuiltinTypes.STRING)

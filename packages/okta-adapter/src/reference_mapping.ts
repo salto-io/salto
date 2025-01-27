@@ -67,6 +67,14 @@ const OktaReferenceSerializationStrategyLookup: Record<
     lookupIndexName: 'credentials.oauthClient.client_id',
     getReferenceId: topLevelId => topLevelId.createNestedID('credentials', 'oauthClient', 'client_id'),
   },
+  // When adding an email domain alongside the brand that uses it, we reverse the dependencies to create the brand
+  // first, then the email domain. This is because Okta requires the brand ID to be added to the email domain request.
+  // This means we can't use the `id` strategy since it serializes the reference in deployments using its `id` field,
+  // which isn't available. In which case it would be set as undefined, making the restore logic omit it from the
+  // brand instance, removing the field altogether.
+  // Instead, we use a strategy that's almost identical to `id`, except when it isn't available, we arbitrarily
+  // serialize it as the entire instance element - though it could be anything that isn't a string -  so that the brand
+  // deploy request can ignore any non-string serialized values.
   emailDomainId: {
     serialize: ({ ref }) => ref.value?.value?.id ?? ref.value,
     lookup: val => val,
@@ -255,11 +263,6 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     missingRefStrategy: 'typeAndValue',
     target: { type: 'DeviceAssurance' },
   },
-  // When adding an email domain alongside the brand that uses it, we reverse the dependencies so that create the brand
-  // first, then the email domain. This is because Okta requires the brand ID to be added to the email domain request.
-  // This means we can't use the `id` strategy as the email domain doesn't have an ID when the brand is created. Instead,
-  // we use `fullValue` and ignore it if no ID is present. Then the reference can be safely restored, and it's
-  // available for the email domain code to search for the brand that references it.
   {
     src: { field: 'emailDomainId', parentTypes: ['Brand'] },
     serializationStrategy: 'emailDomainId',

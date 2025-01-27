@@ -28,8 +28,6 @@ type ChangeWithKey = deployment.dependency.ChangeWithKey<AdditionChange<Instance
  * creation, Okta requires a single brand ID to be added to the request. If both are added in the same
  * deployment, we need to deploy the brand first and then the email domain, so that the brand ID is available
  * when creating the email domain.
- *
- * @param changes
  */
 export const addedEmailDomainAfterAddedBrand: DependencyChanger = async changes => {
   const additions = Array.from(changes.entries())

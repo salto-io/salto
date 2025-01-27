@@ -293,13 +293,18 @@ describe('Static Files', () => {
             .catch(e => expect(e.message).toEqual('Missing content on static file: path')))
       })
       describe('Flush', () => {
-        it('should flush all directory stores', async () => {
+        beforeEach(async () => {
           mockDirStore.flush = jest.fn().mockResolvedValue({
             updates: [{ filename: 'file.txt', buffer: Buffer.from('hello'), timestamp: 1234 }],
             deletions: ['file2.txt'],
           })
           await staticFilesSource.flush()
+        })
+        it('should flush all directory stores', async () => {
           expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
+          expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
+        })
+        it('should update the static files cache with the dirStore flush result', () => {
           expect(mockCacheStore.putMany).toHaveBeenCalledWith([
             {
               filepath: 'file.txt',
@@ -308,7 +313,6 @@ describe('Static Files', () => {
             },
           ])
           expect(mockCacheStore.deleteMany).toHaveBeenCalledWith(['file2.txt'])
-          expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
         })
       })
       describe('isPathIncluded', () => {

@@ -106,7 +106,7 @@ type ReferenceSerializationStrategyName =
   | 'customLabel'
   | 'fromDataInstance'
   | 'recordField'
-  | 'assignToReferenceField'
+  | 'recordFieldDollarPrefix'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategy
@@ -169,7 +169,7 @@ export const ReferenceSerializationStrategyLookup: Record<
       return val
     },
   },
-  assignToReferenceField: {
+  recordFieldDollarPrefix: {
     serialize: async ({ ref, path }) =>
       `$Record${API_NAME_SEPARATOR}${await safeApiName({ ref, path, relative: true })}`,
     lookup: (val, context) => {
@@ -996,7 +996,23 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
       field: ASSIGN_TO_REFERENCE,
       parentTypes: Object.values(FLOW_FIELD_TYPE_NAMES),
     },
-    serializationStrategy: 'assignToReferenceField',
+    serializationStrategy: 'recordFieldDollarPrefix',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: {
+      field: 'leftValueReference',
+      parentTypes: ['FlowCondition'],
+    },
+    serializationStrategy: 'recordFieldDollarPrefix',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: {
+      field: 'elementReference',
+      parentTypes: ['FlowElementReferenceOrValue'],
+    },
+    serializationStrategy: 'recordFieldDollarPrefix',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
 ]

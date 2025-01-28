@@ -2821,7 +2821,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     },
     omitTicketStatusTicketField: false,
     useNewInfra: true,
-    useGuideNewInfra: false,
+    useGuideNewInfra: true,
     translationBodyAsStaticFile: true,
     fetchBotBuilder: false,
   },

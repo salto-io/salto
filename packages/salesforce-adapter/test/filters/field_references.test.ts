@@ -1041,7 +1041,7 @@ describe('Serialization Strategies', () => {
       expect(fieldInstanceCreatedReference).toBeInstanceOf(ReferenceExpression)
       // Make sure serialization works on the created reference
       expect(
-        await ReferenceSerializationStrategyLookup.leftValueField.serialize({
+        await ReferenceSerializationStrategyLookup.flexiPageleftValueField.serialize({
           ref: componentInstanceCreatedReference,
           element: flexiPageInstance,
         }),

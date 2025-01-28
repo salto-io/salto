@@ -26,6 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
+  createSaltoElementError,
   createTemplateExpression,
   ERROR_MESSAGES,
   extractTemplate,
@@ -247,9 +248,15 @@ const filterCreator: FilterCreator = ({ config }) => {
                 prepRef,
               )
             } catch (e) {
-              log.error(
-                `Error serializing article translation body in deployment for ${instance.elemID.getFullName()}: ${e}, stack: ${e.stack}`,
-              )
+              const message = `Error serializing article translation body in deployment: ${e}, stack: ${e.stack}`
+
+              throw createSaltoElementError({
+                // caught in adapter.ts
+                message,
+                detailedMessage: message,
+                severity: 'Error',
+                elemID: instance.elemID,
+              })
             }
             return instance
           })

@@ -24,6 +24,7 @@ describe('articleAttachmentAndTranslationDependencyChanger', () => {
   const macro = new InstanceElement('macro', macroType, {})
   const articleAttachment = new InstanceElement('attachment1', articleAttachmentType, { id: 1 })
   const articleAttachment2 = new InstanceElement('attachment2', articleAttachmentType, { id: 2 })
+  const articleAttachment3 = new InstanceElement('attachment3', articleAttachmentType, { id: 3 })
   const articleTranslation = new InstanceElement('articleTranslation', articleTranslationType, {
     body: parserUtils.templateExpressionToStaticFile(
       createTemplateExpression({
@@ -34,6 +35,8 @@ describe('articleAttachmentAndTranslationDependencyChanger', () => {
           new ReferenceExpression(articleAttachment2.elemID),
           'bla',
           new ReferenceExpression(macro.elemID),
+          'attachment that does not have a change',
+          new ReferenceExpression(articleAttachment3.elemID),
         ],
       }),
       'test',
@@ -55,10 +58,9 @@ describe('articleAttachmentAndTranslationDependencyChanger', () => {
     ])
 
     const dependencyChanges = [...(await articleAttachmentAndTranslationDependencyChanger(inputChanges, inputDeps))]
-    expect(dependencyChanges.length).toBe(2)
+    expect(dependencyChanges.length).toBe(1)
     expect(dependencyChanges.every(change => change.action === 'add')).toBe(true)
-    expect(dependencyChanges[0].dependency).toMatchObject({ source: 2, target: 0 })
-    expect(dependencyChanges[1].dependency).toMatchObject({ source: 2, target: 1 })
+    expect(dependencyChanges[0].dependency).toMatchObject({ source: 2, target: 1 })
   })
   it('should do nothing if translation body does not have references', async () => {
     const afterTranslation = articleTranslation.clone()

@@ -249,9 +249,7 @@ const filterCreator: FilterCreator = ({ config }) => {
               )
             } catch (e) {
               const message = `Error serializing article translation body in deployment: ${e}, stack: ${e.stack}`
-              log.error(
-                `Error serializing article translation body in deployment for ${instance.elemID.getFullName()}: ${e}, stack: ${e.stack}`,
-              )
+
               throw createSaltoElementError({
                 // caught in adapter.ts
                 message,

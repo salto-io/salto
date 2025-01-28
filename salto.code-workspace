@@ -153,6 +153,18 @@
       "path": "packages/zuora-billing-adapter",
     },
     {
+      "name": "zendesk-adapter-e2e",
+      "path": "packages/zendesk-adapter-e2e",
+    },
+    {
+      "name": "adapter-creators",
+      "path": "packages/adapter-creators",
+    },
+    {
+      "name": "e2e-test-utils",
+      "path": "packages/e2e-test-utils",
+    },
+    {
       "name": "playground",
       "path": "playground",
     },

@@ -32,14 +32,14 @@ const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
 const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> = {
   profilesAndPermissionSets: true,
   managedElements: true,
-  formulaRefs: false,
+  formulaRefs: true,
   omitNonExistingFields: false,
 }
 
 const defaultFixElementsConfiguration: Required<FixElementsSettings> = {
   profilesAndPermissionSets: true,
   managedElements: true,
-  formulaRefs: false,
+  formulaRefs: true,
   omitNonExistingFields: true,
 }
 

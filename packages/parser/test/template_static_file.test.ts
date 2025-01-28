@@ -113,6 +113,15 @@ describe('template static file', () => {
     ],
   })
 
+  const multiLineEscapedMarker = createTemplateExpression({
+    parts: [
+      // eslint-disable-next-line no-template-curly-in-string
+      '\\${ not.reference }\nbefore ref \\',
+      new ReferenceExpression(article.elemID),
+      '\n mid \\ and end \\',
+    ],
+  })
+
   describe('templateExpressionToStaticFile', () => {
     const testTemplateExpressionToStaticFile = async (
       templateExpression: TemplateExpression,
@@ -182,6 +191,35 @@ describe('template static file', () => {
         "/hc/test/test/articles/${ zendesk.article.instance.article }\nHe \\${said, ''' \"Hello, World!\"\tThis is a backslash: \\ 😄${ zendesk.macro.instance.macro1 }/test",
       )
     })
+    describe('with multi line template that contains backslashes before a reference', () => {
+      let fileContent: string
+      beforeEach(async () => {
+        const staticContent = await templateExpressionToStaticFile(multiLineEscapedMarker, 'test').getContent()
+        expect(staticContent).toBeDefined()
+        if (staticContent === undefined) {
+          return
+        }
+        fileContent = staticContent.toString()
+      })
+      it('should escape template marker and all leading backslashes before it', () => {
+        // Original content starts with \${, we expect \ -> \\ and ${ -> \${, so the dumped content should start with \\\${
+        expect(fileContent).toMatch(/\\\\\\\$\{ not.reference \}\nbefore ref.*/m)
+      })
+      it('should escape backslashes that appear before a reference', () => {
+        // Original content has \ and then a reference, so we expect the dumped content to have \\${ ...
+        expect(fileContent).toMatch(/.*before ref \\\\\$\{ zendesk.article.instance.article \}\n.*/m)
+      })
+      it('should not escape backslashes that are not before a reference', () => {
+        expect(fileContent).toMatch(/.*\n mid \\ and end \\/m)
+      })
+      it('should escape template markers and backslashes only if they are before a template marker', async () => {
+        // Putting it all together to have one test that verifies the full content
+        expect(fileContent).toEqual(
+          // eslint-disable-next-line no-template-curly-in-string
+          '\\\\\\${ not.reference }\nbefore ref \\\\${ zendesk.article.instance.article }\n mid \\ and end \\',
+        )
+      })
+    })
   })
   describe('staticFileToTemplateExpression', () => {
     const testStaticFileToTemplate = async (templateExpression: TemplateExpression): Promise<void> => {
@@ -212,6 +250,11 @@ describe('template static file', () => {
     })
     it('should create template correctly for multiLineSpecialChars', async () => {
       await testStaticFileToTemplate(multiLineSpecialChars)
+    })
+    describe('with multi line template that contains backslashes before a reference', () => {
+      it('should get the same expression after dumping to file and parsing back', async () => {
+        await testStaticFileToTemplate(multiLineEscapedMarker)
+      })
     })
     it('should return undefined if isTemplate is not true', async () => {
       const staticfile = new StaticFile({ isTemplate: false, filepath: 'test', content: Buffer.from('test') })

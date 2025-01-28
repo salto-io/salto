@@ -58,8 +58,6 @@ export const createReferenceExpression = (ref: string): ReferenceExpression | Il
   }
 }
 
-export const unescapeTemplateMarker = (text: string): string => text.replace(/\\\$\{/gi, '${')
-
 export const registerRange = (context: ParseContext, id: ElemID, range: Omit<SourceRange, 'filename'>): void => {
   if (context.calcSourceMap) {
     context.sourceMap.push(id.getFullName(), { ...range, filename: context.filename })

@@ -2486,20 +2486,30 @@ describe('adapter', () => {
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
         expect(errors).toBeDefined()
-        expect(errors?.length).toEqual(3)
+        expect(errors?.length).toEqual(4)
         expect(errors?.[0]).toEqual({
           severity: 'Info',
           message: 'Other issues',
           detailedMessage:
             "Salto could not access the custom_status resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         })
-        expect(errors?.[1].message.split('.')[0]).toEqual('Some elements were not fetched due to Salto ID collisions')
-        expect(errors?.[1].detailedMessage.split('.')[0]).toEqual(
-          'Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions',
+        expect(errors?.[1].message).toEqual('Some elements were not fetched due to Salto ID collisions')
+        expect(errors?.[1].detailedMessage).toEqual(
+          expect.stringContaining(
+            '2 Zendesk elements and their child elements were not fetched, as they were mapped to a single ID zendesk.ticket_field.instance.Product_components_multiselect@su',
+          ),
         )
-        expect(errors?.[2].message.split('.')[0]).toEqual('Some elements were not fetched due to Salto ID collisions')
-        expect(errors?.[2].detailedMessage.split('.')[0]).toEqual(
-          'Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions',
+        expect(errors?.[2].message).toEqual('Some elements were not fetched due to Salto ID collisions')
+        expect(errors?.[2].detailedMessage).toEqual(
+          expect.stringContaining(
+            '2 Zendesk elements and their child elements were not fetched, as they were mapped to a single ID zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect__component_b@suuuu',
+          ),
+        )
+        expect(errors?.[3].message).toEqual('Some elements were not fetched due to Salto ID collisions')
+        expect(errors?.[3].detailedMessage).toEqual(
+          expect.stringContaining(
+            '2 Zendesk elements and their child elements were not fetched, as they were mapped to a single ID zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect__component_a@suuuu',
+          ),
         )
         const elementsNames = elements.map(e => e.elemID.getFullName())
         expect(elementsNames).not.toContain(
@@ -2622,25 +2632,33 @@ describe('adapter', () => {
             elementsSource: buildElementsSourceFromElements([]),
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
-        expect(fetchRes.errors?.length).toEqual(3)
+        expect(fetchRes.errors?.length).toEqual(4)
         expect(fetchRes.errors?.[0]).toEqual({
           severity: 'Warning',
           message: 'Other issues',
           detailedMessage:
             'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
         })
-        expect(fetchRes.errors?.[1].message.split('.')[0]).toEqual(
-          'Some elements were not fetched due to Salto ID collisions',
+
+        expect(fetchRes.errors?.[1].message).toEqual('Some elements were not fetched due to Salto ID collisions')
+        expect(fetchRes.errors?.[1].detailedMessage).toEqual(
+          expect.stringContaining(
+            '2 Zendesk elements and their child elements were not fetched, as they were mapped to a single ID zendesk.ticket_field.instance.Product_components_multiselect@su',
+          ),
         )
-        expect(fetchRes.errors?.[1].detailedMessage.split('.')[0]).toEqual(
-          'Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions',
+        expect(fetchRes.errors?.[2].message).toEqual('Some elements were not fetched due to Salto ID collisions')
+        expect(fetchRes.errors?.[2].detailedMessage).toEqual(
+          expect.stringContaining(
+            '2 Zendesk elements and their child elements were not fetched, as they were mapped to a single ID zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect__component_b@suuuu',
+          ),
         )
-        expect(fetchRes.errors?.[2].message.split('.')[0]).toEqual(
-          'Some elements were not fetched due to Salto ID collisions',
+        expect(fetchRes.errors?.[3].message).toEqual('Some elements were not fetched due to Salto ID collisions')
+        expect(fetchRes.errors?.[3].detailedMessage).toEqual(
+          expect.stringContaining(
+            '2 Zendesk elements and their child elements were not fetched, as they were mapped to a single ID zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect__component_a@suuuu',
+          ),
         )
-        expect(fetchRes.errors?.[2].detailedMessage.split('.')[0]).toEqual(
-          'Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions',
-        )
+
         expect(fetchRes.elements.filter(isInstanceElement).find(e => e.elemID.typeName === 'article')).not.toBeDefined()
         expect(fetchRes.elements.filter(isObjectType).find(e => e.elemID.typeName === 'article')).toBeDefined()
       })

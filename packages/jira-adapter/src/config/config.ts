@@ -187,6 +187,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     allowUserCallFailure: false,
     enableAssetsObjectFieldConfiguration: true,
     removeFieldConfigurationDefaultValues: false,
+    splitFieldContextOptions: true,
   },
   deploy: {
     forceDelete: false,

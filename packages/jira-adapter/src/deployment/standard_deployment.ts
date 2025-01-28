@@ -13,6 +13,7 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionChange,
+  isAdditionOrModificationChange,
   isEqualValues,
   isModificationChange,
   isSaltoError,
@@ -45,6 +46,7 @@ type DeployChangeParam = {
   elementsSource?: ReadOnlyElementsSource
   allowedStatusCodesOnRemoval?: number[]
   serviceIdSetter?: (instance: InstanceElement, serviceIdField: string, response: clientUtils.ResponseValue) => void
+  hiddenFieldsSetter?: (instance: InstanceElement, response: clientUtils.ResponseValue) => void
 }
 
 const invertKeysNames = (instance: Record<string, unknown>): void => {
@@ -64,6 +66,14 @@ export const defaultServiceIdSetter = (
   instance.value[serviceIdField] = response[serviceIdField]
 }
 
+export const toNumberServiceIdSetter = (
+  instance: InstanceElement,
+  serviceIdField: string,
+  response: clientUtils.ResponseValue,
+): void => {
+  instance.value[serviceIdField] = Number(response[serviceIdField])
+}
+
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
  */
@@ -76,6 +86,7 @@ export const defaultDeployChange = async ({
   elementsSource,
   allowedStatusCodesOnRemoval,
   serviceIdSetter = defaultServiceIdSetter,
+  hiddenFieldsSetter,
 }: DeployChangeParam): Promise<clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName, resolveValues, elementsSource)
   invertKeysNames(getChangeData(resolvedChange).value)
@@ -114,6 +125,14 @@ export const defaultDeployChange = async ({
     } else {
       log.warn('Received unexpected response from deployChange: %o', response)
     }
+  }
+  if (
+    isAdditionOrModificationChange(change) &&
+    response !== undefined &&
+    !Array.isArray(response) &&
+    hiddenFieldsSetter !== undefined
+  ) {
+    hiddenFieldsSetter(change.data.after, response)
   }
   return response
 }

@@ -6,7 +6,14 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { ElemID, InstanceElement, ObjectType, isEqualElements } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  isEqualElements,
+  ReferenceExpression,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { generateInstancesWithInitialTypes } from '../../../src/fetch/element/instance_element'
 import { queryWithDefault } from '../../../src/definitions'
 import { InstanceFetchApiDefinitions } from '../../../src/definitions/system/fetch'
@@ -189,6 +196,137 @@ describe('instance element', () => {
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(0)
+    })
+    describe('standalone fields', () => {
+      it('should create standalone instances and references when standalone fields are provided', () => {
+        const entries = [{ str: 'A', num: 2, nested: [{ str: 'B' }] }]
+        const res = generateInstancesWithInitialTypes({
+          adapterName: 'myAdapter',
+          entries,
+          typeName: 'myType',
+          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+            customizations: {
+              myType: {
+                element: {
+                  topLevel: { isTopLevel: true },
+                  fieldCustomizations: { nested: { standalone: { typeName: 'myType__myNestedType' } } },
+                },
+              },
+              myType__myNestedType: { element: { topLevel: { isTopLevel: true } } },
+            },
+          }),
+          customNameMappingFunctions: {},
+          definedTypes: {},
+        })
+        expect(res.errors).toBeUndefined()
+        expect(res.instances).toHaveLength(2)
+        expect(res.types.map(e => e.elemID.getFullName())).toEqual([
+          'myAdapter.myType',
+          'myAdapter.myType__myNestedType',
+        ])
+        const [objType, subType] = res.types
+        const myType = new InstanceElement('unnamed_0', objType, entries[0], [])
+        const myNestedType = new InstanceElement('unnamed_0__unnamed_0', subType, entries[0].nested[0], [], {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(myType.elemID, myType)],
+        })
+        myType.value.nested = [new ReferenceExpression(res.instances[1].elemID, res.instances[1])]
+        expect(
+          isEqualElements(
+            res.instances.find(e => e.elemID.typeName === 'myType'),
+            myType,
+          ),
+        ).toBeTruthy()
+        expect(
+          isEqualElements(
+            res.instances.find(e => e.elemID.typeName === 'myType__myNestedType'),
+            myNestedType,
+          ),
+        ).toBeTruthy()
+      })
+      describe('allowEmptyArrays', () => {
+        it('should remove standalone instances empty arrays when allowEmptyArrays is false', () => {
+          const entries = [{ str: 'A', num: 2, nested: { str: 'B', arr: [] } }]
+          const res = generateInstancesWithInitialTypes({
+            adapterName: 'myAdapter',
+            entries,
+            typeName: 'myType',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: {
+                    topLevel: { isTopLevel: true },
+                    fieldCustomizations: { nested: { standalone: { typeName: 'myType__myNestedType' } } },
+                  },
+                },
+                myType__myNestedType: { element: { topLevel: { isTopLevel: true } } },
+              },
+            }),
+            customNameMappingFunctions: {},
+            definedTypes: {},
+          })
+          expect(res.errors).toBeUndefined()
+          expect(res.instances).toHaveLength(2)
+          expect(res.instances[1].value).toEqual({ str: 'B' })
+        })
+
+        it('should keep standalone instances empty arrays when allowEmptyArrays is true', () => {
+          const entries = [{ str: 'A', num: 2, nested: { str: 'B', arr: [] } }]
+          const res = generateInstancesWithInitialTypes({
+            adapterName: 'myAdapter',
+            entries,
+            typeName: 'myType',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: {
+                    topLevel: { isTopLevel: true, allowEmptyArrays: true },
+                    fieldCustomizations: {
+                      nested: {
+                        standalone: { typeName: 'myType__myNestedType' },
+                      },
+                    },
+                  },
+                },
+                myType__myNestedType: { element: { topLevel: { isTopLevel: true, allowEmptyArrays: true } } },
+              },
+            }),
+            customNameMappingFunctions: {},
+            definedTypes: {},
+          })
+          expect(res.errors).toBeUndefined()
+          expect(res.instances).toHaveLength(2)
+          expect(res.instances[1].value).toEqual({ str: 'B', arr: [] })
+        })
+        // This should be fixed in SALTO-6584
+        it('should remove standalone instances empty arrays when allowEmptyArrays is false and nested type is defined with allowEmptyArrays true', () => {
+          const entries = [{ str: 'A', num: 2, nested: { str: 'B', arr: [] } }]
+          const res = generateInstancesWithInitialTypes({
+            adapterName: 'myAdapter',
+            entries,
+            typeName: 'myType',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: {
+                    topLevel: { isTopLevel: true, allowEmptyArrays: false },
+                    fieldCustomizations: {
+                      nested: {
+                        standalone: { typeName: 'myType__myNestedType' },
+                      },
+                    },
+                  },
+                },
+                myType__myNestedType: { element: { topLevel: { isTopLevel: true, allowEmptyArrays: true } } },
+              },
+            }),
+            customNameMappingFunctions: {},
+            definedTypes: {},
+          })
+          expect(res.errors).toBeUndefined()
+          expect(res.instances).toHaveLength(2)
+          expect(res.instances[1].value).toEqual({ str: 'B' })
+        })
+      })
     })
   })
 })

@@ -223,6 +223,9 @@ export const isCustomMetadataRecordTypeSync = (elem: Element): elem is ObjectTyp
   return isObjectType(elem) && (elementApiName?.endsWith(CUSTOM_METADATA_SUFFIX) ?? false)
 }
 
+export const isCustomObjectOrCustomMetadataRecordTypeSync = (elem: Element): elem is ObjectType =>
+  isCustomObjectSync(elem) || isCustomMetadataRecordTypeSync(elem)
+
 /**
  * @deprecated use {@link isCustomMetadataRecordInstanceSync} instead.
  */
@@ -493,7 +496,7 @@ export const instanceInternalId = (instance: InstanceElement): string =>
 export const hasApiName = (elem: Element): boolean => apiName(elem) !== undefined
 
 export const extractFlatCustomObjectFields = (elem: Element): Element[] =>
-  [elem].concat(isCustomObjectSync(elem) ? Object.values(elem.fields) : [])
+  [elem].concat(isCustomObjectOrCustomMetadataRecordTypeSync(elem) ? Object.values(elem.fields) : [])
 
 export type QueryOperator = '>' | '<' | '=' | 'IN' // 'IN' is for values that can be split across multiple queries
 export type SoqlQuery = {

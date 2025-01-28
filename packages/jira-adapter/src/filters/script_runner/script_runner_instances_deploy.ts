@@ -10,6 +10,7 @@ import { Change, InstanceElement, getChangeData, isInstanceChange } from '@salto
 import _ from 'lodash'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
+import { scriptRunnerAuditSetter } from './script_runner_filter'
 
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
@@ -51,6 +52,7 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
         change,
         client: scriptRunnerClient,
         apiDefinitions: scriptRunnerApiDefinitions,
+        hiddenFieldsSetter: scriptRunnerAuditSetter, // the time stamps might differ between the request and the response
       })
     })
     return { deployResult, leftoverChanges }

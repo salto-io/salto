@@ -16,6 +16,7 @@ import { defaultMultifactorEnrollmentPolicyDependency } from './default_multi_fa
 import { addAuthenticatorToMfaPolicyDependency } from './authenticator_to_mfa_policy'
 import { addDependenciesFromPolicyToPriorPolicy } from './order_policies_by_priority'
 import { addAppGroupToAppUserSchemaDependency } from './app_group_assignment_to_app_schema'
+import { addedEmailDomainAfterAddedBrand } from './brand_and_email_domain'
 
 const { awu } = collections.asynciterable
 
@@ -29,6 +30,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   defaultMultifactorEnrollmentPolicyDependency,
   addAuthenticatorToMfaPolicyDependency,
   addDependenciesFromPolicyToPriorPolicy,
+  addedEmailDomainAfterAddedBrand,
 ]
 
 export const dependencyChanger: DependencyChanger = async (changes, deps) =>

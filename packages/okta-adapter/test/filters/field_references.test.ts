@@ -27,6 +27,8 @@ import {
   OKTA,
   USERTYPE_TYPE_NAME,
   USER_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  EMAIL_DOMAIN_TYPE_NAME,
 } from '../../src/constants'
 import { getFilterParams } from '../utils'
 import { FETCH_CONFIG } from '../../src/config'
@@ -126,6 +128,13 @@ describe('fieldReferencesFilter', () => {
       },
     },
   })
+  const brandType = new ObjectType({
+    elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
+    fields: {
+      emailDomainId: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const emailDomainType = new ObjectType({ elemID: new ElemID(OKTA, EMAIL_DOMAIN_TYPE_NAME) })
   const generateElements = (): Element[] => [
     profileMappingType,
     userTypeType,
@@ -137,6 +146,8 @@ describe('fieldReferencesFilter', () => {
     mfaAuthenticatorsType,
     mfaType,
     authorizationServerPolicyType,
+    brandType,
+    emailDomainType,
     new InstanceElement('mapping1', profileMappingType, {
       source: { id: '111', type: 'user' },
       target: { id: '222', type: 'appuser' },
@@ -160,6 +171,8 @@ describe('fieldReferencesFilter', () => {
         },
       },
     }),
+    new InstanceElement('brand1', brandType, { emailDomainId: 'emailDomain1' }),
+    new InstanceElement('emailDomain1', emailDomainType, { id: 'emailDomain1' }),
   ]
 
   describe('onFetch', () => {
@@ -215,6 +228,8 @@ describe('fieldReferencesFilter', () => {
       expect(authorizationServerPolicy.value.conditions.clients.include[0].elemID.getFullName()).toEqual(
         'okta.Application.instance.app1.credentials.oauthClient.client_id',
       )
+      const brand1 = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'brand1')[0] as InstanceElement
+      expect(brand1.value.emailDomainId).toBeInstanceOf(ReferenceExpression)
     })
     describe('When User type is enabled', () => {
       it('should create references to User instances', async () => {

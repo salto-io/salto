@@ -6,22 +6,33 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { DeployMessage } from '@salto-io/jsforce'
-import { decorators } from '@salto-io/lowerdash'
+import { decorators, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
+import {
+  SaltoError,
+  InstanceElement,
+  CORE_ANNOTATIONS,
+  ReadOnlyElementsSource,
+  Element,
+  ElemID,
+} from '@salto-io/adapter-api'
 import {
   ENOTFOUND,
   ERROR_HTTP_502,
   ERROR_PROPERTIES,
   INVALID_GRANT,
   isSalesforceError,
-  SALESFORCE_DEPLOY_PROBLEMS,
+  SALESFORCE_DEPLOY_ERROR_MESSAGES,
   SALESFORCE_ERRORS,
   SalesforceError,
+  VALIDATION_RULES_METADATA_TYPE,
 } from '../constants'
+import { isInstanceOfTypeSync } from '../filters/utils'
 
+const { awu } = collections.asynciterable
+const { DefaultMap } = collections.map
 const log = logger(module)
 
 export const REQUEST_LIMIT_EXCEEDED_MESSAGE =
@@ -137,17 +148,18 @@ export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(async or
   }
 })
 
-// Deploy Problems Mapping
+// Deploy Error Messages Mapping
 
-export type DeployProblemMapper = {
-  test: (problem: string) => boolean
-  map: (deployMessage: DeployMessage) => string
+export type DeployErrorMessageMapper = {
+  test: (errorMessage: string) => boolean
+  map: (saltoDeployError: SaltoError) => string
 }
 
-export type DeployProblemMappers = {
-  [SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS]: DeployProblemMapper
-  [SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT]: DeployProblemMapper
-  [SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME]: DeployProblemMapper
+export type DeployErrorMessageMappers = {
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS]: DeployErrorMessageMapper
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT]: DeployErrorMessageMapper
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME]: DeployErrorMessageMapper
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION]: DeployErrorMessageMapper
 }
 
 export const SCHEDULABLE_CLASS_MESSAGE =
@@ -164,41 +176,136 @@ export const INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE =
   "Please make sure you're managing Dashboards in your Salto environment and that your deployment contains the referenced Dashboard instance.\n" +
   'For more information, please refer to: https://help.salto.io/en/articles/7439350-supported-salesforce-types'
 
-export const DEPLOY_PROBLEM_MAPPER: DeployProblemMappers = {
-  [SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS]: {
-    test: (problem: string) => problem === SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS,
-    map: (deployMessage: DeployMessage) => withSalesforceError(deployMessage.problem, SCHEDULABLE_CLASS_MESSAGE),
+export const FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE =
+  'The element does not meet the validation rules. Try deactivating the validation rules if possible.'
+
+export const DEPLOY_ERROR_MESSAGE_MAPPER: DeployErrorMessageMappers = {
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS]: {
+    test: (errorMessage: string) => errorMessage === SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS,
+    map: (saltoDeployError: SaltoError) => withSalesforceError(saltoDeployError.message, SCHEDULABLE_CLASS_MESSAGE),
   },
-  [SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT]: {
-    test: (problem: string) => problem === SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT,
-    map: (deployMessage: DeployMessage) =>
-      withSalesforceError(deployMessage.problem, MAX_METADATA_DEPLOY_LIMIT_MESSAGE),
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT]: {
+    test: (errorMessage: string) => errorMessage === SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT,
+    map: (saltoDeployError: SaltoError) =>
+      withSalesforceError(saltoDeployError.message, MAX_METADATA_DEPLOY_LIMIT_MESSAGE),
   },
-  [SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME]: {
-    test: (problem: string) => problem.includes(SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME),
-    map: (deployMessage: DeployMessage) => `${deployMessage.problem}\n${INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE}`,
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME]: {
+    test: (errorMessage: string) =>
+      errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME),
+    map: (saltoDeployError: SaltoError) => `${saltoDeployError.message}\n${INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE}`,
+  },
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION]: {
+    test: (errorMessage: string) =>
+      errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION),
+    map: (saltoDeployError: SaltoError) =>
+      `${FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE}\n${saltoDeployError.detailedMessage}`,
   },
 }
 
-export const getUserFriendlyDeployMessage = (deployMessage: DeployMessage): DeployMessage => {
-  const { problem } = deployMessage
+export const getUserFriendlyDeployErrorMessage = (saltoDeployError: SaltoError): string => {
   const userFriendlyMessageByMapperName = _.mapValues(
-    _.pickBy(DEPLOY_PROBLEM_MAPPER, mapper => mapper.test(problem)),
-    mapper => mapper.map(deployMessage),
+    _.pickBy(DEPLOY_ERROR_MESSAGE_MAPPER, mapper => mapper.test(saltoDeployError.message)),
+    mapper => mapper.map(saltoDeployError),
   )
   const matchedMapperNames = Object.keys(userFriendlyMessageByMapperName)
   if (_.isEmpty(matchedMapperNames)) {
-    return deployMessage
+    return saltoDeployError.message
   }
   if (matchedMapperNames.length > 1) {
     log.error(
       'The error %s matched on more than one mapper. Matcher mappers: %s',
-      problem,
+      saltoDeployError.message,
       inspectValue(matchedMapperNames),
     )
-    return deployMessage
+    return saltoDeployError.message
   }
   const [mapperName, userFriendlyMessage] = Object.entries(userFriendlyMessageByMapperName)[0]
-  log.debug('Replacing error %s message to %s. Original error: %o', mapperName, userFriendlyMessage, problem)
-  return { ...deployMessage, problem: userFriendlyMessage }
+  log.debug(
+    'Replacing error %s message to %s. Original error: %s',
+    mapperName,
+    userFriendlyMessage,
+    saltoDeployError.message,
+  )
+  return userFriendlyMessage
 }
+
+// Deploy Error message enrichment
+
+type ValidationRule = InstanceElement & {
+  value: InstanceElement['value'] & {
+    errorMessage: string
+  }
+}
+
+const isValidationRule = (instance: Element): instance is ValidationRule =>
+  isInstanceOfTypeSync(VALIDATION_RULES_METADATA_TYPE)(instance) && _.isString(_.get(instance.value, 'errorMessage'))
+
+const getValidationRulesMessages = (error: SaltoError): string[] => {
+  const pattern = /FIELD_CUSTOM_VALIDATION_EXCEPTION:(.*?):--/g
+  return [...error.message.matchAll(pattern)].map(match => match[1])
+}
+
+const createValidationRulesIndex = async (
+  elementsSource: ReadOnlyElementsSource,
+  groupTypeName: string,
+): Promise<Map<string, ValidationRule[]>> => {
+  const isGroupValidationRule = (id: ElemID): boolean =>
+    id.typeName === VALIDATION_RULES_METADATA_TYPE && id.name.includes(groupTypeName)
+  const validationRules = await awu(await elementsSource.list())
+    .filter(isGroupValidationRule)
+    .map(elementsSource.get)
+    .filter(isValidationRule)
+    .toArray()
+  return validationRules.reduce(
+    (acc: Map<string, ValidationRule[]>, validationRule) => {
+      acc.get(validationRule.value.errorMessage)?.push(validationRule)
+      return acc
+    },
+    new DefaultMap<string, ValidationRule[]>(() => []),
+  )
+}
+
+const getValidationRulesUrls = (validationRules: ValidationRule[]): string[] =>
+  validationRules.map(validationRule => validationRule.annotations[CORE_ANNOTATIONS.SERVICE_URL]).filter(_.isString)
+
+const enrichValidationRulesDeployErrors = async (
+  errors: readonly SaltoError[],
+  elementsSource: ReadOnlyElementsSource,
+  groupTypeName: string,
+): Promise<readonly SaltoError[]> => {
+  if (
+    !errors.some(error => error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION))
+  ) {
+    return errors
+  }
+  const validationRulesIndex: Map<string, ValidationRule[]> = await createValidationRulesIndex(
+    elementsSource,
+    groupTypeName,
+  )
+  return errors.map(error =>
+    error.message.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION)
+      ? {
+          ...error,
+          detailedMessage: `${getValidationRulesMessages(error)
+            .map(validationRuleMessage => {
+              const urls = getValidationRulesUrls(validationRulesIndex.get(validationRuleMessage) ?? [])
+              if (urls.length === 0) {
+                return `- **${validationRuleMessage}**.`
+              }
+              if (urls.length === 1) {
+                return `- **${validationRuleMessage}**. [View in Salesforce](${urls[0]})`
+              }
+              const linkMessages = urls.map((url, index) => `   - [Link${index + 1}](${url})`).join('\n')
+              return `- **${validationRuleMessage}**. Found multiple Validation Rules with this error message. Please review them:\n${linkMessages}`
+            })
+            .join('\n')}`,
+        }
+      : error,
+  )
+}
+
+export const enrichSaltoDeployErrors = async (
+  errors: readonly SaltoError[],
+  elementsSource: ReadOnlyElementsSource,
+  groupTypeName: string,
+): Promise<readonly SaltoError[]> => enrichValidationRulesDeployErrors(errors, elementsSource, groupTypeName)

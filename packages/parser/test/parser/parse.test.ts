@@ -1358,15 +1358,24 @@ describe('Salto parser', () => {
       const body = `
         type salesforce.templates {
           tmpl = "hello {{$\{temp.la@te.instance.stuff@us}}}"
+          tmpl2 = "escaped \\\${ not.reference }"
+          tmpl3 = "escaped \\\\\\\${ not.reference }"
+          tmpl4 = "not escaped \\\\\${ is.reference }"
+          tmpl5 = "ends with backslash \${ is.reference }\\\\"
         }
       `
+      let refObj: ObjectType
 
       beforeEach(async () => {
         ;({ elements, sourceMap, errors } = await parseBody(body))
+        refObj = elements[0] as ObjectType
+      })
+
+      it('should have no parse errors', () => {
+        expect(errors).toHaveLength(0)
       })
 
       it('should parse references to template as TemplateExpression', () => {
-        const refObj = elements[0] as ObjectType
         expect(refObj.annotations.tmpl).toBeInstanceOf(TemplateExpression)
         expect(refObj.annotations.tmpl.parts).toEqual([
           'hello {{',
@@ -1374,6 +1383,31 @@ describe('Salto parser', () => {
             elemID: new ElemID('temp', 'la@te', 'instance', 'stuff@us'),
           }),
           '}}',
+        ])
+      })
+      it('should parse escaped string that is similar to a template as string', () => {
+        // eslint-disable-next-line no-template-curly-in-string
+        expect(refObj.annotations.tmpl2).toEqual('escaped ${ not.reference }')
+        // eslint-disable-next-line no-template-curly-in-string
+        expect(refObj.annotations.tmpl3).toEqual('escaped \\${ not.reference }')
+      })
+      it('should parse template that contains backslash as TemplateExpression', () => {
+        expect(refObj.annotations.tmpl4).toBeInstanceOf(TemplateExpression)
+        expect(refObj.annotations.tmpl4.parts).toEqual([
+          'not escaped \\',
+          expect.objectContaining({
+            elemID: new ElemID('is', 'reference'),
+          }),
+        ])
+      })
+      it('should parse template that ends with a backslash as TemplateExpression', () => {
+        expect(refObj.annotations.tmpl5).toBeInstanceOf(TemplateExpression)
+        expect(refObj.annotations.tmpl5.parts).toEqual([
+          'ends with backslash ',
+          expect.objectContaining({
+            elemID: new ElemID('is', 'reference'),
+          }),
+          '\\',
         ])
       })
 
@@ -1393,6 +1427,8 @@ value
           escapedTemplateMarker = '''
 multiline
 \${{$\{te@mp.late.instance.multiline_stuff@us}}} and {{$\{te@mp.late.instance.multiline_stuff@us}}}\${{$\{te@mp.late.instance.multiline_stuff@us}}}{{$\{te@mp.late.instance.multiline_stuff@us}}} hello
+line where the original content looks like an escaped reference but it it is actually not a reference: \\\\\\\${ not.reference }
+line that ends with \\
 '''
         }
       `
@@ -1433,7 +1469,8 @@ multiline
           expect.objectContaining({
             elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
           }),
-          '}} hello',
+          // eslint-disable-next-line no-template-curly-in-string
+          '}} hello\nline where the original content looks like an escaped reference but it it is actually not a reference: \\${ not.reference }\nline that ends with \\',
         ])
       })
 

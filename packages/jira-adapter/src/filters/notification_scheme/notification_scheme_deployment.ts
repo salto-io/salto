@@ -23,7 +23,7 @@ import { collections } from '@salto-io/lowerdash'
 import { findObject, setFieldDeploymentAnnotations, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME } from '../../constants'
-import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
+import { defaultDeployChange, deployChanges, toNumberServiceIdSetter } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 import {
   getEventChangesToDeploy,
@@ -159,6 +159,7 @@ const filter: FilterCreator = ({ client, config }) => {
           change,
           client,
           apiDefinitions: config.apiDefinitions,
+          serviceIdSetter: toNumberServiceIdSetter,
         })
         if (isModificationChange(change)) {
           const eventChanges = getEventChangesToDeploy(change)

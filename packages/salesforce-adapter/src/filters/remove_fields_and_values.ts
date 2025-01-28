@@ -17,7 +17,7 @@ const fieldRemovalsForType = (type: ObjectType, typeNameToFieldRemovals: Map<str
   return typeNameToFieldRemovals.get(typeName) ?? []
 }
 
-const removeFieldsFromTypes = (elements: Element[], typeNameToFieldRemovals: Map<string, string[]>): void => {
+export const removeFieldsFromTypes = (elements: Element[], typeNameToFieldRemovals: Map<string, string[]>): void => {
   elements.filter(isObjectType).forEach(type => {
     const fieldsToRemove = fieldRemovalsForType(type, typeNameToFieldRemovals)
     fieldsToRemove.forEach(fieldName => {
@@ -26,7 +26,10 @@ const removeFieldsFromTypes = (elements: Element[], typeNameToFieldRemovals: Map
   })
 }
 
-const removeValuesFromInstances = (elements: Element[], typeNameToFieldRemovals: Map<string, string[]>): void => {
+export const removeValuesFromInstances = (
+  elements: Element[],
+  typeNameToFieldRemovals: Map<string, string[]>,
+): void => {
   const removeValuesFunc: TransformFunc = ({ value, field }) => {
     if (!field) return value
     const fieldsToRemove = fieldRemovalsForType(field.parent, typeNameToFieldRemovals)
@@ -61,9 +64,12 @@ const removeValuesFromInstances = (elements: Element[], typeNameToFieldRemovals:
  * */
 export const makeFilter =
   (typeNameToFieldRemovals: Map<string, string[]>): FilterCreator =>
-  () => ({
+  ({ config }) => ({
     name: 'removeFieldsAndValuesFilter',
     onFetch: async (elements: Element[]) => {
+      if (config.fetchProfile.isFeatureEnabled('supportProfileTabVisibilities')) {
+        return
+      }
       removeValuesFromInstances(elements, typeNameToFieldRemovals)
       removeFieldsFromTypes(elements, typeNameToFieldRemovals)
     },

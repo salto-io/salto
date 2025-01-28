@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { filters } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { OKTA } from '../constants'
@@ -18,7 +19,7 @@ const filterCreators: Record<string, FilterCreator> = {
   addAlias: filters.addAliasFilterCreator(),
   query: filters.queryFilterCreator({}),
   sortLists: filters.sortListsFilterCreator(),
-  omitCollitions: filters.omitCollisionsFilterCreator(OKTA),
+  omitCollitions: filters.omitCollisionsFilterCreator(_.upperFirst(OKTA)),
 }
 
 export default filterCreators

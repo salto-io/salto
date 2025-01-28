@@ -15,6 +15,7 @@ import {
 } from '@salto-io/adapter-api'
 import { createSchemeGuard, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import Joi from 'joi'
+import { isEmpty } from 'lodash'
 import { CROSS_SERVICE_SUPPORTED_APPS, JIRA, RECIPE_CODE_TYPE, RECIPE_TYPE } from '../../../constants'
 import { FilterCreator } from '../../../filter'
 import { BlockBase } from '../recipe_block_types'
@@ -122,6 +123,9 @@ const splitAllProjectAndIssueType = (inst: InstanceElement): void =>
       ) {
         splitProjectAndIssueType(objValues, PROJECT_ISSUETYPE, PROJECT_KEY, ISSUE_TYPE)
         splitProjectAndIssueType(objValues, SAMPLE_PROJECT_ISSUETYPE, SAMPLE_PROJECT_KEY, SAMPLE_ISSUE_TYPE)
+        if (isEmpty(objValues.dynamicPickListSelection)) {
+          delete objValues.dynamicPickListSelection
+        }
       }
       return WALK_NEXT_STEP.RECURSE
     },

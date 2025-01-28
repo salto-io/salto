@@ -135,6 +135,7 @@ const TYPES_AND_VALUES_TO_SORT: Record<string, Record<string, Record<string, str
     },
     WorkflowTransitions: {
       properties: ['key'],
+      links: ['fromStatusReference', 'toPort', 'fromPort'],
     },
     // TODO: add also WorkflowCondition
   },

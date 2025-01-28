@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _ from 'lodash'
+import _, { isEmpty } from 'lodash'
 import { Change, Element, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { ARTICLE_TYPE_NAME, SECTION_TYPE_NAME, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME } from '../../constants'
@@ -40,11 +40,13 @@ const filterCreator: FilterCreator = ({ client, config, oldApiDefinitions }) => 
         orderType,
       })
 
-      // Promoted articles are first
-      articleOrderElements.value[ARTICLES_FIELD] = _.sortBy(
-        articleOrderElements.value[ARTICLES_FIELD],
-        a => !a.value.value.promoted,
-      )
+      if (!isEmpty(articleOrderElements.value[ARTICLES_FIELD])) {
+        // Promoted articles are first
+        articleOrderElements.value[ARTICLES_FIELD] = _.sortBy(
+          articleOrderElements.value[ARTICLES_FIELD],
+          a => !a.value.value.promoted,
+        )
+      }
 
       elements.push(articleOrderElements)
     })

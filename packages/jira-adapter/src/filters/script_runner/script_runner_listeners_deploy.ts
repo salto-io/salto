@@ -27,6 +27,7 @@ import { FilterCreator } from '../../filter'
 import { SCRIPT_RUNNER_LISTENER_TYPE } from '../../constants'
 import { getLookUpName } from '../../reference_mapping'
 import { JiraDuckTypeConfig } from '../../config/api_config'
+import { listenersAuditSetter } from './script_runner_filter'
 
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
@@ -47,6 +48,16 @@ const isListenersResponse = createSchemeGuard<ListenersResponse>(
   LISTENERS_RESPONSE_SCHEME,
   'Received an invalid script runner listeners response',
 )
+
+const updateAuditData = (changes: Change<InstanceElement>[], response: ListenersResponse): void => {
+  const uuidToResponse = Object.fromEntries(
+    response.values.filter(value => value.uuid !== undefined).map(value => [value.uuid, value]),
+  )
+  changes
+    .map(getChangeData)
+    .filter(instance => uuidToResponse[instance.value.uuid] !== undefined)
+    .forEach(instance => listenersAuditSetter(instance, uuidToResponse[instance.value.uuid]))
+}
 
 // this function rebuilds the type inside the instance based on the instance's fields
 const fixType = (
@@ -204,10 +215,13 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
       scriptRunnerApiDefinitions,
     })
     try {
-      await scriptRunnerClient.put({
+      const response = await scriptRunnerClient.put({
         url: '/sr-dispatcher/jira/admin/token/scriptevents',
         data: valuesToDeploy,
       })
+      if (isListenersResponse(response.data)) {
+        updateAuditData(relevantChanges.filter(isInstanceChange), response.data)
+      }
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : e
       log.error(`Failed to put script runner listeners with the error: ${errorMessage}`)

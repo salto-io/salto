@@ -35,7 +35,12 @@ import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
 
-type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId' | 'kid' | 'credentials.oauthClient.client_id'
+type OktaReferenceSerializationStrategyName =
+  | 'key'
+  | 'mappingRuleId'
+  | 'kid'
+  | 'credentials.oauthClient.client_id'
+  | 'emailDomainId'
 type OktaReferenceIndexName = OktaReferenceSerializationStrategyName
 const OktaReferenceSerializationStrategyLookup: Record<
   OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
@@ -61,6 +66,19 @@ const OktaReferenceSerializationStrategyLookup: Record<
     lookup: val => val,
     lookupIndexName: 'credentials.oauthClient.client_id',
     getReferenceId: topLevelId => topLevelId.createNestedID('credentials', 'oauthClient', 'client_id'),
+  },
+  // When adding an email domain alongside the brand that uses it, we reverse the dependencies to create the brand
+  // first, then the email domain. This is because Okta requires the brand ID to be added to the email domain request.
+  // This means we can't use the `id` strategy since it serializes the reference in deployments using its `id` field,
+  // which isn't available. In which case it would be set as undefined, making the restore logic omit it from the
+  // brand instance, removing the field altogether.
+  // Instead, we use a strategy that's almost identical to `id`, except when it isn't available, we arbitrarily
+  // serialize it as the entire instance element - though it could be anything that isn't a string -  so that the brand
+  // deploy request can ignore any non-string serialized values.
+  emailDomainId: {
+    serialize: ({ ref }) => ref.value?.value?.id ?? ref.value,
+    lookup: val => val,
+    lookupIndexName: 'id',
   },
 }
 
@@ -247,7 +265,7 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'emailDomainId', parentTypes: ['Brand'] },
-    serializationStrategy: 'id',
+    serializationStrategy: 'emailDomainId',
     missingRefStrategy: 'typeAndValue',
     target: { type: 'EmailDomain' },
   },

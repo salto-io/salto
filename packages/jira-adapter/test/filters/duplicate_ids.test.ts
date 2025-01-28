@@ -156,12 +156,15 @@ describe('duplicateIdsFilter', () => {
       errors: [
         {
           message: 'Some elements were not fetched due to Salto ID collisions',
-          detailedMessage: `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
-If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
-dup (jira.Status.instance.dup),
-instance alias (jira.Status.instance.dup). View in the service - https://dup_1_someurl.com,
-another instance alias (jira.Status.instance.dup). View in the service - https://dup_2_someurl.com,
-instance alias (jira.Status.instance.dup)`,
+          detailedMessage: `5 Jira elements were not fetched, as they were mapped to a single ID jira.Status.instance.dup:
+dup,
+dup,
+instance alias - open in Jira: https://dup_1_someurl.com,
+another instance alias - open in Jira: https://dup_2_someurl.com,
+instance alias .
+
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+Learn about additional ways to resolve this issue at https://help.salto.io/en/articles/6927157-salto-id-collisions .`,
           severity: 'Warning',
         },
       ],

@@ -6,16 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { elements, definitions } from '@salto-io/adapter-components'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { BuiltinTypes, CORE_ANNOTATIONS, InstanceElement, createRestriction } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
+import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction } from '@salto-io/adapter-api'
 import { JWK_TYPE_NAME, OKTA, USER_ROLES_TYPE_NAME, USER_TYPE_NAME } from './constants'
-
-const log = logger(module)
 
 type GetUsersStrategy = 'searchQuery' | 'allUsers'
 
-export type OktaUserFetchConfig = definitions.UserFetchConfig<{
+type OktaUserFetchConfig = definitions.UserFetchConfig<{
   customNameMappingOptions: never
   fetchCriteria: definitions.DefaultFetchCriteria
 }> & {
@@ -136,31 +132,3 @@ export const configType = definitions.createUserConfigType({
     'fetch.enableBrandReferences',
   ],
 })
-
-/*
- * Temporary config suggestion to migrate existing configs to exclude UserRoles type
- */
-export const getExcludeUserRolesConfigSuggestion = (
-  userConfig: Readonly<InstanceElement> | undefined,
-): definitions.ConfigChangeSuggestion | undefined => {
-  const typesToExclude = userConfig?.value?.fetch?.exclude
-  const typesToInclude = userConfig?.value?.fetch?.include
-  if (!Array.isArray(typesToExclude) || !Array.isArray(typesToInclude)) {
-    log.error(
-      'failed creating config suggestion to exclude UserRoles type, expected fetch.exclude and fetch.include to be an array, but instead got %s',
-      safeJsonStringify({ exclude: typesToExclude, include: typesToInclude }),
-    )
-    return undefined
-  }
-  const isUserRolesExcluded = typesToExclude.some(fetchEntry => fetchEntry?.type === USER_ROLES_TYPE_NAME)
-  const isUserRolesIncluded = typesToInclude.some(fetchEntry => fetchEntry?.type === USER_ROLES_TYPE_NAME)
-  if (!isUserRolesExcluded && !isUserRolesIncluded) {
-    return {
-      type: 'typeToExclude',
-      value: USER_ROLES_TYPE_NAME,
-      reason:
-        'UserRoles type is excluded by default. To include it, explicitly add "UserRoles" type into the include list.',
-    }
-  }
-  return undefined
-}

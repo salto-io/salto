@@ -99,16 +99,19 @@ export const createOrderInstance = ({
     ['asc', 'desc', 'desc'],
   )
 
+  const brand = // for category_order parent is brand
+    parent.elemID.typeName !== BRAND_TYPE_NAME ? parent.value.brand : new ReferenceExpression(parent.elemID, parent)
+  const value = _.isEmpty(parentsChildren)
+    ? { brand }
+    : {
+        [orderField]: parentsChildren.map(c => new ReferenceExpression(c.elemID, c)),
+        brand,
+      }
+
   return new InstanceElement(
     parent.elemID.name,
     orderType,
-    {
-      [orderField]: parentsChildren.map(c => new ReferenceExpression(c.elemID, c)),
-      brand:
-        parent.elemID.typeName !== BRAND_TYPE_NAME
-          ? parent.value.brand
-          : new ReferenceExpression(parent.elemID, parent), // for category_order parent is brand
-    },
+    value,
     // The same directory as it's parent
     parent.path !== undefined ? [...parent.path.slice(0, -1), orderType.elemID.typeName] : undefined,
     {

@@ -248,7 +248,7 @@ describe('projectIssuetype filter', () => {
       await filter.onFetch(elements)
 
       expect(recipeCode.value.block[0].block[0].dynamicPickListSelection.project_issuetype).toBeUndefined()
-      expect(recipeCode.value.block[1].dynamicPickListSelection.project_issuetype).toBeUndefined()
+      expect(recipeCode.value.block[1].dynamicPickListSelection).toBeUndefined()
     })
 
     it("should remove 'sample_project_issuetype' from dynamicPickListSelection", async () => {

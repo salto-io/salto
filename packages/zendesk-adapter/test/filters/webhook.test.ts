@@ -47,6 +47,19 @@ describe('webhook filter', () => {
       add_position: 'header',
     },
   })
+  const webhook4 = new InstanceElement('webhook4', webhookType, {
+    name: 'test4',
+    description: 'desc',
+    status: 'active',
+    subscriptions: ['conditional_ticket_events'],
+    endpoint: 'https://otherSubdomain.com/token',
+    http_method: 'GET',
+    request_format: 'json',
+    authentication: {
+      type: 'basic_auth',
+      add_position: 'header',
+    },
+  })
   const webhookAPI = new InstanceElement('test-api auth', webhookType, {
     name: 'test',
     description: 'desc',
@@ -66,6 +79,7 @@ describe('webhook filter', () => {
 
   const brand = new InstanceElement('brand', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), {
     brand_url: 'https://www.example.com',
+    subdomain: 'otherSubdomain',
   })
   const webhookAfterFetch = new InstanceElement('webhook1', webhookType, {
     endpoint: new TemplateExpression({
@@ -86,23 +100,34 @@ describe('webhook filter', () => {
 
   describe('onFetch', () => {
     it('should turn endpoint to template expression with reference to brand subdomain', async () => {
-      const elements = [webhook, brand]
+      const elements = [webhook, webhook4, brand]
       await filter.onFetch(elements)
       expect(webhook.value.endpoint).toEqual(
         new TemplateExpression({
           parts: [new ReferenceExpression(brand.elemID.createNestedID('brand_url'), brand.value.brand_url), '/token'],
         }),
       )
+      expect(webhook4.value.endpoint).toEqual(
+        new TemplateExpression({
+          parts: [
+            'https://',
+            new ReferenceExpression(brand.elemID.createNestedID('subdomain'), brand.value.subdomain),
+            '.com/token',
+          ],
+        }),
+      )
     })
   })
   describe('preDeploy', () => {
     it('should turn zendesk emails from template expression to string', async () => {
-      const elements = [webhookAfterFetch, webhookOther, webhookUndefined].map(e => e.clone())
+      const elements = [webhookAfterFetch, webhookOther, webhookUndefined, webhook4].map(e => e.clone())
       await filter.preDeploy(elements.map(elem => toChange({ after: elem })))
       const zendeskWebhook = elements.find(e => e.elemID.name === 'webhook1')
+      const zendeskSubdomainWebhook = elements.find(e => e.elemID.name === 'webhook4')
       const otherWebhook = elements.find(e => e.elemID.name === 'webhook2')
       const undefinedWebhook = elements.find(e => e.elemID.name === 'webhook3')
       expect(zendeskWebhook?.value.endpoint).toEqual('https://www.example.com/token')
+      expect(zendeskSubdomainWebhook?.value.endpoint).toEqual('https://otherSubdomain.com/token')
       expect(otherWebhook).toEqual(webhookOther)
       expect(undefinedWebhook).toEqual(webhookUndefined)
     })
@@ -112,7 +137,7 @@ describe('webhook filter', () => {
     let elementsAfterOnDeploy: (InstanceElement | ObjectType)[]
 
     beforeAll(async () => {
-      const elementsBeforeFetch = [webhook, webhookOther, webhookUndefined, brand]
+      const elementsBeforeFetch = [webhook, webhookOther, webhookUndefined, brand, webhook4]
       elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
       await filter.onFetch(elementsAfterFetch)
       const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())

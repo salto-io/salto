@@ -319,7 +319,10 @@ const graphBetaCustomizations: FetchCustomizations = {
         endpoint: {
           path: '/deviceManagement/roleScopeTags',
         },
-        transformation: DEFAULT_TRANSFORMATION,
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: ['permissions'],
+        },
       },
     ],
     resource: {

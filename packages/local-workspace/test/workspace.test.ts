@@ -25,6 +25,7 @@ import {
 import { getSaltoHome } from '../src/app_config'
 import * as mockDirStore from '../src/dir_store'
 import { mockStaticFilesSource } from './common/state'
+import { WorkspaceConfigSource } from '../src/workspace_config'
 
 const { awu } = collections.asynciterable
 const { ENVS_PREFIX } = ws.nacl
@@ -37,6 +38,16 @@ const mockConfigSource = (): jest.Mocked<cs.ConfigSource> => ({
   set: mockFunction<cs.ConfigSource['set']>(),
   delete: mockFunction<cs.ConfigSource['delete']>(),
   rename: mockFunction<cs.ConfigSource['rename']>(),
+})
+
+const mockWorkspaceConfigSource = (): jest.Mocked<WorkspaceConfigSource> => ({
+  getWorkspaceConfig: mockFunction<WorkspaceConfigSource['getWorkspaceConfig']>().mockResolvedValue({
+    uid: 'mock-uid',
+    envs: [{ name: 'default' }],
+    currentEnv: 'default',
+  }),
+  setWorkspaceConfig: mockFunction<WorkspaceConfigSource['setWorkspaceConfig']>(),
+  localStorage: 'mocked-local-storage',
 })
 
 jest.mock('@salto-io/file', () => ({
@@ -109,27 +120,39 @@ describe('local workspace', () => {
       ? path.relative(getSaltoHome(), dir)
       : `${path.basename(path.dirname(dir))}${path.sep}${path.basename(dir)}`
   }
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
 
   describe('locateWorkspaceRoot', () => {
     it('should return undefined if no workspaceRoot exists in path', async () => {
       mockExists.mockResolvedValue(false)
-      const workspacePath = await locateWorkspaceRoot('/some/path')
+      const workspacePath = await locateWorkspaceRoot({ lookupDir: '/some/path' })
       expect(workspacePath).toEqual(undefined)
     })
     it('should return current folder if salto.config exists in it', async () => {
       mockExists.mockResolvedValue(true)
-      const workspacePath = await locateWorkspaceRoot('/some/path')
+      const workspacePath = await locateWorkspaceRoot({ lookupDir: '/some/path' })
       expect(workspacePath).toEqual('/some/path')
     })
     it('should find the corret folder in which salto.config exists in path', async () => {
       mockExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
-      const workspacePath = await locateWorkspaceRoot('/some/path')
+      const workspacePath = await locateWorkspaceRoot({ lookupDir: '/some/path' })
       expect(workspacePath).toEqual('/some')
+    })
+    it('should only check the provided path if allowWorkspaceRootLookup is false', async () => {
+      mockExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+      const workspacePath = await locateWorkspaceRoot({ lookupDir: '/some/path', allowWorkspaceRootLookup: false })
+      expect(workspacePath).toEqual(undefined)
+    })
+    it('should support deprecated string argument', async () => {
+      mockExists.mockResolvedValue(true)
+      const workspacePath = await locateWorkspaceRoot('/some/path')
+      expect(workspacePath).toEqual('/some/path')
     })
   })
 
-  describe('load elements  sources', () => {
+  describe('loadLocalElementsSources', () => {
     it('should build the appropriate nacl source', async () => {
       mockExists.mockResolvedValue(true)
       const creator = remoteMap.inMemRemoteMapCreator()
@@ -222,14 +245,35 @@ describe('local workspace', () => {
 
   describe('loadLocalWorkspace', () => {
     const mockLoad = ws.loadWorkspace as jest.Mock
-    it('should throw error if not a workspace', async () => {
+    beforeEach(() => {
       mockExists.mockImplementation((filename: string) => !filename.endsWith('salto.config'))
+    })
+    it('should throw error if not a workspace', async () => {
       await expect(
         loadLocalWorkspace({
-          path: '.',
+          path: '/tmp/nested/path',
           adapterCreators: mockAdapterCreator,
         }),
       ).rejects.toThrow(NotAWorkspaceError)
+      expect(mockExists).toHaveBeenCalledTimes(3)
+      expect(mockExists).toHaveBeenNthCalledWith(1, '/tmp/nested/path/salto.config')
+      expect(mockExists).toHaveBeenNthCalledWith(2, '/tmp/nested/salto.config')
+      expect(mockExists).toHaveBeenNthCalledWith(3, '/tmp/salto.config')
+    })
+
+    describe('with allowWorkspaceRootLookup as false', () => {
+      beforeEach(async () => {
+        await expect(
+          loadLocalWorkspace({
+            path: '/tmp/nested/path',
+            adapterCreators: mockAdapterCreator,
+            allowWorkspaceRootLookup: false,
+          }),
+        ).rejects.toThrow(NotAWorkspaceError)
+      })
+      it('should only check the provided path', () => {
+        expect(mockExists).toHaveBeenCalledExactlyOnceWith('/tmp/nested/path/salto.config')
+      })
     })
 
     describe('with valid workspace configuration', () => {
@@ -284,6 +328,24 @@ describe('local workspace', () => {
           expect(mockLoad).toHaveBeenCalledWith(
             expect.objectContaining({
               credentials: credentialSource,
+            }),
+          )
+        })
+      })
+      describe('with custom config source', () => {
+        let configSource: jest.Mocked<WorkspaceConfigSource>
+        beforeEach(async () => {
+          configSource = mockWorkspaceConfigSource()
+          await loadLocalWorkspace({
+            path: '.',
+            workspaceConfigSource: configSource,
+            adapterCreators: mockAdapterCreator,
+          })
+        })
+        it('should use the config source that was passed as a paramter', async () => {
+          expect(mockLoad).toHaveBeenCalledWith(
+            expect.objectContaining({
+              config: configSource,
             }),
           )
         })

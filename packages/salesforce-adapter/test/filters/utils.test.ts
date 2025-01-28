@@ -63,6 +63,7 @@ import {
   isOrderedMapTypeOrRefType,
   isCustomMetadataRecordInstanceSync,
   metadataTypeOrUndefined,
+  isCustomObjectOrCustomMetadataRecordTypeSync,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -300,6 +301,16 @@ describe('filter utils', () => {
       expect(isCustomMetadataRecordTypeSync(mockTypes.Profile)).toBeFalse()
     })
   })
+  describe('isCustomObjectOrCustomMetadataSync', () => {
+    it('should return true for customMetadataRecordType and customObject', () => {
+      expect(isCustomObjectOrCustomMetadataRecordTypeSync(mockTypes.CustomMetadataRecordType)).toBeTrue()
+      expect(isCustomObjectOrCustomMetadataRecordTypeSync(createCustomObjectType('customObject', {}))).toBeTrue()
+    })
+    it('should return false for non customMetadataRecordType and non customObject', () => {
+      expect(isCustomObjectOrCustomMetadataRecordTypeSync(mockTypes.Profile)).toBeFalse()
+    })
+  })
+
   describe('isCustomMetadataRecordInstance', () => {
     const customMetadataRecordInstance = createInstanceElement(
       { [INSTANCE_FULL_NAME_FIELD]: 'MDType.MDTypeInstance' },

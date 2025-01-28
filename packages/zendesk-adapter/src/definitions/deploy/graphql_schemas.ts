@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { flowFields, nodeFragment, subflowFields } from '../shared/graphql_schemas'
+import { basicFlowFields, flowFields, nodeFragment, subflowFields } from '../shared/graphql_schemas'
 
 // generativeAiEnabled is always false for now,
 // the Flow creation is partial, this should change with SALTO-7257
@@ -30,7 +30,9 @@ export const createFlowMutation = `
     }
   }
 
-  ${flowFields}
+  fragment FlowFields on FlowType {
+    ${basicFlowFields}
+  }
 `
 
 export const updateFlowName = `
@@ -39,6 +41,24 @@ export const updateFlowName = `
       id
       name
       __typename
+    }
+  }
+`
+
+export const updateFlowLanguages = `
+  mutation updateLanguageSettings(
+    $id: String!,
+    $sourceLanguage: LanguageEnum!,
+    $enabledLanguages: [LanguageEnum!]!
+  ) {
+    updateLanguageSettings(
+      flowId: $id
+      sourceLanguage: $sourceLanguage
+      enabledLanguages: $enabledLanguages
+    ) {
+      id
+      sourceLanguage
+      enabledLanguages
     }
   }
 `

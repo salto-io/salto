@@ -13,6 +13,7 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionChange,
+  isRemovalChange,
   isSaltoElementError,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -309,6 +310,19 @@ describe('ContextOptionsDeployment', () => {
     expect(isSaltoElementError(result.deployResult.errors[0])).toBeTruthy()
     expect(result.deployResult.errors[0]).toHaveProperty('elemID', getChangeData(changes[0]).elemID)
     expect(result.deployResult.appliedChanges).toHaveLength(0)
+  })
+  it('should not issue an error if a removal fails with 404', async () => {
+    connection.delete.mockImplementation(async () => {
+      throw new clientUtils.HTTPError('message', {
+        status: 404,
+        data: {},
+      })
+    })
+    const removalChanges = changes.filter(isRemovalChange)
+    const result = await filter.deploy(removalChanges)
+    expect(result.leftoverChanges).toHaveLength(0)
+    expect(result.deployResult.errors).toHaveLength(0)
+    expect(result.deployResult.appliedChanges).toHaveLength(2)
   })
   describe('add cascading options', () => {
     beforeEach(() => {

@@ -32,10 +32,12 @@ describe('sortListsFilter', () => {
   let projectRoleInstance: InstanceElement
   let dashboardInstance: InstanceElement
   let automationInstance: InstanceElement
+  let workflowInstance: InstanceElement
   let sortedDashboardValues: Values
   let sortedProjectRoleValues: Values
   let sortedPermissionValues: Values
   let sortedAutomationValues: Values
+  let sortedWorkflowValues: Values
   beforeEach(async () => {
     filter = sortListsFilter(getFilterParams())
 
@@ -207,6 +209,77 @@ describe('sortListsFilter', () => {
         },
       ],
     }
+    const workflowType = new ObjectType({
+      elemID: new ElemID(JIRA, 'WorkflowConfiguration'),
+      fields: {
+        transitions: {
+          refType: new ListType(
+            new ObjectType({
+              elemID: new ElemID(JIRA, 'WorkflowTransitions'),
+              fields: {
+                links: {
+                  refType: new ListType(
+                    new ObjectType({
+                      elemID: new ElemID(JIRA, 'WorkflowTransitionLinks'),
+                      fields: {
+                        fromStatusReference: { refType: BuiltinTypes.NUMBER },
+                        toPort: { refType: BuiltinTypes.STRING },
+                        fromPort: { refType: BuiltinTypes.NUMBER },
+                      },
+                    }),
+                  ),
+                },
+              },
+            }),
+          ),
+        },
+        notExisting: {
+          refType: new ObjectType({
+            elemID: new ElemID(JIRA, 'NotExisting'),
+            fields: {
+              notExistingInner: { refType: new ListType(BuiltinTypes.STRING) },
+            },
+          }),
+        },
+      },
+    })
+
+    workflowInstance = new InstanceElement('instance', workflowType, {
+      transitions: [
+        {
+          links: [
+            {
+              fromStatusReference: 2,
+              toPort: 'A',
+              fromPort: 1,
+            },
+            {
+              fromStatusReference: 1,
+              toPort: 'B',
+              fromPort: 2,
+            },
+          ],
+        },
+      ],
+    })
+    sortedWorkflowValues = {
+      transitions: [
+        {
+          links: [
+            {
+              fromStatusReference: 1,
+              toPort: 'B',
+              fromPort: 2,
+            },
+            {
+              fromStatusReference: 2,
+              toPort: 'A',
+              fromPort: 1,
+            },
+          ],
+        },
+      ],
+    }
   })
 
   describe('onFetch', () => {
@@ -230,6 +303,19 @@ describe('sortListsFilter', () => {
       delete permissionSchemeInstance.value.permissions
       await filter.onFetch?.([permissionSchemeInstance])
       expect(permissionSchemeInstance.value).toEqual({})
+    })
+    it('should sort workflow links', async () => {
+      await filter.onFetch?.([workflowInstance])
+      expect(workflowInstance.value).toEqual(sortedWorkflowValues)
+    })
+    it('should sort workflows with missing fields', async () => {
+      delete workflowInstance.value.transitions[0].links[0].fromStatusReference
+      delete workflowInstance.value.transitions[0].links[1].fromPort
+      delete sortedWorkflowValues.transitions[0].links[1].fromStatusReference
+      delete sortedWorkflowValues.transitions[0].links[0].fromPort
+
+      await filter.onFetch?.([workflowInstance])
+      expect(workflowInstance.value).toEqual(sortedWorkflowValues)
     })
 
     it('should sort inner lists', async () => {
@@ -313,6 +399,12 @@ describe('sortListsFilter', () => {
           },
         ],
       })
+    })
+
+    it('should not fail for fields that are not defined in the sport list map', async () => {
+      workflowInstance.value.notExisting = { notExistingInner: ['a', 'b'] }
+      await filter.onFetch?.([workflowInstance])
+      expect(workflowInstance.value.notExisting.notExistingInner).toEqual(['a', 'b'])
     })
   })
 })

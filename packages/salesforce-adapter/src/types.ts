@@ -107,6 +107,7 @@ const OPTIONAL_FEATURES = [
   'shouldPopulateInternalIdAfterDeploy',
   'packageVersionReference',
   'omitTotalTrustedRequestsUsageField',
+  'supportProfileTabVisibilities',
   'disablePermissionsOmissions',
   'omitStandardFieldsNonDeployableValues',
 ] as const

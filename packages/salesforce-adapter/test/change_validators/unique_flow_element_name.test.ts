@@ -76,32 +76,32 @@ describe('uniqueFlowElementName change validator', () => {
         {
           elemID: flowInstance.elemID.createNestedID('constants', '0', 'name'),
           severity: 'Warning',
-          message: 'Duplicate FlowElement Name',
-          detailedMessage: 'The name "duplicateName" must be unique within the Flow.',
+          message: 'Duplicate Name in Flow',
+          detailedMessage: 'The name "duplicateName" is used multiple times within this Flow.',
         },
         {
           elemID: flowInstance.elemID.createNestedID('constants', '1', 'name'),
           severity: 'Warning',
-          message: 'Duplicate FlowElement Name',
-          detailedMessage: 'The name "duplicateName" must be unique within the Flow.',
+          message: 'Duplicate Name in Flow',
+          detailedMessage: 'The name "duplicateName" is used multiple times within this Flow.',
         },
         {
           elemID: flowInstance.elemID.createNestedID('dynamicChoiceSets', '0', 'name'),
           severity: 'Warning',
-          message: 'Duplicate FlowElement Name',
-          detailedMessage: 'The name "duplicateName" must be unique within the Flow.',
+          message: 'Duplicate Name in Flow',
+          detailedMessage: 'The name "duplicateName" is used multiple times within this Flow.',
         },
         {
           elemID: flowInstance.elemID.createNestedID('screens', '0', 'name'),
           severity: 'Warning',
-          message: 'Duplicate FlowElement Name',
-          detailedMessage: 'The name "anotherDuplicateName" must be unique within the Flow.',
+          message: 'Duplicate Name in Flow',
+          detailedMessage: 'The name "anotherDuplicateName" is used multiple times within this Flow.',
         },
         {
           elemID: flowInstance.elemID.createNestedID('screens', '1', 'name'),
           severity: 'Warning',
-          message: 'Duplicate FlowElement Name',
-          detailedMessage: 'The name "anotherDuplicateName" must be unique within the Flow.',
+          message: 'Duplicate Name in Flow',
+          detailedMessage: 'The name "anotherDuplicateName" is used multiple times within this Flow.',
         },
       ]
       expect(errors).toEqual(expectedErrors)

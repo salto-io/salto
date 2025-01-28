@@ -156,7 +156,7 @@ export const buildStaticFilesSource = (
         .toArray()
 
       if (deletedFiles.length > 0) {
-        log.info('deleting %d files from static files cache', deletedFiles.length)
+        log.debug('deleting %d files from static files cache', deletedFiles.length)
         await staticFilesCache.deleteMany(deletedFiles)
       }
 

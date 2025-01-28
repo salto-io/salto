@@ -169,12 +169,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     if (!withFlushResult) {
       return undefined
     }
-    // NOTE - this is NOT the desired behavior:
-    // if there are files that are in both `deletesToHandle` and `updatesToHandle`
-    // it means that `set` was called and then `delete` was called for the same filename.
-    // we should avoid writing those files (that are in both `deletesToHandle` and `updatesToHandle`)
-    // but since we do write them, we return them as part of the `updates` list and filter them out
-    // from the `deletions` list.
+    // this filter should be removed when SALTO-7377 is done, because we won't write to the disk files that are in `deletesToHandle`
     const deletions = deletesToHandle.filter(f => updatesToHandle[f] === undefined)
     return { updates, deletions }
   }

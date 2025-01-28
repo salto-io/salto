@@ -382,3 +382,4 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | unknownPicklistValues          | true                   | Disallow any usage of unknown pickList values.                                             |
 | flowReferencedElements         | true                   | Check that the referenced elements in Flow exist.                                          |
 | flexiPageUnusedOrMissingFacets | true                   | Check that all facets are referenced, and referenced facets exist, in FlexiPage .          |
+| uniqueFlowElementName          | true                   | Check that all FlowElement names within a Flow instance are unique.                        |

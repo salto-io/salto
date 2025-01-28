@@ -31,6 +31,8 @@ import { parserUtils } from '@salto-io/parser'
 import { mockDefaultValues } from './mock_elements'
 
 const {
+  TRIGGER_CATEGORY_TYPE_NAME,
+  TRIGGER_TYPE_NAME,
   API_DEFINITIONS_CONFIG,
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ATTACHMENTS_FIELD,
@@ -401,6 +403,61 @@ export const getAllInstancesToDeploy = async ({
     new ReferenceExpression(customObjectFieldOptionInstance1.elemID, customObjectFieldOptionInstance1),
     new ReferenceExpression(customObjectFieldOptionInstance2.elemID, customObjectFieldOptionInstance2),
   ]
+
+  const triggerCategoryName = createName('trigger_category')
+  const triggerCategoryInstance = createInstanceElement({
+    type: TRIGGER_CATEGORY_TYPE_NAME,
+    valuesOverride: { name: triggerCategoryName },
+  })
+
+  const triggerName = createName('trigger')
+  const triggerInstance = createInstanceElement({
+    type: TRIGGER_TYPE_NAME,
+    valuesOverride: {
+      title: triggerName,
+      active: true,
+      default: false,
+      actions: [
+        {
+          field: 'status',
+          value: 'open',
+        },
+        {
+          field: 'group_id',
+          value: new ReferenceExpression(defaultGroup.elemID),
+        },
+      ],
+      conditions: {
+        all: [
+          {
+            field: 'status',
+            operator: 'is',
+            value: 'new',
+          },
+          {
+            field: 'group_id',
+            operator: 'is',
+            value: new ReferenceExpression(defaultGroup.elemID),
+          },
+        ],
+        any: [
+          {
+            field: 'brand_id',
+            operator: 'is',
+            value: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID),
+          },
+          {
+            field: new ReferenceExpression(ticketFieldInstance.elemID),
+            operator: 'is',
+            value: new ReferenceExpression(ticketFieldOption1.elemID),
+          },
+        ],
+      },
+      description: '',
+      raw_title: triggerName,
+      category_id: new ReferenceExpression(triggerCategoryInstance.elemID),
+    },
+  })
 
   // ***************** guide instances ******************* //
 
@@ -884,6 +941,8 @@ export const getAllInstancesToDeploy = async ({
   ]
 
   const instancesToAdd = [
+    triggerCategoryInstance,
+    triggerInstance,
     ticketFieldInstance,
     ticketFieldOption1,
     ticketFieldOption2,

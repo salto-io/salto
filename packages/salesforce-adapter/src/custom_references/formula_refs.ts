@@ -5,30 +5,56 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element, ElemID, InstanceElement, ReferenceInfo, Value } from '@salto-io/adapter-api'
-import { parseFormulaIdentifier } from '@salto-io/salesforce-formula-parser'
+import {
+  CORE_ANNOTATIONS,
+  Element,
+  ElemID,
+  InstanceElement,
+  isReferenceExpression,
+  ReferenceInfo,
+  Value,
+} from '@salto-io/adapter-api'
+// import { parseFormulaIdentifier } from '@salto-io/salesforce-formula-parser'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { WeakReferencesHandler } from '../types'
 import { isInstanceOfTypeSync } from '../filters/utils'
-import { referencesFromIdentifiers } from '../filters/formula_utils'
+import { API_NAME_SEPARATOR, SALESFORCE } from '../constants'
 
 const log = logger(module)
 const { isDefined } = values
 
 type ReferenceExtractor = (instance: InstanceElement) => ReferenceInfo[]
 
-const referenceInfoFromFieldValue = (instance: InstanceElement, path: ElemID, value: Value): ReferenceInfo[] => {
-  const identifierInfo = parseFormulaIdentifier(value, instance.elemID.typeName)
-  const referenceElemIds = referencesFromIdentifiers(identifierInfo)
+const referenceInfoFromFieldValue = (
+  instance: InstanceElement,
+  path: ElemID,
+  value: Value,
+): ReferenceInfo[] | undefined => {
+  if (isReferenceExpression(value)) return undefined
+  if (value.startsWith('$Record.')) {
+    if (instance.annotations[CORE_ANNOTATIONS.PARENT] === undefined) {
+      log.debug(`Missing Parent annotation in ${inspectValue(instance)}`)
+    }
+    return [
+      {
+        source: path,
+        target: new ElemID(
+          SALESFORCE,
+          instance.annotations[CORE_ANNOTATIONS.PARENT][0].elemID.typeName,
+          value.split(API_NAME_SEPARATOR)[1],
+        ),
+        type: 'strong',
+      },
+    ]
+  }
+  // const identifierInfo = parseValue(value, instance.elemID.typeName)
+  // const referenceElemIds = referencesFromIdentifiers(identifierInfo)
 
-  const referencesToOtherTypes = referenceElemIds.filter(ref => ref.typeName !== instance.elemID.typeName)
+  // const referencesToOtherTypes = referenceElemIds.filter(ref => ref.typeName !== instance.elemID.typeName)
 
-  return referencesToOtherTypes.map(ref => ({
-    source: path,
-    target: ref,
-    type: 'strong',
-  }))
+  return undefined
 }
 
 const flowCondition: ReferenceExtractor = (instance: InstanceElement) =>
@@ -119,9 +145,11 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
 ): Promise<ReferenceInfo[]> => {
   const fetchedInstances = elements.filter(isInstanceOfTypeSync(...Object.keys(referenceExtractors)))
   try {
-    return fetchedInstances.flatMap(instance =>
+    const addedCustomReferences = fetchedInstances.flatMap(instance =>
       referenceExtractors[instance.elemID.typeName].flatMap(refExtractor => refExtractor(instance).filter(isDefined)),
     )
+    console.log(addedCustomReferences)
+    return addedCustomReferences
   } catch (error) {
     log.error('Failed to generate custom references from formula fields: %s', error)
     return []

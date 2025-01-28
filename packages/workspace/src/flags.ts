@@ -27,4 +27,5 @@ export const WORKSPACE_FLAGS = {
   // Killswitch for the new fetch diff computation logic. Activating this restores the old logic.
   // TODO(SALTO-6992): Remove this killswitch after 2025-01-30
   computePlanOnFetch: 'COMPUTE_PLAN_ON_FETCH',
+  skipStaticFilesCacheUpdate: 'SKIP_STATIC_FILES_CACHE_UPDATE',
 } as const

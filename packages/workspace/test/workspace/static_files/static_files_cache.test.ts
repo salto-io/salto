@@ -50,6 +50,34 @@ describe('Static Files Cache', () => {
       await staticFilesCache.put(expectedResult)
       expect(await staticFilesCache.get(baseMetaData.filepath)).toEqual(expectedResult)
     })
+    it('put many files and retrieve them', async () => {
+      const files = [1, 2, 3].map(i => ({
+        filepath: `${expectedResult.filepath}.${i}`,
+        hash: `${expectedResult.hash}${i}`,
+        modified: expectedResult.modified + i,
+      }))
+      await staticFilesCache.putMany(files)
+      expect(await staticFilesCache.get(files[0].filepath)).toEqual(files[0])
+      expect(await staticFilesCache.get(files[1].filepath)).toEqual(files[1])
+      expect(await staticFilesCache.get(files[2].filepath)).toEqual(files[2])
+    })
+    it('delete from cache', async () => {
+      await staticFilesCache.put(expectedResult)
+      await staticFilesCache.delete(baseMetaData.filepath)
+      expect(await staticFilesCache.get(baseMetaData.filepath)).toBeUndefined()
+    })
+    it('delete many files from cahce', async () => {
+      const files = [1, 2, 3].map(i => ({
+        filepath: `${expectedResult.filepath}.${i}`,
+        hash: `${expectedResult.hash}${i}`,
+        modified: expectedResult.modified + i,
+      }))
+      await staticFilesCache.putMany(files)
+      await staticFilesCache.deleteMany(files.map(f => f.filepath))
+      expect(await staticFilesCache.get(files[0].filepath)).toBeUndefined()
+      expect(await staticFilesCache.get(files[1].filepath)).toBeUndefined()
+      expect(await staticFilesCache.get(files[2].filepath)).toBeUndefined()
+    })
     it('clear', async () => {
       await staticFilesCache.put(expectedResult)
       await staticFilesCache.clear()

@@ -77,7 +77,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
           .then(entries => entries.map(e => e.fullPath).map(x => getRelativeFileName(x)))
       : []
 
-  const getFileTimestamp = async (filename: string): Promise<number | undefined> =>
+  const getFileModificationTime = async (filename: string): Promise<number | undefined> =>
     (await fileUtils.stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs
 
   const readFile = async (filename: string): Promise<dirStore.File<T> | undefined> => {
@@ -86,19 +86,19 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       ? {
           filename,
           buffer: (await fileUtils.readFile(absFileName, { encoding })) as T,
-          timestamp: await getFileTimestamp(filename),
+          timestamp: await getFileModificationTime(filename),
         }
       : undefined
   }
 
-  const writeFile = async (file: dirStore.File<T>, calculateTimestamp?: boolean): Promise<dirStore.File<T>> => {
+  const writeFile = async (file: dirStore.File<T>, withTimestamp?: boolean): Promise<dirStore.File<T>> => {
     const absFileName = getAbsFileName(file.filename)
     if (!(await fileUtils.exists(path.dirname(absFileName)))) {
       await fileUtils.mkdirp(path.dirname(absFileName))
     }
     await fileUtils.replaceContents(absFileName, file.buffer, encoding)
-    if (calculateTimestamp) {
-      return { ...file, timestamp: await getFileTimestamp(file.filename) }
+    if (withTimestamp) {
+      return { ...file, timestamp: await getFileModificationTime(file.filename) }
     }
     return file
   }
@@ -257,7 +257,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
         return updated[relFilename].timestamp
       }
 
-      return getFileTimestamp(relFilename)
+      return getFileModificationTime(relFilename)
     },
 
     flush,

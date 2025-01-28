@@ -140,8 +140,8 @@ export const buildStaticFilesSource = (
         modified: file.timestamp,
       }
     })
-    await staticFilesCache.putMany(cacheUpdates)
     await staticFilesCache.deleteMany(deletions)
+    await staticFilesCache.putMany(cacheUpdates)
   }
 
   const staticFilesSource: Required<StaticFilesSource> = {
@@ -154,6 +154,11 @@ export const buildStaticFilesSource = (
       const deletedFiles = wu(cachedFileNames.keys())
         .filter(name => !existingFiles.has(name))
         .toArray()
+
+      if (deletedFiles.length > 0) {
+        log.info('deleting %d files from static files cache', deletedFiles.length)
+        await staticFilesCache.deleteMany(deletedFiles)
+      }
 
       const modifiedFilesSet = new Set(
         (

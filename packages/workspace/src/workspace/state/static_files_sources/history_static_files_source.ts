@@ -74,6 +74,6 @@ export const buildHistoryStateStaticFilesSource = (dirStore: StateStaticFilesSto
     flush: () =>
       log.timeTrace(async () => {
         await dirStore.flush()
-      }, 'Flushing history static state files source'),
+      }, 'historyStateStaticFilesSource.flush'),
   }
 }

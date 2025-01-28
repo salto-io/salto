@@ -10,12 +10,13 @@ import { InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { fullFetchConfig, fullQueryParams } from '../../src/config/config_creator'
 import {
-  toLargeFoldersExcludedMessage,
+  toLargeSizeFoldersExcludedMessage,
   toLargeTypesExcludedMessage,
   STOP_MANAGING_ITEMS_MSG,
   getConfigFromConfigChanges,
   ALIGNED_INACTIVE_CRITERIAS,
   toRemovedDeprecatedConfigsMessage,
+  toLargeFilesCountFoldersExcludedMessage,
 } from '../../src/config/suggestions'
 import { NetsuiteQueryParameters, fetchDefault, configType, NetsuiteConfig } from '../../src/config/types'
 import { INACTIVE_FIELDS } from '../../src/constants'
@@ -56,6 +57,11 @@ describe('netsuite config suggestions', () => {
     },
   }
   const newFailedFilePath = '/path/to/file'
+  const newLargeFolderPath = '/largeFolder/'
+  const newLargeFilesCountFolderPath = '/largeFilesCountFolder/'
+  const newLargeFolderExclusion = `^${newLargeFolderPath}.*`
+  const newLargeFilesCountFolderExclusion = `^${newLargeFilesCountFolderPath}.*`
+
   const suggestedSkipListTypes = {
     testExistingPartial: ['scriptid3', 'scriptid4'],
     testNew: ['scriptid5', 'scriptid6'],
@@ -66,7 +72,12 @@ describe('netsuite config suggestions', () => {
       getConfigFromConfigChanges(
         {
           failedToFetchAllAtOnce: false,
-          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedFilePaths: {
+            lockedError: [],
+            otherError: [],
+            largeSizeFoldersError: [],
+            largeFilesCountFoldersError: [],
+          },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
         },
@@ -81,7 +92,12 @@ describe('netsuite config suggestions', () => {
     const configFromConfigChanges = getConfigFromConfigChanges(
       {
         failedToFetchAllAtOnce: true,
-        failedFilePaths: { lockedError: lockedFiles, otherError: [newFailedFilePath], largeFolderError: [] },
+        failedFilePaths: {
+          lockedError: lockedFiles,
+          otherError: [newFailedFilePath],
+          largeSizeFoldersError: [],
+          largeFilesCountFoldersError: [],
+        },
         failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
         failedCustomRecords: [],
       },
@@ -121,8 +137,6 @@ describe('netsuite config suggestions', () => {
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {
-    const newLargeFolderPath = '/largeFolder/'
-    const newLargeFolderExclusion = `^${newLargeFolderPath}.*`
     const newExclude = {
       types: [
         { name: 'testAll', ids: ['.*'] },
@@ -131,13 +145,23 @@ describe('netsuite config suggestions', () => {
         { name: 'testNew', ids: ['scriptid5', 'scriptid6'] },
         { name: 'excludedTypeTest' },
       ],
-      fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
+      fileCabinet: [
+        'SomeRegex',
+        _.escapeRegExp(newFailedFilePath),
+        newLargeFolderExclusion,
+        newLargeFilesCountFolderExclusion,
+      ],
       customRecords: [{ name: 'excludedCustomRecord' }],
     }
     const configChange = getConfigFromConfigChanges(
       {
         failedToFetchAllAtOnce: true,
-        failedFilePaths: { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
+        failedFilePaths: {
+          lockedError: [],
+          otherError: [newFailedFilePath],
+          largeSizeFoldersError: [newLargeFolderPath],
+          largeFilesCountFoldersError: [newLargeFilesCountFolderPath],
+        },
         failedTypes: { lockedError: {}, unexpectedError: suggestedSkipListTypes, excludedTypes: ['excludedTypeTest'] },
         failedCustomRecords: ['excludedCustomRecord'],
       },
@@ -163,15 +187,14 @@ describe('netsuite config suggestions', () => {
     expect(configChange?.message).toBe(
       formatConfigSuggestionsReasons([
         STOP_MANAGING_ITEMS_MSG,
-        toLargeFoldersExcludedMessage([newLargeFolderPath]),
+        toLargeSizeFoldersExcludedMessage([newLargeFolderPath]),
+        toLargeFilesCountFoldersExcludedMessage([newLargeFilesCountFolderPath]),
         toLargeTypesExcludedMessage(['excludedTypeTest', 'excludedCustomRecord']),
       ]),
     )
   })
 
   it('should combine configuration messages when needed', () => {
-    const newLargeFolderPath = '/largeFolder/'
-    const newLargeFolderExclusion = `^${newLargeFolderPath}.*`
     const newSkipList = _.cloneDeep(skipList)
     newSkipList.types = { ...newSkipList.types, someType: ['.*'] }
     newSkipList.filePaths?.push('.*someRegex.*')
@@ -186,7 +209,12 @@ describe('netsuite config suggestions', () => {
     const configChange = getConfigFromConfigChanges(
       {
         failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
+        failedFilePaths: {
+          lockedError: [],
+          otherError: [newFailedFilePath],
+          largeSizeFoldersError: [newLargeFolderPath],
+          largeFilesCountFoldersError: [newLargeFilesCountFolderPath],
+        },
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedCustomRecords: [],
       },
@@ -194,7 +222,11 @@ describe('netsuite config suggestions', () => {
     )
 
     expect(configChange?.message).toBe(
-      formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, toLargeFoldersExcludedMessage([newLargeFolderPath])]),
+      formatConfigSuggestionsReasons([
+        STOP_MANAGING_ITEMS_MSG,
+        toLargeSizeFoldersExcludedMessage([newLargeFolderPath]),
+        toLargeFilesCountFoldersExcludedMessage([newLargeFilesCountFolderPath]),
+      ]),
     )
   })
 
@@ -211,7 +243,12 @@ describe('netsuite config suggestions', () => {
     const configChange = getConfigFromConfigChanges(
       {
         failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+        failedFilePaths: {
+          lockedError: [],
+          otherError: [],
+          largeSizeFoldersError: [],
+          largeFilesCountFoldersError: [],
+        },
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedCustomRecords: [],
       },
@@ -248,7 +285,12 @@ describe('netsuite config suggestions', () => {
     const configChange = getConfigFromConfigChanges(
       {
         failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+        failedFilePaths: {
+          lockedError: [],
+          otherError: [],
+          largeSizeFoldersError: [],
+          largeFilesCountFoldersError: [],
+        },
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedCustomRecords: [],
       },

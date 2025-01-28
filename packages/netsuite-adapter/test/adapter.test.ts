@@ -63,6 +63,7 @@ import {
   CustomTypeInfo,
   FileCustomizationInfo,
   FolderCustomizationInfo,
+  ImportFileCabinetResult,
   SDFObjectNode,
 } from '../src/client/types'
 import * as changesDetector from '../src/changes_detector/changes_detector'
@@ -208,10 +209,16 @@ describe('Adapter', () => {
     })
     client.importFileCabinetContent = mockFunction<SdfClient['importFileCabinetContent']>().mockResolvedValue({
       elements: [],
-      failedPaths: { lockedError: [], otherError: [], largeFolderError: [] },
+      failedPaths: { lockedError: [], otherError: [], largeSizeFoldersError: [], largeFilesCountFoldersError: [] },
+      largeFilesCountFolderWarnings: [],
     })
 
-    suiteAppImportFileCabinetMock.mockResolvedValue({ elements: [], failedPaths: [] })
+    const suiteAppImportFileCabinetResult: ImportFileCabinetResult = {
+      elements: [],
+      failedPaths: { lockedError: [], otherError: [], largeFilesCountFoldersError: [], largeSizeFoldersError: [] },
+      largeFilesCountFolderWarnings: [],
+    }
+    suiteAppImportFileCabinetMock.mockResolvedValue(suiteAppImportFileCabinetResult)
   })
 
   describe('fetch', () => {
@@ -248,7 +255,8 @@ describe('Adapter', () => {
 
       client.importFileCabinetContent = mockFunction<SdfClient['importFileCabinetContent']>().mockResolvedValue({
         elements: [folderCustomizationInfo, fileCustomizationInfo],
-        failedPaths: { lockedError: [], otherError: [], largeFolderError: [] },
+        failedPaths: { lockedError: [], otherError: [], largeSizeFoldersError: [], largeFilesCountFoldersError: [] },
+        largeFilesCountFolderWarnings: [],
       })
       client.getCustomObjects = mockFunction<SdfClient['getCustomObjects']>().mockResolvedValue({
         elements: [customTypeInfo, featuresCustomTypeInfo],
@@ -458,14 +466,25 @@ describe('Adapter', () => {
     it('should filter large file cabinet folders', async () => {
       client.importFileCabinetContent = mockFunction<SdfClient['importFileCabinetContent']>().mockResolvedValue({
         elements: [],
-        failedPaths: { lockedError: [], otherError: [], largeFolderError: ['largeFolder'] },
+        failedPaths: {
+          lockedError: [],
+          otherError: [],
+          largeSizeFoldersError: ['largeFolder'],
+          largeFilesCountFoldersError: [],
+        },
+        largeFilesCountFolderWarnings: [],
       })
 
       await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: false,
-          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: ['largeFolder'] },
+          failedFilePaths: {
+            lockedError: [],
+            otherError: [],
+            largeSizeFoldersError: ['largeFolder'],
+            largeFilesCountFoldersError: [],
+          },
           failedTypes: expect.anything(),
           failedCustomRecords: expect.anything(),
         },
@@ -486,7 +505,12 @@ describe('Adapter', () => {
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: false,
-          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedFilePaths: {
+            lockedError: [],
+            otherError: [],
+            largeSizeFoldersError: [],
+            largeFilesCountFoldersError: [],
+          },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeTest'] },
           failedCustomRecords: [],
         },
@@ -553,7 +577,12 @@ describe('Adapter', () => {
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: false,
-          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedFilePaths: {
+            lockedError: [],
+            otherError: [],
+            largeSizeFoldersError: [],
+            largeFilesCountFoldersError: [],
+          },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
         },
@@ -565,7 +594,13 @@ describe('Adapter', () => {
     it('should call getConfigFromConfigChanges with failed file paths', async () => {
       client.importFileCabinetContent = mockFunction<SdfClient['importFileCabinetContent']>().mockResolvedValue({
         elements: [],
-        failedPaths: { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
+        failedPaths: {
+          lockedError: [],
+          otherError: ['/path/to/file'],
+          largeSizeFoldersError: [],
+          largeFilesCountFoldersError: [],
+        },
+        largeFilesCountFolderWarnings: [],
       })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
@@ -574,7 +609,12 @@ describe('Adapter', () => {
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: false,
-          failedFilePaths: { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
+          failedFilePaths: {
+            lockedError: [],
+            otherError: ['/path/to/file'],
+            largeSizeFoldersError: [],
+            largeFilesCountFoldersError: [],
+          },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
         },
@@ -598,7 +638,12 @@ describe('Adapter', () => {
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: false,
-          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedFilePaths: {
+            lockedError: [],
+            otherError: [],
+            largeSizeFoldersError: [],
+            largeFilesCountFoldersError: [],
+          },
           failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
           failedCustomRecords: [],
         },
@@ -621,7 +666,12 @@ describe('Adapter', () => {
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: true,
-          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedFilePaths: {
+            lockedError: [],
+            otherError: [],
+            largeSizeFoldersError: [],
+            largeFilesCountFoldersError: [],
+          },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
         },
@@ -1346,9 +1396,12 @@ describe('Adapter', () => {
 
     it('should use suiteAppFileCabinet importFileCabinet and pass it the right params', async () => {
       await adapter.fetch(mockFetchOpts)
-      expect(suiteAppImportFileCabinetMock).toHaveBeenCalledWith(suiteAppClient, expect.anything(), 3, [
-        '.*\\.(csv|pdf|png)',
-      ])
+      expect(suiteAppImportFileCabinetMock).toHaveBeenCalledWith(suiteAppClient, {
+        query: expect.anything(),
+        maxFileCabinetSizeInGB: 3,
+        extensionsToExclude: ['.*\\.(csv|pdf|png)'],
+        maxFilesPerFileCabinetFolder: [],
+      })
     })
 
     it('should not create serverTime elements when getSystemInformation returns undefined', async () => {

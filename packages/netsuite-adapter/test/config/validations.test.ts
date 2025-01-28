@@ -416,6 +416,33 @@ describe('netsuite config validations', () => {
         expect(() => validateConfig(config)).toThrow()
       })
     })
+
+    describe('validate maxFilesPerFileCabinetFolder', () => {
+      it('should validate maxFilesPerFileCabinetFolder is the correct object with valid regex', () => {
+        config.client = {
+          maxFilesPerFileCabinetFolder: [{ folderPath: '/SuiteScripts.*', limit: 2000 }],
+        }
+        expect(() => validateConfig(config)).not.toThrow()
+      })
+
+      it('should throw if maxFilesPerFileCabinetFolder is the wrong object', () => {
+        config.client = {
+          maxFilesPerFileCabinetFolder: [{ name: '/SuiteScripts.*', limit: 2000 }],
+        }
+        expect(() => validateConfig(config)).toThrow(
+          'Expected maxFilesPerFileCabinetFolder to be a list of { folderPath: string, limit: number }',
+        )
+      })
+
+      it('should throw if maxFilesPerFileCabinetFolder is the correct object with invalid regex', () => {
+        config.client = {
+          maxFilesPerFileCabinetFolder: [{ folderPath: '/SuiteScripts(.*', limit: 2000 }],
+        }
+        expect(() => validateConfig(config)).toThrow(
+          'The following regular expressions in maxFilesPerFileCabinetFolder are invalid',
+        )
+      })
+    })
   })
 
   describe('suiteAppClient config', () => {

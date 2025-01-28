@@ -10,7 +10,7 @@ import { hash } from '@salto-io/lowerdash'
 import { calculateStaticFileHash, StaticFile } from '@salto-io/adapter-api'
 import { mockFunction, setupEnvVar } from '@salto-io/test-utils'
 import { mockStaticFilesCache } from '../../common/static_files_cache'
-import { DirectoryStore } from '../../../src/workspace/dir_store'
+import { DirectoryStore, FlushResult } from '../../../src/workspace/dir_store'
 import {
   buildStaticFilesSource,
   StaticFilesCache,
@@ -294,12 +294,16 @@ describe('Static Files', () => {
             .catch(e => expect(e.message).toEqual('Missing content on static file: path')))
       })
       describe('Flush', () => {
+        let flushResult: FlushResult<Buffer>
+        beforeEach(async () => {
+          flushResult = {
+            updates: [{ filename: 'file.txt', buffer: Buffer.from('hello'), timestamp: 1234 }],
+            deletions: ['file2.txt'],
+          }
+          mockDirStore.flush = jest.fn(async withFlushResult => (withFlushResult ? flushResult : undefined))
+        })
         describe('with valid flush result', () => {
           beforeEach(async () => {
-            mockDirStore.flush = jest.fn().mockResolvedValue({
-              updates: [{ filename: 'file.txt', buffer: Buffer.from('hello'), timestamp: 1234 }],
-              deletions: ['file2.txt'],
-            })
             await staticFilesSource.flush()
           })
           it('should flush all directory stores', async () => {
@@ -333,13 +337,13 @@ describe('Static Files', () => {
         })
         describe('with some invalid items in the flush result', () => {
           beforeEach(async () => {
-            mockDirStore.flush = jest.fn().mockResolvedValue({
+            flushResult = {
               updates: [
                 { filename: 'file1.txt', buffer: Buffer.from('hello') },
                 { filename: 'file2.txt', buffer: Buffer.from('world'), timestamp: 1234 },
               ],
               deletions: ['file3.txt'],
-            })
+            }
             await staticFilesSource.flush()
           })
           it('should flush all directory stores', async () => {

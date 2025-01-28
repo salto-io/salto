@@ -262,7 +262,7 @@ export const buildStaticFilesSource = (
     },
     flush: async () => {
       const skipStaticFilesCacheUpdate = getSaltoFlagBool(WORKSPACE_FLAGS.skipStaticFilesCacheUpdate)
-      const flushResult = await staticFilesDirStore.flush(skipStaticFilesCacheUpdate)
+      const flushResult = await staticFilesDirStore.flush(!skipStaticFilesCacheUpdate)
       if (flushResult !== undefined) {
         await updateCacheWithFlushResult(flushResult)
       } else {

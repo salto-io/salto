@@ -107,7 +107,7 @@ type ReferenceSerializationStrategyName =
   | 'fromDataInstance'
   | 'recordField'
   | 'recordFieldDollarPrefix'
-  | 'leftValueField'
+  | 'flexiPageleftValueField'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategy
@@ -180,7 +180,7 @@ export const ReferenceSerializationStrategyLookup: Record<
       return val
     },
   },
-  leftValueField: {
+  flexiPageleftValueField: {
     serialize: async ({ ref, path }) =>
       `{!Record${API_NAME_SEPARATOR}${await safeApiName({ ref, path, relative: true })}}`,
     lookup: (val, context) => {
@@ -1032,7 +1032,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   },
   {
     src: { field: 'leftValue', parentTypes: ['UiFormulaCriterion'] },
-    serializationStrategy: 'leftValueField',
+    serializationStrategy: 'flexiPageleftValueField',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
 ]

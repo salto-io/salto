@@ -27,11 +27,8 @@ const createChangeErrors = (element: InstanceElement): ChangeError[] => {
     if (field === undefined || path === undefined) return value
     if (field.name === 'name' && nameToElemIds.get(value).length > 0) {
       duplicates.add(value)
-      nameToElemIds.get(value).push(path)
     }
-    if (field.name === 'name' && nameToElemIds.get(value).length === 0) {
-      nameToElemIds.get(value).push(path)
-    }
+    nameToElemIds.get(value).push(path)
     return value
   }
   transformValuesSync({

@@ -321,11 +321,7 @@ const querySubFolders = async (
   topLevelFolders: FolderResult[],
   isSuiteBundlesEnabled: boolean,
 ): Promise<FolderResult[]> => {
-  const subFolderCriteria = "istoplevel = 'F'"
-  const whereQuery =
-    topLevelFolders.length > 0
-      ? `${subFolderCriteria} AND (${topLevelFolders.map(folder => `appfolder LIKE '${folder.name}%'`).join(' OR ')})`
-      : subFolderCriteria
+  const whereQuery = `istoplevel = 'F' AND (${topLevelFolders.map(folder => `appfolder LIKE '${folder.name}%'`).join(' OR ')})`
   const { results } = await queryFolders(suiteAppClient, whereQuery, isSuiteBundlesEnabled)
   return results
 }
@@ -644,11 +640,15 @@ const queryFileCabinet = async (
     }
   }
 
-  const filesCountsPerFolder = await queryFilesCountPerFolder(suiteAppClient, {
-    folderIdsToQuery: foldersToIncludeByPath.map(folder => folder.id),
-    isSuiteBundlesEnabled,
-    extensionsToExclude,
-  })
+  const filesCountsPerFolder =
+    // TODO: remove this condition
+    maxFilesPerFileCabinetFolder.length > 0
+      ? await queryFilesCountPerFolder(suiteAppClient, {
+          folderIdsToQuery: foldersToIncludeByPath.map(folder => folder.id),
+          isSuiteBundlesEnabled,
+          extensionsToExclude,
+        })
+      : {}
 
   const { foldersResults, largeFilesCountFoldersError, largeFilesCountFolderWarnings } = filterFoldersByFilesCount({
     filesCountsPerFolder,

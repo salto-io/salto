@@ -141,6 +141,9 @@ export const createLargeFilesCountFolderFetchWarnings = (
   instances: InstanceElement[],
   largeFilesCountFolderWarnings: LargeFilesCountFolderWarning[],
 ): (SaltoError | SaltoElementError)[] => {
+  if (largeFilesCountFolderWarnings.length === 0) {
+    return []
+  }
   const folderInstances = _.keyBy(
     instances.filter(instance => instance.elemID.typeName === FOLDER),
     instance => instance.value[PATH] as string,

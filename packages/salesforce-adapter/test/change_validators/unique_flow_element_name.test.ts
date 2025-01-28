@@ -77,31 +77,31 @@ describe('uniqueFlowElementName change validator', () => {
           elemID: flowInstance.elemID.createNestedID('constants', '0', 'name'),
           severity: 'Warning',
           message: 'Duplicate Name in Flow',
-          detailedMessage: 'The name "duplicateName" is used multiple times within this Flow.',
+          detailedMessage: 'The name "duplicateName" is used multiple times in this Flow.',
         },
         {
           elemID: flowInstance.elemID.createNestedID('constants', '1', 'name'),
           severity: 'Warning',
           message: 'Duplicate Name in Flow',
-          detailedMessage: 'The name "duplicateName" is used multiple times within this Flow.',
+          detailedMessage: 'The name "duplicateName" is used multiple times in this Flow.',
         },
         {
           elemID: flowInstance.elemID.createNestedID('dynamicChoiceSets', '0', 'name'),
           severity: 'Warning',
           message: 'Duplicate Name in Flow',
-          detailedMessage: 'The name "duplicateName" is used multiple times within this Flow.',
+          detailedMessage: 'The name "duplicateName" is used multiple times in this Flow.',
         },
         {
           elemID: flowInstance.elemID.createNestedID('screens', '0', 'name'),
           severity: 'Warning',
           message: 'Duplicate Name in Flow',
-          detailedMessage: 'The name "anotherDuplicateName" is used multiple times within this Flow.',
+          detailedMessage: 'The name "anotherDuplicateName" is used multiple times in this Flow.',
         },
         {
           elemID: flowInstance.elemID.createNestedID('screens', '1', 'name'),
           severity: 'Warning',
           message: 'Duplicate Name in Flow',
-          detailedMessage: 'The name "anotherDuplicateName" is used multiple times within this Flow.',
+          detailedMessage: 'The name "anotherDuplicateName" is used multiple times in this Flow.',
         },
       ]
       expect(errors).toEqual(expectedErrors)

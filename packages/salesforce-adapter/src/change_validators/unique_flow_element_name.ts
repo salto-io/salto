@@ -40,7 +40,7 @@ const createChangeErrors = (element: InstanceElement): ChangeError[] => {
       elemID: elemId,
       severity: 'Warning',
       message: 'Duplicate Name in Flow',
-      detailedMessage: `The name "${name}" is used multiple times within this Flow.`,
+      detailedMessage: `The name "${name}" is used multiple times in this Flow.`,
     })),
   )
 }

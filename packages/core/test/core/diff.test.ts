@@ -33,12 +33,15 @@ import { mockWorkspace } from '../common/workspace'
 import { createDiffChanges, getEnvsDeletionsDiff } from '../../src/core/diff'
 import { createElementSource } from '../common/helpers'
 import { ChangeWithDetails } from '../../src/core/plan/plan_item'
+import { setupEnvVar } from '@salto-io/test-utils'
+import { SALTO_FLAG_PREFIX, WORKSPACE_FLAGS } from '@salto-io/workspace/dist/src/flags'
 
 const { createInMemoryElementSource } = elementSource
 const { awu } = collections.asynciterable
 const { mergeElements } = merger
 
-describe('diff', () => {
+describe.each([0,1])('diff (SALTO_CORE_REPLACE_GET_PLAN_WITH_CALCULATE_DIFF=%s)', (replaceGetPlanWithCalculateDiff) => {
+  setupEnvVar(SALTO_FLAG_PREFIX + WORKSPACE_FLAGS.replaceGetPlanWithCalculateDiff, replaceGetPlanWithCalculateDiff)
   const nestedType = new ObjectType({
     elemID: new ElemID('salto', 'nested'),
     fields: {

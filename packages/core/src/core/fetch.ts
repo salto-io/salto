@@ -1011,6 +1011,9 @@ const createFetchChanges = async ({
 
   const configs = await awu(configsMerge.merged.values()).toArray()
   const updatedConfigNames = new Set(configs.map(c => c.elemID.getFullName()))
+  if (getSaltoFlagBool(WORKSPACE_FLAGS.replaceGetPlanWithCalculateDiff)) {
+    log.trace('Using calculateDiff instead of getPlan to compute config changes')
+  }
   const configChanges = getSaltoFlagBool(WORKSPACE_FLAGS.replaceGetPlanWithCalculateDiff) ?
     await awu(await calculateDiff({
       before: elementSource.createInMemoryElementSource(

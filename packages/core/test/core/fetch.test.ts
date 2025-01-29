@@ -58,7 +58,6 @@ import {
   calcFetchChanges,
   createElemIdGetters,
 } from '../../src/core/fetch'
-import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from '../common/helpers'
 import { mockStaticFilesSource } from '../common/state'
 import { FetchChange } from '../../src/types'
@@ -473,15 +472,6 @@ describe('fetch', () => {
       })
       const configInstance = new InstanceElement('ins', configType, { test: ['SkipMe'] })
       const currentInstanceConfig = new InstanceElement('ins', configType, { test: [] })
-
-      const verifyPlan = (plan: Plan, expectedPlan: Plan, expectedPlanLength: number): void => {
-        const configChanges = [...plan.itemsByEvalOrder()]
-        const expectedConfigChanges = [...expectedPlan.itemsByEvalOrder()]
-        expect(configChanges).toHaveLength(expectedPlanLength)
-        expect(configChanges.map(change => [...change.items.values()])).toEqual(
-          expectedConfigChanges.map(change => [...change.items.values()]),
-        )
-      }
 
       beforeEach(() => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce({

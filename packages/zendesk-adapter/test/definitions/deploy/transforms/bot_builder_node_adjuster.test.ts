@@ -41,15 +41,46 @@ describe('bot_builder_node_adjuster', () => {
     nodeType,
     {
       id: '3',
+      externalId: '3',
       data: { for: 'event' },
     },
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [answerInstance.value] }, // The parent is resolved
   )
   describe('transformRequest', () => {
-    it.each(['Added', 'Changed'])('should create the correct bot builder node request for type %s', async actionStr => {
-      const action = actionStr as 'Changed' | 'Added'
-      const finalValue = await transformRequest(action)({
+    it('should create the correct bot builder node request for type Added', async () => {
+      const finalValue = await transformRequest('Added')({
+        value: nodeInstance.value,
+        typeName: 'test',
+        context: {
+          change: toChange({ after: nodeInstance }),
+        } as unknown as definitions.deploy.ChangeAndExtendedContext,
+      })
+      expect(finalValue).toEqual(
+        expect.objectContaining({
+          value: {
+            query: expect.any(String),
+            operationName: 'applyNodeListTransactionByFlowId',
+            variables: {
+              flowId: botInstance.value.id,
+              subFlowId: answerInstance.value.id,
+              transactionId: expect.stringMatching(/^[0-9A-Z]{26}$/), // Generated ksuid,
+              events: [
+                {
+                  eventType: 'Added',
+                  id: expect.stringMatching(/^[0-9A-Z]{26}$/), // Generated ksuid
+                  externalId: nodeInstance.value.externalId,
+                  from: null,
+                  to: { data: { for: 'event' } },
+                },
+              ],
+            },
+          },
+        }),
+      )
+    })
+    it('should create the correct bot builder node request for type Changed', async () => {
+      const finalValue = await transformRequest('Changed')({
         value: nodeInstance.value,
         typeName: 'test',
         context: {
@@ -65,7 +96,15 @@ describe('bot_builder_node_adjuster', () => {
               flowId: botInstance.value.id,
               subFlowId: answerInstance.value.id,
               transactionId: nodeInstance.value.id,
-              events: [{ eventType: action, id: nodeInstance.value.id, from: null, to: { data: { for: 'event' } } }],
+              events: [
+                {
+                  eventType: 'Changed',
+                  id: nodeInstance.value.id,
+                  externalId: nodeInstance.value.externalId,
+                  from: null,
+                  to: { data: { for: 'event' } },
+                },
+              ],
             },
           },
         }),
@@ -96,11 +135,12 @@ describe('bot_builder_node_adjuster', () => {
       )
     })
 
-    it('should throw an error if the id is missing', async () => {
+    it.each(['Deleted', 'Changed'])('should throw an error if the id is missing on action %s', async actionStr => {
+      const action = actionStr as 'Changed' | 'Deleted'
       const nodeInstanceWithoutId = nodeInstance.clone()
       nodeInstanceWithoutId.value.id = undefined
       await expect(
-        transformRequest('Added')({
+        transformRequest(action)({
           value: nodeInstanceWithoutId.value,
           typeName: 'test',
           context: {
@@ -165,8 +205,8 @@ describe('bot_builder_node_adjuster', () => {
         value: {
           data: {
             applyNodeListTransactionByFlowId: [
-              { id: '3', data: { for: 'event' } },
-              { id: '4', some: { other: 'event' } },
+              { externalId: '3', data: { for: 'event' } },
+              { externalId: '4', some: { other: 'event' } },
             ],
           },
         },
@@ -175,7 +215,7 @@ describe('bot_builder_node_adjuster', () => {
           change: toChange({ after: nodeInstance }),
         } as unknown as definitions.deploy.ChangeAndExtendedContext,
       })
-      expect(response).toEqual({ value: { id: '3', data: { for: 'event' } } })
+      expect(response).toEqual({ value: { externalId: '3', data: { for: 'event' } } })
     })
 
     it('should throw an error if the response contains errors', async () => {
@@ -189,15 +229,15 @@ describe('bot_builder_node_adjuster', () => {
       ).rejects.toThrow(`graphql response contained errors: ${inspectValue(value)}`)
     })
 
-    it('should throw an error if the response is missing the node by id', async () => {
-      const value = { data: { applyNodeListTransactionByFlowId: [{ id: '4', data: { for: 'event' } }] } }
+    it('should throw an error if the response is missing the node by externalId', async () => {
+      const value = { data: { applyNodeListTransactionByFlowId: [{ externalId: '4', data: { for: 'event' } }] } }
       await expect(
         transformResponse()({
           value,
           typeName: 'test',
           context: { change: toChange({ after: nodeInstance }) } as definitions.deploy.ChangeAndExtendedContext,
         }),
-      ).rejects.toThrow('Failed to find node with id 3')
+      ).rejects.toThrow('Failed to find node with externalId 3')
     })
 
     describe('when the node is deleted', () => {
@@ -208,7 +248,7 @@ describe('bot_builder_node_adjuster', () => {
           typeName: 'test',
           context: { change: toChange({ after: nodeInstance }) } as definitions.deploy.ChangeAndExtendedContext,
         })
-        expect(response).toEqual({ value: { id: '3' } })
+        expect(response).toEqual({ value: { externalId: '3' } })
       })
 
       it('should not throw an error if there is an unauthorized error', async () => {

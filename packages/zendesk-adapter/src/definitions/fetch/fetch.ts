@@ -2180,8 +2180,8 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'id' }], extendsParent: true },
-        path: { pathParts: [{ parts: [{ fieldName: 'id' }], extendsParent: true }] },
+        elemID: { parts: [{ fieldName: 'externalId' }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'externalId' }], extendsParent: true }] },
         alias: {
           aliasComponents: [
             {
@@ -2194,6 +2194,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         allowEmptyArrays: true,
       },
       fieldCustomizations: {
+        id: { fieldType: 'string', hide: true },
         externalId: { fieldType: 'string', hide: true },
       },
     },

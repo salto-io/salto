@@ -5259,6 +5259,7 @@ __metadata:
     jest: ^29.7.0
     joi: ^17.4.0
     jszip: ^3.10.1
+    ksuid: ^3.0.0
     lodash: ^4.17.21
     moment-timezone: ^0.5.39
     prettier: 3.2.5
@@ -7461,6 +7462,13 @@ __metadata:
   version: 1.0.0
   resolution: "balanced-match@npm:1.0.0"
   checksum: 9b67bfe558772f40cf743a3469b48b286aecec2ea9fe80c48d74845e53aab1cef524fafedf123a63019b49ac397760573ef5f173f539423061f7217cbb5fbd40
+  languageName: node
+  linkType: hard
+
+"base-convert-int-array@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "base-convert-int-array@npm:1.0.1"
+  checksum: b436272aa1c4a1b238d9f3dac2f278760a2173130e08bf7556429810da9e12a62652a17778cce0e41a82f45cf9d81614713b9e0a72bff6ddc940e17215c58d30
   languageName: node
   linkType: hard
 
@@ -14112,6 +14120,15 @@ __metadata:
     knip: bin/knip.js
     knip-bun: bin/knip-bun.js
   checksum: 8b1d59d3fc488b49c681da5b35feb256a0e82bf4c609001ffd410b559d5d58fc36e7c3dbd3c78f26416d49750a8abd117cd77648cde929d46fda6d3de90f3629
+  languageName: node
+  linkType: hard
+
+"ksuid@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "ksuid@npm:3.0.0"
+  dependencies:
+    base-convert-int-array: ^1.0.1
+  checksum: d8291b21ba1fb5374f426c15b4f8bd2ddcdad9cf8cf5f8056a758f0d9c23216050e10864067465058eea0622c84b78383fae92db21ccc529aa6a081eb4ec6faf
   languageName: node
   linkType: hard
 

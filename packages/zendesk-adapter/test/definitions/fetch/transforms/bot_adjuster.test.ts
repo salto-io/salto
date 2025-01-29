@@ -36,4 +36,36 @@ describe('bot_adjuster', () => {
     })
     expect(finalValue).toEqual([{ value: { b: 2, enabledLanguages: ['zz', 'French'] } }])
   })
+  it('should add externalId if missing based on id', async () => {
+    const finalValue = await transformBotItem({
+      value: {
+        data: {
+          flows: {
+            subflows: [
+              {
+                nodes: [{ id: '2', externalId: '3' }, { id: '4' }, { id: '5', externalId: null }],
+              },
+            ],
+          },
+        },
+      },
+      context: {},
+      typeName: 'test',
+    })
+    expect(finalValue).toEqual([
+      {
+        value: {
+          subflows: [
+            {
+              nodes: [
+                { id: '2', externalId: '3' },
+                { id: '4', externalId: '4' },
+                { id: '5', externalId: '5' },
+              ],
+            },
+          ],
+        },
+      },
+    ])
+  })
 })

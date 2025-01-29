@@ -13,7 +13,6 @@ import { resolveValues } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import {
   getParent,
-  normalizeFilePathPart,
   replaceTemplatesWithValues,
   safeJsonStringify,
   inspectValue,
@@ -38,6 +37,7 @@ import {
   TemplatePart,
   UnresolvedReference,
   Values,
+  normalizeFilePathPart,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../client/client'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../constants'

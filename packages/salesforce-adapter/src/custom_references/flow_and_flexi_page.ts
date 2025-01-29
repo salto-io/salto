@@ -15,13 +15,12 @@ import {
   ReferenceInfo,
   Value,
 } from '@salto-io/adapter-api'
-// import { parseFormulaIdentifier } from '@salto-io/salesforce-formula-parser'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { inspectValue, WALK_NEXT_STEP, walkOnElement, WalkOnFunc } from '@salto-io/adapter-utils'
 import { WeakReferencesHandler } from '../types'
 import { isInstanceOfTypeSync } from '../filters/utils'
-import { API_NAME_SEPARATOR, SALESFORCE } from '../constants'
+import { API_NAME_SEPARATOR, FLOW_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
 const { isDefined } = values
@@ -61,7 +60,7 @@ const referenceInfoFromFieldValue = (
     return [
       {
         source: path,
-        target: new ElemID(SALESFORCE, parentRef.elemID.typeName, value.split(API_NAME_SEPARATOR)[1]),
+        target: parentRef.elemID.createNestedID('field', value.split(API_NAME_SEPARATOR)[1]),
         type: 'strong',
       },
     ]
@@ -70,6 +69,7 @@ const referenceInfoFromFieldValue = (
 }
 
 const flowCondition: ReferenceExtractor = (instance: InstanceElement) =>
+  // FlowCondition.leftValueReference
   instance.value.decisions?.flatMap((flowDecision: Value, decisionIdx: number) =>
     flowDecision.rules?.flatMap((flowRule: Value, ruleIdx: number) =>
       flowRule.conditions?.flatMap((flowCond: Value, conditionIdx: number) =>
@@ -108,45 +108,6 @@ const flowAssignmentItem: ReferenceExtractor = (instance: InstanceElement) =>
     ),
   ) ?? []
 
-const flowTestCondition: ReferenceExtractor = (instance: InstanceElement) =>
-  instance.value.testPoints?.flatMap((testPoint: Value, pointIdx: number) =>
-    testPoint.assertions?.flatMap((assertion: Value, assertionIdx: number) =>
-      assertion.conditions?.flatMap((condition: Value, conditionIdx: number) =>
-        referenceInfoFromFieldValue(
-          instance,
-          instance.elemID.createNestedID(
-            'testPoints',
-            pointIdx.toString(),
-            'assertions',
-            assertionIdx.toString(),
-            'conditions',
-            conditionIdx.toString(),
-            'leftValueReference',
-          ),
-          condition.leftValueReference,
-        ),
-      ),
-    ),
-  ) ?? []
-
-const flowTestParameter: ReferenceExtractor = (instance: InstanceElement) =>
-  // FlowTestParameter.leftValueReference
-  instance.value.testPoints?.flatMap((testPoint: Value, pointIdx: number) =>
-    testPoint.parameters?.flatMap((parameter: Value, parameterIdx: number) =>
-      referenceInfoFromFieldValue(
-        instance,
-        instance.elemID.createNestedID(
-          'testPoints',
-          pointIdx.toString(),
-          'parameters',
-          parameterIdx.toString(),
-          'leftValueReference',
-        ),
-        parameter.leftValueReference,
-      ),
-    ),
-  ) ?? []
-
 const flowElementReferenceOrValue: ReferenceExtractor = (instance: InstanceElement) => {
   // FlowElementReferenceOrValue.elementReference
   const result: ReferenceInfo[] = []
@@ -163,8 +124,7 @@ const flowElementReferenceOrValue: ReferenceExtractor = (instance: InstanceEleme
 }
 
 const referenceExtractors: Record<string, ReadonlyArray<ReferenceExtractor>> = {
-  Flow: [flowCondition, flowAssignmentItem, flowElementReferenceOrValue],
-  FlowTest: [flowTestCondition, flowTestParameter],
+  [FLOW_METADATA_TYPE]: [flowCondition, flowAssignmentItem, flowElementReferenceOrValue],
 }
 
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (

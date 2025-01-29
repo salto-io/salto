@@ -63,6 +63,8 @@ import {
   ASSIGN_TO_REFERENCE,
   LIVE_CHAT_BUTTON,
   APPROVAL_PROCESS_METADATA_TYPE,
+  LEFT_VALUE_REFERENCE,
+  ELEMENT_REFERENCE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -485,6 +487,52 @@ export const mockTypes = {
             fields: {
               [ASSIGN_TO_REFERENCE]: {
                 refType: BuiltinTypes.STRING,
+              },
+            },
+          }),
+        ),
+      },
+      decisions: {
+        refType: new ListType(
+          createMetadataObjectType({
+            annotations: {
+              metadataType: FLOW_FIELD_TYPE_NAMES.FLOW_DECISION,
+            },
+            fields: {
+              rules: {
+                refType: new ListType(
+                  createMetadataObjectType({
+                    annotations: {
+                      metadataType: FLOW_FIELD_TYPE_NAMES.FLOW_RULE,
+                    },
+                    fields: {
+                      conditions: {
+                        refType: new ListType(
+                          createMetadataObjectType({
+                            annotations: {
+                              metadataType: FLOW_FIELD_TYPE_NAMES.FLOW_CONDITION,
+                            },
+                            fields: {
+                              [LEFT_VALUE_REFERENCE]: {
+                                refType: BuiltinTypes.STRING,
+                              },
+                              rightValue: {
+                                refType: createMetadataObjectType({
+                                  annotations: { metadataType: FLOW_FIELD_TYPE_NAMES.FLOW_ELEMENT_REFERENCE_OR_VALUE },
+                                  fields: {
+                                    [ELEMENT_REFERENCE]: {
+                                      refType: BuiltinTypes.STRING,
+                                    },
+                                  },
+                                }),
+                              },
+                            },
+                          }),
+                        ),
+                      },
+                    },
+                  }),
+                ),
               },
             },
           }),

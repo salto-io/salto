@@ -28,7 +28,7 @@ export const escapeTemplateMarker = (
   { isNextPartReference = false }: EscapeTemplateMarkerOptions | undefined = {},
 ): string =>
   prim.replace(
-    // In the last part we don't need to escape a \ at the end
+    // If the next part is a reference, we need to escape all \ at the end of the part
     isNextPartReference ? /(\\*)(\$\{|$)/g : /(\\*)(\$\{)/g,
     (_, backslashes, ending) =>
       // Double all leading backslashes and escape the ${
@@ -59,7 +59,7 @@ export const unescapeTemplateMarker = (
     )
   }
   return text.replace(
-    // In the last part we don't need to unescape \ at the end
+    // We need to unescape \${, but if the next part is a reference, we also need to unescape \ at the end of the part
     isNextPartReference ? /(\\*)(\\\$\{|$)/g : /(\\*)(\\\$\{)/g,
     (_, backslashes, ending) => {
       const leadingBackslashes = unescapeStrategy === 'markerOnly' ? backslashes : backslashes.replace(/\\\\/g, '\\')

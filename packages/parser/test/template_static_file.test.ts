@@ -118,7 +118,7 @@ describe('template static file', () => {
       // eslint-disable-next-line no-template-curly-in-string
       '\\${ not.reference }\nbefore ref \\',
       new ReferenceExpression(article.elemID),
-      '\n mid \\ and end \\',
+      '\n mid \\\\ and end \\',
     ],
   })
 

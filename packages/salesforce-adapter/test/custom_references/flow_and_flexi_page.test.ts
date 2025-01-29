@@ -7,7 +7,7 @@
  */
 import { ElemID, InstanceElement, ObjectType, ReferenceInfo } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
-import { formulaRefsHandler } from '../../src/custom_references/formula_refs'
+import { formulaRefsHandler } from '../../src/custom_references/flow_and_flexi_page'
 import { SALESFORCE } from '../../src/constants'
 
 describe('formulaRefs', () => {

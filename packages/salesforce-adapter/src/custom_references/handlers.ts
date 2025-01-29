@@ -19,7 +19,7 @@ import {
 } from '../types'
 import { profilesAndPermissionSetsHandler } from './profiles_and_permission_sets'
 import { managedElementsHandler } from './managed_elements'
-import { formulaRefsHandler } from './formula_refs'
+import { formulaRefsHandler } from './flow_and_flexi_page'
 import { omitNonExistingFieldsHandler } from './omit_non_existing_fields'
 
 const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {

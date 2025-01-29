@@ -28,9 +28,9 @@ export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
-export type ZuoraClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
+type ZuoraClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
 
-export type ZuoraFetchConfig = definitions.UserFetchConfig
+type ZuoraFetchConfig = definitions.UserFetchConfig
 
 type ZuoraSettingsSwaggerConfig = {
   typeNameOverrides?: configUtils.TypeNameOverrideConfig[]
@@ -46,7 +46,7 @@ export type ZuoraConfig = {
 }
 
 const DEFAULT_ID_FIELDS = ['name']
-export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'createdBy', fieldType: 'string' },
   { fieldName: 'createdOn', fieldType: 'string' },
   { fieldName: 'updatedBy', fieldType: 'string' },

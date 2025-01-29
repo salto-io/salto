@@ -5,15 +5,11 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import ZuoraClient from './client/client'
 import { FilterContext } from './config'
 
 export const { filtersRunner } = filterUtils
-
-export type FilterAdditionalParams = {
-  fetchQuery: elementUtils.query.ElementQuery
-}
 
 export type Filter = filterUtils.Filter
 

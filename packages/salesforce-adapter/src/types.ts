@@ -29,7 +29,6 @@ type UserDeployConfig = definitions.UserDeployConfig
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export const MAX_INSTANCES_PER_TYPE = 'maxInstancesPerType'
-export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
 export const METADATA_CONFIG = 'metadata'
@@ -45,7 +44,7 @@ export const DATA_CONFIGURATION = 'data'
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const DATA_MANAGEMENT = 'dataManagement'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
-export const SHOULD_FETCH_ALL_CUSTOM_SETTINGS = 'fetchAllCustomSettings'
+const SHOULD_FETCH_ALL_CUSTOM_SETTINGS = 'fetchAllCustomSettings'
 
 // Based on the list in https://salesforce.stackexchange.com/questions/101844/what-are-the-object-and-field-name-suffixes-that-salesforce-uses-such-as-c-an
 export const INSTANCE_SUFFIXES = [
@@ -216,14 +215,14 @@ export type SaltoAliasSettings = {
   overrides?: ObjectAliasSettings[]
 }
 
-export type SaltoManagementFieldSettings = {
+type SaltoManagementFieldSettings = {
   defaultFieldName: string
 }
 
 export const outgoingReferenceBehaviors = ['ExcludeInstance', 'BrokenReference', 'InternalId'] as const
 export type OutgoingReferenceBehavior = (typeof outgoingReferenceBehaviors)[number]
 
-export type BrokenOutgoingReferencesSettings = {
+type BrokenOutgoingReferencesSettings = {
   defaultBehavior: OutgoingReferenceBehavior
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
@@ -369,7 +368,7 @@ const warningSettingsType = new ObjectType({
   },
 })
 
-export type WarningSettings = {
+type WarningSettings = {
   nonQueryableFields: boolean
 }
 
@@ -386,7 +385,7 @@ export type DataManagementConfig = {
   regenerateSaltoIds?: boolean
 }
 
-export type FetchLimits = {
+type FetchLimits = {
   maxExtraDependenciesQuerySize?: number
   maxExtraDependenciesResponseSize?: number
   extendTriggersMetadataChunkSize?: number
@@ -501,7 +500,7 @@ export type MetadataConfigSuggestion = {
   reason?: string
 }
 
-export type RetrieveSizeConfigSuggestion = {
+type RetrieveSizeConfigSuggestion = {
   type: typeof MAX_ITEMS_IN_RETRIEVE_REQUEST
   value: number
   reason?: string
@@ -1005,7 +1004,7 @@ export type MetadataQuery<T = MetadataInstance> = {
   logData: () => void
 }
 
-export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
+type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
 
 export type DataManagement = {
   shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>

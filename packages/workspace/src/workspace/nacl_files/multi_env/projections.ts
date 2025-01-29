@@ -26,7 +26,7 @@ import {
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
 
-export class InvalidProjectionError extends Error {
+class InvalidProjectionError extends Error {
   constructor(change: DetailedChange, reason: string) {
     super(`Can not project ${getChangeData(change).elemID}: ${reason}`)
   }

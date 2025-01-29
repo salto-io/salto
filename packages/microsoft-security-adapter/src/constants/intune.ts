@@ -33,9 +33,9 @@ export const SETTINGS_FIELD_NAME = 'settings'
 export const SETTING_COUNT_FIELD_NAME = 'settingCount'
 
 // DeviceCompliance fields
-export const RESTRICTED_APPS_FIELD_NAME = 'restrictedApps'
+const RESTRICTED_APPS_FIELD_NAME = 'restrictedApps'
 export const SCHEDULED_ACTIONS_FIELD_NAME = 'scheduledActionsForRule'
-export const SCHEDULED_ACTION_CONFIGURATIONS_FIELD_NAME = 'scheduledActionConfigurations'
+const SCHEDULED_ACTION_CONFIGURATIONS_FIELD_NAME = 'scheduledActionConfigurations'
 
 // Platform script fields
 // Linux
@@ -68,8 +68,9 @@ export const TOP_LEVEL_TYPES = {
   SCOPE_TAG_TYPE_NAME: 'IntuneScopeTag',
 } as const
 
-// We only use the validateTypeNames for compilation time validation
-export const validateTypeNames: IntuneTypeName[] = Object.values(TOP_LEVEL_TYPES)
+// This anonymous function is only used for compile time validation.
+// Once we upgrade to TS 4.9 or newer we can use the new `satisfies` syntax instead.
+;(<T extends Record<string, IntuneTypeName>>(_value: T): void => {})(TOP_LEVEL_TYPES)
 
 // Nested types
 export const DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME = recursiveNestedTypeName(

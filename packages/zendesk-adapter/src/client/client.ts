@@ -34,17 +34,17 @@ type LogsFilterConfig = {
   allowOrganizationNames?: boolean
 }
 
-export type HolidayRes = {
+type HolidayRes = {
   data: {
     holidays: Values[]
   }
 }
-export type SupportAddressRes = {
+type SupportAddressRes = {
   data: {
     recipient_addresses: Values[]
   }
 }
-export type AttachmentRes = {
+type AttachmentRes = {
   data: {
     article_attachments: Values[]
   }

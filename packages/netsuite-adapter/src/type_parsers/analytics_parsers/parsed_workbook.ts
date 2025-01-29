@@ -203,7 +203,7 @@ export const workbookDefinitionFields: types.TypeKeysEnum<WorkbookDefinitionType
   Workbook: 'Workbook',
 }
 
-export type Workbook = AnalyticOriginalFields & WorkbookDefinitionType
+type Workbook = AnalyticOriginalFields & WorkbookDefinitionType
 
 export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}

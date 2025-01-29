@@ -55,7 +55,7 @@ const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
 const { awu } = collections.asynciterable
 
-export interface MockWriteStreamOpts {
+interface MockWriteStreamOpts {
   isTTY?: boolean
   hasColors?: boolean
 }
@@ -263,7 +263,6 @@ export const mockErrors = (errors: SaltoError[]): wsErrors.Errors =>
 export type MockWorkspace = MockInterface<Omit<Workspace, 'transformToWorkspaceError'>> &
   Pick<Workspace, 'transformToWorkspaceError'>
 
-export const withoutEnvironmentParam = 'active'
 export const withEnvironmentParam = 'inactive'
 
 type MockWorkspaceArgs = {
@@ -273,7 +272,7 @@ type MockWorkspaceArgs = {
   getElements?: () => Element[]
 }
 
-export const mockStateStaticFilesSource = (): MockInterface<staticFiles.StateStaticFilesSource> => ({
+const mockStateStaticFilesSource = (): MockInterface<staticFiles.StateStaticFilesSource> => ({
   persistStaticFile: mockFunction<staticFiles.StateStaticFilesSource['persistStaticFile']>(),
   getStaticFile: mockFunction<staticFiles.StateStaticFilesSource['getStaticFile']>(),
   clear: mockFunction<staticFiles.StateStaticFilesSource['clear']>(),

@@ -13,7 +13,7 @@ export type ClientOptions = 'main'
 type PaginationOptions = 'cursor'
 export type ReferenceContextStrategies = 'ODataType' | 'resourceAccessType'
 export type CustomReferenceSerializationStrategyName = 'appId' | 'bundleId' | 'packageId' | 'servicePrincipalAppId'
-export type CustomIndexField = CustomReferenceSerializationStrategyName
+type CustomIndexField = CustomReferenceSerializationStrategyName
 
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions

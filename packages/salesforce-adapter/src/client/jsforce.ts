@@ -60,15 +60,15 @@ export interface Soap {
   describeSObjects(typeNames: string | string[]): Promise<DescribeSObjectResult | DescribeSObjectResult[]>
 }
 
-export interface Global {
+interface Global {
   sobjects: DescribeGlobalSObjectResult[]
 }
 
-export type Limit = {
+type Limit = {
   Remaining: number
 }
 
-export type Limits = {
+type Limits = {
   DailyApiRequests: Limit
 }
 
@@ -120,7 +120,7 @@ export interface RunTestFailure {
   time: number
 }
 
-export interface CodeCoverageWarning {
+interface CodeCoverageWarning {
   id: string
   message: string
   name?: string

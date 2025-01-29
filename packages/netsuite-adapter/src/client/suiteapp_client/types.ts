@@ -87,12 +87,12 @@ export const RESTLET_RESULTS_SCHEMA = {
   additionalProperties: true,
 }
 
-export type RestletSuccessResults = {
+type RestletSuccessResults = {
   status: 'success'
   results: unknown
 }
 
-export type RestletErrorResults = {
+type RestletErrorResults = {
   status: 'error'
   message: string
   error?: Values
@@ -341,12 +341,12 @@ export type SetConfigType = {
   items: SetConfigField[]
 }
 
-export type SuccessSetConfig = {
+type SuccessSetConfig = {
   configType: string
   status: 'success'
 }
 
-export type FailSetConfig = {
+type FailSetConfig = {
   configType: string
   status: 'fail'
   errorMessage: string

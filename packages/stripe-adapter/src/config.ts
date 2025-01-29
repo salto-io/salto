@@ -7,7 +7,7 @@
  */
 import { elements, definitions } from '@salto-io/adapter-components'
 
-export type UserFetchConfig = definitions.UserFetchConfig<{
+type UserFetchConfig = definitions.UserFetchConfig<{
   customNameMappingOptions: never
   fetchCriteria: definitions.DefaultFetchCriteria
 }>

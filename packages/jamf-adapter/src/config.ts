@@ -12,7 +12,7 @@ export type UserFetchConfig = definitions.UserFetchConfig<{
   fetchCriteria: definitions.DefaultFetchCriteria
 }>
 
-export type UserDeployConfig = definitions.UserDeployConfig & {
+type UserDeployConfig = definitions.UserDeployConfig & {
   delayAfterDeploy?: number
 }
 

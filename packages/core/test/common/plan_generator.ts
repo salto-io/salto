@@ -27,7 +27,7 @@ import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from './helpers'
 import { addFieldToObjectDependency } from '../../src/core/plan/dependency'
 
-export type PlanGenerators = {
+type PlanGenerators = {
   planWithTypeChanges: () => Promise<[Plan, ObjectType]>
   planWithFieldChanges: () => Promise<[Plan, ObjectType]>
   planWithNewType: () => Promise<[Plan, PrimitiveType]>

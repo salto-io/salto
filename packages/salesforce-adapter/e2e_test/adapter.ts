@@ -12,12 +12,12 @@ import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
 import { SalesforceConfig, Credentials } from '../src/types'
 
-export type Reals = {
+type Reals = {
   client: SalesforceClient
   adapter: SalesforceAdapter
 }
 
-export type Opts = {
+type Opts = {
   adapterParams?: Partial<SalesforceAdapterParams>
   credentials: Credentials
 }

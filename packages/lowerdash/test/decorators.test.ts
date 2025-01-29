@@ -5,20 +5,20 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { decorators } from '../src'
+import { wrapMethodWith, OriginalCall } from '../src/decorators'
 
 describe('decorators', () => {
   describe('wrapMethodWith', () => {
     const ensureFooIsCalled = jest.fn(async function ensureFooIsCalledImpl(
       // eslint-disable-next-line no-use-before-define
       this: MyClass,
-      original: decorators.OriginalCall,
+      original: OriginalCall,
     ): Promise<unknown> {
       this.foo()
       const originalResult = await original.call()
       return `${originalResult}_modified`
     })
-    const ensureFooIsCalledDecorator = decorators.wrapMethodWith(ensureFooIsCalled)
+    const ensureFooIsCalledDecorator = wrapMethodWith(ensureFooIsCalled)
 
     class MyClass {
       constructor(public value: number) {}
@@ -45,7 +45,7 @@ describe('decorators', () => {
     })
 
     describe('the originalCall argument', () => {
-      let originalCall: decorators.OriginalCall
+      let originalCall: OriginalCall
 
       beforeEach(async () => {
         await m.bar(14, 'world')

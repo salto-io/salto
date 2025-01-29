@@ -34,7 +34,7 @@ export const OAUTH_REQUIRED_SCOPES = [
   'UserAuthenticationMethod.ReadWrite.All',
 ]
 
-export type OauthRequestParameters = {
+type OauthRequestParameters = {
   tenantId: string
   clientId: string
   clientSecret: string

@@ -43,7 +43,7 @@ export const mockStaticFilesSource = (staticFiles: StaticFile[] = []): StaticFil
     .mockImplementation(filePath => staticFiles.find(f => f.filepath === filePath) !== undefined),
 })
 
-export const defaultContent = 'ZOMG'
+const defaultContent = 'ZOMG'
 const defaultPath = 'path'
 export const defaultBuffer = Buffer.from(defaultContent)
 export const defaultFile: File<Buffer> = { filename: defaultPath, buffer: defaultBuffer }

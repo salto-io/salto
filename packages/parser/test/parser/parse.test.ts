@@ -1428,7 +1428,7 @@ value
 multiline
 \${{$\{te@mp.late.instance.multiline_stuff@us}}} and {{$\{te@mp.late.instance.multiline_stuff@us}}}\${{$\{te@mp.late.instance.multiline_stuff@us}}}{{$\{te@mp.late.instance.multiline_stuff@us}}} hello
 line where the original content looks like an escaped reference but it it is actually not a reference: \\\\\\\${ not.reference }
-line that ends with \\
+line that has \\\\\\\\ and ends with \\
 '''
         }
       `
@@ -1470,7 +1470,7 @@ line that ends with \\
             elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
           }),
           // eslint-disable-next-line no-template-curly-in-string
-          '}} hello\nline where the original content looks like an escaped reference but it it is actually not a reference: \\${ not.reference }\nline that ends with \\',
+          '}} hello\nline where the original content looks like an escaped reference but it it is actually not a reference: \\${ not.reference }\nline that has \\\\\\\\ and ends with \\',
         ])
       })
 

@@ -16,8 +16,8 @@ import { ParseError } from '../parser'
 
 const log = logger(module)
 
-const createSimpleStringValue = (_context: unknown, tokens: Required<Token>[], isLastPart?: boolean): string =>
-  unescapeTemplateMarker(tokens.map(token => token.text).join(''), { isLastPart })
+const createSimpleStringValue = (_context: unknown, tokens: Required<Token>[], isNextPartReference?: boolean): string =>
+  unescapeTemplateMarker(tokens.map(token => token.text).join(''), { isNextPartReference })
 
 const parseBufferToTemplateExpression = (
   buffer: Buffer,
@@ -41,7 +41,7 @@ export const templateExpressionToStaticFile = (expression: TemplateExpression, f
     .map((part, idx) =>
       isReferenceExpression(part)
         ? `\${ ${[part.elemID.getFullName()]} }`
-        : escapeTemplateMarker(part, { isLastPart: idx === expression.parts.length - 1 }),
+        : escapeTemplateMarker(part, { isNextPartReference: isReferenceExpression(expression.parts[idx + 1]) }),
     )
     .join('')
   return new StaticFile({ filepath, content: Buffer.from(string), isTemplate: true, encoding: 'utf8' })

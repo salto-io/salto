@@ -206,7 +206,7 @@ SALTO_LOG_MAX_JSON_LOG_CHUNK_SIZE=3072 # 3K
 
 Configure the max chunk size for the formatted json log message.
 
-Default: 200 \* 1024 - 200K
+Default: 25 \* 1024 - 25K
 
 Supported formatting: Receives only number which signifies the allowed bytes amount
 

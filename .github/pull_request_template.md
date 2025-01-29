@@ -2,12 +2,18 @@ _Replace me with a description of the changes in this PR_
 
 ---
 
-_Additional context for reviewer_
+Additional context for reviewer:
+
+_Replace me with some extra information that might be useful for the reviewer._
 
 ---
-_Release Notes_: 
-_Replace me with a short sentence that describes the effect of this change on Salto users_
+
+Release Notes:
+
+_Replace me with a short sentence that describes the effect of this change on Salto users._
 
 ---
-_User Notifications_: 
+
+User Notifications:
+
 _Replace me with a short sentence that describes changes that will appear in NaCls and are not caused by user actions (e.g. a new annotation, field values that are converted to references, etc). Hidden changes should not be listed._

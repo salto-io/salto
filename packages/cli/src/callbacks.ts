@@ -14,7 +14,8 @@ import {
   ElemID,
   InstanceElement,
   isPrimitiveType,
-  PrimitiveTypes, Change,
+  PrimitiveTypes,
+  Change,
 } from '@salto-io/adapter-api'
 import { FetchChange } from '@salto-io/core'
 import { collections } from '@salto-io/lowerdash'
@@ -104,7 +105,12 @@ export const shouldUpdateConfig = async (
   introMessage: string,
   change: Change,
 ): Promise<boolean> => {
-  stdout.write(formatConfigChangeNeeded(introMessage, await formatDetailedChanges([[toDetailedChangeFromBaseChange(change)]], true)))
+  stdout.write(
+    formatConfigChangeNeeded(
+      introMessage,
+      await formatDetailedChanges([[toDetailedChangeFromBaseChange(change)]], true),
+    ),
+  )
   return getUserBooleanInput(Prompts.SHOULD_UPDATE_CONFIG)
 }
 

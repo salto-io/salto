@@ -488,14 +488,16 @@ describe('fetch', () => {
           [],
         )
         expect(fetchChangesResult.configChanges).toBeArrayOfSize(1)
-        expect(fetchChangesResult.configChanges).toContainEqual(expect.objectContaining({
-          action: 'add',
-          data: {
-            after: expect.objectContaining({
-              elemID: configInstance.elemID,
-            }),
-          }
-        }))
+        expect(fetchChangesResult.configChanges).toContainEqual(
+          expect.objectContaining({
+            action: 'add',
+            data: {
+              after: expect.objectContaining({
+                elemID: configInstance.elemID,
+              }),
+            },
+          }),
+        )
       })
 
       it('should return config change plan when there is current config', async () => {
@@ -508,19 +510,21 @@ describe('fetch', () => {
         )
 
         expect(fetchChangesResult.configChanges).toBeArrayOfSize(1)
-        expect(fetchChangesResult.configChanges).toContainEqual(expect.objectContaining({
-          action: 'modify',
-          data: {
-            before: expect.objectContaining({
-              elemID: configInstance.elemID,
-              value: { test: [] },
-            }),
-            after: expect.objectContaining({
-              elemID: configInstance.elemID,
-              value: { test: ['SkipMe'] },
-            }),
-          }
-        }))
+        expect(fetchChangesResult.configChanges).toContainEqual(
+          expect.objectContaining({
+            action: 'modify',
+            data: {
+              before: expect.objectContaining({
+                elemID: configInstance.elemID,
+                value: { test: [] },
+              }),
+              after: expect.objectContaining({
+                elemID: configInstance.elemID,
+                value: { test: ['SkipMe'] },
+              }),
+            },
+          }),
+        )
       })
 
       it('should return a config message which includes the account name', async () => {

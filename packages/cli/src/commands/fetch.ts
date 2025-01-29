@@ -198,7 +198,8 @@ export const fetchCommand = async ({
   }
 
   if (!_.isUndefined(fetchResult.configChanges)) {
-    const abortRequests = await awu(fetchResult.configChanges).map(async change => {
+    const abortRequests = await awu(fetchResult.configChanges)
+      .map(async change => {
         const newConfig = getChangeData(change)
         const accountName = newConfig.elemID.adapter
         if (!isInstanceElement(newConfig)) {
@@ -216,7 +217,8 @@ export const fetchCommand = async ({
           )
         }
         return !shouldWriteToConfig
-      }).toArray()
+      })
+      .toArray()
 
     if (_.some(abortRequests)) {
       return CliExitCode.UserInputError

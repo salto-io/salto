@@ -24,11 +24,14 @@ import {
   createRefToElmWithValue,
   TypeReference,
   TemplateExpression,
+  ReadOnlyElementsSource,
+  Element,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 import {
-  validateElements,
+  validateElements as originalValidateElements,
   InvalidValueValidationError,
   CircularReferenceValidationError,
   InvalidValueRangeValidationError,
@@ -39,10 +42,13 @@ import {
   RegexMismatchValidationError,
   InvalidValueMaxLengthValidationError,
   InvalidValueMaxListLengthValidationError,
+  ValidationError,
 } from '../src/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
 import { getFieldsAndAnnoTypes } from './utils'
+
+const { awu } = collections.asynciterable
 
 describe('Elements validation', () => {
   const INVALID_NACL_CONTENT_ERROR = 'Element has invalid NaCl content'
@@ -283,6 +289,23 @@ describe('Elements validation', () => {
     },
   })
 
+  const validateElements = async (
+    elements: Element[],
+    elementsSource: ReadOnlyElementsSource,
+  ): Promise<ValidationError[]> => {
+    const errors = await awu(await originalValidateElements(elements, elementsSource)).toArray()
+
+    expect(errors.length).toEqual(_.uniqBy(errors, entry => entry.key).length)
+
+    errors.forEach(({ key, value }) => {
+      value.forEach(error => {
+        expect(error.elemID.createTopLevelParentID().parent.getFullName()).toEqual(key)
+      })
+    })
+
+    return errors.flatMap(({ value }) => value)
+  }
+
   describe('validate types', () => {
     let clonedBaseType: ObjectType
     let clonedNestedType: ObjectType
@@ -388,7 +411,13 @@ describe('Elements validation', () => {
     it('should return error object/primitive mismatch', async () => {
       clonedNestedType.fields.nested.annotations.annoStr = {}
 
-      const badObj = nestedType.clone()
+      const clonedObj = nestedType.clone()
+      const badObj = new ObjectType({
+        elemID: new ElemID('badObj'),
+        fields: clonedObj.fields,
+        annotationRefsOrTypes: clonedObj.annotationRefTypes,
+        annotations: clonedObj.annotations,
+      })
       badObj.annotations.nested = 'not an object'
       const elements = [badObj, clonedNestedType]
       const errors = await validateElements(
@@ -571,7 +600,7 @@ describe('Elements validation', () => {
       restrictedListLength: ['very long value, longer than the max size of the list', 'blah', 'oof'],
     })
 
-    const circularRefInst = new InstanceElement('unresolved', simpleType, {
+    const circularRefInst = new InstanceElement('unresolved1', simpleType, {
       str: 'str',
       num: 12,
     })
@@ -600,7 +629,7 @@ describe('Elements validation', () => {
       bool: new parser.IllegalReference('foo.bla.bar', 'illegal elem id type "bar"'),
     })
 
-    const circularRefInst2 = new InstanceElement('unresolved', simpleType, {
+    const circularRefInst2 = new InstanceElement('unresolved2', simpleType, {
       str: 'str',
       num: 12,
       bool: new ReferenceExpression(circularRefInst.elemID.createNestedID('bool')),
@@ -1765,11 +1794,11 @@ describe('Elements validation', () => {
           },
         })
 
-        const numValue = new InstanceElement('numInst', unknownObj, { unknown: 1 })
-        const strValue = new InstanceElement('numInst', unknownObj, { unknown: 'O' })
-        const booValue = new InstanceElement('numInst', unknownObj, { unknown: true })
-        const arrValue = new InstanceElement('numInst', unknownObj, { unknown: [0] })
-        const objValue = new InstanceElement('numInst', unknownObj, { unknown: { o: 'o' } })
+        const numValue = new InstanceElement('numInst1', unknownObj, { unknown: 1 })
+        const strValue = new InstanceElement('numInst2', unknownObj, { unknown: 'O' })
+        const booValue = new InstanceElement('numInst3', unknownObj, { unknown: true })
+        const arrValue = new InstanceElement('numInst4', unknownObj, { unknown: [0] })
+        const objValue = new InstanceElement('numInst5', unknownObj, { unknown: { o: 'o' } })
         const elements = [numValue, strValue, booValue, arrValue, objValue, unknownObj]
         const errors = await validateElements(
           elements,
@@ -2091,11 +2120,11 @@ describe('Elements validation', () => {
 
     it('should handle circular references in two instances', async () => {
       const type = new ObjectType({ elemID: new ElemID('instance', 'type') })
-      const instance1 = new InstanceElement('name', type, {
+      const instance1 = new InstanceElement('name1', type, {
         value: 1,
       })
 
-      const instance2 = new InstanceElement('name', type, {
+      const instance2 = new InstanceElement('name2', type, {
         value: 1,
       })
 

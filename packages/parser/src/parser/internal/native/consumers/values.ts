@@ -87,7 +87,7 @@ const createTemplateExpressions = (
   createSimpleStringValueFunc: (
     context: Pick<ParseContext, 'errors' | 'filename'>,
     tokens: Required<Token>[],
-    isLastPart?: boolean,
+    isNextPartReference?: boolean,
   ) => string,
 ): TemplateExpression =>
   createTemplateExpression({
@@ -96,8 +96,8 @@ const createTemplateExpressions = (
         const ref = createReferenceExpression(token.value)
         return ref instanceof IllegalReference ? token.text : ref
       }
-      const isLastPart = idx === tokens.length - 1
-      return createSimpleStringValueFunc(context, [token], isLastPart)
+      const isNextPartReference = tokens[idx + 1]?.type === TOKEN_TYPES.REFERENCE
+      return createSimpleStringValueFunc(context, [token], isNextPartReference)
     }),
   })
 
@@ -247,8 +247,12 @@ const consumeArrayItems = (context: ParseContext, closingTokenType: string, idPr
 
 const unescapeMultilineMarker = (prim: string): string => prim.replace(/\\'''/g, "'''")
 
-const createMultilineSimpleStringValue = (_context: unknown, tokens: Required<Token>[], isLastPart = true): string =>
-  unescapeMultilineMarker(unescapeTemplateMarker(tokens.map(token => token.text).join(''), { isLastPart }))
+const createMultilineSimpleStringValue = (
+  _context: unknown,
+  tokens: Required<Token>[],
+  isNextPartReference?: boolean,
+): string =>
+  unescapeMultilineMarker(unescapeTemplateMarker(tokens.map(token => token.text).join(''), { isNextPartReference }))
 
 const consumeMultilineString: Consumer<string | TemplateExpression> = context => {
   // Getting the position of the start marker

@@ -94,7 +94,7 @@ const dumpExpression = (exp: Value, indentationLevel = 0): string[] => {
         .map((part, idx) =>
           isExpression(part)
             ? `\${ ${dumpExpression(part).join('\n')} }`
-            : escapeTemplateMarker(part, { isLastPart: idx === parts.length - 1 }),
+            : escapeTemplateMarker(part, { isNextPartReference: isExpression(parts[idx + 1]) }),
         )
         .join(''),
       indentationLevel,

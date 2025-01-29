@@ -162,7 +162,7 @@ describe('Salto Dump', () => {
         // eslint-disable-next-line no-template-curly-in-string
         'Hello \\${ not.reference } and \n line with escaped ref \\',
         new ReferenceExpression(new ElemID('salto', 'ref')),
-        '\n and another line\\',
+        '\n and another \\\\ line\\',
       ],
     }),
     doubleEscapedTemplate: new TemplateExpression({
@@ -173,7 +173,7 @@ describe('Salto Dump', () => {
       'string with two backslashes before template marker \\\\${ not.reference } and after \\',
     multiLineNonTemplate:
       // eslint-disable-next-line no-template-curly-in-string
-      'multi line string\nwith two \\ before template marker \\\\${ not.reference } \\\n and one at the end \\',
+      'multi line string\nwith two \\\\ before template marker \\\\${ not.reference } \\\n and one at the end \\',
   })
 
   describe('dump elements', () => {
@@ -292,14 +292,14 @@ describe('Salto Dump', () => {
         expect(body).toMatch(/Hello \\\\\\\$\{ not.reference \}/m)
       })
       it('should not escape backslashes that do not appear before ${', () => {
-        expect(body).toMatch(/and another line\\\n\s*'''/m)
+        expect(body).toMatch(/and another \\\\ line\\\n\s*'''/m)
       })
     })
 
     describe('dumped multi line string with escaped template marker', () => {
       it('should escape the template marker and all leading backslashes before it', () => {
         expect(body).toMatch(
-          /multi line string\nwith two \\ before template marker \\\\\\\\\\\$\{ not.reference \} \\\n and one at the end \\/m,
+          /multi line string\nwith two \\\\ before template marker \\\\\\\\\\\$\{ not.reference \} \\\n and one at the end \\/m,
         )
       })
     })

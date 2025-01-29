@@ -20,16 +20,16 @@
 // A string with \ followed by a reference will be \\${
 // and so on...
 type EscapeTemplateMarkerOptions = {
-  isLastPart?: boolean
+  isNextPartReference?: boolean
 }
 
 export const escapeTemplateMarker = (
   prim: string,
-  { isLastPart = true }: EscapeTemplateMarkerOptions | undefined = {},
+  { isNextPartReference = false }: EscapeTemplateMarkerOptions | undefined = {},
 ): string =>
   prim.replace(
-    // In the last part we don't need to escape a \ at the end
-    isLastPart ? /(\\*)(\$\{)/g : /(\\*)(\$\{|$)/g,
+    // If the next part is a reference, we need to escape all \ at the end of the part
+    isNextPartReference ? /(\\*)(\$\{|$)/g : /(\\*)(\$\{)/g,
     (_, backslashes, ending) =>
       // Double all leading backslashes and escape the ${
       `${backslashes.replace(/\\/g, '\\\\')}${ending === '' ? '' : '\\${'}`,
@@ -50,7 +50,7 @@ type UnescapeTemplateMarkerOptions = EscapeTemplateMarkerOptions & {
 
 export const unescapeTemplateMarker = (
   text: string,
-  { isLastPart = true, unescapeStrategy = 'all' }: UnescapeTemplateMarkerOptions | undefined = {},
+  { isNextPartReference = false, unescapeStrategy = 'all' }: UnescapeTemplateMarkerOptions | undefined = {},
 ): string => {
   if (unescapeStrategy === 'leadingBackslashOnly') {
     return text.replace(/(\\*)(\\\\\$\{)/g, (_match, backslashes, ending) =>
@@ -59,8 +59,8 @@ export const unescapeTemplateMarker = (
     )
   }
   return text.replace(
-    // In the last part we don't need to unescape \ at the end
-    isLastPart ? /(\\*)(\\\$\{)/g : /(\\*)(\\\$\{|$)/g,
+    // We need to unescape \${, but if the next part is a reference, we also need to unescape \ at the end of the part
+    isNextPartReference ? /(\\*)(\\\$\{|$)/g : /(\\*)(\\\$\{)/g,
     (_, backslashes, ending) => {
       const leadingBackslashes = unescapeStrategy === 'markerOnly' ? backslashes : backslashes.replace(/\\\\/g, '\\')
       if (ending === '') {

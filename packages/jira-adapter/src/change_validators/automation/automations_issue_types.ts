@@ -50,37 +50,37 @@ const isIssueTypeObject = createSchemeGuard<IssueTypeObject>(AUTOMATION_ISSUE_TY
 
 const isInstanceWithInvalidIssueType = (
   instance: InstanceElement,
-  projectsIssueTypeSchemes: {
-    key: string
-    value: string
-  }[],
-): { componentElemID: ElemID; invalidIssueType: string | undefined }[] | [] => {
-  const elemIDWithIssueType: { componentElemID: ElemID; invalidIssueType: string | undefined }[] = []
-  let createIssueProject: string
+  projectsIssueTypeSchemes: { key: string; value: string }[],
+): { componentElemID: ElemID; invalidIssueType: string | undefined }[] => {
+  const invalidIssueTypes: { componentElemID: ElemID; invalidIssueType: string | undefined }[] = []
+  let projectKey: string | undefined
+
   walkOnValue({
     elemId: instance.elemID.createNestedID('components'),
     value: instance.value.components,
     func: ({ value, path }) => {
       if (value.fieldType === PROJECT_FIELD) {
-        createIssueProject = value.value.value.elemID.getFullName()
+        projectKey = value.value.value.elemID.getFullName()
+        return WALK_NEXT_STEP.RECURSE
       }
-      if (isIssueTypeObject(value)) {
-        if (value.fieldType === ISSUE_TYPE_FIELD) {
-          const issueType = value.value.value !== 'current' ? value.value.value.elemID.getFullName() : undefined
-          if (createIssueProject) {
-            if (
-              !projectsIssueTypeSchemes.find(
-                project => project.key === createIssueProject && project.value.includes(issueType),
-              )
-            )
-              elemIDWithIssueType.push({ componentElemID: path, invalidIssueType: issueType })
-          }
+
+      if (isIssueTypeObject(value) && value.fieldType === ISSUE_TYPE_FIELD) {
+        const issueType = value.value.value !== 'current' ? value.value.value.elemID.getFullName() : undefined
+
+        const isValidIssueType = projectKey
+          ? projectsIssueTypeSchemes.some(project => project.key === projectKey && project.value.includes(issueType))
+          : false
+
+        if (!isValidIssueType) {
+          invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueType })
         }
       }
+
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return elemIDWithIssueType
+
+  return invalidIssueTypes
 }
 
 const isNotGlobalAutomation = (instance: InstanceElement): boolean => 'projects' in instance.value

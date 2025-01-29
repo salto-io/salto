@@ -50,7 +50,7 @@ import {
   Value,
   Values,
   isRemovalChange,
-  Adapter,
+  Adapter, Change,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults,
@@ -87,7 +87,7 @@ import {
 } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
-import { getPlan, Plan } from './plan'
+import { getPlan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
 import { IDFilter } from './plan/plan'
 import { getAdaptersCreatorConfigs } from './adapters'
@@ -143,21 +143,6 @@ export const getDetailedChanges = async (
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
 ): Promise<DetailedChangeWithBaseChange[]> => {
-  if (getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch)) {
-    return wu(
-      (
-        await getPlan({
-          before,
-          after,
-          dependencyChangers: [],
-          topLevelFilters,
-        })
-      ).itemsByEvalOrder(),
-    )
-      .map(item => item.detailedChanges())
-      .flatten()
-      .toArray()
-  }
   const changes = await calculateDiff({ before, after, topLevelFilters })
   return awu(changes)
     .map(change => getDetailedChangesFromChange(change))
@@ -403,7 +388,7 @@ const toFetchChanges = (
       // When there are no pending changes, the state and workspace are already aligned, so we can reuse service changes
       // as workspace changes. We are guaranteed no conflicts, so we can return early here. This reuse relies on the
       // assumption that reference expressions in the state element source used to compute the diff are *not* resolved.
-      if (!getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) && pendingChanges.length === 0) {
+      if (pendingChanges.length === 0) {
         return serviceChanges.map(change => ({ change, serviceChanges, pendingChanges: [] }))
       }
 
@@ -467,7 +452,7 @@ export type FetchChangesResult = {
   unmergedElements: Element[]
   mergeErrors: MergeErrorWithElements[]
   updatedConfig: Record<string, InstanceElement[]>
-  configChanges?: Plan
+  configChanges?: Change[],
   accountNameToConfigMessage?: Record<string, string>
   partiallyFetchedAccounts: Set<string>
 }
@@ -916,11 +901,7 @@ export const calcFetchChanges = async ({
           [
             accountFetchFilter,
             partialFetchFilter,
-            // Computing a plan for fetch operations results in reference expressions being resolved, which doesn't
-            // allow us to use service-state diff to calculate workspace-service diff (as resolved values would be
-            // wrong), so we can't limit the diff to pending changes here if the flag is turned on.
-            // TODO: Remove when the new plan computation is stable in production.
-            getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) ? serviceChangeIdsFilter : pendingChangeIdsFilter,
+            pendingChangeIdsFilter,
           ],
           'service',
         ),
@@ -1030,12 +1011,19 @@ const createFetchChanges = async ({
 
   const configs = await awu(configsMerge.merged.values()).toArray()
   const updatedConfigNames = new Set(configs.map(c => c.elemID.getFullName()))
-  const configChanges = await getPlan({
+  const configChanges = getSaltoFlagBool(WORKSPACE_FLAGS.replaceGetPlanWithCalculateDiff) ?
+    await awu(await calculateDiff({
+      before: elementSource.createInMemoryElementSource(
+        currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
+      ),
+      after: elementSource.createInMemoryElementSource(configs),
+    })).toArray() :
+    [...(await getPlan({
     before: elementSource.createInMemoryElementSource(
       currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
     ),
     after: elementSource.createInMemoryElementSource(configs),
-  })
+  })).itemsByEvalOrder()].flatMap(item => [...item.changes()])
 
   const accountNameToConfig = _.keyBy(updatedConfigs, config => config.config[0].elemID.adapter)
   const accountNameToConfigMessage = _.mapValues(accountNameToConfig, config => config.message)

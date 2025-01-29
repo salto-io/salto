@@ -24,8 +24,6 @@ export const getSaltoFlagBool = (flagName: string): boolean => {
 export const WORKSPACE_FLAGS = {
   createFilenamesToElementIdsMapping: 'CREATE_FILENAMES_TO_ELEMENT_IDS_MAPPING',
   useSplitSourceMapInUpdate: 'USE_SPLIT_SOURCE_MAP_IN_UPDATE',
-  // Killswitch for the new fetch diff computation logic. Activating this restores the old logic.
-  // TODO(SALTO-6992): Remove this killswitch after 2025-01-30
-  computePlanOnFetch: 'COMPUTE_PLAN_ON_FETCH',
+  replaceGetPlanWithCalculateDiff: 'REPLACE_GET_PLAN_WITH_CALCULATE_DIFF',
   skipStaticFilesCacheUpdate: 'SKIP_STATIC_FILES_CACHE_UPDATE',
 } as const

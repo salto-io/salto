@@ -58,7 +58,6 @@ import {
   calcFetchChanges,
   createElemIdGetters,
 } from '../../src/core/fetch'
-import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from '../common/helpers'
 import { mockStaticFilesSource } from '../common/state'
 import { FetchChange } from '../../src/types'
@@ -474,15 +473,6 @@ describe('fetch', () => {
       const configInstance = new InstanceElement('ins', configType, { test: ['SkipMe'] })
       const currentInstanceConfig = new InstanceElement('ins', configType, { test: [] })
 
-      const verifyPlan = (plan: Plan, expectedPlan: Plan, expectedPlanLength: number): void => {
-        const configChanges = [...plan.itemsByEvalOrder()]
-        const expectedConfigChanges = [...expectedPlan.itemsByEvalOrder()]
-        expect(configChanges).toHaveLength(expectedPlanLength)
-        expect(configChanges.map(change => [...change.items.values()])).toEqual(
-          expectedConfigChanges.map(change => [...change.items.values()]),
-        )
-      }
-
       beforeEach(() => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce({
           elements: [],
@@ -497,14 +487,16 @@ describe('fetch', () => {
           { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
-        expect(fetchChangesResult.configChanges).toBeDefined()
-        verifyPlan(
-          fetchChangesResult.configChanges as Plan,
-          await getPlan({
-            before: createElementSource([]),
-            after: createElementSource([configInstance]),
+        expect(fetchChangesResult.configChanges).toBeArrayOfSize(1)
+        expect(fetchChangesResult.configChanges).toContainEqual(
+          expect.objectContaining({
+            action: 'add',
+            data: {
+              after: expect.objectContaining({
+                elemID: configInstance.elemID,
+              }),
+            },
           }),
-          1,
         )
       })
 
@@ -516,14 +508,22 @@ describe('fetch', () => {
           { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [currentInstanceConfig],
         )
-        expect(fetchChangesResult.configChanges).toBeDefined()
-        verifyPlan(
-          fetchChangesResult.configChanges as Plan,
-          await getPlan({
-            before: createElementSource([currentInstanceConfig]),
-            after: createElementSource([configInstance]),
+
+        expect(fetchChangesResult.configChanges).toBeArrayOfSize(1)
+        expect(fetchChangesResult.configChanges).toContainEqual(
+          expect.objectContaining({
+            action: 'modify',
+            data: {
+              before: expect.objectContaining({
+                elemID: configInstance.elemID,
+                value: { test: [] },
+              }),
+              after: expect.objectContaining({
+                elemID: configInstance.elemID,
+                value: { test: ['SkipMe'] },
+              }),
+            },
           }),
-          1,
         )
       })
 
@@ -551,7 +551,7 @@ describe('fetch', () => {
           { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [configInstance],
         )
-        expect([...(fetchChangesResult.configChanges?.itemsByEvalOrder() ?? [])]).toHaveLength(0)
+        expect(fetchChangesResult.configChanges).toEqual([])
       })
     })
 

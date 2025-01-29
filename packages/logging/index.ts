@@ -5,17 +5,17 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Config, mergeConfigs } from './internal/config'
-import { loggerRepo } from './internal/logger'
-import * as env from './internal/env'
-import * as pino from './internal/pino'
+import { Config, mergeConfigs } from './src/config'
+import { loggerRepo } from './src/logger'
+import * as env from './src/env'
+import * as pino from './src/pino'
 
-export { LogLevel } from './internal/level'
-export { Logger } from './internal/logger'
-export { Config as LogConfig } from './internal/config'
-export { LogTags } from './internal/log-tags'
+export { LogLevel } from './src/level'
+export { Logger } from './src/logger'
+export { Config as LogConfig } from './src/config'
+export { LogTags } from './src/log-tags'
 
-export { compare as compareLogLevels } from './internal/level'
+export { compare as compareLogLevels } from './src/level'
 
 const deps = {
   consoleStream: process.stdout,

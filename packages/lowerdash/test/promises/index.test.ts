@@ -5,18 +5,13 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-const deepMerge = require('../../build_utils/deep_merge')
+import { object, state, array, timeout } from '../../src/promises'
 
-module.exports = deepMerge(require('../../jest.base.config.js'), {
-  displayName: '@salto/logging',
-  rootDir: `${__dirname}`,
-  coveragePathIgnorePatterns: ['index.ts'],
-  coverageThreshold: {
-    global: {
-      branches: 96,
-      functions: 100,
-      lines: 100,
-      statements: 100,
-    },
-  },
+describe('index.ts', () => {
+  it('should export all modules', () => {
+    expect(object).toBeDefined()
+    expect(state).toBeDefined()
+    expect(array).toBeDefined()
+    expect(timeout).toBeDefined()
+  })
 })

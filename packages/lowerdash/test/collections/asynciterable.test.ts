@@ -6,10 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { mockFunction } from '@salto-io/test-utils'
-import { collections } from '../../src'
-
-const { asynciterable } = collections
-const {
+import {
   handleErrorsAsync,
   findAsync,
   mapAsync,
@@ -32,8 +29,8 @@ const {
   iterateTogether,
   flatMapAsync,
   partitionAsync,
-} = asynciterable
-type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
+  BeforeAfter,
+} from '../../src/collections/asynciterable'
 
 describe('asynciterable', () => {
   describe('findAsync', () => {

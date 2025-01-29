@@ -5,16 +5,17 @@
   "description": "Keeps a persistent pool of objects",
   "repository": {
     "type": "git",
-    "url": "https://github.com/salto-io/salto_monorepo"
+    "url": "https://github.com/salto-io/salto"
   },
   "publishConfig": {
     "access": "public"
   },
   "files": [
-    "dist/src"
+    "dist/src",
+    "dist/index.*"
   ],
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "../../build_utils/turbo_run.sh build-ts ; ../../build_utils/turbo_run.sh lint",
     "build-ts": "tsc -b",

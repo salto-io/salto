@@ -22,7 +22,7 @@ export type NamespaceOrModule = Namespace | LoggingModule
 
 const parentDir = (numLevels: number): string => path.normalize(path.join(__dirname, ...Array(numLevels).fill('..')))
 
-const MONOREPO_PACKAGES_DIRNAME = parentDir(4)
+const MONOREPO_PACKAGES_DIRNAME = parentDir(3)
 
 const usableNamespaceColors = safeColors.map(c => c.hexString)
 

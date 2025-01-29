@@ -195,7 +195,6 @@ export async function createDiffChangesWithGetPlan({
   compareOptions?: CompareOptions
   resultType?: 'changes' | 'detailedChanges'
 }): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
-  return []
   if (elementSelectors.length > 0) {
     const matchers = await createMatchers(toElementsSrc, fromElementsSrc, referenceSourcesIndex, elementSelectors)
     const plan = await getPlan({

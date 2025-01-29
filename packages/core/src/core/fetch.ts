@@ -896,11 +896,7 @@ export const calcFetchChanges = async ({
         getDetailedChangeTree(
           workspaceElements,
           partialFetchElementSource,
-          [
-            accountFetchFilter,
-            partialFetchFilter,
-            pendingChangeIdsFilter,
-          ],
+          [accountFetchFilter, partialFetchFilter, pendingChangeIdsFilter],
           'service',
         ),
       'calculate service-workspace changes',

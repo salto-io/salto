@@ -28,6 +28,7 @@ import {
   CUSTOM_METADATA,
   CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
+  DESCRIPTION,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_FIELD,
   LABEL,
@@ -48,6 +49,7 @@ describe('customMetadataToObjectTypeFilter', () => {
   const CUSTOM_METADATA_RECORD_TYPE_NAME = 'MDType__mdt'
   const CHECKBOX_FIELD_NAME = 'checkBox__c'
   const PICKLIST_FIELD_NAME = 'picklist__c'
+  const CUSTOM_METADATA_DESCRIPTION = 'description test'
 
   let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
@@ -108,6 +110,7 @@ describe('customMetadataToObjectTypeFilter', () => {
         [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
         [INTERNAL_ID_FIELD]: CUSTOM_METADATA_RECORD_INTERNAL_ID,
         fields: [checkboxField, picklistField],
+        [DESCRIPTION]: CUSTOM_METADATA_DESCRIPTION,
       })
       afterOnFetchElements = [customMetadataInstance, mockTypes.CustomMetadata]
       await filter.onFetch(afterOnFetchElements)
@@ -123,6 +126,7 @@ describe('customMetadataToObjectTypeFilter', () => {
         [LABEL]: CUSTOM_METADATA_RECORD_LABEL,
         [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
         [CORE_ANNOTATIONS.ALIAS]: CUSTOM_METADATA_RECORD_LABEL,
+        [DESCRIPTION]: CUSTOM_METADATA_DESCRIPTION,
       })
     })
     it('should create type with both the RecordType fields and CustomMetadata metadata type fields', () => {
@@ -166,6 +170,7 @@ describe('customMetadataToObjectTypeFilter', () => {
           [LABEL]: CUSTOM_METADATA_RECORD_LABEL,
           [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
           [CORE_ANNOTATIONS.ALIAS]: CUSTOM_METADATA_RECORD_LABEL,
+          [DESCRIPTION]: CUSTOM_METADATA_DESCRIPTION,
         })
       })
       it('should create type with both the RecordType fields and CustomMetadata metadata type fields', () => {

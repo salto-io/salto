@@ -83,7 +83,6 @@ import {
   isElementIdMatchSelectors,
   updateElementsWithAlternativeAccount,
   Workspace,
-  flags,
 } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
@@ -100,7 +99,6 @@ const { mapValuesAsync } = promises.object
 const { withLimitedConcurrency } = promises.array
 const { mergeElements } = merger
 const { isTypeOfOrUndefined } = types
-const { getSaltoFlagBool, WORKSPACE_FLAGS } = flags
 const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
@@ -898,11 +896,7 @@ export const calcFetchChanges = async ({
         getDetailedChangeTree(
           workspaceElements,
           partialFetchElementSource,
-          [
-            accountFetchFilter,
-            partialFetchFilter,
-            pendingChangeIdsFilter,
-          ],
+          [accountFetchFilter, partialFetchFilter, pendingChangeIdsFilter],
           'service',
         ),
       'calculate service-workspace changes',

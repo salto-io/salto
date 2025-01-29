@@ -57,6 +57,7 @@ import {
   VALUE_SETTINGS_FIELDS,
   LOOKUP_FILTER_FIELDS,
   FILTER_ITEM_FIELDS,
+  DESCRIPTION,
 } from '../../src/constants'
 import { findElements, createValueSetEntry, defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
@@ -169,6 +170,7 @@ describe('Custom Objects to Object Type filter', () => {
       caseInstance = new InstanceElement('Case', customObjectType, {
         [INSTANCE_FULL_NAME_FIELD]: 'Case',
         [LABEL]: 'Case',
+        [DESCRIPTION]: 'Description test',
         fields: [
           {
             [INSTANCE_FULL_NAME_FIELD]: 'ExtraSalt',
@@ -383,6 +385,7 @@ describe('Custom Objects to Object Type filter', () => {
             [METADATA_TYPE]: CUSTOM_OBJECT,
             [LABEL]: 'Case',
             [CORE_ANNOTATIONS.ALIAS]: 'Case',
+            [DESCRIPTION]: 'Description test',
           }),
         )
       })

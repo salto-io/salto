@@ -103,6 +103,7 @@ import {
   UNIX_TIME_ZERO_STRING,
   VALUE_SET_DEFINITION_FIELDS,
   VALUE_SET_FIELDS,
+  DESCRIPTION,
 } from '../constants'
 import { CustomField, CustomObject, JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -311,6 +312,9 @@ export const addLabel = (elem: TypeElement | Field, label?: string): void => {
   const { name } = elem.elemID
   setAnnotationDefault(elem, LABEL, label ?? name, BuiltinTypes.STRING)
 }
+
+export const addDescription = (elem: TypeElement | Field, description?: string): void =>
+  setAnnotationDefault(elem, DESCRIPTION, description ?? '', BuiltinTypes.STRING)
 
 export const addPluralLabel = (elem: ObjectType, pluralLabel: string): void => {
   setAnnotationDefault(elem, PLURAL_LABEL, pluralLabel, BuiltinTypes.STRING)

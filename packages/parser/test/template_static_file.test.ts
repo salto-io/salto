@@ -210,13 +210,13 @@ describe('template static file', () => {
         expect(fileContent).toMatch(/.*before ref \\\\\$\{ zendesk.article.instance.article \}\n.*/m)
       })
       it('should not escape backslashes that are not before a reference', () => {
-        expect(fileContent).toMatch(/.*\n mid \\ and end \\/m)
+        expect(fileContent).toMatch(/.*\n mid \\\\ and end \\/m)
       })
       it('should escape template markers and backslashes only if they are before a template marker', async () => {
         // Putting it all together to have one test that verifies the full content
         expect(fileContent).toEqual(
           // eslint-disable-next-line no-template-curly-in-string
-          '\\\\\\${ not.reference }\nbefore ref \\\\${ zendesk.article.instance.article }\n mid \\ and end \\',
+          '\\\\\\${ not.reference }\nbefore ref \\\\${ zendesk.article.instance.article }\n mid \\\\ and end \\',
         )
       })
     })

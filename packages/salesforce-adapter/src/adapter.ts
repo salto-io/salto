@@ -144,7 +144,6 @@ import picklistReferences from './filters/picklist_references'
 import addParentToInstancesWithinFolderFilter from './filters/add_parent_to_instances_within_folder'
 import addParentToRecordTriggeredFlows from './filters/add_parent_to_record_triggered_flows'
 import addParentToApprovalProcess from './filters/add_parent_to_approval_process'
-import convertFieldsToFormulaFieldsFilter from './filters/convert_fields_to_formula_fields'
 import { getConfigFromConfigChanges } from './config_change'
 import { Filter, FilterContext, FilterCreator, FilterResult } from './filter'
 import {
@@ -202,7 +201,6 @@ export const allFilters: Array<FilterCreator> = [
   // fetchFlowsFilter should run before flowFilter
   flowsFilter,
   // customMetadataToObjectTypeFilter should run before customObjectsFromDescribeFilter
-  convertFieldsToFormulaFieldsFilter,
   customMetadataToObjectTypeFilter,
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   customObjectsFromDescribeFilter,

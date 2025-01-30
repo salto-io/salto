@@ -20,7 +20,7 @@ import { AUTOMATION_TYPE } from '../../constants'
 import { JiraConfig } from '../../config/config'
 
 const { isDefined } = values
-type Component = {
+export type Component = {
   component: string
   schemaVersion: number
   type: string

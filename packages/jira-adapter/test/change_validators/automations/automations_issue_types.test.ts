@@ -14,9 +14,11 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { AUTOMATION_TYPE } from '../../../src/constants'
+import { ISSUE_TYPE_FIELD, PROJECT_FIELD } from '@atlassianlabs/jql-ast'
+import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE } from '../../../src/constants'
 import { automationIssueTypeValidator } from '../../../src/change_validators/automation/automations_issue_types'
 import { createEmptyType } from '../../utils'
+import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 describe('automationIssueTypeValidator', () => {
   let elementsSource: ReadOnlyElementsSource
@@ -25,6 +27,7 @@ describe('automationIssueTypeValidator', () => {
   let instance: InstanceElement
   let instance2: InstanceElement
   let instance3: InstanceElement
+  let globalInstance: InstanceElement
   let invalidInstance: InstanceElement
   let invalidAfterInstance: InstanceElement
   let instanceIssueTypeCurrentValue: InstanceElement
@@ -32,6 +35,8 @@ describe('automationIssueTypeValidator', () => {
   let projectType: ObjectType
   let testProjectInstance: InstanceElement
   let someOtherProjectInstance: InstanceElement
+  let testProjectReference: ReferenceExpression
+  let someOtherProjectReference: ReferenceExpression
 
   let issueTypeSchemeType: ObjectType
   let testProjectIssueTypeSchemeInstance: InstanceElement
@@ -40,12 +45,12 @@ describe('automationIssueTypeValidator', () => {
   beforeEach(() => {
     issueTypeSchemeType = createEmptyType('IssueTypeScheme')
     const testProjectIssueTypesReference = [
-      new ReferenceExpression(new ElemID('jira', 'IssueType', 'instance', 'someValidIssueTypeFromTestProject')),
-      new ReferenceExpression(new ElemID('jira', 'IssueType', 'instance', 'moreIssueType')),
+      new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'someValidIssueTypeFromTestProject')),
+      new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'moreIssueType')),
     ]
     const someOtherProjectIssueTypesReference = [
-      new ReferenceExpression(new ElemID('jira', 'IssueType', 'instance', 'someIssueTypeFromAnotherProject')),
-      new ReferenceExpression(new ElemID('jira', 'IssueType', 'instance', 'moreAndMoreIssueType')),
+      new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'someIssueTypeFromAnotherProject')),
+      new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'moreAndMoreIssueType')),
     ]
     testProjectIssueTypeSchemeInstance = new InstanceElement(
       'testProjectIssueTypeSchemeInstance',
@@ -63,20 +68,28 @@ describe('automationIssueTypeValidator', () => {
     )
 
     projectType = createEmptyType('Project')
-    testProjectInstance = new InstanceElement('testProjectInstance', projectType, {
+    testProjectInstance = new InstanceElement('testProject', projectType, {
       name: 'testProjectInstance',
       issueTypeScheme: new ReferenceExpression(
         testProjectIssueTypeSchemeInstance.elemID,
         testProjectIssueTypeSchemeInstance,
       ),
     })
-    someOtherProjectInstance = new InstanceElement('someOtherProjectInstance', projectType, {
+    someOtherProjectInstance = new InstanceElement('someOtherProject', projectType, {
       name: 'someOtherProjectInstance',
       issueTypeScheme: new ReferenceExpression(
         someOtherProjectInstanceIssueTypeSchemeInstance.elemID,
         someOtherProjectInstanceIssueTypeSchemeInstance,
       ),
     })
+    testProjectReference = new ReferenceExpression(
+      new ElemID(JIRA, PROJECT_TYPE, 'instance', 'testProject'),
+      new ReferenceExpression(testProjectInstance.elemID, testProjectInstance),
+    )
+    someOtherProjectReference = new ReferenceExpression(
+      new ElemID(JIRA, PROJECT_TYPE, 'instance', 'someOtherProject'),
+      new ReferenceExpression(someOtherProjectInstance.elemID, someOtherProjectInstance),
+    )
 
     automationType = createEmptyType(AUTOMATION_TYPE)
     instance = new InstanceElement('instance', automationType, {
@@ -90,25 +103,29 @@ describe('automationIssueTypeValidator', () => {
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Project__project',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
                 },
-                fieldType: 'project',
+                fieldType: PROJECT_FIELD,
                 type: 'SET',
                 value: {
-                  value: testProjectInstance,
+                  value: testProjectReference,
                   type: 'ID',
                 },
               },
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Issue_Type__issuetype@suu',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
                 },
-                fieldType: 'issuetype',
+                fieldType: ISSUE_TYPE_FIELD,
                 type: 'SET',
                 value: {
                   type: 'ID',
-                  value: { elemID: new ElemID('jira.IssueType.instance.someValidIssueTypeFromTestProject') },
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'someValidIssueTypeFromTestProject'),
+                  ),
                 },
               },
             ],
@@ -117,7 +134,7 @@ describe('automationIssueTypeValidator', () => {
       ],
       projects: [
         {
-          projectId: testProjectInstance,
+          projectId: testProjectReference,
         },
       ],
     }) // this suppose to be valid, issue type from project & this is the project under 'projects'
@@ -132,25 +149,29 @@ describe('automationIssueTypeValidator', () => {
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Project__project',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
                 },
-                fieldType: 'project',
+                fieldType: PROJECT_FIELD,
                 type: 'SET',
                 value: {
-                  value: testProjectInstance,
+                  value: testProjectReference,
                   type: 'ID',
                 },
               },
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Issue_Type__issuetype@suu',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
                 },
-                fieldType: 'issuetype',
+                fieldType: ISSUE_TYPE_FIELD,
                 type: 'SET',
                 value: {
                   type: 'ID',
-                  value: { elemID: new ElemID('jira.IssueType.instance.someValidIssueTypeFromTestProject') },
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'someValidIssueTypeFromTestProject'),
+                  ),
                 },
               },
             ],
@@ -159,7 +180,7 @@ describe('automationIssueTypeValidator', () => {
       ],
       projects: [
         {
-          projectId: someOtherProjectInstance,
+          projectId: someOtherProjectReference,
         },
       ],
     }) // this suppose to be valid, issue type from project & this is not a project under 'projects'
@@ -174,25 +195,29 @@ describe('automationIssueTypeValidator', () => {
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Project__project',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
                 },
-                fieldType: 'project',
+                fieldType: PROJECT_FIELD,
                 type: 'SET',
                 value: {
-                  value: testProjectInstance,
+                  value: testProjectReference,
                   type: 'ID',
                 },
               },
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Issue_Type__issuetype@suu',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
                 },
-                fieldType: 'issuetype',
+                fieldType: ISSUE_TYPE_FIELD,
                 type: 'SET',
                 value: {
                   type: 'ID',
-                  value: { elemID: new ElemID('jira.IssueType.instance.someIssueTypeFromAnotherProject') },
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'someIssueTypeFromAnotherProject'),
+                  ),
                 },
               },
             ],
@@ -201,15 +226,15 @@ describe('automationIssueTypeValidator', () => {
       ],
       projects: [
         {
-          projectId: testProjectInstance,
+          projectId: testProjectReference,
         },
         {
-          projectId: someOtherProjectInstance,
+          projectId: someOtherProjectReference,
         },
       ],
     }) // this suppose to be valid, not a 'issue.create' action
-    invalidInstance = new InstanceElement('invalidInstance', automationType, {
-      name: 'invalidInstance',
+    globalInstance = new InstanceElement('globalInstance', automationType, {
+      name: '4',
       components: [
         {
           component: 'ACTION',
@@ -219,72 +244,36 @@ describe('automationIssueTypeValidator', () => {
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Project__project',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
                 },
-                fieldType: 'project',
+                fieldType: PROJECT_FIELD,
                 type: 'SET',
                 value: {
-                  value: testProjectInstance,
+                  value: testProjectReference,
                   type: 'ID',
                 },
               },
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Issue_Type__issuetype@suu',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
                 },
-                fieldType: 'issuetype',
+                fieldType: ISSUE_TYPE_FIELD,
                 type: 'SET',
                 value: {
                   type: 'ID',
-                  value: { elemID: new ElemID('jira.IssueType.instance.someIssueTypeFromAnotherProject') },
-                },
-              },
-            ],
-          },
-        },
-        {
-          component: 'ACTION',
-          type: 'jira.issue.create',
-          value: {
-            operations: [
-              {
-                field: {
-                  type: 'ID',
-                  value: 'jira.Field.instance.Project__project',
-                },
-                fieldType: 'project',
-                type: 'SET',
-                value: {
-                  value: testProjectInstance,
-                  type: 'ID',
-                },
-              },
-              {
-                field: {
-                  type: 'ID',
-                  value: 'jira.Field.instance.Issue_Type__issuetype@suu',
-                },
-                fieldType: 'issuetype',
-                type: 'SET',
-                value: {
-                  type: 'ID',
-                  value: { elemID: new ElemID('jira.IssueType.instance.someIssueTypeFromAnotherProject') },
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'someValidIssueTypeFromTestProject'),
+                  ),
                 },
               },
             ],
           },
         },
       ],
-      projects: [
-        {
-          projectId: testProjectInstance,
-        },
-        {
-          projectId: someOtherProjectInstance,
-        },
-      ],
-    }) // this suppose to be invalid, issue type from another project
+    }) // this suppose to be valid, issue type from project & this is the project under 'projects'
     instanceIssueTypeCurrentValue = new InstanceElement('instanceIssueTypeCurrentValue', automationType, {
       name: '1',
       components: [
@@ -296,21 +285,23 @@ describe('automationIssueTypeValidator', () => {
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Project__project',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
                 },
-                fieldType: 'project',
+                fieldType: PROJECT_FIELD,
                 type: 'SET',
                 value: {
-                  value: testProjectInstance,
+                  value: testProjectReference,
                   type: 'ID',
                 },
               },
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Issue_Type__issuetype@suu',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
                 },
-                fieldType: 'issuetype',
+                fieldType: ISSUE_TYPE_FIELD,
                 type: 'SET',
                 value: {
                   type: 'ID',
@@ -323,10 +314,10 @@ describe('automationIssueTypeValidator', () => {
       ],
       projects: [
         {
-          projectId: testProjectInstance,
+          projectId: testProjectReference,
         },
         {
-          projectId: someOtherProjectInstance,
+          projectId: someOtherProjectReference,
         },
       ],
     }) // this suppose to be valid, current issue type
@@ -341,25 +332,29 @@ describe('automationIssueTypeValidator', () => {
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Project__project',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
                 },
-                fieldType: 'project',
+                fieldType: PROJECT_FIELD,
                 type: 'SET',
                 value: {
-                  value: testProjectInstance,
+                  value: testProjectReference,
                   type: 'ID',
                 },
               },
               {
                 field: {
                   type: 'ID',
-                  value: 'jira.Field.instance.Issue_Type__issuetype@suu',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
                 },
-                fieldType: 'issuetype',
+                fieldType: ISSUE_TYPE_FIELD,
                 type: 'SET',
                 value: {
                   type: 'ID',
-                  value: { elemID: new ElemID('jira.IssueType.instance.someInvalidIssueType') },
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, ISSUE_TYPE_FIELD, 'instance', 'someInvalidIssueType'),
+                  ),
                 },
               },
             ],
@@ -368,18 +363,103 @@ describe('automationIssueTypeValidator', () => {
       ],
       projects: [
         {
-          projectId: testProjectInstance,
+          projectId: testProjectReference,
         },
       ],
     }) // this suppose to be invalid, issue type not from the project referred
+    invalidInstance = new InstanceElement('invalidInstance', automationType, {
+      name: 'invalidInstance',
+      components: [
+        {
+          component: 'ACTION',
+          type: 'jira.issue.create',
+          value: {
+            operations: [
+              {
+                field: {
+                  type: 'ID',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
+                },
+                fieldType: PROJECT_FIELD,
+                type: 'SET',
+                value: {
+                  value: testProjectReference,
+                  type: 'ID',
+                },
+              },
+              {
+                field: {
+                  type: 'ID',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
+                },
+                fieldType: ISSUE_TYPE_FIELD,
+                type: 'SET',
+                value: {
+                  type: 'ID',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'someIssueTypeFromAnotherProject'),
+                  ),
+                },
+              },
+            ],
+          },
+        },
+        {
+          component: 'ACTION',
+          type: 'jira.issue.create',
+          value: {
+            operations: [
+              {
+                field: {
+                  type: 'ID',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
+                },
+                fieldType: PROJECT_FIELD,
+                type: 'SET',
+                value: {
+                  value: testProjectReference,
+                  type: 'ID',
+                },
+              },
+              {
+                field: {
+                  type: 'ID',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
+                },
+                fieldType: ISSUE_TYPE_FIELD,
+                type: 'SET',
+                value: {
+                  type: 'ID',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'someIssueTypeFromAnotherProject'),
+                  ),
+                },
+              },
+            ],
+          },
+        },
+      ],
+      projects: [
+        {
+          projectId: testProjectReference,
+        },
+        {
+          projectId: someOtherProjectReference,
+        },
+      ],
+    }) // this suppose to be invalid, two 'issue.create' components with issue type from another project from 'projects'
 
     elementsSource = buildElementsSourceFromElements([
       instance,
       instance2,
       instance3,
-      invalidInstance,
       instanceIssueTypeCurrentValue,
       invalidAfterInstance,
+      invalidInstance,
       testProjectInstance,
       someOtherProjectInstance,
       testProjectIssueTypeSchemeInstance,
@@ -387,13 +467,14 @@ describe('automationIssueTypeValidator', () => {
     ])
   })
 
-  it('should return an error when the issue type is not from the project issue type scheme', async () => {
+  it('should return an error when the issue type is not from the relevant project issue type scheme', async () => {
     const changes = [
       toChange({ after: invalidAfterInstance }),
       toChange({ before: instance, after: invalidAfterInstance }),
       toChange({ after: invalidInstance }),
-      toChange({ after: instance2 }),
+      toChange({ after: instance2 }), // valid
     ]
+    // should return in total 4 errors - 2 for invalidAfterInstance, 2 for invalidInstance, none for instance2
     expect(await automationIssueTypeValidator(changes, elementsSource)).toEqual([
       {
         elemID: new ElemID(
@@ -408,10 +489,9 @@ describe('automationIssueTypeValidator', () => {
           '1',
         ),
         severity: 'Error',
-        message:
-          'Cannot deploy automation due to issue types not aligned with the automation project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the automation project issue scheme. To fix it, change this issue type: jira.IssueType.instance.someInvalidIssueType',
+          'In order to deploy an automation you must use issue types from the relevant project issue scheme. To fix it, change this issue type: someInvalidIssueType',
       },
       {
         elemID: new ElemID(
@@ -426,10 +506,9 @@ describe('automationIssueTypeValidator', () => {
           '1',
         ),
         severity: 'Error',
-        message:
-          'Cannot deploy automation due to issue types not aligned with the automation project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the automation project issue scheme. To fix it, change this issue type: jira.IssueType.instance.someInvalidIssueType',
+          'In order to deploy an automation you must use issue types from the relevant project issue scheme. To fix it, change this issue type: someInvalidIssueType',
       },
       {
         elemID: new ElemID(
@@ -444,10 +523,9 @@ describe('automationIssueTypeValidator', () => {
           '1',
         ),
         severity: 'Error',
-        message:
-          'Cannot deploy automation due to issue types not aligned with the automation project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the automation project issue scheme. To fix it, change this issue type: jira.IssueType.instance.someIssueTypeFromAnotherProject',
+          'In order to deploy an automation you must use issue types from the relevant project issue scheme. To fix it, change this issue type: someIssueTypeFromAnotherProject',
       },
       {
         elemID: new ElemID(
@@ -462,10 +540,9 @@ describe('automationIssueTypeValidator', () => {
           '1',
         ),
         severity: 'Error',
-        message:
-          'Cannot deploy automation due to issue types not aligned with the automation project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the automation project issue scheme. To fix it, change this issue type: jira.IssueType.instance.someIssueTypeFromAnotherProject',
+          'In order to deploy an automation you must use issue types from the relevant project issue scheme. To fix it, change this issue type: someIssueTypeFromAnotherProject',
       },
     ])
   })
@@ -480,5 +557,9 @@ describe('automationIssueTypeValidator', () => {
 
   it('should not return an error when the issue type is current', async () => {
     expect(await automationIssueTypeValidator([toChange({ after: instanceIssueTypeCurrentValue })])).toEqual([])
+  })
+
+  it('should not return an error for a global automation', async () => {
+    expect(await automationIssueTypeValidator([toChange({ after: globalInstance })])).toEqual([])
   })
 })

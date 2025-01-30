@@ -25,6 +25,7 @@ import { getFilterParams } from '../../../utils'
 describe('smart_value_reference_filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
   let filter: FilterType
+  let additionalAutomationExpressionsFilter: FilterType
   let automationType: ObjectType
   let fieldType: ObjectType
   let fieldInstance: InstanceElement
@@ -37,6 +38,11 @@ describe('smart_value_reference_filter', () => {
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     filter = filterCreator(getFilterParams({ config })) as FilterType
+    additionalAutomationExpressionsFilter = filterCreator(
+      getFilterParams({
+        config: { ...config, fetch: { ...config.fetch, parseAdditionalAutomationExpressions: true } },
+      }),
+    ) as FilterType
 
     automationType = new ObjectType({
       elemID: new ElemID('jira', 'Automation'),
@@ -153,11 +159,6 @@ describe('smart_value_reference_filter', () => {
       })
       describe('when parseAdditionalAutomationExpressions is false', () => {
         beforeEach(async () => {
-          filter = filterCreator(
-            getFilterParams({
-              config: { ...config, fetch: { ...config.fetch, parseAdditionalAutomationExpressions: false } },
-            }),
-          ) as FilterType
           elements = generateElements()
           await filter.onFetch(elements)
           const automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'complexAutom')
@@ -177,16 +178,11 @@ describe('smart_value_reference_filter', () => {
 
       describe('when parseAdditionalAutomationExpressions is true', () => {
         beforeEach(async () => {
-          filter = filterCreator(
-            getFilterParams({
-              config: { ...config, fetch: { ...config.fetch, parseAdditionalAutomationExpressions: true } },
-            }),
-          ) as FilterType
           elements = generateElements()
         })
         describe('fetch', () => {
           beforeEach(async () => {
-            await filter.onFetch(elements)
+            await additionalAutomationExpressionsFilter.onFetch(elements)
             const automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'complexAutom')
             expect(automationResult).toBeDefined()
             automation = automationResult as InstanceElement
@@ -237,7 +233,7 @@ describe('smart_value_reference_filter', () => {
                 '}} ending',
               ],
             })
-            await filter.preDeploy(elements.map(e => toChange({ before: e, after: e })))
+            await additionalAutomationExpressionsFilter.preDeploy(elements.map(e => toChange({ before: e, after: e })))
             const automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'complexAutom')
             expect(automationResult).toBeDefined()
             automation = automationResult as InstanceElement
@@ -251,7 +247,7 @@ describe('smart_value_reference_filter', () => {
             )
           })
           it('should resolve templates in array on onDeploy', async () => {
-            await filter.onDeploy(elements.map(e => toChange({ before: e, after: e })))
+            await additionalAutomationExpressionsFilter.onDeploy(elements.map(e => toChange({ before: e, after: e })))
             expect(complexAutomationInstance.value.components[0].children[0].value.first).toEqual(
               new TemplateExpression({
                 parts: [
@@ -275,6 +271,113 @@ describe('smart_value_reference_filter', () => {
               }),
             )
           })
+        })
+      })
+    })
+
+    describe('smart query', () => {
+      let smartQueryAutomation: InstanceElement
+      let automationResult: InstanceElement | undefined
+      beforeEach(async () => {
+        jest.clearAllMocks()
+        smartQueryAutomation = new InstanceElement('smartQueryAutom', automationType, {
+          trigger: {},
+          components: [
+            {
+              value: {
+                type: 'SMART',
+                query: {
+                  type: 'SMART',
+                  value: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+                },
+              },
+            },
+            {
+              value: {
+                type: 'IQL',
+                query: {
+                  type: 'SMART',
+                  value: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+                },
+              },
+            },
+            {
+              value: {
+                customSmartValue: {
+                  type: 'SMART',
+                  query: {
+                    type: 'SMART',
+                    value: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+                  },
+                },
+              },
+            },
+          ],
+        })
+        elements.push(smartQueryAutomation)
+        await additionalAutomationExpressionsFilter.onFetch(elements)
+        automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'smartQueryAutom')
+      })
+      describe('when parseAdditionalAutomationExpressions is true', () => {
+        it('should parse smart query', async () => {
+          expect(automationResult).toBeDefined()
+          const smartQuery = automationResult as InstanceElement
+          expect(smartQuery.value.components[0].value.query.value).toEqual(
+            new TemplateExpression({
+              parts: [
+                'Field is: {{issue.',
+                new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
+                '}} {{issue.',
+                new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+                '}} ending',
+              ],
+            }),
+          )
+        })
+        it('should parse IQL smart value', async () => {
+          expect(automationResult).toBeDefined()
+          const smartQuery = automationResult as InstanceElement
+          expect(smartQuery.value.components[1].value.query.value).toEqual(
+            'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+          )
+        })
+        it('should parse custom smart value', async () => {
+          expect(automationResult).toBeDefined()
+          const smartQuery = automationResult as InstanceElement
+          expect(smartQuery.value.components[2].value.customSmartValue.query.value).toEqual(
+            new TemplateExpression({
+              parts: [
+                'Field is: {{issue.',
+                new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
+                '}} {{issue.',
+                new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+                '}} ending',
+              ],
+            }),
+          )
+        })
+      })
+      describe('when parseAdditionalAutomationExpressions is false', () => {
+        it('should not parse smart query', async () => {
+          expect(automationResult).toBeDefined()
+          const smartQuery = automationResult as InstanceElement
+          expect(smartQuery.value.components[0].value.query.value).toEqual(
+            'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+          )
+        })
+        it('should not parse IQL smart value', async () => {
+          expect(automationResult).toBeDefined()
+          const smartQuery = automationResult as InstanceElement
+          expect(smartQuery.value.components[1].value.query.value).toEqual(
+            'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+          )
+        })
+        it('should not parse custom smart value', async () => {
+          expect(automationResult).toBeDefined()
+          const smartQuery = automationResult as InstanceElement
+          expect(smartQuery.value.components[2].value.customSmartValue.query.value).toEqual(
+            'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+          )
         })
       })
     })

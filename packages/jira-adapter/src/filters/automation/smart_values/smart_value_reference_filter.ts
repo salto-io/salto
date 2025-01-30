@@ -36,6 +36,9 @@ import { stringToTemplate } from './template_expression_generator'
 
 const log = logger(module)
 
+const SMART = 'SMART'
+const SMART_TYPES = [SMART, 'IQL']
+
 type Component = {
   value?: Values | boolean
   rawValue?: unknown
@@ -67,10 +70,50 @@ const isAutomationInstance = createSchemeGuard<AutomationInstance>(
   'Received an invalid automation',
 )
 
+type SmartQuery = {
+  type: string
+  query: {
+    type: string
+    value: string
+  }
+}
+
+const SMART_QUERY_SCHEME = Joi.object({
+  type: Joi.string().required(),
+  query: Joi.object({
+    type: Joi.string().required(),
+    value: Joi.string().required(),
+  }).required(),
+})
+  .required()
+  .unknown(true)
+
+const isSmartQuery = createSchemeGuard<SmartQuery>(SMART_QUERY_SCHEME)
+
+const CUSTOM_SMART_VALUE_SCHEME = Joi.object({
+  customSmartValue: SMART_QUERY_SCHEME.required(),
+})
+  .required()
+  .unknown(true)
+
+type CustomSmartValue = {
+  customSmartValue: SmartQuery
+}
+
+const isCustomSmartValue = createSchemeGuard<CustomSmartValue>(CUSTOM_SMART_VALUE_SCHEME)
+
 const filterAutomations = (instances: InstanceElement[]): AutomationInstance[] =>
   instances.filter(instance => instance.elemID.typeName === AUTOMATION_TYPE).filter(isAutomationInstance)
 
 type SmartValueContainer = { obj: Values; key: string }
+
+const parseSmartQuery = (value: Values, containers: SmartValueContainer[]): void => {
+  if (isSmartQuery(value) && SMART_TYPES.includes(value.type) && value.query.type === SMART) {
+    containers.push({ obj: value.query, key: 'value' })
+  } else if (isCustomSmartValue(value)) {
+    parseSmartQuery(value.customSmartValue, containers)
+  }
+}
 
 const getPossibleSmartValues = (
   automation: AutomationInstance,
@@ -81,8 +124,12 @@ const getPossibleSmartValues = (
   const findSmartValues = (component: Component): void => {
     if (component.value !== undefined && !_.isBoolean(component.value)) {
       const { value } = component
-      if (parseAdditionalAutomationExpressions === true && Array.isArray(value?.operations)) {
-        value.operations.forEach(findSmartValues)
+      if (parseAdditionalAutomationExpressions === true) {
+        parseSmartQuery(value, containers)
+
+        if (Array.isArray(value?.operations)) {
+          value.operations.forEach(findSmartValues)
+        }
       }
       Object.keys(value)
         .filter(key => _.isString(value[key]) || isTemplateExpression(value[key]))

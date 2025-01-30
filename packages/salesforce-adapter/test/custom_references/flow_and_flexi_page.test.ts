@@ -8,7 +8,7 @@
 import { CORE_ANNOTATIONS, ReferenceInfo, Element, ReferenceExpression } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { formulaRefsHandler } from '../../src/custom_references/flow_and_flexi_page'
-import { FLOW_METADATA_TYPE } from '../../src/constants'
+import { FLEXI_PAGE_TYPE, FLOW_METADATA_TYPE } from '../../src/constants'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
 describe('Flow and FlexiPage custom references', () => {
@@ -92,6 +92,59 @@ describe('Flow and FlexiPage custom references', () => {
               '0',
               'rightValue',
               'elementReference',
+            ),
+            target,
+            type,
+          },
+        ]
+        expect(refs).toIncludeSameMembers(expectedRefs)
+      })
+    })
+    describe('FlexiPage', () => {
+      beforeEach(() => {
+        referringInstance = createInstanceElement(
+          {
+            fullName: FLEXI_PAGE_TYPE,
+            flexiPageRegions: [
+              {
+                itemInstances: [
+                  {
+                    componentInstance: {
+                      visibilityRule: {
+                        criteria: [
+                          {
+                            leftValue: 'Record.Name',
+                          },
+                        ],
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          mockTypes.FlexiPage,
+          undefined,
+          { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(mockTypes.Account.elemID)] },
+        )
+        elements = [referringInstance]
+      })
+      it('should generate references', async () => {
+        refs = await formulaRefsHandler.findWeakReferences(elements)
+        const target = mockTypes.Account.elemID.createNestedID('field', 'Name')
+        const type = 'strong'
+        const expectedRefs = [
+          {
+            source: referringInstance.elemID.createNestedID(
+              'flexiPageRegions',
+              '0',
+              'itemInstances',
+              '0',
+              'componentInstance',
+              'visibilityRule',
+              'criteria',
+              '0',
+              'leftValue',
             ),
             target,
             type,

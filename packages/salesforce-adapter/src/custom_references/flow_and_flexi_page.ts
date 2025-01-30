@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { inspectValue, WALK_NEXT_STEP, walkOnElement, WalkOnFunc } from '@salto-io/adapter-utils'
 import { WeakReferencesHandler } from '../types'
 import { isInstanceOfTypeSync } from '../filters/utils'
-import { API_NAME_SEPARATOR, FLOW_METADATA_TYPE } from '../constants'
+import { API_NAME_SEPARATOR, FLEXI_PAGE_TYPE, FLOW_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
 const { isDefined } = values
@@ -46,7 +46,7 @@ const getInstanceParent = (instance: InstanceElement): ReferenceExpression | und
   return parentRef
 }
 
-const recordPrefixes = ['$Record.']
+const recordPrefixes = ['$Record.', 'Record.']
 
 const referenceInfoFromFieldValue = (
   instance: InstanceElement,
@@ -125,8 +125,24 @@ const flowElementReferenceOrValue: ReferenceExtractor = (instance: InstanceEleme
   return result
 }
 
+const uiFormulaCriterion: ReferenceExtractor = (instance: InstanceElement) => {
+  // UiFormulaCriterion.leftValue
+  const result: ReferenceInfo[] = []
+  const walkOnFunc: WalkOnFunc = ({ value, path }) => {
+    if (path === undefined || path.name !== 'leftValue') return WALK_NEXT_STEP.RECURSE
+    const newRef = referenceInfoFromFieldValue(instance, path, value)
+    if (newRef !== undefined) {
+      result.push(...newRef)
+    }
+    return WALK_NEXT_STEP.SKIP
+  }
+  walkOnElement({ element: instance, func: walkOnFunc })
+  return result
+}
+
 const referenceExtractors: Record<string, ReadonlyArray<ReferenceExtractor>> = {
   [FLOW_METADATA_TYPE]: [flowCondition, flowAssignmentItem, flowElementReferenceOrValue],
+  [FLEXI_PAGE_TYPE]: [uiFormulaCriterion],
 }
 
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (

@@ -46,13 +46,15 @@ const getInstanceParent = (instance: InstanceElement): ReferenceExpression | und
   return parentRef
 }
 
+const recordPrefixes = ['$Record.']
+
 const referenceInfoFromFieldValue = (
   instance: InstanceElement,
   path: ElemID,
   value: Value,
 ): ReferenceInfo[] | undefined => {
   if (isReferenceExpression(value)) return undefined
-  if (value.startsWith('$Record.')) {
+  if (recordPrefixes.some(prefix => value.startsWith(prefix))) {
     const parentRef = getInstanceParent(instance)
     if (parentRef === undefined) {
       return undefined

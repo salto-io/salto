@@ -113,7 +113,7 @@ describe('Flow and FlexiPage custom references', () => {
                       visibilityRule: {
                         criteria: [
                           {
-                            leftValue: 'Record.Name',
+                            leftValue: '{!Record.Name',
                           },
                         ],
                       },

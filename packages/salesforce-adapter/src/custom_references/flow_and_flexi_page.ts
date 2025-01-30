@@ -46,7 +46,7 @@ const getInstanceParent = (instance: InstanceElement): ReferenceExpression | und
   return parentRef
 }
 
-const recordPrefixes = ['$Record.', 'Record.']
+const recordPrefixes = ['$Record.', '{!Record.']
 
 const referenceInfoFromFieldValue = (
   instance: InstanceElement,
@@ -70,51 +70,12 @@ const referenceInfoFromFieldValue = (
   return undefined
 }
 
-const flowCondition: ReferenceExtractor = (instance: InstanceElement) =>
-  // FlowCondition.leftValueReference
-  instance.value.decisions?.flatMap((flowDecision: Value, decisionIdx: number) =>
-    flowDecision.rules?.flatMap((flowRule: Value, ruleIdx: number) =>
-      flowRule.conditions?.flatMap((flowCond: Value, conditionIdx: number) =>
-        referenceInfoFromFieldValue(
-          instance,
-          instance.elemID.createNestedID(
-            'decisions',
-            decisionIdx.toString(),
-            'rules',
-            ruleIdx.toString(),
-            'conditions',
-            conditionIdx.toString(),
-            'leftValueReference',
-          ),
-          flowCond.leftValueReference,
-        ),
-      ),
-    ),
-  ) ?? []
+const flowFields = ['elementReference', 'assignToReference', 'leftValueReference']
 
-const flowAssignmentItem: ReferenceExtractor = (instance: InstanceElement) =>
-  // FlowAssignmentItem.assignToReference
-  instance.value.assignments?.flatMap((assignment: Value, assignmentIdx: number) =>
-    assignment.assignmentItems?.flatMap((assignmentItem: Value, itemIdx: number) =>
-      referenceInfoFromFieldValue(
-        instance,
-        instance.elemID.createNestedID(
-          'assignments',
-          assignmentIdx.toString(),
-          'assignmentItems',
-          itemIdx.toString(),
-          'assignToReference',
-        ),
-        assignmentItem.assignToReference,
-      ),
-    ),
-  ) ?? []
-
-const flowElementReferenceOrValue: ReferenceExtractor = (instance: InstanceElement) => {
-  // FlowElementReferenceOrValue.elementReference
+const flowReferenceExtractor: ReferenceExtractor = (instance: InstanceElement) => {
   const result: ReferenceInfo[] = []
   const walkOnFunc: WalkOnFunc = ({ value, path }) => {
-    if (path === undefined || path.name !== 'elementReference') return WALK_NEXT_STEP.RECURSE
+    if (path === undefined || !flowFields.includes(path.name)) return WALK_NEXT_STEP.RECURSE
     const newRef = referenceInfoFromFieldValue(instance, path, value)
     if (newRef !== undefined) {
       result.push(...newRef)
@@ -125,8 +86,7 @@ const flowElementReferenceOrValue: ReferenceExtractor = (instance: InstanceEleme
   return result
 }
 
-const uiFormulaCriterion: ReferenceExtractor = (instance: InstanceElement) => {
-  // UiFormulaCriterion.leftValue
+const flexiPageReferenceExtractor: ReferenceExtractor = (instance: InstanceElement) => {
   const result: ReferenceInfo[] = []
   const walkOnFunc: WalkOnFunc = ({ value, path }) => {
     if (path === undefined || path.name !== 'leftValue') return WALK_NEXT_STEP.RECURSE
@@ -140,31 +100,29 @@ const uiFormulaCriterion: ReferenceExtractor = (instance: InstanceElement) => {
   return result
 }
 
-const referenceExtractors: Record<string, ReadonlyArray<ReferenceExtractor>> = {
-  [FLOW_METADATA_TYPE]: [flowCondition, flowAssignmentItem, flowElementReferenceOrValue],
-  [FLEXI_PAGE_TYPE]: [uiFormulaCriterion],
+const referenceExtractors: Record<string, ReferenceExtractor> = {
+  [FLOW_METADATA_TYPE]: flowReferenceExtractor,
+  [FLEXI_PAGE_TYPE]: flexiPageReferenceExtractor,
 }
 
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
   const fetchedInstances = elements.filter(isInstanceOfTypeSync(...Object.keys(referenceExtractors)))
-  return fetchedInstances.flatMap(instance =>
-    referenceExtractors[apiNameSync(instance.getTypeSync()) ?? ''].flatMap(refExtractor => {
-      try {
-        const addedCustomReferences = refExtractor(instance).filter(isDefined)
-        if (addedCustomReferences.length > 0) {
-          log.debug(
-            `added custom references to ${instance.elemID.getFullName()} at ${refExtractor.name}: ${inspectValue(addedCustomReferences)}`,
-          )
-        }
-        return addedCustomReferences
-      } catch (error) {
-        log.error('Failed to generate custom references from formula fields: %s', error)
-        return []
+  return fetchedInstances.flatMap(instance => {
+    const refExtractor = referenceExtractors[apiNameSync(instance.getTypeSync()) ?? '']
+    if (refExtractor === undefined) return []
+    try {
+      const addedCustomReferences = refExtractor(instance).filter(isDefined)
+      if (addedCustomReferences.length > 0) {
+        log.debug(`added custom references to ${instance.elemID.getFullName()}: ${inspectValue(addedCustomReferences)}`)
       }
-    }),
-  )
+      return addedCustomReferences
+    } catch (error) {
+      log.error('Failed to generate custom references from formula fields: %s', error)
+      return []
+    }
+  })
 }
 
 export const formulaRefsHandler: WeakReferencesHandler = {

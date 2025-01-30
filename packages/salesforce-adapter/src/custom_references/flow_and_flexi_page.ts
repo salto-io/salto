@@ -19,7 +19,7 @@ import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { inspectValue, WALK_NEXT_STEP, walkOnElement, WalkOnFunc } from '@salto-io/adapter-utils'
 import { WeakReferencesHandler } from '../types'
-import { isInstanceOfTypeSync } from '../filters/utils'
+import { apiNameSync, isInstanceOfTypeSync } from '../filters/utils'
 import { API_NAME_SEPARATOR, FLEXI_PAGE_TYPE, FLOW_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
@@ -150,7 +150,7 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
 ): Promise<ReferenceInfo[]> => {
   const fetchedInstances = elements.filter(isInstanceOfTypeSync(...Object.keys(referenceExtractors)))
   return fetchedInstances.flatMap(instance =>
-    referenceExtractors[instance.elemID.typeName].flatMap(refExtractor => {
+    referenceExtractors[apiNameSync(instance.getTypeSync()) ?? ''].flatMap(refExtractor => {
       try {
         const addedCustomReferences = refExtractor(instance).filter(isDefined)
         if (addedCustomReferences.length > 0) {

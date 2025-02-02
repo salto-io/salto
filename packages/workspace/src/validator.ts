@@ -846,12 +846,13 @@ const validateElement = (element: Element): ValidationError[] => {
   return []
 }
 
-export const validateElements = async (
+export const validateElements = async <T>(
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
-): Promise<Iterable<RemoteMapEntry<ValidationError[]>>> => {
+  consumeErrorsFunc: (errors: Iterable<RemoteMapEntry<ValidationError[]>>) => T | Promise<T>,
+): Promise<T> => {
   const resolved = await resolve(elements, elementsSource)
-  return wu(resolved)
+  const errorsIterator = wu(resolved)
     .map(element => {
       const key = element.elemID.getFullName()
       const errors = validateElement(element)
@@ -865,4 +866,6 @@ export const validateElements = async (
       return { key, value: errorsWithRightTopLevel }
     })
     .filter(errors => errors.value.length > 0)
+
+  return log.timeDebug(() => consumeErrorsFunc(errorsIterator), 'validateElements with %d elements', resolved.length)
 }

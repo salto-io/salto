@@ -8,7 +8,6 @@
 import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
-import { logger } from '@salto-io/logging'
 import { Workspace, nacl, errors, validator, COMMON_ENV_PREFIX, elementSource } from '@salto-io/workspace'
 import {
   Element,
@@ -27,8 +26,6 @@ import {
 import { values, collections } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 import { detailedCompare, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-
-const log = logger(module)
 
 const { validateElements } = validator
 
@@ -220,10 +217,8 @@ export class EditorWorkspace {
     const elementsToValidate = (
       await Promise.all([...ids].map(async id => elements.get(ElemID.fromFullName(id))))
     ).filter(values.isDefined)
-    return log.timeDebug(
-      async () => Array.from(await validateElements(elementsToValidate, elements)).flatMap(({ value }) => value),
-      'validateElements with %d elements',
-      elementsToValidate.length,
+    return validateElements(elementsToValidate, elements, validationErrors =>
+      Array.from(validationErrors).flatMap(({ value }) => value),
     )
   }
 

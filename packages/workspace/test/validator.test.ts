@@ -28,7 +28,6 @@ import {
   Element,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 import {
   validateElements,
@@ -47,8 +46,6 @@ import {
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
 import { getFieldsAndAnnoTypes } from './utils'
-
-const { awu } = collections.asynciterable
 
 describe('Elements validation', () => {
   const INVALID_NACL_CONTENT_ERROR = 'Element has invalid NaCl content'
@@ -293,7 +290,7 @@ describe('Elements validation', () => {
     elements: Element[],
     elementsSource: ReadOnlyElementsSource,
   ): Promise<ValidationError[]> => {
-    const errors = await awu(await validateElements(elements, elementsSource)).toArray()
+    const errors = await validateElements(elements, elementsSource, res => Array.from(res))
 
     // we expect each key in `errors` to appear once
     expect(errors.length).toEqual(_.uniqBy(errors, entry => entry.key).length)

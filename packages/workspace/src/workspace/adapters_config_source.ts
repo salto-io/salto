@@ -5,7 +5,6 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { logger } from '@salto-io/logging'
 import {
   Adapter,
   DetailedChange,
@@ -37,8 +36,6 @@ import { NaclFilesSource } from './nacl_files'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { EnvConfig } from './config/workspace_config_types'
 import { createInMemoryElementSource } from './elements_source'
-
-const log = logger(module)
 
 export type PartialNaclFilesSource = Pick<
   NaclFilesSource,
@@ -76,11 +73,7 @@ const updateValidationErrorsCache = async (
 ): Promise<void> => {
   const elementsToValidate = await awu(await naclSource.getAll()).toArray()
   await validationErrorsMap.clear()
-  await log.timeDebug(
-    async () => validationErrorsMap.setAll(await validateElements(elementsToValidate, elementsSource)),
-    'validateElements with %d elements',
-    elementsToValidate.length,
-  )
+  await validateElements(elementsToValidate, elementsSource, validationErrorsMap.setAll)
 }
 
 export type AdaptersConfigSourceArgs = {

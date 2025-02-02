@@ -113,6 +113,24 @@ export enum FLOW_NODE_FIELD_NAMES {
   LOCATION_X = 'locationX',
   LOCATION_Y = 'locationY',
 }
+export const FLOW_ELEMENTS_WITH_UNIQUE_NAMES = [
+  'FlowChoice',
+  'FlowConstant',
+  'FlowDynamicChoiceSet',
+  'FlowExitRule',
+  'FlowExperimentPath',
+  'FlowFormula',
+  'FlowNode',
+  'FlowRule',
+  'FlowScheduledPath',
+  'FlowScreenField',
+  'FlowStage',
+  'FlowCapability',
+  'FlowCapabilityInput',
+  'FlowTextTemplate',
+  'FlowVariable',
+  'FlowWaitEvent',
+]
 
 export const FLOW_FIELD_TYPE_NAMES = {
   FLOW_ASSIGNMENT_ITEM: 'FlowAssignmentItem',

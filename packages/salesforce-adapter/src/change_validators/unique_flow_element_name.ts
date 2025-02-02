@@ -14,26 +14,34 @@ import {
   isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { WALK_NEXT_STEP, walkOnElement, WalkOnFunc } from '@salto-io/adapter-utils'
+import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import { isInstanceOfTypeSync } from '../filters/utils'
-import { FLOW_METADATA_TYPE } from '../constants'
+import { FLOW_ELEMENTS_WITH_UNIQUE_NAMES, FLOW_METADATA_TYPE } from '../constants'
 
 const { DefaultMap } = collections.map
 
 const createChangeErrors = (element: InstanceElement): ChangeError[] => {
   const duplicates = new Set<string>()
   const nameToElemIds = new DefaultMap<string, ElemID[]>(() => [])
-  const mapNameToElemIds: WalkOnFunc = ({ value, path }) => {
-    if (path === undefined || path.name !== 'name') return WALK_NEXT_STEP.RECURSE
+  const mapNameToElemIds: TransformFuncSync = ({ value, path, field }) => {
+    if (
+      field === undefined ||
+      path === undefined ||
+      !FLOW_ELEMENTS_WITH_UNIQUE_NAMES.includes(field.elemID.typeName) ||
+      path.name !== 'name'
+    )
+      return value
     if (nameToElemIds.get(value).length > 0) {
       duplicates.add(value)
     }
     nameToElemIds.get(value).push(path)
-    return WALK_NEXT_STEP.RECURSE
+    return value
   }
-  walkOnElement({
-    element,
-    func: mapNameToElemIds,
+  transformValuesSync({
+    values: element.value,
+    pathID: element.elemID,
+    type: element.getTypeSync(),
+    transformFunc: mapNameToElemIds,
   })
   return Array.from(duplicates).flatMap(name =>
     nameToElemIds.get(name).map(elemId => ({

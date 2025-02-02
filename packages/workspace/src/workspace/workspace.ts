@@ -912,10 +912,8 @@ export async function loadWorkspace(params: LoadWorkspaceParams): Promise<Worksp
           await stateToBuild.states[envName].validationErrors.deleteAll(keysToDelete)
 
           const elementsToValidate = changedElements.concat(dependents)
-          await validateElements(
-            elementsToValidate,
-            stateToBuild.states[envName].merged,
-            stateToBuild.states[envName].validationErrors.setAll,
+          await validateElements(elementsToValidate, stateToBuild.states[envName].merged, errors =>
+            stateToBuild.states[envName].validationErrors.setAll(errors),
           )
         }
       }

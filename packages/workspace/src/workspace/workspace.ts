@@ -907,10 +907,11 @@ export async function loadWorkspace(params: LoadWorkspaceParams): Promise<Worksp
             stateToBuild.states[envName].merged,
             stateToBuild.states[envName].referenceSources,
           )
+
+          const keysToDelete = changeIDs.concat(dependents.map(elem => elem.elemID)).map(id => id.getFullName())
+          await stateToBuild.states[envName].validationErrors.deleteAll(keysToDelete)
+
           const elementsToValidate = changedElements.concat(dependents)
-          await stateToBuild.states[envName].validationErrors.deleteAll(
-            elementsToValidate.map(e => e.elemID.getFullName()),
-          )
           await log.timeDebug(
             async () =>
               stateToBuild.states[envName].validationErrors.setAll(

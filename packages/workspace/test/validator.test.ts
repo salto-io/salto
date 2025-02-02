@@ -31,7 +31,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 import {
-  validateElements as originalValidateElements,
+  validateElements,
   InvalidValueValidationError,
   CircularReferenceValidationError,
   InvalidValueRangeValidationError,
@@ -289,16 +289,18 @@ describe('Elements validation', () => {
     },
   })
 
-  const validateElements = async (
+  const getValidationErrors = async (
     elements: Element[],
     elementsSource: ReadOnlyElementsSource,
   ): Promise<ValidationError[]> => {
-    const errors = await awu(await originalValidateElements(elements, elementsSource)).toArray()
+    const errors = await awu(await validateElements(elements, elementsSource)).toArray()
 
+    // we expect each key in `errors` to appear once
     expect(errors.length).toEqual(_.uniqBy(errors, entry => entry.key).length)
 
     errors.forEach(({ key, value }) => {
       value.forEach(error => {
+        // we expect each error's elemID to be equal/nested under its key
         expect(error.elemID.createTopLevelParentID().parent.getFullName()).toEqual(key)
       })
     })
@@ -316,7 +318,7 @@ describe('Elements validation', () => {
     })
 
     it('should validate a correct type', async () => {
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [simpleType, nestedType],
         createInMemoryElementSource([nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
       )
@@ -327,7 +329,7 @@ describe('Elements validation', () => {
       clonedNestedType.fields.nested.annotations.unspecifiedStr = 'unspecified'
       clonedNestedType.fields.nested.annotations.unspecifiedNum = 1
       clonedNestedType.fields.nested.annotations.unspecifiedBool = false
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [clonedNestedType],
         createInMemoryElementSource([clonedNestedType, ...(await getFieldsAndAnnoTypes(clonedNestedType))]),
       )
@@ -336,7 +338,7 @@ describe('Elements validation', () => {
 
     it('should return error on bad str primitive type', async () => {
       clonedNestedType.fields.nested.annotations.annoStr = 1
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [clonedNestedType],
         createInMemoryElementSource([clonedNestedType, ...(await getFieldsAndAnnoTypes(clonedNestedType))]),
       )
@@ -346,7 +348,7 @@ describe('Elements validation', () => {
 
     it('should return error on bad str primitive type defined in meta type', async () => {
       clonedBaseType.annotations.annoStr = 1
-      const errors = await validateElements([clonedBaseType], createInMemoryElementSource([metaType]))
+      const errors = await getValidationErrors([clonedBaseType], createInMemoryElementSource([metaType]))
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedBaseType.elemID.createNestedID('attr', 'annoStr'))
     })
@@ -355,7 +357,7 @@ describe('Elements validation', () => {
       clonedNestedType.fields.nested.annotations.annoStr = new TemplateExpression({
         parts: ['1', new ReferenceExpression(new ElemID('a', 'b'), 'hello world')],
       })
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [clonedNestedType],
         createInMemoryElementSource([
           new ObjectType({ elemID: new ElemID('a', 'b') }),
@@ -370,7 +372,7 @@ describe('Elements validation', () => {
       clonedNestedType.fields.nested.annotations.annoStr = new TemplateExpression({
         parts: ['1', new ReferenceExpression(new ElemID('a', 'b'), 'hello world')],
       })
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [clonedNestedType],
         createInMemoryElementSource([clonedNestedType, ...(await getFieldsAndAnnoTypes(clonedNestedType))]),
       )
@@ -380,7 +382,7 @@ describe('Elements validation', () => {
 
     it('should return error on bad num primitive type', async () => {
       clonedNestedType.fields.nested.annotations.annoNum = 'str'
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [clonedNestedType],
         createInMemoryElementSource([clonedNestedType, ...(await getFieldsAndAnnoTypes(clonedNestedType))]),
       )
@@ -390,7 +392,7 @@ describe('Elements validation', () => {
 
     it('should return error on bad bool primitive type', async () => {
       clonedNestedType.fields.nested.annotations.annoBoolean = 1
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [clonedNestedType],
         createInMemoryElementSource([clonedNestedType, ...(await getFieldsAndAnnoTypes(clonedNestedType))]),
       )
@@ -400,7 +402,7 @@ describe('Elements validation', () => {
 
     it('should return error on nested annotation mismatch', async () => {
       clonedNestedType.annotations.nested = { str: 1 }
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [clonedNestedType],
         createInMemoryElementSource([clonedNestedType, ...(await getFieldsAndAnnoTypes(clonedNestedType))]),
       )
@@ -420,7 +422,7 @@ describe('Elements validation', () => {
       })
       badObj.annotations.nested = 'not an object'
       const elements = [badObj, clonedNestedType]
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         elements,
         createInMemoryElementSource([
           badObj,
@@ -446,7 +448,7 @@ describe('Elements validation', () => {
           notList: [{ simple: 'str1' }, { simple: 'str2' }],
         },
       })
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [objWithListAnnotation],
         createInMemoryElementSource([objWithListAnnotation, ...(await getFieldsAndAnnoTypes(objWithListAnnotation))]),
       )
@@ -464,7 +466,7 @@ describe('Elements validation', () => {
           notList: ['str1', 'str2'],
         },
       })
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [objWithListAnnotation],
         createInMemoryElementSource([objWithListAnnotation, ...(await getFieldsAndAnnoTypes(objWithListAnnotation))]),
       )
@@ -485,7 +487,7 @@ describe('Elements validation', () => {
           notList: ['str1', 'str2'],
         },
       })
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [objWithListAnnotation],
         createInMemoryElementSource([objWithListAnnotation, ...(await getFieldsAndAnnoTypes(objWithListAnnotation))]),
       )
@@ -504,7 +506,7 @@ describe('Elements validation', () => {
           notList: [{ simple: 'str1' }, { simple: 'str2' }],
         },
       })
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [objWithListAnnotation],
         createInMemoryElementSource([objWithListAnnotation, ...(await getFieldsAndAnnoTypes(objWithListAnnotation))]),
       )
@@ -525,7 +527,7 @@ describe('Elements validation', () => {
           },
         },
       })
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [objWithUnresolvedRef],
         createInMemoryElementSource([objWithUnresolvedRef, ...(await getFieldsAndAnnoTypes(objWithUnresolvedRef))]),
       )
@@ -537,7 +539,7 @@ describe('Elements validation', () => {
         BuiltinTypes.STRING.elemID,
         BuiltinTypes.STRING,
       ) as unknown as TypeReference<ObjectType>
-      const errors = await validateElements([clonedBaseType], createInMemoryElementSource())
+      const errors = await getValidationErrors([clonedBaseType], createInMemoryElementSource())
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedBaseType.elemID)
     })
@@ -549,7 +551,7 @@ describe('Elements validation', () => {
         metaType: metaMetaType,
       })
       clonedBaseType.metaType = new TypeReference(metaElemID, invalidMetaType) as unknown as TypeReference<ObjectType>
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [clonedBaseType],
         createInMemoryElementSource([metaMetaType, invalidMetaType]),
       )
@@ -565,7 +567,7 @@ describe('Elements validation', () => {
         },
       })
       clonedBaseType.metaType = new TypeReference(metaElemID, invalidMetaType) as unknown as TypeReference<ObjectType>
-      const errors = await validateElements([clonedBaseType], createInMemoryElementSource([invalidMetaType]))
+      const errors = await getValidationErrors([clonedBaseType], createInMemoryElementSource([invalidMetaType]))
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedBaseType.elemID)
     })
@@ -667,7 +669,7 @@ describe('Elements validation', () => {
             num: 1,
             bool: true,
           }
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
           )
@@ -677,7 +679,7 @@ describe('Elements validation', () => {
         it('should return error when required primitive field is missing', async () => {
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extInst.refType = createRefToElmWithValue(extType)
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -693,7 +695,7 @@ describe('Elements validation', () => {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           }
           extInst.refType = createRefToElmWithValue(extType)
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -722,7 +724,7 @@ describe('Elements validation', () => {
             },
           ]
 
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([
               extInst,
@@ -754,7 +756,7 @@ describe('Elements validation', () => {
             },
           }
 
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -769,7 +771,7 @@ describe('Elements validation', () => {
             simple: new ReferenceExpression(varInst.elemID, varInst),
           })
           expect(
-            await validateElements(
+            await getValidationErrors(
               [refInst],
               createInMemoryElementSource([
                 refInst,
@@ -787,7 +789,7 @@ describe('Elements validation', () => {
             simple: new ReferenceExpression(illegalValueVarInst.elemID, illegalValueVarInst),
           })
           expect(
-            await validateElements(
+            await getValidationErrors(
               [refInst],
               createInMemoryElementSource([
                 refInst,
@@ -844,7 +846,7 @@ describe('Elements validation', () => {
             num: 1,
             bool: true,
           }
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -855,7 +857,7 @@ describe('Elements validation', () => {
           extInst.refType = createRefToElmWithValue(extType)
           extInst.value.additional = 'fail'
           extInst.value.additional2 = 'fail2'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -878,7 +880,7 @@ describe('Elements validation', () => {
           extInst.refType = createRefToElmWithValue(extType)
           extInst.value.unexpected = 'fail'
           extInst.value.unexpected2 = 'fail2'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -893,7 +895,7 @@ describe('Elements validation', () => {
             bool: true,
             additional: 'should not cause warn',
           }
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -912,7 +914,7 @@ describe('Elements validation', () => {
             bool: true,
             additional: 'should cause warn',
           }
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -945,7 +947,7 @@ describe('Elements validation', () => {
               { str: 'str3', additional6: 'should also not fail' },
             ],
           })
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [testInstance],
             createInMemoryElementSource([testInstance, topType, validatingType, nonValidatingType]),
           )
@@ -971,7 +973,7 @@ describe('Elements validation', () => {
       describe('values annotation', () => {
         it('should succeed when all values corresponds to values annotation', async () => {
           expect(
-            await validateElements(
+            await getValidationErrors(
               [extInst],
               createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
             ),
@@ -986,7 +988,7 @@ describe('Elements validation', () => {
           extInst.value.restrictStr = 'wrongValue'
           extInst.refType = createRefToElmWithValue(extType)
           expect(
-            await validateElements(
+            await getValidationErrors(
               [extInst],
               createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
             ),
@@ -998,7 +1000,7 @@ describe('Elements validation', () => {
           extInst.refType = createRefToElmWithValue(extType)
           extInst.value.restrictStr = 'str'
           expect(
-            await validateElements(
+            await getValidationErrors(
               [extInst],
               createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
             ),
@@ -1010,7 +1012,7 @@ describe('Elements validation', () => {
           extInst.refType = createRefToElmWithValue(extType)
           extInst.value.restrictStr = 'str'
           expect(
-            await validateElements(
+            await getValidationErrors(
               [extInst],
               createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
             ),
@@ -1022,7 +1024,7 @@ describe('Elements validation', () => {
           extInst.refType = createRefToElmWithValue(extType)
           extInst.value.restrictStr = 'str'
           expect(
-            await validateElements(
+            await getValidationErrors(
               [extInst],
               createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
             ),
@@ -1031,7 +1033,7 @@ describe('Elements validation', () => {
 
         it('should return an error when value is not inside the range', async () => {
           extInst.value.restrictNumber = -1
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1045,7 +1047,7 @@ describe('Elements validation', () => {
 
         it('should return an error when value is not a number and field has min-max restriction', async () => {
           extInst.value.restrictNumber = 'Not A Number'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
           )
@@ -1068,7 +1070,7 @@ describe('Elements validation', () => {
           extInst.value.restrictStr = 'wrongValue'
           extInst.value.nested.str = 'wrongValue2'
 
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
           )
@@ -1095,7 +1097,7 @@ describe('Elements validation', () => {
 
         it('should return an error when annotations values do not match restriction values', async () => {
           extType.fields.restrictedAnnotation.annotations.temp = 'wrong'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extType],
             createInMemoryElementSource([extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1112,7 +1114,7 @@ describe('Elements validation', () => {
 
         it('should succeed when annotation value is inside the range', async () => {
           extType.fields.restrictedAnnotation.annotations.range = 7
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extType],
             createInMemoryElementSource([extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1122,7 +1124,7 @@ describe('Elements validation', () => {
         it('should return an error when annotations value is bigger than max restriction', async () => {
           extType.fields.restrictedAnnotation.annotations.range = 11
           extType.fields.restrictedAnnotation.annotations.rangeNoMin = 11
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extType],
             createInMemoryElementSource([extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1144,7 +1146,7 @@ describe('Elements validation', () => {
         it('should return an error when annotations value is smaller than min restriction', async () => {
           extType.fields.restrictedAnnotation.annotations.range = 0
           extType.fields.restrictedAnnotation.annotations.rangeNoMax = 0
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extType],
             createInMemoryElementSource([extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1165,7 +1167,7 @@ describe('Elements validation', () => {
 
         it('should return validation error on max_length validation on an instance through field annotation', async () => {
           extInst.value.restrictStringLength = 'longer than length limit restriction'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1175,7 +1177,7 @@ describe('Elements validation', () => {
 
         it('should not return validation error on max_length validation if value is not a string', async () => {
           extInst.value.restrictStringLength = {}
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1185,7 +1187,7 @@ describe('Elements validation', () => {
 
         it('should succeed max_length validation on an instance through field annotation', async () => {
           extInst.value.restrictStringLength = 'a'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1194,7 +1196,7 @@ describe('Elements validation', () => {
 
         it('should return validation error on max_length validation on an instance through the field type', async () => {
           extInst.value.restrictedStringMaxLengthType = 'very long str'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1204,7 +1206,7 @@ describe('Elements validation', () => {
 
         it('should succeed on max_length validation on an instance through the field type', async () => {
           extInst.value.restrictedStringMaxLengthType = 'a'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1213,7 +1215,7 @@ describe('Elements validation', () => {
 
         it('should return error on max_length validation on a restriction on annotation type of a type', async () => {
           objWithRestrictedAnnoType.annotations.withRestriction = 'a string which is too long'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [objWithRestrictedAnnoType],
             createInMemoryElementSource([objWithRestrictedAnnoType, restrictedStringMaxLengthType]),
           )
@@ -1223,7 +1225,7 @@ describe('Elements validation', () => {
 
         it('should succeed on max_length validation on a restriction on annotation type of a type', async () => {
           objWithRestrictedAnnoType.annotations.withRestriction = 't'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [objWithRestrictedAnnoType],
             createInMemoryElementSource([objWithRestrictedAnnoType, restrictedStringMaxLengthType]),
           )
@@ -1232,7 +1234,7 @@ describe('Elements validation', () => {
 
         it('should return an error when annotations value does not match regex restriction', async () => {
           extType.fields.restrictedAnnotation.annotations.regexOnlyLower = 'ABC'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extType],
             createInMemoryElementSource([
               extType,
@@ -1259,7 +1261,7 @@ describe('Elements validation', () => {
           extInst.refType = createRefToElmWithValue(extType)
 
           expect(
-            await validateElements(
+            await getValidationErrors(
               [extInst],
               createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
             ),
@@ -1268,7 +1270,7 @@ describe('Elements validation', () => {
 
         it('should succeed when string value matches regex', async () => {
           extInst.value.restrictStringRegex = 'aaa123'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
           )
@@ -1277,7 +1279,7 @@ describe('Elements validation', () => {
 
         it('should return an error when string value does not match regex restriction', async () => {
           extInst.value.restrictStringRegex = 'AAA_123'
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
           )
@@ -1292,7 +1294,7 @@ describe('Elements validation', () => {
 
         it('should succeed when number value matches regex', async () => {
           extInst.value.restrictNumberRegex = 111
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
           )
@@ -1301,7 +1303,7 @@ describe('Elements validation', () => {
 
         it('should return an error when number value does not match regex restriction', async () => {
           extInst.value.restrictNumberRegex = 211
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
           )
@@ -1327,7 +1329,7 @@ describe('Elements validation', () => {
             'nine',
             'ten',
           ]
-          const errors = await validateElements(
+          const errors = await getValidationErrors(
             [extInst],
             createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
@@ -1343,7 +1345,7 @@ describe('Elements validation', () => {
 
     describe('validate values correctness', () => {
       it('should validate a correct type', async () => {
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1369,7 +1371,7 @@ describe('Elements validation', () => {
           someFile: new StaticFile({ filepath: 'path', hash: 'hash' }),
         })
 
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [instWithFile],
           createInMemoryElementSource([instWithFile, objWithFile, ...(await getFieldsAndAnnoTypes(objWithFile))]),
         )
@@ -1395,7 +1397,7 @@ describe('Elements validation', () => {
           someFile: new MissingStaticFile('aa'),
         })
 
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [instWithFile],
           createInMemoryElementSource([instWithFile, withFileObj, ...(await getFieldsAndAnnoTypes(withFileObj))]),
         )
@@ -1406,7 +1408,7 @@ describe('Elements validation', () => {
         extInst.value.unspecifiedStr = 'unspecified'
         extInst.value.unspecifiedNum = 1
         extInst.value.unspecifiedBool = false
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1415,7 +1417,7 @@ describe('Elements validation', () => {
 
       it('should return error on bad str primitive type', async () => {
         extInst.value.flatStr = 1
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1427,7 +1429,7 @@ describe('Elements validation', () => {
 
       it('should not return error on str primitive type with list', async () => {
         extInst.value.flatStr = ['str1', 'str2']
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1436,7 +1438,7 @@ describe('Elements validation', () => {
 
       it('should return error on str primitive type with invalid list', async () => {
         extInst.value.flatStr = ['str1', 57]
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1448,7 +1450,7 @@ describe('Elements validation', () => {
 
       it('should return error on bad str primitive type with object', async () => {
         extInst.value.flatStr = { obj: 'str' }
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1460,7 +1462,7 @@ describe('Elements validation', () => {
 
       it('should return error on bad num primitive type', async () => {
         extInst.value.flatNum = 'str'
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1472,7 +1474,7 @@ describe('Elements validation', () => {
 
       it('should return error on bad bool primitive type', async () => {
         extInst.value.flatBool = 'str'
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1482,7 +1484,7 @@ describe('Elements validation', () => {
 
       it('should return error on nested string value mismatch', async () => {
         extInst.value.nested.str = 1
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1493,7 +1495,7 @@ describe('Elements validation', () => {
 
       it('should return error on nested num value mismatch', async () => {
         extInst.value.nested.num = 'str'
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1503,7 +1505,7 @@ describe('Elements validation', () => {
 
       it('should return error on nested bool value mismatch', async () => {
         extInst.value.nested.bool = 'str'
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1513,7 +1515,7 @@ describe('Elements validation', () => {
 
       it('should return error object/primitive mismatch', async () => {
         extInst.value.nested = 'str'
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1524,7 +1526,7 @@ describe('Elements validation', () => {
 
       it('should not return error on list/primitive mismatch if inner type is valid', async () => {
         extInst.value.list = 'not a list'
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1533,7 +1535,7 @@ describe('Elements validation', () => {
 
       it('should return error on list/primitive mismatch if inner type is invalid', async () => {
         extInst.value.list = 75
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1543,7 +1545,7 @@ describe('Elements validation', () => {
 
       it('should return error on inconsistent primitive map values', async () => {
         extInst.value.map = { valid: 'string', invalid: 55 }
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1556,7 +1558,7 @@ describe('Elements validation', () => {
       it('should return error on inconsistent object map values', async () => {
         extInst.value.mapOfObject.invalid1 = 'aaa'
         extInst.value.mapOfObject.invalid2 = { str: 2, bool: true }
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1589,7 +1591,7 @@ describe('Elements validation', () => {
 
       it('should not return error for list/object mismatch with empty array', async () => {
         extInst.value = { nested: [] }
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1601,7 +1603,7 @@ describe('Elements validation', () => {
         nestedRequiredType.fields.nested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
         extInst.refType = createRefToElmWithValue(nestedRequiredType)
         extInst.value = { nested: [] }
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([
             extInst,
@@ -1620,7 +1622,7 @@ describe('Elements validation', () => {
         requiredType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
         extInst.refType = createRefToElmWithValue(requiredType)
         extInst.value = []
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, requiredType, ...(await getFieldsAndAnnoTypes(requiredType))]),
         )
@@ -1631,7 +1633,7 @@ describe('Elements validation', () => {
 
       it('should return inner error for list/object mismatch with non-empty invalid array', async () => {
         extInst.value = { nested: [{ bool: true }, { str: 'str' }] }
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1641,7 +1643,7 @@ describe('Elements validation', () => {
 
       it('should not return error list/object mismatch with non-empty valid array', async () => {
         extInst.value = { nested: [{ bool: true }] }
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1658,7 +1660,7 @@ describe('Elements validation', () => {
             },
           ],
         }
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1668,7 +1670,7 @@ describe('Elements validation', () => {
       it('should not return an error when matching list item', async () => {
         extInst.value.list.push('abc')
         const nestedTypes = await getFieldsAndAnnoTypes(nestedType)
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...nestedTypes]),
         )
@@ -1677,7 +1679,7 @@ describe('Elements validation', () => {
 
       it('should return error in list of list item mismatch', async () => {
         extInst.value.listOfList[0].push(1)
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1691,7 +1693,7 @@ describe('Elements validation', () => {
           num: 3,
           bool: false,
         })
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1700,7 +1702,7 @@ describe('Elements validation', () => {
 
       it('should not return error when inner is not a list in list of lists', async () => {
         extInst.value.listOfList = ['a']
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1709,7 +1711,7 @@ describe('Elements validation', () => {
 
       it('should not return error when not a list in list of lists', async () => {
         extInst.value.listOfList = 'a'
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1718,7 +1720,7 @@ describe('Elements validation', () => {
 
       it('should not return error when not a list in list-of-lists-of-lists', async () => {
         extInst.value.listOfListOfList = 'a'
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1731,7 +1733,7 @@ describe('Elements validation', () => {
           num: 3,
           bool: false,
         }
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1744,7 +1746,7 @@ describe('Elements validation', () => {
           num: 'str',
           bool: false,
         }
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1756,7 +1758,7 @@ describe('Elements validation', () => {
         extInst.value.listOfObject.push({
           abc: 'a string',
         })
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1766,7 +1768,7 @@ describe('Elements validation', () => {
 
       it('should return an error when primitive instead of list object item', async () => {
         extInst.value.listOfObject.push(1)
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1778,7 +1780,7 @@ describe('Elements validation', () => {
 
       it('should return error list item mismatch', async () => {
         extInst.value.list.push(1)
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [extInst],
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1800,7 +1802,7 @@ describe('Elements validation', () => {
         const arrValue = new InstanceElement('numInst4', unknownObj, { unknown: [0] })
         const objValue = new InstanceElement('numInst5', unknownObj, { unknown: { o: 'o' } })
         const elements = [numValue, strValue, booValue, arrValue, objValue, unknownObj]
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           elements,
           createInMemoryElementSource([...elements, ...(await getFieldsAndAnnoTypes(unknownObj))]),
         )
@@ -1810,7 +1812,7 @@ describe('Elements validation', () => {
 
     describe('reference validation', () => {
       it('should return error when encountering an unresolved reference', async () => {
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [unresolvedRefInst],
           createInMemoryElementSource([unresolvedRefInst, simpleType]),
         )
@@ -1819,7 +1821,7 @@ describe('Elements validation', () => {
       })
 
       it('should return error when encountering a circular reference', async () => {
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [circularRefInst, circularRefInst2],
           createInMemoryElementSource([circularRefInst, circularRefInst2, simpleType]),
         )
@@ -1834,14 +1836,17 @@ describe('Elements validation', () => {
           num: 12,
         })
         refToSelfInst.value.bool = new ReferenceExpression(refToSelfInst.elemID.createNestedID('bool'))
-        const errors = await validateElements([refToSelfInst], createInMemoryElementSource([refToSelfInst, simpleType]))
+        const errors = await getValidationErrors(
+          [refToSelfInst],
+          createInMemoryElementSource([refToSelfInst, simpleType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(refToSelfInst.elemID.createNestedID('bool'))
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
       })
 
       it('should validate throw error on reference that points to a bad type', async () => {
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [wrongRefInst, extInst],
           createInMemoryElementSource([
             wrongRefInst,
@@ -1856,7 +1861,7 @@ describe('Elements validation', () => {
       })
 
       it('should return error when encountering an illegal reference target', async () => {
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [illegalRefInst],
           createInMemoryElementSource([illegalRefInst, simpleType]),
         )
@@ -1868,21 +1873,21 @@ describe('Elements validation', () => {
 
     describe('variable validation', () => {
       it('should return error when encountering an unresolved variable expression', async () => {
-        const errors = await validateElements([varInst], createInMemoryElementSource([varInst, simpleType]))
+        const errors = await getValidationErrors([varInst], createInMemoryElementSource([varInst, simpleType]))
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(UnresolvedReferenceValidationError)
         expect(errors[0].elemID).toEqual(varInst.elemID.createNestedID('bool'))
       })
 
       it('should not return error when encountering a valid variable expression', async () => {
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [varInst, variable],
           createInMemoryElementSource([varInst, variable, simpleType]),
         )
         expect(errors).toHaveLength(0)
       })
       it("should return error when the type of a variable's value is incorrect", async () => {
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [illegalValueVarInst, variable],
           createInMemoryElementSource([illegalValueVarInst, variable, simpleType]),
         )
@@ -1894,7 +1899,7 @@ describe('Elements validation', () => {
         const varElementInst = new InstanceElement('withVarElement', noRestrictionsType, {
           someVal: new Variable(varElemId, 5),
         })
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [varElementInst],
           createInMemoryElementSource([
             varElementInst,
@@ -1911,7 +1916,7 @@ describe('Elements validation', () => {
       it('should return error when the value is an object (not supported for now)', async () => {
         const objVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'objVar')
         const objVar = new Variable(objVarElemId, { key: 'val' })
-        const errors = await validateElements([objVar], createInMemoryElementSource([objVar]))
+        const errors = await getValidationErrors([objVar], createInMemoryElementSource([objVar]))
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(objVarElemId)
@@ -1921,7 +1926,7 @@ describe('Elements validation', () => {
       it('should return error when the value is a reference to an element', async () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
         const objVar = new Variable(instVarElemId, new ReferenceExpression(extInst.elemID))
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [objVar, extInst],
           createInMemoryElementSource([objVar, extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1935,7 +1940,7 @@ describe('Elements validation', () => {
       it('should return error when the value is a reference to an object', async () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
         const objVar = new Variable(instVarElemId, new ReferenceExpression(extInst.elemID.createNestedID('nested')))
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [objVar, extInst],
           createInMemoryElementSource([objVar, extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -1949,7 +1954,7 @@ describe('Elements validation', () => {
       it('should return error when the value is an unresolved reference', async () => {
         const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
         const refVar = new Variable(refVarElemId, new ReferenceExpression(new ElemID('salesforce', 'nonexistent')))
-        const errors = await validateElements([refVar], createInMemoryElementSource([refVar]))
+        const errors = await getValidationErrors([refVar], createInMemoryElementSource([refVar]))
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(UnresolvedReferenceValidationError)
         expect(errors[0].elemID).toEqual(refVarElemId)
@@ -1959,7 +1964,7 @@ describe('Elements validation', () => {
         const refVarElemId2 = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar2')
         const refVar = new Variable(refVarElemId, new VariableExpression(refVarElemId2))
         const refVar2 = new Variable(refVarElemId2, new VariableExpression(refVarElemId))
-        const errors = await validateElements([refVar, refVar2], createInMemoryElementSource([refVar, refVar2]))
+        const errors = await getValidationErrors([refVar, refVar2], createInMemoryElementSource([refVar, refVar2]))
         expect(errors).toHaveLength(2)
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
         expect(errors[0].elemID).toEqual(refVarElemId)
@@ -1967,7 +1972,7 @@ describe('Elements validation', () => {
       it('should return error when the value is referencing itself', async () => {
         const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
         const refVar = new Variable(refVarElemId, new VariableExpression(refVarElemId))
-        const errors = await validateElements([refVar], createInMemoryElementSource([refVar]))
+        const errors = await getValidationErrors([refVar], createInMemoryElementSource([refVar]))
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
         expect(errors[0].elemID).toEqual(refVarElemId)
@@ -1976,7 +1981,7 @@ describe('Elements validation', () => {
         const numVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'numVar'), 6)
         const boolVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'boolVar'), true)
         const strVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'strVar'), 'hi')
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [numVar, boolVar, strVar],
           createInMemoryElementSource([numVar, boolVar, strVar]),
         )
@@ -1987,7 +1992,7 @@ describe('Elements validation', () => {
           new ElemID(ElemID.VARIABLES_NAMESPACE, 'numVar'),
           new ReferenceExpression(extInst.elemID.createNestedID('flatNum')),
         )
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [numVar, extInst],
           createInMemoryElementSource([numVar, extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
@@ -2004,7 +2009,7 @@ describe('Elements validation', () => {
       })
 
       it('should return error when encountering an unresolved reference', async () => {
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [unresolvedRefInAnnoInst],
           createInMemoryElementSource([unresolvedRefInAnnoInst, emptyType]),
         )
@@ -2028,7 +2033,7 @@ describe('Elements validation', () => {
           someField: 'str',
           unExpectedField: 3,
         })
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [instanceWithUnMatchedField],
           createInMemoryElementSource([someType, ...(await getFieldsAndAnnoTypes(someType))]),
         )
@@ -2044,7 +2049,7 @@ describe('Elements validation', () => {
             unExpectedField: new ReferenceExpression(new ElemID('salto', 'test', 'field', 'noSuchField')),
           },
         )
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [instanceWithUnMatchedAndUnresolvedField],
           createInMemoryElementSource([someType, ...(await getFieldsAndAnnoTypes(someType))]),
         )
@@ -2062,7 +2067,7 @@ describe('Elements validation', () => {
             },
           },
         )
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [instanceWithUnMatchedAndUnresolvedField],
           createInMemoryElementSource([someType, ...(await getFieldsAndAnnoTypes(someType))]),
         )
@@ -2086,7 +2091,7 @@ describe('Elements validation', () => {
             },
           },
         )
-        const errors = await validateElements(
+        const errors = await getValidationErrors(
           [instanceWithUnMatchedAndUnresolvedField],
           createInMemoryElementSource([someType, ...(await getFieldsAndAnnoTypes(someType))]),
         )
@@ -2096,7 +2101,7 @@ describe('Elements validation', () => {
 
     it('should throw an error when an instance type is not found', async () => {
       const instance = new InstanceElement('name', new TypeReference(new ElemID('instance', 'notExists')))
-      const errors = await validateElements([instance], createInMemoryElementSource([instance]))
+      const errors = await getValidationErrors([instance], createInMemoryElementSource([instance]))
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
       expect(errors[0].detailedMessage).toBe(
@@ -2114,7 +2119,7 @@ describe('Elements validation', () => {
 
       instance.value.a.ref.value = instance.value.a
 
-      const errors = await validateElements([instance], createInMemoryElementSource([instance, type]))
+      const errors = await getValidationErrors([instance], createInMemoryElementSource([instance, type]))
       expect(errors).toHaveLength(0)
     })
 
@@ -2136,7 +2141,7 @@ describe('Elements validation', () => {
         ref: new ReferenceExpression(instance1.elemID.createNestedID('a'), instance1.value.a),
       }
 
-      const errors = await validateElements(
+      const errors = await getValidationErrors(
         [instance1, instance2],
         createInMemoryElementSource([instance1, instance2, type]),
       )

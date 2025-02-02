@@ -833,23 +833,36 @@ const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] 
 
 const validateVariable = (element: Variable): ValidationError[] => validateVariableValue(element.elemID, element.value)
 
+const validateElement = (element: Element): ValidationError[] => {
+  if (isInstanceElement(element)) {
+    return validateInstanceElements(element)
+  }
+  if (isVariable(element)) {
+    return validateVariable(element)
+  }
+  if (isType(element)) {
+    return validateType(element)
+  }
+  return []
+}
+
 export const validateElements = async (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
 ): Promise<Iterable<RemoteMapEntry<ValidationError[]>>> => {
   const resolved = await resolve(elements, elementsSource)
   return wu(resolved)
-    .map(e => {
-      if (isInstanceElement(e)) {
-        return { key: e.elemID.getFullName(), value: validateInstanceElements(e) }
+    .map(element => {
+      const key = element.elemID.getFullName()
+      const errors = validateElement(element)
+      const [errorsWithRightTopLevel, errorsWithWrongTopLevel] = _.partition(
+        errors,
+        err => err.elemID.createTopLevelParentID().parent.getFullName() === key,
+      )
+      if (errorsWithWrongTopLevel.length > 0) {
+        log.warn('expected errors to have the right top level id %s but received: %o', key, errorsWithWrongTopLevel)
       }
-      if (isVariable(e)) {
-        return { key: e.elemID.getFullName(), value: validateVariable(e) }
-      }
-      if (isType(e)) {
-        return { key: e.elemID.getFullName(), value: validateType(e) }
-      }
-      return { key: e.elemID.getFullName(), value: [] }
+      return { key, value: errorsWithRightTopLevel }
     })
     .filter(errors => errors.value.length > 0)
 }

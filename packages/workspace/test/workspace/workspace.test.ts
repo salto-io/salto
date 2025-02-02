@@ -4050,14 +4050,21 @@ salesforce.staticFile staticFileInstance {
 
     const startsAsErr = `
         salto.base willBeFixed {
-          str = "STR",
+          str = "STR"
           num = "This will be string"
         }
       `
 
     const willRemainErr = `
         salto.base willRemain {
-          str = "STR",
+          str = "STR"
+          num = false
+        }
+      `
+
+    const willBeDeleted = `
+        salto.base willBeDeleted {
+          str = "STR"
           num = false
         }
       `
@@ -4072,12 +4079,13 @@ salesforce.staticFile staticFileInstance {
       inst2updateFile,
       startsAsErr,
       willRemainErr,
+      willBeDeleted,
     }
 
     let workspace: Workspace
     const naclFileStore = mockDirStore(undefined, undefined, files)
     const primElemID = new ElemID('salto', 'prim')
-    const changes = [
+    const changes: DetailedChange[] = [
       {
         id: new ElemID('salto', 'obj', 'instance', 'objInst', 'baseField', 'str'),
         action: 'remove',
@@ -4096,16 +4104,26 @@ salesforce.staticFile staticFileInstance {
           after: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.STRING }),
         },
       },
-    ] as DetailedChange[]
+      {
+        id: new ElemID('salto', 'base', 'instance', 'willBeDeleted'),
+        action: 'remove',
+        data: {
+          before: new InstanceElement('willBeDeleted', new TypeReference(new ElemID('salto', 'base')), {
+            str: 'STR',
+            num: false,
+          }),
+        },
+      },
+    ]
 
     let validationErrs: ReadonlyArray<ValidationError>
     let resultNumber: UpdateNaclFilesResult
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
-      // Verify that the two errors we are starting with (that should be deleted in the update
+      // Verify that the errors we are starting with (that should be deleted in the update
       // since the update resolves them ) are present. This check will help debug situations in
       // which the entire flow is broken and errors are not created at all...
-      expect((await workspace.errors()).validation).toHaveLength(2)
+      expect((await workspace.errors()).validation).toHaveLength(3)
       resultNumber = await workspace.updateNaclFiles(
         await addBaseChangeToDetailedChanges(await workspace.elements(false), workspace.state(), changes),
       )
@@ -4114,6 +4132,17 @@ salesforce.staticFile staticFileInstance {
 
     it('returns correct number of actual changes', () => {
       expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
+    })
+
+    it('returns correct validation errors', () => {
+      expect(validationErrs.map(err => err.elemID.getFullName()).sort()).toEqual([
+        'salto.base.instance.baseInst.str',
+        'salto.base.instance.baseInst2.str',
+        'salto.base.instance.willRemain.num',
+        'salto.obj.instance.objInst.baseField.num',
+        'salto.obj.instance.objInstToUpdate.baseField.num',
+        'salto.obj.instance.objInstToUpdate.baseField.str',
+      ])
     })
 
     it('create validation errors in the updated elements', () => {

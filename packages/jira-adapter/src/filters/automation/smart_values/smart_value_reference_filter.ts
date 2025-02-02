@@ -83,7 +83,9 @@ const SMART_QUERY_SCHEME = Joi.object({
   query: Joi.object({
     type: Joi.string().required(),
     value: Joi.string().required(),
-  }).required(),
+  })
+    .unknown(true)
+    .required(),
 })
   .required()
   .unknown(true)

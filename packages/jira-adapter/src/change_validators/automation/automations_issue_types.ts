@@ -15,13 +15,13 @@ import {
   isReferenceExpression,
   ReferenceExpression,
   SeverityLevel,
+  Values,
 } from '@salto-io/adapter-api'
 import { createSchemeGuard, getInstancesFromElementSource, WALK_NEXT_STEP, walkOnValue } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { ISSUE_TYPE_FIELD, PROJECT_FIELD } from '@atlassianlabs/jql-ast'
 import _ from 'lodash'
 import { AUTOMATION_TYPE, PROJECT_TYPE } from '../../constants'
-import { Component } from './automation_to_assets'
 
 type IssueTypeObject = {
   fieldType: string
@@ -51,17 +51,23 @@ const isIssueTypeObject = createSchemeGuard<IssueTypeObject>(AUTOMATION_ISSUE_TY
 
 const isInstanceWithInvalidIssueType = (
   instance: InstanceElement,
-  projectNameToIssueTypeNames: { key: string; value: string }[],
+  projectNameToIssueTypeNames: Record<string, string[]>,
 ): IssueTypeError[] => {
   const invalidIssueTypes: IssueTypeError[] = []
-  let projectKey: string | undefined
+  let projectElemID: string | undefined
+
+  const instanceProject = instance.value.projects.length === 1 ? instance.value.projects[0].projectId : undefined
 
   walkOnValue({
     elemId: instance.elemID.createNestedID('components'),
     value: instance.value.components,
     func: ({ value, path }) => {
-      if (_.isPlainObject(value) && value.fieldType === PROJECT_FIELD && isReferenceExpression(value.value?.value)) {
-        projectKey = value.value.value.elemID.getFullName()
+      if (_.isPlainObject(value) && value.fieldType === PROJECT_FIELD) {
+        if (value.value.value === 'current') {
+          projectElemID = isReferenceExpression(instanceProject) ? instanceProject.elemID.getFullName() : undefined
+        } else if (isReferenceExpression(value.value?.value)) {
+          projectElemID = value.value.value.elemID.getFullName()
+        }
         return WALK_NEXT_STEP.RECURSE
       }
 
@@ -71,12 +77,9 @@ const isInstanceWithInvalidIssueType = (
         isReferenceExpression(value.value.value)
       ) {
         const issueType = value.value.value.elemID
-        const isValidIssueType = projectKey
-          ? projectNameToIssueTypeNames.some(
-              projectToIssueType =>
-                projectToIssueType.key === projectKey && projectToIssueType.value.includes(issueType.getFullName()),
-            )
-          : false
+        const isValidIssueType = projectElemID
+          ? projectNameToIssueTypeNames[projectElemID]?.includes(issueType.getFullName())
+          : true
         if (!isValidIssueType) {
           invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueType.name })
         }
@@ -91,7 +94,7 @@ const isInstanceWithInvalidIssueType = (
 
 const isNotGlobalAutomation = (instance: InstanceElement): boolean => instance.value.projects !== undefined
 
-const isIssueCreateActionAutomation = (components: unknown): components is Component[] =>
+const isIssueCreateActionAutomation = (components: Values[]): boolean =>
   Array.isArray(components) && components.some(component => component.type === 'jira.issue.create')
 
 const isProjectInstanceWithIssueTypeScheme = (instance: InstanceElement): instance is ProjectWithIssueTypeScheme =>
@@ -103,19 +106,22 @@ export const automationIssueTypeValidator: ChangeValidator = async (changes, ele
   }
 
   const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
-  const projectsIssueTypeSchemes = await Promise.all(
-    projects.filter(isProjectInstanceWithIssueTypeScheme).map(async project => {
-      const resolvedIssueTypeSchemeReferences =
-        (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds ?? []
+  const projectNameToIssueTypeNames: Record<string, string[]> = await projects
+    .filter(isProjectInstanceWithIssueTypeScheme)
+    .reduce(
+      async (accPromise, project) => {
+        const acc = await accPromise
+        const resolvedIssueTypeSchemeReferences =
+          (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds ?? []
 
-      return {
-        key: project.elemID.getFullName(),
-        value: resolvedIssueTypeSchemeReferences
+        acc[project.elemID.getFullName()] = resolvedIssueTypeSchemeReferences
           .filter(isReferenceExpression)
-          .map((issueType: ReferenceExpression) => issueType.elemID.getFullName()),
-      }
-    }),
-  )
+          .map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
+
+        return acc
+      },
+      Promise.resolve({} as Record<string, string[]>),
+    )
 
   return changes
     .filter(isInstanceChange)
@@ -124,8 +130,7 @@ export const automationIssueTypeValidator: ChangeValidator = async (changes, ele
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
     .filter(isNotGlobalAutomation)
     .filter(instance => isIssueCreateActionAutomation(instance.value.components))
-    .flatMap(instance => isInstanceWithInvalidIssueType(instance, projectsIssueTypeSchemes))
-    .filter(IssueTypeError => IssueTypeError.invalidIssueType !== undefined)
+    .flatMap(instance => isInstanceWithInvalidIssueType(instance, projectNameToIssueTypeNames))
     .map(IssueTypeError => ({
       elemID: IssueTypeError.componentElemID,
       severity: 'Error' as SeverityLevel,

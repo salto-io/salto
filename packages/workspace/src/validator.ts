@@ -852,16 +852,17 @@ export const validateElements = async <T>(
   consumeErrorsFunc: (errors: Iterable<RemoteMapEntry<ValidationError[]>>) => T | Promise<T>,
 ): Promise<T> => {
   const resolved = await resolve(elements, elementsSource)
-  const errorsIterator = wu(resolved)
-    .map(element => {
-      const key = element.elemID.getFullName()
-      const errors = validateElement(element)
+  const groupedByTopLevelId = _.groupBy(resolved, elem => elem.elemID.createTopLevelParentID().parent.getFullName())
+  const errorsIterator = wu(Object.entries(groupedByTopLevelId))
+    .map(([key, elems]) => {
+      const topLevelID = ElemID.fromFullName(key)
+      const errors = elems.flatMap(validateElement)
       const [errorsWithRightTopLevel, errorsWithWrongTopLevel] = _.partition(
         errors,
-        err => err.elemID.createTopLevelParentID().parent.getFullName() === key,
+        err => topLevelID.isEqual(err.elemID) || topLevelID.isParentOf(err.elemID),
       )
       if (errorsWithWrongTopLevel.length > 0) {
-        log.warn('expected errors to have the right top level id %s but received: %o', key, errorsWithWrongTopLevel)
+        log.warn('expected errors to have top level id %s but received: %o', key, errorsWithWrongTopLevel)
       }
       return { key, value: errorsWithRightTopLevel }
     })

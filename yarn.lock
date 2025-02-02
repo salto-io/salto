@@ -4579,7 +4579,6 @@ __metadata:
     "@salto-io/adapter-api": 0.5.0
     "@salto-io/adapter-utils": 0.5.0
     "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
     "@salto-io/lowerdash": 0.5.0
     "@salto-io/parser": 0.5.0
     "@salto-io/test-utils": 0.5.0

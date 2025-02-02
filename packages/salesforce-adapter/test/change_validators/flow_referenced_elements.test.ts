@@ -14,16 +14,41 @@ import {
   MetadataInstanceElement,
   MetadataObjectType,
 } from '../../src/transformers/transformer'
-import { FLOW_NODE_FIELD_NAMES, TARGET_REFERENCE } from '../../src/constants'
+import {
+  ELEMENT_REFERENCE,
+  FLOW_ELEMENTS_WITH_UNIQUE_NAMES,
+  FLOW_FIELD_TYPE_NAMES,
+  FLOW_NODE_FIELD_NAMES,
+  LEFT_VALUE_REFERENCE,
+  TARGET_REFERENCE,
+} from '../../src/constants'
 
 describe('flowReferencedElements change validator', () => {
   let flowChange: Change
   let flowConnector: MetadataObjectType
   let flowElementReferenceOrValue: MetadataObjectType
+  let flowCondition: MetadataObjectType
   let flowNode: MetadataObjectType
   let flow: MetadataObjectType
   let flowInstance: MetadataInstanceElement
   beforeEach(() => {
+    flowElementReferenceOrValue = createMetadataObjectType({
+      annotations: {
+        metadataType: 'FlowElementReferenceOrValue',
+      },
+      fields: {
+        [ELEMENT_REFERENCE]: { refType: BuiltinTypes.STRING },
+      },
+    })
+    flowCondition = createMetadataObjectType({
+      annotations: {
+        metadataType: 'FlowCondition',
+      },
+      fields: {
+        [LEFT_VALUE_REFERENCE]: { refType: BuiltinTypes.STRING },
+        rightValue: { refType: flowElementReferenceOrValue },
+      },
+    })
     flowConnector = createMetadataObjectType({
       annotations: {
         metadataType: 'FlowConnector',

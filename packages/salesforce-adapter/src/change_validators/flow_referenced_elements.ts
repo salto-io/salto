@@ -49,12 +49,13 @@ const getFlowElementsAndReferences = (
   const elementReferences = new DefaultMap<string, ElemID[]>(() => [])
   const leftValueReferences = new DefaultMap<string, ElemID[]>(() => [])
   const findFlowElementsAndTargetReferences: TransformFuncSync = ({ value, path, field }) => {
-    if (_.isUndefined(field) || _.isUndefined(path)) return value
     if (
-      !FLOW_ELEMENTS_WITH_UNIQUE_NAMES.includes(apiNameSync(field.elemID.typeName) ?? '') &&
-      path.name === FLOW_NODE_FIELD_NAMES.NAME &&
-      _.isString(value)
-    ) {
+      field === undefined ||
+      path === undefined ||
+      !FLOW_ELEMENTS_WITH_UNIQUE_NAMES.includes(apiNameSync(field.parent) ?? '')
+    )
+      return value
+    if (path.name === FLOW_NODE_FIELD_NAMES.NAME && _.isString(value)) {
       if (isFlowNode(field.parent.fields)) flowNodes[value] = path
       else flowElements[value] = path
     }

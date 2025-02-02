@@ -19,10 +19,10 @@ import {
 import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { isInstanceOfTypeSync } from '../filters/utils'
+import { apiNameSync, isInstanceOfTypeSync } from '../filters/utils'
 import {
   ELEMENT_REFERENCE,
-  FLOW_ELEMENTS_WITH_NONUNIQUE_NAMES,
+  FLOW_ELEMENTS_WITH_UNIQUE_NAMES,
   FLOW_METADATA_TYPE,
   FLOW_NODE_FIELD_NAMES,
   LEFT_VALUE_REFERENCE,
@@ -51,7 +51,7 @@ const getFlowElementsAndReferences = (
   const findFlowElementsAndTargetReferences: TransformFuncSync = ({ value, path, field }) => {
     if (_.isUndefined(field) || _.isUndefined(path)) return value
     if (
-      !FLOW_ELEMENTS_WITH_NONUNIQUE_NAMES.includes(field.elemID.typeName) &&
+      !FLOW_ELEMENTS_WITH_UNIQUE_NAMES.includes(apiNameSync(field.elemID.typeName) ?? '') &&
       path.name === FLOW_NODE_FIELD_NAMES.NAME &&
       _.isString(value)
     ) {

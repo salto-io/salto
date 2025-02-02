@@ -232,7 +232,9 @@ const isCPQRuleChange = (change: Change): change is Change<InstanceElement> =>
   ruleTypeNames.includes(apiNameSync(getChangeData(change).getTypeSync()) ?? '')
 
 const filterCreator: FilterCreator = ({ config }) => {
-  const templateMappingByRuleType: Partial<Record<string, Record<string, TemplateExpression>>> = {}
+  const templateMappingByRuleTypeAndInstance: Partial<
+    Record<string, Record<string, Record<string, TemplateExpression>>>
+  > = {}
   return {
     name: 'cpqRulesAndConditionsFilter',
     onFetch: async elements => {
@@ -275,17 +277,24 @@ const filterCreator: FilterCreator = ({ config }) => {
       )
       defs.forEach(def => {
         const rules = rulesInstancesByType[def.rule.typeApiName] ?? []
-        if (rules.length > 0) {
+        if (rules.length === 0) {
+          return
+        }
+        const templateMappingByInstance: Record<string, Record<string, TemplateExpression>> = {}
+        rules.forEach(rule => {
           const templateMapping = {}
           replaceTemplatesWithValues(
             {
-              values: rules.map(rule => rule.value),
+              values: [rule.value],
               fieldName: def.rule.customConditionField,
             },
             templateMapping,
             resolveConditionIndexFunc(def.condition.indexField),
           )
-          templateMappingByRuleType[def.rule.typeApiName] = templateMapping
+          templateMappingByInstance[rule.elemID.getFullName()] = templateMapping
+        })
+        if (Object.keys(templateMappingByInstance).length > 0) {
+          templateMappingByRuleTypeAndInstance[def.rule.typeApiName] = templateMappingByInstance
         }
       })
     },
@@ -300,16 +309,23 @@ const filterCreator: FilterCreator = ({ config }) => {
       )
       defs.forEach(def => {
         const rules = rulesInstancesByType[def.rule.typeApiName] ?? []
-        const templateMapping = templateMappingByRuleType[def.rule.typeApiName]
-        if (templateMapping && Object.keys(templateMapping).length > 0 && rules.length > 0) {
+        const templateMappingByInstance = templateMappingByRuleTypeAndInstance[def.rule.typeApiName]
+        if (!templateMappingByInstance || Object.keys(templateMappingByInstance).length === 0 || rules.length === 0) {
+          return
+        }
+        rules.forEach(rule => {
+          const templateMapping = templateMappingByInstance[rule.elemID.getFullName()]
+          if (!templateMapping) {
+            return
+          }
           resolveTemplates(
             {
-              values: rules.map(rule => rule.value),
+              values: [rule.value],
               fieldName: def.rule.customConditionField,
             },
             templateMapping,
           )
-        }
+        })
       })
     },
   }

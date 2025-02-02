@@ -31,6 +31,10 @@ describe('CPQ Rules and Conditions References', () => {
   let condition0: InstanceElement
   let condition1: InstanceElement
 
+  let anotherRuleInstance: InstanceElement
+  let anotherCondition0: InstanceElement
+  let anotherCondition1: InstanceElement
+
   const filter = filterCreator({
     config: defaultFilterContext,
   }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -47,13 +51,31 @@ describe('CPQ Rules and Conditions References', () => {
       [CPQ_INDEX_FIELD]: 1,
       [CPQ_QUOTE_TERM_FIELD]: new ReferenceExpression(ruleInstance.elemID),
     })
+    anotherRuleInstance = new InstanceElement('anotherRuleInstance', mockTypes[CPQ_QUOTE_TERM], {
+      [CPQ_ADVANCED_CONDITION_FIELD]: ADVANCED_CONDITION,
+    })
+    anotherCondition0 = new InstanceElement('anotherCondition0', mockTypes[CPQ_TERM_CONDITION], {
+      [CPQ_INDEX_FIELD]: 0,
+      [CPQ_QUOTE_TERM_FIELD]: new ReferenceExpression(anotherRuleInstance.elemID),
+    })
+    anotherCondition1 = new InstanceElement('anotherCondition1', mockTypes[CPQ_TERM_CONDITION], {
+      [CPQ_INDEX_FIELD]: 1,
+      [CPQ_QUOTE_TERM_FIELD]: new ReferenceExpression(anotherRuleInstance.elemID),
+    })
   })
 
   it('should convert advanced conditions to TemplateExpressions on fetch and deploy as string', async () => {
-    await filter.onFetch([ruleInstance, condition0, condition1])
+    await filter.onFetch([
+      ruleInstance,
+      condition0,
+      condition1,
+      anotherRuleInstance,
+      anotherCondition0,
+      anotherCondition1,
+    ])
     const advancedCondition = ruleInstance.value[CPQ_ADVANCED_CONDITION_FIELD] as TemplateExpression
-    const clonedAdvancedConditionParts = [...advancedCondition.parts]
     expect(advancedCondition).toSatisfy(isTemplateExpression)
+    const clonedAdvancedConditionParts = [...advancedCondition.parts]
     expect(advancedCondition.parts).toEqual([
       new ReferenceExpression(condition1.elemID, condition1),
       ' OR (',
@@ -63,16 +85,38 @@ describe('CPQ Rules and Conditions References', () => {
       // Make sure we simply don't create missing references
       ') OR 2',
     ])
-    const changes = [toChange({ after: ruleInstance })]
+
+    const anotherAdvancedCondition = anotherRuleInstance.value[CPQ_ADVANCED_CONDITION_FIELD] as TemplateExpression
+    expect(anotherAdvancedCondition).toSatisfy(isTemplateExpression)
+    const clonedAnotherAdvancedConditionParts = [...anotherAdvancedCondition.parts]
+    expect(anotherAdvancedCondition.parts).toEqual(clonedAnotherAdvancedConditionParts)
+    expect(anotherAdvancedCondition.parts).toEqual([
+      new ReferenceExpression(anotherCondition1.elemID, anotherCondition1),
+      ' OR (',
+      new ReferenceExpression(anotherCondition1.elemID, anotherCondition1),
+      ' AND ',
+      new ReferenceExpression(anotherCondition0.elemID, anotherCondition0),
+      // Make sure we simply don't create missing references
+      ') OR 2',
+    ])
+
+    const changes = [toChange({ after: ruleInstance }), toChange({ after: anotherRuleInstance })]
     await filter.preDeploy(changes)
-    expect(changes).toHaveLength(1)
+    expect(changes).toHaveLength(2)
     expect(getChangeData(changes[0]).value[CPQ_ADVANCED_CONDITION_FIELD]).toEqual(ADVANCED_CONDITION)
     await filter.onDeploy(changes)
+
     const advancedConditionAfterDeploy = getChangeData(changes[0]).value[
       CPQ_ADVANCED_CONDITION_FIELD
     ] as TemplateExpression
     expect(advancedConditionAfterDeploy).toSatisfy(isTemplateExpression)
     expect(advancedConditionAfterDeploy.parts).toEqual(clonedAdvancedConditionParts)
+
+    const anotherAdvancedConditionAfterDeploy = getChangeData(changes[1]).value[
+      CPQ_ADVANCED_CONDITION_FIELD
+    ] as TemplateExpression
+    expect(anotherAdvancedConditionAfterDeploy).toSatisfy(isTemplateExpression)
+    expect(anotherAdvancedConditionAfterDeploy.parts).toEqual(clonedAnotherAdvancedConditionParts)
   })
   it('should not convert advanced conditions to TemplateExpressions if no conditions are fetched for rule', async () => {
     await filter.onFetch([ruleInstance])

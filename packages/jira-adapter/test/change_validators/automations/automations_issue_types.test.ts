@@ -28,7 +28,8 @@ describe('automationIssueTypeValidator', () => {
   let instance2: InstanceElement
   let instance3: InstanceElement
   let instance4: InstanceElement
-  let globalInstance: InstanceElement
+  let globalValidInstance: InstanceElement
+  let globalInvalidInstance: InstanceElement
   let invalidInstance: InstanceElement
   let invalidInstance2: InstanceElement
   let invalidAfterInstance: InstanceElement
@@ -284,7 +285,7 @@ describe('automationIssueTypeValidator', () => {
         },
       ],
     }) // this suppose to be valid, project value is "current" but more than one project under 'projects' field
-    globalInstance = new InstanceElement('globalInstance', automationType, {
+    globalValidInstance = new InstanceElement('globalInstance', automationType, {
       name: '4',
       components: [
         {
@@ -324,7 +325,46 @@ describe('automationIssueTypeValidator', () => {
           },
         },
       ],
-    }) // this suppose to be valid, issue type from project & this is the project under 'projects'
+    }) // this suppose to be valid, global automation, issue type from project
+    globalInvalidInstance = new InstanceElement('globalInvalidInstance', automationType, {
+      name: '4',
+      components: [
+        {
+          component: 'ACTION',
+          type: 'jira.issue.create',
+          value: {
+            operations: [
+              {
+                field: {
+                  type: 'ID',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
+                },
+                fieldType: PROJECT_FIELD,
+                type: 'SET',
+                value: {
+                  value: testProjectReference,
+                  type: 'ID',
+                },
+              },
+              {
+                field: {
+                  type: 'ID',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
+                },
+                fieldType: ISSUE_TYPE_FIELD,
+                type: 'SET',
+                value: {
+                  type: 'ID',
+                  value: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'someInvalidIssueType')),
+                },
+              },
+            ],
+          },
+        },
+      ],
+    }) // this suppose to be valid, global automation, issue type from other project
     instanceIssueTypeCurrentValue = new InstanceElement('instanceIssueTypeCurrentValue', automationType, {
       name: '1',
       components: [
@@ -668,6 +708,29 @@ describe('automationIssueTypeValidator', () => {
     ])
   })
 
+  it('should return an error for a global automation, when the issue type is not from the relevant project issue type scheme', async () => {
+    const changes = [toChange({ after: globalInvalidInstance })]
+    expect(await automationIssueTypeValidator(changes, elementsSource)).toEqual([
+      {
+        elemID: new ElemID(
+          'jira',
+          'Automation',
+          'instance',
+          'globalInvalidInstance',
+          'components',
+          '0',
+          'value',
+          'operations',
+          '1',
+        ),
+        severity: 'Error',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
+        detailedMessage:
+          'In order to deploy an automation you must use issue types from the relevant project issue scheme. To fix it, change this issue type: someInvalidIssueType',
+      },
+    ])
+  })
+
   it('should not check when the operation is not jira.issue.create', async () => {
     expect(await automationIssueTypeValidator([toChange({ after: instance3 })])).toEqual([])
   })
@@ -680,8 +743,8 @@ describe('automationIssueTypeValidator', () => {
     expect(await automationIssueTypeValidator([toChange({ after: instanceIssueTypeCurrentValue })])).toEqual([])
   })
 
-  it('should not return an error for a global automation', async () => {
-    expect(await automationIssueTypeValidator([toChange({ after: globalInstance })])).toEqual([])
+  it('should not return an error for a global automation with issue type from the project referenced', async () => {
+    expect(await automationIssueTypeValidator([toChange({ after: globalValidInstance })])).toEqual([])
   })
 
   it('should not return an error when the project value is "current" and there is more than one project under "projects"', async () => {

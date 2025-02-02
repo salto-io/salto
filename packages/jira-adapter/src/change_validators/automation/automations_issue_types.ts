@@ -49,25 +49,37 @@ const AUTOMATION_ISSUE_TYPE_OBJECT_SCHEME = Joi.object({
 
 const isIssueTypeObject = createSchemeGuard<IssueTypeObject>(AUTOMATION_ISSUE_TYPE_OBJECT_SCHEME)
 
+const getIssueCreateActionProject = (
+  value: Values,
+  instanceProject: ReferenceExpression | string | undefined,
+): string | undefined => {
+  if (value.value?.value === 'current') {
+    return isReferenceExpression(instanceProject) ? instanceProject.elemID.getFullName() : undefined
+  }
+  if (isReferenceExpression(value.value?.value)) {
+    return value.value.value.elemID.getFullName()
+  }
+  return undefined
+}
+
 const isInstanceWithInvalidIssueType = (
   instance: InstanceElement,
   projectNameToIssueTypeNames: Record<string, string[]>,
 ): IssueTypeError[] => {
   const invalidIssueTypes: IssueTypeError[] = []
-  let projectElemID: string | undefined
+  let projectFullName: string | undefined
 
-  const instanceProject = instance.value.projects.length === 1 ? instance.value.projects[0].projectId : undefined
+  const instanceProject =
+    Array.isArray(instance.value.projects) && instance.value.projects.length === 1
+      ? instance.value.projects[0].projectId
+      : undefined
 
   walkOnValue({
     elemId: instance.elemID.createNestedID('components'),
     value: instance.value.components,
     func: ({ value, path }) => {
       if (_.isPlainObject(value) && value.fieldType === PROJECT_FIELD) {
-        if (value.value.value === 'current') {
-          projectElemID = isReferenceExpression(instanceProject) ? instanceProject.elemID.getFullName() : undefined
-        } else if (isReferenceExpression(value.value?.value)) {
-          projectElemID = value.value.value.elemID.getFullName()
-        }
+        projectFullName = getIssueCreateActionProject(value, instanceProject)
         return WALK_NEXT_STEP.RECURSE
       }
 
@@ -76,12 +88,12 @@ const isInstanceWithInvalidIssueType = (
         value.fieldType === ISSUE_TYPE_FIELD &&
         isReferenceExpression(value.value.value)
       ) {
-        const issueType = value.value.value.elemID
-        const isValidIssueType = projectElemID
-          ? projectNameToIssueTypeNames[projectElemID]?.includes(issueType.getFullName())
+        const issueTypeElemID = value.value.value.elemID
+        const isValidIssueType = projectFullName
+          ? projectNameToIssueTypeNames[projectFullName]?.includes(issueTypeElemID.getFullName())
           : true
         if (!isValidIssueType) {
-          invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueType.name })
+          invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueTypeElemID.name })
         }
       }
 
@@ -91,8 +103,6 @@ const isInstanceWithInvalidIssueType = (
 
   return invalidIssueTypes
 }
-
-const isNotGlobalAutomation = (instance: InstanceElement): boolean => instance.value.projects !== undefined
 
 const isIssueCreateActionAutomation = (components: Values[]): boolean =>
   Array.isArray(components) && components.some(component => component.type === 'jira.issue.create')
@@ -106,29 +116,27 @@ export const automationIssueTypeValidator: ChangeValidator = async (changes, ele
   }
 
   const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
-  const projectNameToIssueTypeNames: Record<string, string[]> = await projects
-    .filter(isProjectInstanceWithIssueTypeScheme)
-    .reduce(
-      async (accPromise, project) => {
-        const acc = await accPromise
-        const resolvedIssueTypeSchemeReferences =
-          (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds ?? []
+  const projectsWithSchemes = projects.filter(isProjectInstanceWithIssueTypeScheme)
+  const projectNameToIssueTypeNames: Record<string, string[]> = Object.fromEntries(
+    await Promise.all(
+      projectsWithSchemes.map(async project => {
+        const issueTypeSchemeElemID = await elementsSource.get(project.value.issueTypeScheme.elemID)
+        const resolvedIssueTypeSchemeReferences = issueTypeSchemeElemID?.value.issueTypeIds ?? []
 
-        acc[project.elemID.getFullName()] = resolvedIssueTypeSchemeReferences
+        const issueTypeNames = resolvedIssueTypeSchemeReferences
           .filter(isReferenceExpression)
           .map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
 
-        return acc
-      },
-      Promise.resolve({} as Record<string, string[]>),
-    )
+        return [project.elemID.getFullName(), issueTypeNames]
+      }),
+    ),
+  )
 
   return changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-    .filter(isNotGlobalAutomation)
     .filter(instance => isIssueCreateActionAutomation(instance.value.components))
     .flatMap(instance => isInstanceWithInvalidIssueType(instance, projectNameToIssueTypeNames))
     .map(IssueTypeError => ({

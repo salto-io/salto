@@ -31,6 +31,7 @@
   "dependencies": {
     "@salto-io/adapter-api": "0.5.0",
     "@salto-io/adapter-utils": "0.5.0",
+    "@salto-io/logging": "0.5.0",
     "@salto-io/lowerdash": "0.5.0",
     "@salto-io/parser": "0.5.0",
     "@salto-io/workspace": "0.5.0",

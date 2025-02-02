@@ -13,7 +13,7 @@
     { "path": "../adapter-utils" },
     { "path": "../element-test-utils" },
     { "path": "../lowerdash" },
-    { "path": "../lowerdash" },
+    { "path": "../logging" },
     { "path": "../parser" },
     { "path": "../test-utils" },
     { "path": "../workspace" }

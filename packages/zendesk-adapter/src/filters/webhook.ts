@@ -39,11 +39,9 @@ export const AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA: Record<string, unknown> = {
 
 const turnEndpointToTemplateExpression = ({
   instance,
-  brandByUrl,
   brandBySubdomain,
 }: {
   instance: InstanceElement
-  brandByUrl: Record<string, InstanceElement>
   brandBySubdomain: Record<string, InstanceElement>
 }): void => {
   const { endpoint } = instance.value
@@ -53,13 +51,6 @@ const turnEndpointToTemplateExpression = ({
   }
 
   instance.value.endpoint = extractTemplate(endpoint, [DOMAIN_REGEX], urlPart => {
-    const urlDomain = urlPart.match(DOMAIN_REGEX)?.pop()
-    if (urlDomain !== undefined) {
-      const brand = brandByUrl[urlDomain]
-      if (brand !== undefined) {
-        return [new ReferenceExpression(brand.elemID.createNestedID('brand_url'), brand.value.brand_url)]
-      }
-    }
     const urlSubdomainSplit = urlPart.split(SUBDOMAIN_REGEX).filter(part => !_.isEmpty(part))
     // ['https//', 'subdomain', '.com]
     if (urlSubdomainSplit.length !== 3) {
@@ -105,10 +96,6 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => {
       const instances = elements.filter(isInstanceElement)
       const webhookInstances = instances.filter(inst => inst.elemID.typeName === WEBHOOK_TYPE_NAME)
       const brandInstances = instances.filter(inst => inst.elemID.typeName === BRAND_TYPE_NAME)
-      const brandByUrl: Record<string, InstanceElement> = _.keyBy(
-        brandInstances.filter(inst => inst.value.brand_url !== undefined),
-        (inst: InstanceElement): string => inst.value.brand_url,
-      )
       const brandBySubdomain: Record<string, InstanceElement> = _.keyBy(
         brandInstances.filter(inst => inst.value.subdomain !== undefined),
         (inst: InstanceElement): string => inst.value.subdomain,
@@ -116,7 +103,6 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => {
       webhookInstances.forEach(webhookInstance => {
         turnEndpointToTemplateExpression({
           instance: webhookInstance,
-          brandByUrl,
           brandBySubdomain,
         })
       })

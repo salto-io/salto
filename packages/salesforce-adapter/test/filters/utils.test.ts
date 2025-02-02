@@ -948,6 +948,16 @@ describe('filter utils', () => {
           false,
         ),
       ).toEqual('Parent.Test')
+      // Instances within folders
+      expect(
+        getFullName(
+          mockFileProperties({
+            fullName: 'DocumentsFolder/logo.png',
+            namespacePrefix: 'test',
+            type: 'Document',
+          }),
+        ),
+      ).toEqual('DocumentsFolder/logo.png')
     })
   })
   describe('isInstanceOfCustomObjectSync', () => {

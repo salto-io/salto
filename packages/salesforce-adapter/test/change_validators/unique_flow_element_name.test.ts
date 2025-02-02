@@ -14,11 +14,11 @@ import { FLOW_METADATA_TYPE } from '../../src/constants'
 describe('uniqueFlowElementName change validator', () => {
   let flowChange: Change
   let flowElement: MetadataObjectType
-  let flowElementWithNonuniqueName: MetadataObjectType
+  let flowElementWithNonUniqueName: MetadataObjectType
   let flow: MetadataObjectType
   let flowInstance: InstanceElement
   beforeEach(() => {
-    flowElementWithNonuniqueName = createMetadataObjectType({
+    flowElementWithNonUniqueName = createMetadataObjectType({
       annotations: {
         metadataType: 'FlowMetadataValue',
       },
@@ -44,7 +44,7 @@ describe('uniqueFlowElementName change validator', () => {
         dynamicChoiceSets: { refType: new ListType(flowElement), annotations: { required: false } },
         screens: { refType: new ListType(flowElement), annotations: { required: false } },
         processMetadataValues: {
-          refType: new ListType(flowElementWithNonuniqueName),
+          refType: new ListType(flowElementWithNonUniqueName),
           annotations: { required: false },
         },
       },

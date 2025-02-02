@@ -20,25 +20,54 @@ import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { isInstanceOfTypeSync } from '../filters/utils'
-import { FLOW_METADATA_TYPE, FLOW_NODE_FIELD_NAMES, TARGET_REFERENCE } from '../constants'
+import {
+  ELEMENT_REFERENCE,
+  FLOW_ELEMENTS_WITH_NONUNIQUE_NAMES,
+  FLOW_METADATA_TYPE,
+  FLOW_NODE_FIELD_NAMES,
+  LEFT_VALUE_REFERENCE,
+  TARGET_REFERENCE,
+} from '../constants'
 
 const { DefaultMap } = collections.map
 
 const isFlowNode = (fields: FieldMap): boolean =>
   FLOW_NODE_FIELD_NAMES.LOCATION_X in fields && FLOW_NODE_FIELD_NAMES.LOCATION_Y in fields
 
-const getFlowNodesAndTargetReferences = (
+const getFlowElementsAndReferences = (
   element: InstanceElement,
-): { targetReferences: Map<string, ElemID[]>; flowNodes: Record<string, ElemID> } => {
+): {
+  flowNodes: Record<string, ElemID>
+  flowElements: Record<string, ElemID>
+  targetReferences: Map<string, ElemID[]>
+  elementReferences: Map<string, ElemID[]>
+  leftValueReferences: Map<string, ElemID[]>
+} => {
   const flowNodes: Record<string, ElemID> = {}
+  const flowElements: Record<string, ElemID> = {}
   const targetReferences = new DefaultMap<string, ElemID[]>(() => [])
-  const findFlowNodesAndTargetReferences: TransformFuncSync = ({ value, path, field }) => {
+  const elementReferences = new DefaultMap<string, ElemID[]>(() => [])
+  const leftValueReferences = new DefaultMap<string, ElemID[]>(() => [])
+  const findFlowElementsAndTargetReferences: TransformFuncSync = ({ value, path, field }) => {
     if (_.isUndefined(field) || _.isUndefined(path)) return value
-    if (isFlowNode(field.parent.fields) && path.name === FLOW_NODE_FIELD_NAMES.NAME && _.isString(value)) {
-      flowNodes[value] = path
+    if (
+      !FLOW_ELEMENTS_WITH_NONUNIQUE_NAMES.includes(field.elemID.typeName) &&
+      path.name === FLOW_NODE_FIELD_NAMES.NAME &&
+      _.isString(value)
+    ) {
+      if (isFlowNode(field.parent.fields)) flowNodes[value] = path
+      else flowElements[value] = path
     }
     if (path.name === TARGET_REFERENCE && _.isString(value)) {
       targetReferences.get(value).push(path)
+    }
+    if (path.name === ELEMENT_REFERENCE && _.isString(value)) {
+      const elemName = value.includes('.') ? value.split('.')[0] : value
+      elementReferences.get(elemName).push(path)
+    }
+    if (path.name === LEFT_VALUE_REFERENCE && _.isString(value)) {
+      const elemName = value.includes('.') ? value.split('.')[0] : value
+      leftValueReferences.get(elemName).push(path)
     }
     return value
   }
@@ -46,27 +75,9 @@ const getFlowNodesAndTargetReferences = (
     values: element.value,
     pathID: element.elemID,
     type: element.getTypeSync(),
-    transformFunc: findFlowNodesAndTargetReferences,
+    transformFunc: findFlowElementsAndTargetReferences,
   })
-  return { flowNodes, targetReferences }
-}
-
-const getUnusedElementsAndMissingReferences = ({
-  flowNodes,
-  targetReferences,
-}: {
-  flowNodes: Record<string, ElemID>
-  targetReferences: Map<string, ElemID[]>
-}): { unusedElements: Record<string, ElemID>; missingReferences: Map<string, ElemID[]> } => {
-  const unusedElements: Record<string, ElemID> = {}
-  const missingReferences = new DefaultMap<string, ElemID[]>(() => [])
-  Object.keys(flowNodes).forEach(elem => {
-    if (!targetReferences.has(elem)) unusedElements[elem] = flowNodes[elem]
-  })
-  targetReferences.forEach((elemId, elem) => {
-    if (_.isUndefined(flowNodes[elem])) missingReferences.set(elem, elemId)
-  })
-  return { unusedElements, missingReferences }
+  return { flowNodes, flowElements, targetReferences, elementReferences, leftValueReferences }
 }
 
 const createMissingReferencedElementChangeError = (elemId: ElemID, elemName: string): ChangeError => ({
@@ -85,12 +96,31 @@ const createUnusedElementChangeError = (elemId: ElemID, elemName: string): Chang
 
 const createChangeErrors = ({
   flowNodes,
+  flowElements,
   targetReferences,
+  elementReferences,
+  leftValueReferences,
 }: {
   flowNodes: Record<string, ElemID>
+  flowElements: Record<string, ElemID>
   targetReferences: Map<string, ElemID[]>
+  elementReferences: Map<string, ElemID[]>
+  leftValueReferences: Map<string, ElemID[]>
 }): ChangeError[] => {
-  const { unusedElements, missingReferences } = getUnusedElementsAndMissingReferences({ flowNodes, targetReferences })
+  const unusedElements: Record<string, ElemID> = {}
+  const missingReferences = new DefaultMap<string, ElemID[]>(() => [])
+  const allFlowElements = { ...flowNodes, ...flowElements }
+  const allReferences = new Map([
+    ...targetReferences.entries(),
+    ...elementReferences.entries(),
+    ...leftValueReferences.entries(),
+  ])
+  Object.keys(flowNodes).forEach(elem => {
+    if (!targetReferences.has(elem)) unusedElements[elem] = flowNodes[elem]
+  })
+  allReferences.forEach((elemId, elem) => {
+    if (_.isUndefined(allFlowElements[elem])) missingReferences.set(elem, elemId)
+  })
   const unusedElementErrors = Object.entries(unusedElements).map(([name, elemId]) =>
     createUnusedElementChangeError(elemId, name),
   )
@@ -99,13 +129,14 @@ const createChangeErrors = ({
   )
   return [...unusedElementErrors, ...missingReferenceErrors]
 }
+
 const changeValidator: ChangeValidator = async changes =>
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
-    .map(getFlowNodesAndTargetReferences)
+    .map(getFlowElementsAndReferences)
     .flatMap(createChangeErrors)
 
 export default changeValidator

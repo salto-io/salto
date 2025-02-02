@@ -102,11 +102,8 @@ describe('webhook filter', () => {
     it('should turn endpoint to template expression with reference to brand subdomain', async () => {
       const elements = [webhook, webhook4, brand]
       await filter.onFetch(elements)
-      expect(webhook.value.endpoint).toEqual(
-        new TemplateExpression({
-          parts: [new ReferenceExpression(brand.elemID.createNestedID('brand_url'), brand.value.brand_url), '/token'],
-        }),
-      )
+      // url is not equal to the subdomain
+      expect(webhook.value.endpoint).toEqual('https://www.example.com/token')
       expect(webhook4.value.endpoint).toEqual(
         new TemplateExpression({
           parts: [

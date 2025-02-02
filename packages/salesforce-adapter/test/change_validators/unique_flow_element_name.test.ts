@@ -13,11 +13,20 @@ import { FLOW_METADATA_TYPE } from '../../src/constants'
 
 describe('uniqueFlowElementName change validator', () => {
   let flowChange: Change
-  let FlowElement: MetadataObjectType
+  let flowElement: MetadataObjectType
+  let flowElementWithNonUniqueName: MetadataObjectType
   let flow: MetadataObjectType
   let flowInstance: InstanceElement
   beforeEach(() => {
-    FlowElement = createMetadataObjectType({
+    flowElementWithNonUniqueName = createMetadataObjectType({
+      annotations: {
+        metadataType: 'FlowMetadataValue',
+      },
+      fields: {
+        name: { refType: BuiltinTypes.STRING },
+      },
+    })
+    flowElement = createMetadataObjectType({
       annotations: {
         metadataType: 'FlowConstant',
       },
@@ -30,10 +39,14 @@ describe('uniqueFlowElementName change validator', () => {
         metadataType: FLOW_METADATA_TYPE,
       },
       fields: {
-        constants: { refType: new ListType(FlowElement), annotations: { required: false } },
-        decisions: { refType: new ListType(FlowElement), annotations: { required: false } },
-        dynamicChoiceSets: { refType: new ListType(FlowElement), annotations: { required: false } },
-        screens: { refType: new ListType(FlowElement), annotations: { required: false } },
+        constants: { refType: new ListType(flowElement), annotations: { required: false } },
+        decisions: { refType: new ListType(flowElement), annotations: { required: false } },
+        dynamicChoiceSets: { refType: new ListType(flowElement), annotations: { required: false } },
+        screens: { refType: new ListType(flowElement), annotations: { required: false } },
+        processMetadataValues: {
+          refType: new ListType(flowElementWithNonUniqueName),
+          annotations: { required: false },
+        },
       },
     })
   })
@@ -46,6 +59,7 @@ describe('uniqueFlowElementName change validator', () => {
           decisions: [{ name: 'decision1' }],
           dynamicChoiceSets: [{ name: 'dynamicChoice1' }],
           screens: [{ name: 'screen1' }],
+          processMetadataValues: [{ name: 'value1' }],
         },
         flow,
       )
@@ -62,15 +76,16 @@ describe('uniqueFlowElementName change validator', () => {
         {
           fullName: 'TestFlow',
           constants: [{ name: 'duplicateName' }, { name: 'duplicateName' }],
-          decisions: [{ name: 'uniqueName' }],
+          decisions: [{ name: 'uniqueName' }, { name: 'ThirdDuplicateName' }],
           dynamicChoiceSets: [{ name: 'duplicateName' }],
           screens: [{ name: 'anotherDuplicateName' }, { name: 'anotherDuplicateName' }],
+          processMetadataValues: [{ name: 'ThirdDuplicateName' }, { name: 'ThirdDuplicateName' }],
         },
         flow,
       )
       flowChange = toChange({ after: flowInstance })
     })
-    it('should return change errors for duplicate names', async () => {
+    it('should return change errors for duplicate names in FlowElements with unique name only', async () => {
       const errors = await uniqueFlowElementName([flowChange])
       const expectedErrors = [
         {

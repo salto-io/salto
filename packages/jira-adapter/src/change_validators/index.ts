@@ -77,6 +77,7 @@ import { emptyProjectScopedContextValidator } from './field_contexts/empty_proje
 import { fieldValidator } from './field'
 import { globalTransitionValidator } from './workflowsV2/global_transition'
 import { htmlBodyContentValidator } from './automation/html_body_content'
+import { systemGeneratedFieldsValidator } from './jsm/system_generated_fields'
 import { automationIssueTypeValidator } from './automation/automations_issue_types'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
@@ -163,6 +164,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     kanbanBoardBacklog: kanbanBoardBacklogValidator,
     globalTransition: globalTransitionValidator,
     htmlBodyContentAction: htmlBodyContentValidator,
+    systemGeneratedFields: systemGeneratedFieldsValidator,
     automationIssueType: automationIssueTypeValidator(client),
   }
 

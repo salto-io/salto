@@ -301,6 +301,7 @@ const CHANGE_VALIDATOR_NAMES = [
   'globalTransition',
   'htmlBodyContentAction',
   'automationIssueType',
+  'systemGeneratedFields',
 ]
 
 export type ChangeValidatorName = (typeof CHANGE_VALIDATOR_NAMES)[number]

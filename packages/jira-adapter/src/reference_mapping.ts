@@ -103,6 +103,9 @@ const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   if (val === 'issuetype') {
     return ISSUE_TYPE_NAME
   }
+  if (val === 'com.atlassian.servicedesk:vp-origin') {
+    return REQUEST_TYPE_NAME
+  }
   return _.capitalize(val)
 }
 

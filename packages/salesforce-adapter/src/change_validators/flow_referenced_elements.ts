@@ -83,7 +83,7 @@ const getFlowElementsAndReferences = (
 
 const createMissingReferencedElementChangeError = (elemId: ElemID, elemName: string): ChangeError => ({
   elemID: elemId,
-  severity: 'Error',
+  severity: 'Warning',
   message: 'Reference to missing Flow Element',
   detailedMessage: `The Flow Element "${elemName}" does not exist.`,
 })

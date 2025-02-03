@@ -96,7 +96,9 @@ const getFlowVersionsByApiName = async ({
   chunkSize: number
 }): Promise<Map<string, FlowVersionProperties[]>> => {
   const flowDefinitionsIdsToApiNames = Object.fromEntries(
-    flowDefinitions.map(flow => [flow.value[INTERNAL_ID_FIELD], flow.value[INSTANCE_FULL_NAME_FIELD]]),
+    flowDefinitions
+      .map(flow => [flow.value[INTERNAL_ID_FIELD], flow.value[INSTANCE_FULL_NAME_FIELD]])
+      .filter((entry): entry is [string, string] => entry.every(_.isString)),
   )
   const records = _.flatten(
     await Promise.all(
@@ -116,14 +118,14 @@ const getFlowVersionsByApiName = async ({
       log.trace('All invalid Flow version records are: %s', inspectValue(invalidRecords, { maxArrayLength: null }))
     }
   }
-  return validRecords.reduce<Map<string, FlowVersionProperties[]>>(
+  return validRecords.reduce(
     (acc, record) => {
       const apiName = flowDefinitionsIdsToApiNames[record.DefinitionId]
       if (apiName === undefined) {
         log.warn('Got flow version with unrecognized flow definition ID: %s', inspectValue(record))
         return acc
       }
-      acc.get(apiName)?.push({
+      acc.get(apiName).push({
         id: record.Id,
         version: record.VersionNumber,
         status: record.Status,
@@ -134,7 +136,7 @@ const getFlowVersionsByApiName = async ({
       })
       return acc
     },
-    new DefaultMap(() => []),
+    new DefaultMap<string, FlowVersionProperties[]>(() => []),
   )
 }
 

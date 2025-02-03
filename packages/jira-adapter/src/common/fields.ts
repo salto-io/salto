@@ -39,11 +39,15 @@ export const getContextParentAsync = async (
     : parent
 }
 
-export const getContextAndFieldIds = (change: Change<InstanceElement>): { contextId: string; fieldId: string } => {
+export const getContextAndFieldIds = (
+  change: Change<InstanceElement>,
+): { contextId: string; fieldId: string; fieldName: string } => {
   const parent = getContextParent(getChangeData(change))
+  const fieldInstance = getParent(parent)
   return {
     contextId: parent.value.id,
-    fieldId: getParent(parent).value.id,
+    fieldId: fieldInstance.value.id,
+    fieldName: fieldInstance.value.name,
   }
 }
 

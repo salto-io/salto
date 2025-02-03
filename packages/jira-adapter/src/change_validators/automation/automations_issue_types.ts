@@ -30,7 +30,7 @@ type IssueTypeObject = {
 
 type IssueTypeError = {
   componentElemID: ElemID
-  invalidIssueType: string | undefined
+  invalidIssueType: string
 }
 
 type ProjectWithIssueTypeScheme = InstanceElement & { value: { issueTypeScheme: ReferenceExpression } }
@@ -48,6 +48,9 @@ const AUTOMATION_ISSUE_TYPE_OBJECT_SCHEME = Joi.object({
   .required()
 
 const isIssueTypeObject = createSchemeGuard<IssueTypeObject>(AUTOMATION_ISSUE_TYPE_OBJECT_SCHEME)
+
+const isProjectInstanceWithIssueTypeScheme = (instance: InstanceElement): instance is ProjectWithIssueTypeScheme =>
+  isReferenceExpression(instance.value.issueTypeScheme)
 
 const getIssueCreateActionProject = (
   value: Values,
@@ -68,6 +71,7 @@ const isInstanceWithInvalidIssueType = (
 ): IssueTypeError[] => {
   const invalidIssueTypes: IssueTypeError[] = []
   let projectFullName: string | undefined
+  let insideIssueCreateComponent = false
 
   const instanceProject =
     Array.isArray(instance.value.projects) && instance.value.projects.length === 1
@@ -78,22 +82,29 @@ const isInstanceWithInvalidIssueType = (
     elemId: instance.elemID.createNestedID('components'),
     value: instance.value.components,
     func: ({ value, path }) => {
-      if (_.isPlainObject(value) && value.fieldType === PROJECT_FIELD) {
-        projectFullName = getIssueCreateActionProject(value, instanceProject)
-        return WALK_NEXT_STEP.RECURSE
+      if (_.isPlainObject(value) && value.component === 'ACTION' && value.type === 'jira.issue.create') {
+        insideIssueCreateComponent = true
       }
 
-      if (
-        isIssueTypeObject(value) &&
-        value.fieldType === ISSUE_TYPE_FIELD &&
-        isReferenceExpression(value.value.value)
-      ) {
-        const issueTypeElemID = value.value.value.elemID
-        const isValidIssueType = projectFullName
-          ? projectNameToIssueTypeNames[projectFullName]?.includes(issueTypeElemID.getFullName())
-          : true
-        if (!isValidIssueType) {
-          invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueTypeElemID.name })
+      if (insideIssueCreateComponent) {
+        if (_.isPlainObject(value) && value.fieldType === PROJECT_FIELD) {
+          projectFullName = getIssueCreateActionProject(value, instanceProject)
+          return WALK_NEXT_STEP.RECURSE
+        }
+
+        if (
+          isIssueTypeObject(value) &&
+          value.fieldType === ISSUE_TYPE_FIELD &&
+          isReferenceExpression(value.value.value)
+        ) {
+          const issueTypeElemID = value.value.value.elemID
+          const isValidIssueType = projectFullName
+            ? projectNameToIssueTypeNames[projectFullName]?.includes(issueTypeElemID.getFullName())
+            : true
+          if (!isValidIssueType) {
+            invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueTypeElemID.name })
+          }
+          insideIssueCreateComponent = false
         }
       }
 
@@ -104,14 +115,21 @@ const isInstanceWithInvalidIssueType = (
   return invalidIssueTypes
 }
 
-const isIssueCreateActionAutomation = (components: Values[]): boolean =>
-  Array.isArray(components) && components.some(component => component.type === 'jira.issue.create')
-
-const isProjectInstanceWithIssueTypeScheme = (instance: InstanceElement): instance is ProjectWithIssueTypeScheme =>
-  isReferenceExpression(instance.value.issueTypeScheme)
-
+/**
+ * Verify that for jira.issue.create components, the issue types are selected from the issue type scheme associated with the referenced project.
+ */
 export const automationIssueTypeValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
+    return []
+  }
+
+  const relevantChanges = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+
+  if (_.isEmpty(relevantChanges)) {
     return []
   }
 
@@ -132,12 +150,7 @@ export const automationIssueTypeValidator: ChangeValidator = async (changes, ele
     ),
   )
 
-  return changes
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-    .filter(instance => isIssueCreateActionAutomation(instance.value.components))
+  return relevantChanges
     .flatMap(instance => isInstanceWithInvalidIssueType(instance, projectNameToIssueTypeNames))
     .map(IssueTypeError => ({
       elemID: IssueTypeError.componentElemID,

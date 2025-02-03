@@ -6,11 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ChangeValidator, getChangeData, isInstanceElement, SeverityLevel } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import { FIELD_TYPE_NAME, IS_LOCKED, SERVICE, WORK_CATEGORY_FIELD } from '../filters/fields/constants'
 import { isRelatedToSpecifiedTerms } from '../common/fields'
-
-const { awu } = collections.asynciterable
 
 const PROJECT_TEMPLATE_TO_FIELDS = (): Record<string, string[]> => ({
   'IT Service Management': [
@@ -41,12 +38,12 @@ const jsmFieldToTemplateName = (field: string): string => {
 }
 
 export const lockedFieldsValidator: ChangeValidator = async changes =>
-  awu(changes)
+  changes
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
     .filter(instance => instance.value[IS_LOCKED] === true)
-    .map(async instance => ({
+    .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Cannot deploy a locked field',
@@ -56,4 +53,3 @@ export const lockedFieldsValidator: ChangeValidator = async changes =>
           'https://help.salto.io/en/articles/9556414-jira-service-management-locked-fields'
         : 'The field is locked and cannot be deployed. Learn more here: https://help.salto.io/en/articles/6933969-the-field-is-locked-and-cannot-be-deployed',
     }))
-    .toArray()

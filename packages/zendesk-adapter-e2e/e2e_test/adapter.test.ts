@@ -125,7 +125,7 @@ const fetchBaseInstances = async (
 ): Promise<{
   brandInstanceE2eHelpCenter?: InstanceElement
   defaultGroup?: InstanceElement
-  types?: ObjectType[]
+  types: ObjectType[]
 }> => {
   await fetchWorkspace({ workspace, validationFilter: zendeskValidationFilter, adapterCreators })
   const elements = await getElementsFromWorkspace(workspace)
@@ -138,7 +138,7 @@ const fetchBaseInstances = async (
   expect(brandInstanceE2eHelpCenter == null || defaultGroup == null).toBeFalsy()
   // we don't want to run zendesk clean up
   if (brandInstanceE2eHelpCenter == null || defaultGroup === null) {
-    return {}
+    return { types }
   }
   await zendeskCleanUp(firstFetchInstances, workspace)
   return { brandInstanceE2eHelpCenter, defaultGroup, types }
@@ -188,7 +188,7 @@ describe('Zendesk adapter E2E', () => {
         credentialsType,
       })
       const { brandInstanceE2eHelpCenter, defaultGroup, types } = await fetchBaseInstances(workspace)
-      if (brandInstanceE2eHelpCenter == null || defaultGroup == null || types == null) {
+      if (brandInstanceE2eHelpCenter == null || defaultGroup == null) {
         return
       }
 

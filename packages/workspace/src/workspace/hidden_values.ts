@@ -204,6 +204,7 @@ export const removeHiddenFromElement = <T extends Element>(
     elementsSource,
     allowEmptyArrays: true,
     allowEmptyObjects: true,
+    allowEmptiedObjects: true,
   })
 
 const removeHiddenFromValues = (

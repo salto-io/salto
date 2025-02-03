@@ -77,7 +77,10 @@ type TransformValuesBaseArgs = {
   pathID?: ElemID
   isTopLevel?: boolean
   allowEmptyArrays?: boolean
+  // Keep empty objects in the result if they were originally empty
   allowEmptyObjects?: boolean
+  // Keep emptied objects in the result if they became empty as a result of the transformation
+  allowEmptiedObjects?: boolean
 }
 
 type TransformValuesSyncArgs = TransformValuesBaseArgs & { transformFunc: TransformFuncSync }
@@ -167,10 +170,12 @@ const removeEmptyParts = ({
   value,
   allowEmptyArrays,
   allowEmptyObjects,
+  allowEmptiedObjects = false,
 }: {
   value: Value
   allowEmptyArrays: boolean
   allowEmptyObjects: boolean
+  allowEmptiedObjects?: boolean
 }): Value => {
   if (Array.isArray(value)) {
     const filtered = value.filter(isDefined)
@@ -178,7 +183,9 @@ const removeEmptyParts = ({
   }
   if (_.isPlainObject(value)) {
     const filtered = _.omitBy(value, _.isUndefined)
-    return _.isEmpty(filtered) && (!_.isEmpty(value) || !allowEmptyObjects) ? undefined : filtered
+    return _.isEmpty(filtered) && (!_.isEmpty(value) || !allowEmptyObjects) && !allowEmptiedObjects
+      ? undefined
+      : filtered
   }
   return value
 }
@@ -283,6 +290,7 @@ export const transformValues = async ({
   isTopLevel = true,
   allowEmptyArrays = false,
   allowEmptyObjects = false,
+  allowEmptiedObjects = false,
 }: TransformValuesArgs): Promise<Values | undefined> => {
   const transformValue = async (value: Value, keyPathID?: ElemID, field?: Field): Promise<Value> => {
     if (field === undefined && strict) {
@@ -304,7 +312,7 @@ export const transformValues = async ({
       field,
       fieldType: await field?.getType(elementsSource),
     })
-    return removeEmptyParts({ value: recursed, allowEmptyArrays, allowEmptyObjects })
+    return removeEmptyParts({ value: recursed, allowEmptyArrays, allowEmptyObjects, allowEmptiedObjects })
   }
 
   const fieldMapper = fieldMapperGenerator(type, values)
@@ -338,6 +346,7 @@ export const transformValuesSync = ({
   isTopLevel = true,
   allowEmptyArrays = false,
   allowEmptyObjects = false,
+  allowEmptiedObjects = false,
 }: TransformValuesSyncArgs): lowerDashTypes.NonPromise<Value> | undefined => {
   const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): lowerDashTypes.NonPromise<Value> => {
     if (field === undefined && strict) {
@@ -359,7 +368,7 @@ export const transformValuesSync = ({
       field,
       fieldType: field?.getTypeSync(),
     })
-    return removeEmptyParts({ value: recursed, allowEmptyArrays, allowEmptyObjects })
+    return removeEmptyParts({ value: recursed, allowEmptyArrays, allowEmptyObjects, allowEmptiedObjects })
   }
 
   const fieldMapper = fieldMapperGenerator(type, values)
@@ -440,6 +449,7 @@ export const transformElement = async <T extends Element>({
   runOnFields,
   allowEmptyArrays,
   allowEmptyObjects,
+  allowEmptiedObjects = false,
 }: {
   element: T
   transformFunc: TransformFunc
@@ -448,6 +458,7 @@ export const transformElement = async <T extends Element>({
   runOnFields?: boolean
   allowEmptyArrays?: boolean
   allowEmptyObjects?: boolean
+  allowEmptiedObjects?: boolean
 }): Promise<T> => {
   let newElement: Element
   const transformedAnnotations = await transformElementAnnotations({
@@ -470,6 +481,7 @@ export const transformElement = async <T extends Element>({
         pathID: element.elemID,
         allowEmptyArrays,
         allowEmptyObjects,
+        allowEmptiedObjects,
       })) || {}
 
     newElement = new InstanceElement(

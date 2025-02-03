@@ -49,15 +49,10 @@ const getFlowElementsAndReferences = (
   const elementReferences = new DefaultMap<string, ElemID[]>(() => [])
   const leftValueReferences = new DefaultMap<string, ElemID[]>(() => [])
   const findFlowElementsAndTargetReferences: TransformFuncSync = ({ value, path, field }) => {
-    if (
-      field === undefined ||
-      path === undefined ||
-      !FLOW_ELEMENTS_WITH_UNIQUE_NAMES.includes(apiNameSync(field.parent) ?? '')
-    )
-      return value
+    if (field === undefined || path === undefined) return value
     if (path.name === FLOW_NODE_FIELD_NAMES.NAME && _.isString(value)) {
       if (isFlowNode(field.parent.fields)) flowNodes[value] = path
-      else flowElements[value] = path
+      else if (FLOW_ELEMENTS_WITH_UNIQUE_NAMES.includes(apiNameSync(field.parent) ?? '')) flowElements[value] = path
     }
     if (path.name === TARGET_REFERENCE && _.isString(value)) {
       targetReferences.get(value).push(path)
@@ -111,11 +106,12 @@ const createChangeErrors = ({
   const unusedElements: Record<string, ElemID> = {}
   const missingReferences = new DefaultMap<string, ElemID[]>(() => [])
   const allFlowElements = { ...flowNodes, ...flowElements }
-  const allReferences = new Map([
-    ...targetReferences.entries(),
-    ...elementReferences.entries(),
-    ...leftValueReferences.entries(),
-  ])
+  const allReferences = [targetReferences, elementReferences, leftValueReferences].reduce((acc, refMap) => {
+    refMap.forEach((value, key) => {
+      acc.set(key, [...(acc.get(key) || []), ...value])
+    })
+    return acc
+  }, new Map<string, ElemID[]>())
   Object.keys(flowNodes).forEach(elem => {
     if (!targetReferences.has(elem)) unusedElements[elem] = flowNodes[elem]
   })

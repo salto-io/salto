@@ -36,7 +36,7 @@ export const DEFAULT_CONFIG: Readonly<Config> = Object.freeze({
   namespaceFilter: '*',
   colorize: null,
   globalTags: {},
-  maxJsonLogChunkSize: 200 * 1024, // 200K
+  maxJsonLogChunkSize: 25 * 1024, // 25K, DataDog recommended limit
   maxTagsPerLogMessage: 100,
 })
 

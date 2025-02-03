@@ -9,11 +9,12 @@
 import { BuiltinTypes, Change, InstanceElement, ListType, toChange } from '@salto-io/adapter-api'
 import { createInstanceElement, createMetadataObjectType, MetadataObjectType } from '../../src/transformers/transformer'
 import uniqueFlowElementName from '../../src/change_validators/unique_flow_element_name'
-import { FLOW_METADATA_TYPE } from '../../src/constants'
+import { FLOW_METADATA_TYPE, FLOW_NODE_FIELD_NAMES } from '../../src/constants'
 
 describe('uniqueFlowElementName change validator', () => {
   let flowChange: Change
   let flowElement: MetadataObjectType
+  let flowNode: MetadataObjectType
   let flowElementWithNonUniqueName: MetadataObjectType
   let flow: MetadataObjectType
   let flowInstance: InstanceElement
@@ -34,11 +35,22 @@ describe('uniqueFlowElementName change validator', () => {
         name: { refType: BuiltinTypes.STRING },
       },
     })
+    flowNode = createMetadataObjectType({
+      annotations: {
+        metadataType: 'FlowActionCall',
+      },
+      fields: {
+        [FLOW_NODE_FIELD_NAMES.NAME]: { refType: BuiltinTypes.STRING },
+        [FLOW_NODE_FIELD_NAMES.LOCATION_X]: { refType: BuiltinTypes.NUMBER, annotations: { constant: 1 } },
+        [FLOW_NODE_FIELD_NAMES.LOCATION_Y]: { refType: BuiltinTypes.NUMBER, annotations: { constant: 1 } },
+      },
+    })
     flow = createMetadataObjectType({
       annotations: {
         metadataType: FLOW_METADATA_TYPE,
       },
       fields: {
+        actionCalls: { refType: new ListType(flowNode), annotations: { required: false } },
         constants: { refType: new ListType(flowElement), annotations: { required: false } },
         decisions: { refType: new ListType(flowElement), annotations: { required: false } },
         dynamicChoiceSets: { refType: new ListType(flowElement), annotations: { required: false } },
@@ -55,11 +67,12 @@ describe('uniqueFlowElementName change validator', () => {
       flowInstance = createInstanceElement(
         {
           fullName: 'TestFlow',
-          constants: [{ name: 'constant1' }, { name: 'constant2' }],
-          decisions: [{ name: 'decision1' }],
-          dynamicChoiceSets: [{ name: 'dynamicChoice1' }],
-          screens: [{ name: 'screen1' }],
-          processMetadataValues: [{ name: 'value1' }],
+          actionCalls: [{ name: 'ActionCall1' }, { name: 'ActionCall2' }],
+          constants: [{ name: 'Constant1' }, { name: 'Constant2' }],
+          decisions: [{ name: 'Decision1' }],
+          dynamicChoiceSets: [{ name: 'DynamicChoice1' }],
+          screens: [{ name: 'Screen1' }],
+          processMetadataValues: [{ name: 'Value1' }],
         },
         flow,
       )
@@ -75,6 +88,7 @@ describe('uniqueFlowElementName change validator', () => {
       flowInstance = createInstanceElement(
         {
           fullName: 'TestFlow',
+          actionCalls: [{ name: 'duplicateName' }, { name: 'anotherDuplicateName' }],
           constants: [{ name: 'duplicateName' }, { name: 'duplicateName' }],
           decisions: [{ name: 'uniqueName' }, { name: 'ThirdDuplicateName' }],
           dynamicChoiceSets: [{ name: 'duplicateName' }],
@@ -118,8 +132,20 @@ describe('uniqueFlowElementName change validator', () => {
           message: 'Duplicate Name in Flow',
           detailedMessage: 'The name "anotherDuplicateName" is used multiple times in this Flow.',
         },
+        {
+          elemID: flowInstance.elemID.createNestedID('actionCalls', '0', 'name'),
+          severity: 'Warning',
+          message: 'Duplicate Name in Flow',
+          detailedMessage: 'The name "duplicateName" is used multiple times in this Flow.',
+        },
+        {
+          elemID: flowInstance.elemID.createNestedID('actionCalls', '1', 'name'),
+          severity: 'Warning',
+          message: 'Duplicate Name in Flow',
+          detailedMessage: 'The name "anotherDuplicateName" is used multiple times in this Flow.',
+        },
       ]
-      expect(errors).toEqual(expectedErrors)
+      expect(errors).toIncludeSameMembers(expectedErrors)
     })
   })
 })

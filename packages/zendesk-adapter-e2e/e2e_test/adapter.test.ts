@@ -18,6 +18,7 @@ import {
   InstanceElement,
   isInstanceElement,
   isObjectType,
+  ObjectType,
   ReferenceExpression,
   toChange,
   Value,
@@ -124,9 +125,12 @@ const fetchBaseInstances = async (
 ): Promise<{
   brandInstanceE2eHelpCenter?: InstanceElement
   defaultGroup?: InstanceElement
+  types: ObjectType[]
 }> => {
   await fetchWorkspace({ workspace, validationFilter: zendeskValidationFilter, adapterCreators })
-  const firstFetchInstances = (await getElementsFromWorkspace(workspace)).filter(isInstanceElement)
+  const elements = await getElementsFromWorkspace(workspace)
+  const firstFetchInstances = elements.filter(isInstanceElement)
+  const types = elements.filter(isObjectType)
   const brandInstanceE2eHelpCenter = firstFetchInstances.find(e => e.elemID.name === HELP_CENTER_BRAND_NAME)
   const defaultGroup = firstFetchInstances.find(e => e.elemID.typeName === GROUP_TYPE_NAME && e.value.default === true)
   expect(defaultGroup).toBeDefined()
@@ -134,10 +138,10 @@ const fetchBaseInstances = async (
   expect(brandInstanceE2eHelpCenter == null || defaultGroup == null).toBeFalsy()
   // we don't want to run zendesk clean up
   if (brandInstanceE2eHelpCenter == null || defaultGroup === null) {
-    return {}
+    return { types }
   }
   await zendeskCleanUp(firstFetchInstances, workspace)
-  return { brandInstanceE2eHelpCenter, defaultGroup }
+  return { brandInstanceE2eHelpCenter, defaultGroup, types }
 }
 
 describe('Zendesk adapter E2E', () => {
@@ -183,7 +187,7 @@ describe('Zendesk adapter E2E', () => {
         adapterCreators,
         credentialsType,
       })
-      const { brandInstanceE2eHelpCenter, defaultGroup } = await fetchBaseInstances(workspace)
+      const { brandInstanceE2eHelpCenter, defaultGroup, types } = await fetchBaseInstances(workspace)
       if (brandInstanceE2eHelpCenter == null || defaultGroup == null) {
         return
       }
@@ -191,6 +195,7 @@ describe('Zendesk adapter E2E', () => {
       ;({ instancesToDeploy, guideInstances, guideThemeInstance } = await getAllInstancesToDeploy({
         brandInstanceE2eHelpCenter,
         defaultGroup,
+        types,
       }))
 
       // we remove hidden fields as they cannot be deployed

@@ -8,7 +8,7 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  displayName: 'salto',
+  displayName: 'adapter-creators',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
   coverageThreshold: {

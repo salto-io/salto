@@ -20,7 +20,7 @@ import ZendeskClient from '../client/client'
 import { ZendeskApiConfig } from '../user_config'
 import { isBrand, invalidBrandChange } from './guide_activation'
 
-export const invalidBrandAdditionChange = (
+const invalidBrandAdditionChange = (
   change: Change<InstanceElement>,
   fieldToCheck: 'has_help_center' | 'help_center_state',
 ): boolean => {

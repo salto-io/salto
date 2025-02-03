@@ -64,7 +64,7 @@ export type ActionDependency<AdditionalAction extends string> = {
   second: ActionName | AdditionalAction
 }
 
-export type RecurseIntoPath = {
+type RecurseIntoPath = {
   fieldPath: string[]
   // the type name in the specified path, the type should have its own deploy definition
   typeName: string

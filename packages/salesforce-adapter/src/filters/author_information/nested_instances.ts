@@ -17,7 +17,7 @@ import SalesforceClient from '../../client/client'
 
 const log = logger(module)
 
-export const WARNING_MESSAGE =
+const WARNING_MESSAGE =
   'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'
 
 const NESTED_INSTANCES_METADATA_TYPES = [

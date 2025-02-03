@@ -32,10 +32,9 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 const MERGER_LOCK = 'MERGER_LOCK'
 const FLUSH_IN_PROGRESS = 'FLUSHING'
-export const MAX_LOG_ON_MERGE = 100
+const MAX_LOG_ON_MERGE = 100
 export const REBUILD_ON_RECOVERY = 'rebuild'
-export const CLEAR_ON_RECOVERY = 'clearOnly'
-export const MERGE_MANAGER_SUFFIX = 'merge_manager'
+const MERGE_MANAGER_SUFFIX = 'merge_manager'
 export type MergedRecoveryMode = 'rebuild' | 'clearOnly'
 
 export type ChangeSet<Change> = {
@@ -43,13 +42,6 @@ export type ChangeSet<Change> = {
   cacheValid: boolean
   preChangeHash?: string
   postChangeHash?: string
-}
-
-export type CacheUpdate = {
-  src1Changes: Change[]
-  src2Changes: Change[]
-  src1: ReadOnlyElementsSource
-  src2: ReadOnlyElementsSource
 }
 
 export type RecoveryOverrideFunc = (
@@ -61,7 +53,7 @@ export type RecoveryOverrideFunc = (
   src2ElementsToMerge: AsyncIterable<ElemID>
 }>
 
-export type CacheChangeSetUpdate = {
+type CacheChangeSetUpdate = {
   src1Changes?: ChangeSet<Change<Element>>
   src2Changes?: ChangeSet<Change<Element>>
   recoveryOverride?: RecoveryOverrideFunc

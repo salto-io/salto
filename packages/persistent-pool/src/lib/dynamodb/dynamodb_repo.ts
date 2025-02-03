@@ -40,7 +40,7 @@ const { withRetry, retryStrategies, RetryError } = retryUtil
 
 type ItemList = Key[]
 
-export type DynamoRepoPartialOpts = {
+type DynamoRepoPartialOpts = {
   tableName: string
   listBatchSize: number | undefined
   billingMode: BillingMode
@@ -55,13 +55,13 @@ export type DynamoDbInstances = {
   dbDoc: DynamoDBDocumentClient
 }
 
-export type DynamoInstancesOrConfig =
+type DynamoInstancesOrConfig =
   | DynamoDbInstances
   | {
       serviceOpts: DynamoDBClientConfig
     }
 
-export type DynamoRepoRequiredOpts = RepoOpts & DynamoInstancesOrConfig
+type DynamoRepoRequiredOpts = RepoOpts & DynamoInstancesOrConfig
 
 export type DynamoRepoOpts = DynamoRepoPartialOpts & DynamoRepoRequiredOpts
 

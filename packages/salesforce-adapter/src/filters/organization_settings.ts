@@ -147,7 +147,7 @@ const addLatestSupportedAPIVersion = async ({
 }
 
 const FILTER_NAME = 'organizationSettings'
-export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
+const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: FILTER_NAME,

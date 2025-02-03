@@ -20,11 +20,7 @@ import { createClientDefinitions, createFetchDefinitions } from '../src/definiti
 import { Options } from '../src/definitions/types'
 import { PAGINATION } from '../src/definitions/requests/pagination'
 
-export const createDefinitions = ({
-  client,
-}: {
-  client: ZendeskClient
-}): definitionsUtils.RequiredDefinitions<Options> => ({
+const createDefinitions = ({ client }: { client: ZendeskClient }): definitionsUtils.RequiredDefinitions<Options> => ({
   clients: createClientDefinitions({ main: client, guide: client }),
   pagination: PAGINATION,
   fetch: createFetchDefinitions({ baseUrl: client.getUrl().href }),

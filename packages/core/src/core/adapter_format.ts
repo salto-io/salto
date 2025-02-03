@@ -109,7 +109,7 @@ type IsInitializedFolderArgs = {
   adapterCreators: Record<string, Adapter>
 }
 
-export type IsInitializedFolderResult = {
+type IsInitializedFolderResult = {
   result: boolean
   errors: ReadonlyArray<SaltoError>
 }
@@ -142,7 +142,7 @@ type InitFolderArgs = {
   adapterCreators: Record<string, Adapter>
 }
 
-export type InitFolderResult = {
+type InitFolderResult = {
   errors: ReadonlyArray<SaltoError>
 }
 

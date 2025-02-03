@@ -13,7 +13,7 @@ type PaginationOptions = 'cursor'
 export type ReferenceContextStrategies = never
 export type CustomReferenceSerializationStrategyName = 'roleId' | 'orgUnitId' | 'buildingId' | 'email'
 
-export type CustomIndexField = CustomReferenceSerializationStrategyName
+type CustomIndexField = CustomReferenceSerializationStrategyName
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions
   paginationOptions: PaginationOptions

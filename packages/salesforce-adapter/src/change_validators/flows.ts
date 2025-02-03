@@ -34,7 +34,7 @@ import { FLOW_URL_SUFFIX } from '../elements_url_retriever/lightning_url_resolve
 
 const ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT = false
 
-export const getDeployAsActiveFlag = async (
+const getDeployAsActiveFlag = async (
   elementsSource: ReadOnlyElementsSource | undefined,
   defaultValue: boolean,
 ): Promise<boolean> => {
@@ -46,15 +46,15 @@ export const getDeployAsActiveFlag = async (
     : flowSettings.value.enableFlowDeployAsActiveEnabled
 }
 
-export const getFlowStatus = (instance: InstanceElement): string => instance.value[STATUS]
+const getFlowStatus = (instance: InstanceElement): string => instance.value[STATUS]
 
-export const isActiveFlowChange = (change: ModificationChange<InstanceElement>): boolean =>
+const isActiveFlowChange = (change: ModificationChange<InstanceElement>): boolean =>
   getFlowStatus(change.data.before) === ACTIVE && getFlowStatus(change.data.after) === ACTIVE
 
-export const isActivatingChange = (change: ModificationChange<InstanceElement>): boolean =>
+const isActivatingChange = (change: ModificationChange<InstanceElement>): boolean =>
   getFlowStatus(change.data.before) !== ACTIVE && getFlowStatus(change.data.after) === ACTIVE
 
-export const isActivatingChangeOnly = (change: ModificationChange<InstanceElement>): boolean => {
+const isActivatingChangeOnly = (change: ModificationChange<InstanceElement>): boolean => {
   const beforeClone = change.data.before.clone()
   beforeClone.value[STATUS] = ACTIVE
   const diffWithoutStatus = detailedCompare(beforeClone, change.data.after)

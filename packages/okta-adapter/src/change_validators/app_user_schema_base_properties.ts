@@ -24,7 +24,7 @@ import { APP_USER_SCHEMA_TYPE_NAME, BASE_FIELD, DEFINITIONS_FIELD, SCHEMA_TYPES 
 
 export const BASE_PATH = [DEFINITIONS_FIELD, BASE_FIELD]
 
-export const getErrorWithSeverity = (elemID: ElemID, severity: SeverityLevel): ChangeError => ({
+const getErrorWithSeverity = (elemID: ElemID, severity: SeverityLevel): ChangeError => ({
   elemID,
   severity,
   message: "Base attributes cannot be deployed via Okta's APIs",

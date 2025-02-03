@@ -22,7 +22,7 @@ import { apiName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 
-export const CASE = 'Case'
+const CASE = 'Case'
 
 type RuleEntry = {
   // with team

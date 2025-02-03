@@ -56,7 +56,7 @@ type FieldInfo = {
   identifier: 'id' | 'name'
 }
 
-export type JqlContext = {
+type JqlContext = {
   typeToInstancesByField: Record<string, Record<string, InstanceElement[]>>
   typeToInstanceById: Record<string, Record<string, InstanceElement>>
 }

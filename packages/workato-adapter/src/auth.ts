@@ -18,7 +18,7 @@ export const workatoBaseUrlOptions = [
   'https://app.au.workato.com',
 ]
 
-export type UsernameTokenCredentials = {
+type UsernameTokenCredentials = {
   username?: string
   baseUrl?: string
   token: string

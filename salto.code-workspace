@@ -149,6 +149,10 @@
       "path": "packages/zendesk-adapter",
     },
     {
+      "name": "zendesk-adapter-e2e",
+      "path": "packages/zendesk-adapter-e2e",
+    },
+    {
       "name": "zuora-billing-adapter",
       "path": "packages/zuora-billing-adapter",
     },

@@ -14,11 +14,11 @@ import { getConfigRecordsFieldValue } from '../client/utils'
 
 const log = logger(module)
 
-export const SUITEQL_DATE_FORMAT = 'YYYY-MM-DD'
-export const SUITEQL_TIME_FORMAT = 'HH:MI:SS'
-export const TIMEZONE = 'TIMEZONE'
-export const TIMEFORMAT = 'TIMEFORMAT'
-export const DATEFORMAT = 'DATEFORMAT'
+const SUITEQL_DATE_FORMAT = 'YYYY-MM-DD'
+const SUITEQL_TIME_FORMAT = 'HH:MI:SS'
+const TIMEZONE = 'TIMEZONE'
+const TIMEFORMAT = 'TIMEFORMAT'
+const DATEFORMAT = 'DATEFORMAT'
 export type TimeZoneAndFormat = {
   timeZone?: string
   format?: string

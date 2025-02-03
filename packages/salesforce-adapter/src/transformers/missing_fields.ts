@@ -21,7 +21,7 @@ type BooleanMissingFieldDefinition = {
 
 type MissingFieldDefinition = FullMissingFieldDefinition | BooleanMissingFieldDefinition
 
-export type MissingFieldsDataItem = {
+type MissingFieldsDataItem = {
   id: string
   fields: MissingFieldDefinition[]
 }

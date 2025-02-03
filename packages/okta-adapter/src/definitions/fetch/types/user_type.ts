@@ -15,7 +15,7 @@ import { extractIdFromUrl } from '../../../utils'
 
 const log = logger(module)
 
-export type UserType = {
+type UserType = {
   _links: {
     schema: {
       href: string

@@ -7,7 +7,7 @@
  */
 import fs, { PathLike } from 'fs'
 import path from 'path'
-import { validateLogFile } from '../../src/internal/log-file'
+import { validateLogFile } from '../src/log-file'
 
 describe('validateLogFile', () => {
   const WRITE_DIR = '/home/user/.salto'

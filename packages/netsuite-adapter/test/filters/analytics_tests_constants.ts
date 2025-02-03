@@ -199,7 +199,7 @@ export const unknownDataset = new InstanceElement('seggev unknown', dataset, unk
   constants.DATASET,
 ])
 
-export const parsedUnknownDatasetValue = {
+const parsedUnknownDatasetValue = {
   name: unknownDatasetValue.name,
   scriptid: unknownDatasetValue.scriptid,
   audience: {

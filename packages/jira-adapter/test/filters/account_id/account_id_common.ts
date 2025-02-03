@@ -11,7 +11,7 @@ import { accountIdInfoType } from '../../../src/filters/account_id/types'
 import { AUTOMATION_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
 import { OWNER_STYLE_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
 
-export const createObjectedNestedType = (name: string): ObjectType =>
+const createObjectedNestedType = (name: string): ObjectType =>
   new ObjectType({
     elemID: new ElemID(JIRA, name),
     fields: {
@@ -39,7 +39,7 @@ export const createObjectedType = (name: string, nestedName = 'nested'): ObjectT
   })
 }
 
-export const createNestedType = (name: string): ObjectType =>
+const createNestedType = (name: string): ObjectType =>
   new ObjectType({
     elemID: new ElemID(JIRA, name),
     fields: {

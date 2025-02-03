@@ -13,7 +13,7 @@ import { Credentials, getAuthenticationBaseUrl } from './oauth'
 
 const log = logger(module)
 
-export const validateCredentials = async ({
+const validateCredentials = async ({
   credentials: { tenantId },
   connection,
 }: {

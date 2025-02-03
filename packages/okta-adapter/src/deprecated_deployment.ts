@@ -104,7 +104,7 @@ const DEACTIVATE_BEFORE_REMOVAL_TYPES = new Set([NETWORK_ZONE_TYPE_NAME])
 const shouldDeactivateBeforeRemoval = (change: Change<InstanceElement>): boolean =>
   isRemovalChange(change) && DEACTIVATE_BEFORE_REMOVAL_TYPES.has(getChangeData(change).elemID.typeName)
 
-export const deployStatusChange = async (
+const deployStatusChange = async (
   change: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
   apiDefinitions: OktaSwaggerApiConfig,
@@ -154,7 +154,7 @@ export const assignServiceIdToAdditionChange = async (
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
  */
-export const defaultDeployChange = async (
+const defaultDeployChange = async (
   change: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
   apiDefinitions: OktaSwaggerApiConfig,

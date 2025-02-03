@@ -22,7 +22,7 @@ import { NameMappingOptions } from '../definitions'
 
 const { findDuplicates } = collections.array
 
-export const FIELD_REFERENCE_PREFIX = '&'
+const FIELD_REFERENCE_PREFIX = '&'
 
 export type StandaloneFieldConfigType = {
   fieldName: string

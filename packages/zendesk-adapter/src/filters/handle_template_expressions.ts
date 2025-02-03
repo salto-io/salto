@@ -316,25 +316,16 @@ const formulaToTemplate = ({
   }
 
   // The expression size can be quite large, so we do not want to use it as a regex pattern
-  const isPotentialHelpCenterUrl = (expression: string): boolean => {
+  const hasHelpCenterPrefix = (expression: string): boolean => {
     // Check if the expression is a link to a zendesk page without a subdomain
     // href="/hc/en-us/../articles/123123
-    let prefixStart = 0
-    let prefixEnd = formula.indexOf(expression)
-    const prefixRegex = new RegExp(/"\/?hc\/\S*$/) // Match the start of a zendesk link
-
-    while (prefixEnd !== -1) {
-      const prefixPart = formula.slice(prefixStart, prefixEnd)
-      const prefixMatch = prefixRegex.test(prefixPart.slice(prefixStart, prefixEnd))
-
-      if (prefixMatch) {
-        return true // Return first match
+    const helpCenterMatches = formula.matchAll(/"\/?hc\/\S*/g)
+    for (const match of helpCenterMatches) {
+      if (match[0].includes(expression)) {
+        return true
       }
-
-      prefixStart = prefixEnd
-      prefixEnd = formula.indexOf(expression, prefixEnd + 1) // Move to next occurrence
     }
-    return false // No match found
+    return false
   }
 
   const potentialRegexes = [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX_WITH_BRACKETS]
@@ -355,13 +346,16 @@ const formulaToTemplate = ({
       return handleDynamicContentReference(expression, dynamicContentReference)
     }
     if (extractReferencesFromFreeText) {
-      const potentialHelpCenterUrl = isPotentialHelpCenterUrl(expression)
-      if (potentialHelpCenterUrl) {
-        return transformReferenceUrls({
-          urlPart: expression,
-          instancesById,
-          enableMissingReferences,
-        })
+      // There are multiple regexes that can reach this part, only one section is relevant here
+      const isElementsRegexMatch = ELEMENTS_REGEXES.map(s => s.urlRegex).find(regex => regex.test(expression))
+      if (isElementsRegexMatch) {
+        if (hasHelpCenterPrefix(expression)) {
+          return transformReferenceUrls({
+            urlPart: expression,
+            instancesById,
+            enableMissingReferences,
+          })
+        }
       }
     }
     return expression

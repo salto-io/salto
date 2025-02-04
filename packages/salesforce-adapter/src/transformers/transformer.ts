@@ -130,9 +130,9 @@ const xsdTypes = [
   'xsd:long',
 ] as const
 
-const PARENT_TYPES_WITH_FORMULA_FIELDS: Record<string, Value> = {
-  ValidationRule: { fieldName: 'errorConditionFormula', fieldType: 'Checkbox' },
-}
+// const PARENT_TYPES_WITH_FORMULA_FIELDS: Record<string, Value> = {
+//   ValidationRule: { fieldName: 'errorConditionFormula', fieldType: 'Checkbox' },
+// }
 
 export type XsdType = (typeof xsdTypes)[number]
 type ConvertXsdTypeFunc = (v: string) => PrimitiveValue
@@ -1135,16 +1135,16 @@ export const instancesToDeleteRecords = (instances: InstanceElement[]): Salesfor
 export const isLocalOnly = (field?: Field): boolean =>
   field !== undefined && field.annotations[FIELD_ANNOTATIONS.LOCAL_ONLY] === true
 
-const getFormulaTypeName = (field: ValueTypeField, parent: ObjectType): TypeElement | undefined => {
-  if (parent.elemID.typeName in PARENT_TYPES_WITH_FORMULA_FIELDS) {
-    if (field.name === PARENT_TYPES_WITH_FORMULA_FIELDS[parent.elemID.typeName].fieldName) {
-      const a = formulaTypeName(PARENT_TYPES_WITH_FORMULA_FIELDS[parent.elemID.typeName].fieldType as FIELD_TYPE_NAMES)
-      const b = Types.getKnownType(a, true)
-      return b
-    }
-  }
-  return undefined
-}
+// const getFormulaTypeName = (field: ValueTypeField, parent: ObjectType): TypeElement | undefined => {
+//   if (parent.elemID.typeName in PARENT_TYPES_WITH_FORMULA_FIELDS) {
+//     if (field.name === PARENT_TYPES_WITH_FORMULA_FIELDS[parent.elemID.typeName].fieldName) {
+//       const a = formulaTypeName(PARENT_TYPES_WITH_FORMULA_FIELDS[parent.elemID.typeName].fieldType as FIELD_TYPE_NAMES)
+//       const b = Types.getKnownType(a, true)
+//       return b
+//     }
+//   }
+//   return undefined
+// }
 
 export const getValueTypeFieldElement = (
   parent: ObjectType,
@@ -1155,9 +1155,7 @@ export const getValueTypeFieldElement = (
   const naclFieldType =
     field.name === INSTANCE_FULL_NAME_FIELD
       ? BuiltinTypes.SERVICE_ID
-      : getFormulaTypeName(field, parent) ||
-        knownTypes.get(field.soapType) ||
-        Types.get({ name: field.soapType, customObject: false })
+      : knownTypes.get(field.soapType) || Types.get({ name: field.soapType, customObject: false })
   const annotations: Values = {
     ...(additionalAnnotations || {}),
   }

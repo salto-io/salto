@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { Element, Field, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, Field, isInstanceElement, ReferenceExpression, Value } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, inspectValue } from '@salto-io/adapter-utils'
 import {
   parseFormulaIdentifier,
@@ -24,20 +24,38 @@ import { logInvalidReferences, referencesFromIdentifiers, referenceValidity } fr
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const addDependenciesAnnotation = (field: Field, potentialReferenceTargets: Map<string, Element>): void => {
-  const formula = field.annotations[FORMULA]
+const getFormulaFromField = (element: Element): string | undefined => {
+  const formula = element.annotations[FORMULA]
+  return _.isString(formula) ? formula : undefined
+}
+
+const getFormulaFromValidationRule = (element: Element): string | undefined => {
+  if (!isInstanceElement(element)) {
+    return undefined
+  }
+  const formula = element.value.errorConditionFormula
+  return _.isString(formula) ? formula : undefined
+}
+
+const getFormula = (element: Element): string | undefined =>
+  getFormulaFromField(element) || getFormulaFromValidationRule(element)
+
+const addDependenciesAnnotation = (element: Element, potentialReferenceTargets: Map<string, Element>): void => {
+  const formula = getFormula(element)
   if (!_.isString(formula)) {
-    log.error(`The value of the formula field ${field.elemID.getFullName()} is not a string: ${inspectValue(formula)}`)
+    log.error(
+      `The value of the formula field ${element.elemID.getFullName()} is not a string: ${inspectValue(formula)}`,
+    )
     return
   }
 
-  log.debug(`Extracting formula refs from ${field.elemID.getFullName()}: ${formula}`)
+  log.debug(`Extracting formula refs from ${element.elemID.getFullName()}: ${formula}`)
 
   let identifiersInfo: FormulaIdentifierInfo[] = []
   let identifiersCount: number = 0
   try {
     const formulaInfo = extractFormulaIdentifiers(formula).map(identifier =>
-      parseFormulaIdentifier(identifier, field.parent.elemID.typeName),
+      parseFormulaIdentifier(identifier, element.annotations[CORE_ANNOTATIONS.PARENT].elemID.typeName),
     )
     identifiersInfo = formulaInfo.flat()
     identifiersCount = formulaInfo.length
@@ -52,24 +70,29 @@ const addDependenciesAnnotation = (field: Field, potentialReferenceTargets: Map<
 
   if (references.length < identifiersCount) {
     log.warn(`Some formula identifiers were not converted to references.
-      Field: ${field.elemID.getFullName()}
+      Field: ${element.elemID.getFullName()}
       Formula: ${formula}
       Identifiers: ${inspectValue(identifiersInfo.map(info => info.instance))}
       References: ${inspectValue(references.map(ref => ref.getFullName()))}`)
   }
 
   const referencesWithValidity = _.groupBy(references, refElemId =>
-    referenceValidity(refElemId, field.parent.elemID, potentialReferenceTargets),
+    referenceValidity(refElemId, element.annotations[CORE_ANNOTATIONS.PARENT].elemID, potentialReferenceTargets),
   )
 
-  logInvalidReferences(field.elemID, referencesWithValidity.invalid ?? [], formula, identifiersInfo)
+  logInvalidReferences(element.elemID, referencesWithValidity.invalid ?? [], formula, identifiersInfo)
 
   const depsAsRefExpr = (referencesWithValidity.valid ?? []).map(elemId => ({
     reference: new ReferenceExpression(elemId),
   }))
 
-  extendGeneratedDependencies(field, depsAsRefExpr)
+  extendGeneratedDependencies(element, depsAsRefExpr)
 }
+
+const isFormulaOrValidationRule = (field: Element): field is Field =>
+  isFormulaField(field) || field.elemID.typeName === 'ValidationRule' || field.elemID.typeName === 'WorkflowRule'
+
+const getFields = (element: Value): Value[] => extractFlatCustomObjectFields(element) ?? [element].concat(element.value)
 
 /**
  * Extract references from formulas
@@ -84,10 +107,10 @@ const filter: FilterCreator = ({ config }) => ({
     warningMessage: 'Error while parsing formulas',
     config,
     fetchFilterFunc: async fetchedElements => {
-      const fetchedObjectTypes = fetchedElements.filter(isObjectType)
-      const fetchedFormulaFields = fetchedObjectTypes
-        .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
-        .filter(isFormulaField)
+      // const fetchedObjectTypes = fetchedElements.filter(isObjectType)
+      const fetchedFormulaFields = fetchedElements
+        .flatMap(getFields) // Get the types + their fields
+        .filter(isFormulaOrValidationRule)
       const allElements = await buildElementsSourceForFetch(fetchedElements, config).getAll()
       const elemIdToElement = await awu(allElements)
         .map(e => [e.elemID.getFullName(), e] as [string, Element])

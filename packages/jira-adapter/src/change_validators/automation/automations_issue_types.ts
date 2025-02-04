@@ -17,11 +17,18 @@ import {
   SeverityLevel,
   Values,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, getInstancesFromElementSource, WALK_NEXT_STEP, walkOnValue } from '@salto-io/adapter-utils'
+import {
+  createSchemeGuard,
+  getInstancesFromElementSource,
+  isResolvedReferenceExpression,
+  WALK_NEXT_STEP,
+  walkOnValue,
+} from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { ISSUE_TYPE_FIELD, PROJECT_FIELD } from '@atlassianlabs/jql-ast'
 import _ from 'lodash'
 import { AUTOMATION_TYPE, PROJECT_TYPE } from '../../constants'
+import JiraClient from '../../client/client'
 
 type IssueTypeObject = {
   fieldType: string
@@ -31,6 +38,7 @@ type IssueTypeObject = {
 type IssueTypeError = {
   componentElemID: ElemID
   invalidIssueType: string
+  serviceUrl: string
 }
 
 type ProjectWithIssueTypeScheme = InstanceElement & { value: { issueTypeScheme: ReferenceExpression } }
@@ -55,22 +63,31 @@ const isProjectInstanceWithIssueTypeScheme = (instance: InstanceElement): instan
 const getIssueCreateActionProject = (
   value: Values,
   instanceProject: ReferenceExpression | string | undefined,
-): string | undefined => {
+): { projectFullName: string | undefined; projectKey: string | undefined } => {
   if (value.value?.value === 'current') {
-    return isReferenceExpression(instanceProject) ? instanceProject.elemID.getFullName() : undefined
+    const projectFullName = isReferenceExpression(instanceProject) ? instanceProject.elemID.getFullName() : undefined
+    const projectKey =
+      projectFullName && isResolvedReferenceExpression(instanceProject) ? instanceProject.value.value.key : undefined
+    return { projectFullName, projectKey }
   }
   if (isReferenceExpression(value.value?.value)) {
-    return value.value.value.elemID.getFullName()
+    const projectFullName = value.value.value.elemID.getFullName()
+    const projectKey = isResolvedReferenceExpression(value.value?.value)
+      ? value.value?.value.resValue.value.key
+      : undefined
+    return { projectFullName, projectKey }
   }
-  return undefined
+  return { projectFullName: undefined, projectKey: undefined }
 }
 
 const isInstanceWithInvalidIssueType = (
   instance: InstanceElement,
   projectNameToIssueTypeNames: Record<string, string[]>,
+  baseUrl: string,
 ): IssueTypeError[] => {
   const invalidIssueTypes: IssueTypeError[] = []
   let projectFullName: string | undefined
+  let projectKey: string | undefined
   let insideIssueCreateComponent = false
 
   const instanceProject =
@@ -88,7 +105,7 @@ const isInstanceWithInvalidIssueType = (
 
       if (insideIssueCreateComponent) {
         if (_.isPlainObject(value) && value.fieldType === PROJECT_FIELD) {
-          projectFullName = getIssueCreateActionProject(value, instanceProject)
+          ;({ projectFullName, projectKey } = getIssueCreateActionProject(value, instanceProject))
           return WALK_NEXT_STEP.RECURSE
         }
 
@@ -101,8 +118,10 @@ const isInstanceWithInvalidIssueType = (
           const isValidIssueType = projectFullName
             ? projectNameToIssueTypeNames[projectFullName]?.includes(issueTypeElemID.getFullName())
             : true
-          if (!isValidIssueType) {
-            invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueTypeElemID.name })
+
+          if (!isValidIssueType && projectKey) {
+            const serviceUrl = `${baseUrl}plugins/servlet/project-config/${projectKey}/issuetypes`
+            invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueTypeElemID.name, serviceUrl })
           }
           insideIssueCreateComponent = false
         }
@@ -118,44 +137,47 @@ const isInstanceWithInvalidIssueType = (
 /**
  * Verify that for jira.issue.create components, the issue types are selected from the issue type scheme associated with the referenced project.
  */
-export const automationIssueTypeValidator: ChangeValidator = async (changes, elementsSource) => {
-  if (elementsSource === undefined) {
-    return []
+export const automationIssueTypeValidator: (client: JiraClient) => ChangeValidator =
+  client => async (changes, elementsSource) => {
+    if (elementsSource === undefined) {
+      return []
+    }
+
+    const relevantChanges = changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+
+    if (_.isEmpty(relevantChanges)) {
+      return []
+    }
+
+    const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
+    const projectsWithSchemes = projects.filter(isProjectInstanceWithIssueTypeScheme)
+    const projectNameToIssueTypeNames: Record<string, string[]> = Object.fromEntries(
+      await Promise.all(
+        projectsWithSchemes.map(async project => {
+          const issueTypeSchemeElemID = await elementsSource.get(project.value.issueTypeScheme.elemID)
+          const resolvedIssueTypeSchemeReferences = issueTypeSchemeElemID?.value.issueTypeIds ?? []
+
+          const issueTypeNames = resolvedIssueTypeSchemeReferences
+            .filter(isReferenceExpression)
+            .map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
+
+          return [project.elemID.getFullName(), issueTypeNames]
+        }),
+      ),
+    )
+
+    const { baseUrl } = client
+
+    return relevantChanges
+      .flatMap(instance => isInstanceWithInvalidIssueType(instance, projectNameToIssueTypeNames, baseUrl))
+      .map(IssueTypeError => ({
+        elemID: IssueTypeError.componentElemID,
+        severity: 'Error' as SeverityLevel,
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
+        detailedMessage: `In order to deploy an automation you must use issue types from the relevant project issue type scheme: ${IssueTypeError.serviceUrl}. To fix it, change this issue type: ${IssueTypeError.invalidIssueType}`,
+      }))
   }
-
-  const relevantChanges = changes
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-
-  if (_.isEmpty(relevantChanges)) {
-    return []
-  }
-
-  const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
-  const projectsWithSchemes = projects.filter(isProjectInstanceWithIssueTypeScheme)
-  const projectNameToIssueTypeNames: Record<string, string[]> = Object.fromEntries(
-    await Promise.all(
-      projectsWithSchemes.map(async project => {
-        const issueTypeSchemeElemID = await elementsSource.get(project.value.issueTypeScheme.elemID)
-        const resolvedIssueTypeSchemeReferences = issueTypeSchemeElemID?.value.issueTypeIds ?? []
-
-        const issueTypeNames = resolvedIssueTypeSchemeReferences
-          .filter(isReferenceExpression)
-          .map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
-
-        return [project.elemID.getFullName(), issueTypeNames]
-      }),
-    ),
-  )
-
-  return relevantChanges
-    .flatMap(instance => isInstanceWithInvalidIssueType(instance, projectNameToIssueTypeNames))
-    .map(IssueTypeError => ({
-      elemID: IssueTypeError.componentElemID,
-      severity: 'Error' as SeverityLevel,
-      message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
-      detailedMessage: `In order to deploy an automation you must use issue types from the relevant project issue scheme. To fix it, change this issue type: ${IssueTypeError.invalidIssueType}`,
-    }))
-}

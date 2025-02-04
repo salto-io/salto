@@ -163,7 +163,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     kanbanBoardBacklog: kanbanBoardBacklogValidator,
     globalTransition: globalTransitionValidator,
     htmlBodyContentAction: htmlBodyContentValidator,
-    automationIssueType: automationIssueTypeValidator,
+    automationIssueType: automationIssueTypeValidator(client),
   }
 
   return createChangeValidator({

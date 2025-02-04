@@ -107,6 +107,8 @@ export enum FLEXI_PAGE_FIELD_NAMES {
 // Flow constants
 export const FLOW_NODE = 'FlowNode'
 export const TARGET_REFERENCE = 'targetReference'
+export const ELEMENT_REFERENCE = 'elementReference'
+export const LEFT_VALUE_REFERENCE = 'leftValueReference'
 export const ASSIGN_TO_REFERENCE = 'assignToReference'
 export enum FLOW_NODE_FIELD_NAMES {
   NAME = 'name',

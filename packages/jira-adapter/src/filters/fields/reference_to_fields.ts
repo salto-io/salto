@@ -6,28 +6,37 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { InstanceElement, ReferenceExpression, TemplateExpression, Value } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ReferenceExpression, TemplateExpression, Value } from '@salto-io/adapter-api'
+import { references as referenceUtils } from '@salto-io/adapter-components'
 import { extractTemplate } from '@salto-io/adapter-utils'
 import { referenceFunc } from '../script_runner/walk_on_scripts'
+import { JIRA } from '../../constants'
+import { FIELD_TYPE_NAME } from './constants'
 
 const CUSTOM_FIELD_PATTERN = /(customfield_\d+)/
 
 const referenceCustomFields = (
   text: string,
   fieldInstancesById: Map<string, InstanceElement>,
+  enableMissingReferences: boolean,
 ): TemplateExpression | string =>
   extractTemplate(text, [CUSTOM_FIELD_PATTERN], expression => {
-    const instance = fieldInstancesById.get(expression)
-    if (!expression.match(CUSTOM_FIELD_PATTERN) || instance === undefined) {
+    if (!expression.match(CUSTOM_FIELD_PATTERN)) {
       return expression
     }
-    return new ReferenceExpression(instance.elemID, instance)
+    const instance = fieldInstancesById.get(expression)
+    if (instance !== undefined) {
+      return new ReferenceExpression(instance.elemID, instance)
+    }
+    return enableMissingReferences
+      ? referenceUtils.createMissingValueReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance'), expression)
+      : expression
   })
 
 export const addFieldsTemplateReferences =
-  (fieldInstancesById: Map<string, InstanceElement>): referenceFunc =>
+  (fieldInstancesById: Map<string, InstanceElement>, enableMissingReferences: boolean): referenceFunc =>
   (value: Value, fieldName: string): void => {
     if (typeof value[fieldName] === 'string') {
-      value[fieldName] = referenceCustomFields(value[fieldName], fieldInstancesById)
+      value[fieldName] = referenceCustomFields(value[fieldName], fieldInstancesById, enableMissingReferences)
     }
   }

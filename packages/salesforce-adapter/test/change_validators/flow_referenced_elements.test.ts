@@ -183,7 +183,7 @@ describe('flowReferencedElements change validator', () => {
         {
           severity: 'Warning',
           message: 'Reference to missing Flow Element',
-          detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+          detailedMessage: 'The Flow Element "ActionCall" does not exist.',
           elemID: flowInstance.elemID.createNestedID('start', 'connector', TARGET_REFERENCE),
         },
       ])
@@ -210,7 +210,7 @@ describe('flowReferencedElements change validator', () => {
         {
           severity: 'Info',
           message: 'Unused Flow Element',
-          detailedMessage: `The Flow Element "${'ActionCall'}" isn’t being used in the Flow.`,
+          detailedMessage: 'The Flow Element "ActionCall" isn’t being used in the Flow.',
           elemID: flowInstance.elemID.createNestedID('actionCalls', '0', FLOW_NODE_FIELD_NAMES.NAME),
         },
       ])
@@ -278,7 +278,7 @@ describe('flowReferencedElements change validator', () => {
         {
           severity: 'Warning',
           message: 'Reference to missing Flow Element',
-          detailedMessage: `The Flow Element "${'Const2'}" does not exist.`,
+          detailedMessage: 'The Flow Element "Const2" does not exist.',
           elemID: flowInstance.elemID.createNestedID(
             'exitRules',
             '0',
@@ -291,7 +291,7 @@ describe('flowReferencedElements change validator', () => {
         {
           severity: 'Warning',
           message: 'Reference to missing Flow Element',
-          detailedMessage: `The Flow Element "${'ActionCall1'}" does not exist.`,
+          detailedMessage: 'The Flow Element "ActionCall1" does not exist.',
           elemID: flowInstance.elemID.createNestedID(
             'actionCalls',
             '0',
@@ -339,25 +339,25 @@ describe('flowReferencedElements change validator', () => {
         {
           severity: 'Info',
           message: 'Unused Flow Element',
-          detailedMessage: `The Flow Element "${'Assignment'}" isn’t being used in the Flow.`,
+          detailedMessage: 'The Flow Element "Assignment" isn’t being used in the Flow.',
           elemID: flowInstance.elemID.createNestedID('assignments', '0', FLOW_NODE_FIELD_NAMES.NAME),
         },
         {
           severity: 'Warning',
           message: 'Reference to missing Flow Element',
-          detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+          detailedMessage: 'The Flow Element "ActionCall" does not exist.',
           elemID: flowInstance.elemID.createNestedID('start', 'connector', TARGET_REFERENCE),
         },
         {
           severity: 'Warning',
           message: 'Reference to missing Flow Element',
-          detailedMessage: `The Flow Element "${'RecordCreate'}" does not exist.`,
+          detailedMessage: 'The Flow Element "RecordCreate" does not exist.',
           elemID: flowInstance.elemID.createNestedID('decisions', '0', 'connector', TARGET_REFERENCE),
         },
         {
           severity: 'Warning',
           message: 'Reference to missing Flow Element',
-          detailedMessage: `The Flow Element "${'Const2'}" does not exist.`,
+          detailedMessage: 'The Flow Element "Const2" does not exist.',
           elemID: flowInstance.elemID.createNestedID(
             'exitRules',
             '0',
@@ -416,25 +416,25 @@ describe('flowReferencedElements change validator', () => {
         {
           severity: 'Warning',
           message: 'Reference to missing Flow Element',
-          detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+          detailedMessage: 'The Flow Element "ActionCall" does not exist.',
           elemID: flowInstance.elemID.createNestedID('assignments', '0', 'connector', TARGET_REFERENCE),
         },
         {
           severity: 'Warning',
           message: 'Reference to missing Flow Element',
-          detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+          detailedMessage: 'The Flow Element "ActionCall" does not exist.',
           elemID: flowInstance.elemID.createNestedID('decisions', '0', 'connector', TARGET_REFERENCE),
         },
         {
           severity: 'Info',
           message: 'Unused Flow Element',
-          detailedMessage: `The Flow Element "${'Decision'}" isn’t being used in the Flow.`,
+          detailedMessage: 'The Flow Element "Decision" isn’t being used in the Flow.',
           elemID: flowInstance.elemID.createNestedID('decisions', '0', FLOW_NODE_FIELD_NAMES.NAME),
         },
         {
           severity: 'Warning',
           message: 'Reference to missing Flow Element',
-          detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+          detailedMessage: 'The Flow Element "ActionCall" does not exist.',
           elemID: flowInstance.elemID.createNestedID(
             'exitRules',
             '0',
@@ -447,7 +447,7 @@ describe('flowReferencedElements change validator', () => {
         {
           severity: 'Warning',
           message: 'Reference to missing Flow Element',
-          detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+          detailedMessage: 'The Flow Element "ActionCall" does not exist.',
           elemID: flowInstance.elemID.createNestedID(
             'actionCalls',
             '0',

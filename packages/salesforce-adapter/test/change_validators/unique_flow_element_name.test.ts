@@ -83,16 +83,18 @@ describe('uniqueFlowElementName change validator', () => {
       expect(errors).toBeEmpty()
     })
   })
-  describe('when there duplicate FlowElement names', () => {
+  describe('when there are duplicate FlowElement names', () => {
     beforeEach(() => {
       flowInstance = createInstanceElement(
         {
           fullName: 'TestFlow',
+          // Flow element extending FlowNode. Should be checked for uniqueness.
           actionCalls: [{ name: 'duplicateName' }, { name: 'anotherDuplicateName' }],
           constants: [{ name: 'duplicateName' }, { name: 'duplicateName' }],
           decisions: [{ name: 'uniqueName' }, { name: 'ThirdDuplicateName' }],
           dynamicChoiceSets: [{ name: 'duplicateName' }],
           screens: [{ name: 'anotherDuplicateName' }, { name: 'anotherDuplicateName' }],
+          // Flow element with a non-unique name. uniqueness check not required.
           processMetadataValues: [{ name: 'ThirdDuplicateName' }, { name: 'ThirdDuplicateName' }],
         },
         flow,
@@ -123,6 +125,7 @@ describe('uniqueFlowElementName change validator', () => {
         {
           elemID: flowInstance.elemID.createNestedID('screens', '0', 'name'),
           severity: 'Warning',
+
           message: 'Duplicate Name in Flow',
           detailedMessage: 'The name "anotherDuplicateName" is used multiple times in this Flow.',
         },

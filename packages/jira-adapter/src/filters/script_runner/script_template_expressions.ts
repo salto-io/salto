@@ -62,7 +62,11 @@ const filter: FilterCreator = ({ config, client }) => {
         fieldInstances.map(instance => [instance.value.id, instance] as [string, InstanceElement]),
       )
 
-      walkOnScripts({ func: addFieldsTemplateReferences(fieldInstancesById), isDc: client.isDataCenter, instances })
+      walkOnScripts({
+        func: addFieldsTemplateReferences(fieldInstancesById, config.fetch.enableMissingReferences ?? true),
+        isDc: client.isDataCenter,
+        instances,
+      })
     },
     preDeploy: async changes => {
       if (!config.fetch.enableScriptRunnerAddon) {

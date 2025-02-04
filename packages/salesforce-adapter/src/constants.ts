@@ -110,6 +110,8 @@ export const TARGET_REFERENCE = 'targetReference'
 export const ELEMENT_REFERENCE = 'elementReference'
 export const LEFT_VALUE_REFERENCE = 'leftValueReference'
 export const ASSIGN_TO_REFERENCE = 'assignToReference'
+export const LEFT_VALUE_REFERENCE = 'leftValueReference'
+export const ELEMENT_REFERENCE = 'elementReference'
 export enum FLOW_NODE_FIELD_NAMES {
   NAME = 'name',
   LOCATION_X = 'locationX',
@@ -135,6 +137,10 @@ export const FLOW_ELEMENTS_WITH_UNIQUE_NAMES = [
 ]
 
 export const FLOW_FIELD_TYPE_NAMES = {
+  FLOW_RULE: 'FlowRule',
+  FLOW_DECISION: 'FlowDecision',
+  FLOW_ELEMENT_REFERENCE_OR_VALUE: 'flowElementReferenceOrValue',
+  FLOW_CONDITION: 'FlowCondition',
   FLOW_ASSIGNMENT_ITEM: 'FlowAssignmentItem',
   FLOW_STAGE_STEP_OUTPUT_PARAMETER: 'FlowStageStepOutputParameter',
   FLOW_SUBFLOW_OUTPUT_ASSIGNMENT: 'FlowSubflowOutputAssignment',

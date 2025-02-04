@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { makeResolvablePromise, Resolvable, stepManager, StepManager } from '../src'
+import { makeResolvablePromise, Resolvable, stepManager, StepManager } from '../src/promise'
 
 describe('makeResolvablePromise', () => {
   let resolvable: Resolvable<number>

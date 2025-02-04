@@ -11,7 +11,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { DumpedHclBlock, DumpedHclBody } from './types'
 import { isFunctionExpression } from './functions'
 import { rules } from './native/lexer'
-import { escapeTemplateMarker } from './utils'
+import { escapeTemplateMarker, unescapeTemplateMarker } from './utils'
 
 const O_BLOCK = '{'
 const C_BLOCK = '}'
@@ -43,9 +43,6 @@ const separateByCommas = (items: string[][]): string[][] => {
 
 const isMultilineString = (prim: string): boolean => _.isString(prim) && prim.includes('\n')
 
-// Double escaping happens when we stringify after escaping.
-const fixDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\\\$\{/g, '\\${')
-
 const escapeMultilineMarker = (prim: string): string => prim.replace(/'''/g, "\\'''")
 
 const dumpMultilineString = (prim: string): string =>
@@ -54,7 +51,8 @@ const dumpMultilineString = (prim: string): string =>
 const dumpString = (prim: string, indentationLevel = 0): string => {
   const dumpedString = isMultilineString(prim)
     ? dumpMultilineString(prim)
-    : fixDoubleTemplateMarkerEscaping(safeJsonStringify(prim))
+    : // See documentation of unescapeTemplateMarker for why we need to unescape leading backslashes here
+      unescapeTemplateMarker(safeJsonStringify(prim), { unescapeStrategy: 'leadingBackslashOnly' })
   return `${createIndentation(indentationLevel)}${dumpedString}`
 }
 
@@ -93,7 +91,11 @@ const dumpExpression = (exp: Value, indentationLevel = 0): string[] => {
   return [
     dumpString(
       parts
-        .map(part => (isExpression(part) ? `\${ ${dumpExpression(part).join('\n')} }` : escapeTemplateMarker(part)))
+        .map((part, idx) =>
+          isExpression(part)
+            ? `\${ ${dumpExpression(part).join('\n')} }`
+            : escapeTemplateMarker(part, { isNextPartReference: isExpression(parts[idx + 1]) }),
+        )
         .join(''),
       indentationLevel,
     ),

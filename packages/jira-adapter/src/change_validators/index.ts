@@ -83,7 +83,7 @@ const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsCha
 
 const TYPE_TO_UNIQUE_FIELD: Record<string, deployment.changeValidators.ScopeAndUniqueFields> = {
   [ISSUE_TYPE_NAME]: { scope: SCOPE.global, uniqueFields: ['name'] },
-  [PORTAL_GROUP_TYPE]: { scope: SCOPE.global, uniqueFields: ['name'] },
+  [PORTAL_GROUP_TYPE]: { scope: SCOPE.parent, uniqueFields: ['name'] },
   [SLA_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
   [PROJECT_TYPE]: { scope: SCOPE.global, uniqueFields: ['name', 'key'] },
   [FIELD_CONTEXT_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },

@@ -83,7 +83,6 @@ import {
   isElementIdMatchSelectors,
   updateElementsWithAlternativeAccount,
   Workspace,
-  flags,
 } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
@@ -100,7 +99,6 @@ const { mapValuesAsync } = promises.object
 const { withLimitedConcurrency } = promises.array
 const { mergeElements } = merger
 const { isTypeOfOrUndefined } = types
-const { getSaltoFlagBool, WORKSPACE_FLAGS } = flags
 const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
@@ -143,21 +141,6 @@ export const getDetailedChanges = async (
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
 ): Promise<DetailedChangeWithBaseChange[]> => {
-  if (getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch)) {
-    return wu(
-      (
-        await getPlan({
-          before,
-          after,
-          dependencyChangers: [],
-          topLevelFilters,
-        })
-      ).itemsByEvalOrder(),
-    )
-      .map(item => item.detailedChanges())
-      .flatten()
-      .toArray()
-  }
   const changes = await calculateDiff({ before, after, topLevelFilters })
   return awu(changes)
     .map(change => getDetailedChangesFromChange(change))
@@ -403,7 +386,7 @@ const toFetchChanges = (
       // When there are no pending changes, the state and workspace are already aligned, so we can reuse service changes
       // as workspace changes. We are guaranteed no conflicts, so we can return early here. This reuse relies on the
       // assumption that reference expressions in the state element source used to compute the diff are *not* resolved.
-      if (!getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) && pendingChanges.length === 0) {
+      if (pendingChanges.length === 0) {
         return serviceChanges.map(change => ({ change, serviceChanges, pendingChanges: [] }))
       }
 
@@ -913,15 +896,7 @@ export const calcFetchChanges = async ({
         getDetailedChangeTree(
           workspaceElements,
           partialFetchElementSource,
-          [
-            accountFetchFilter,
-            partialFetchFilter,
-            // Computing a plan for fetch operations results in reference expressions being resolved, which doesn't
-            // allow us to use service-state diff to calculate workspace-service diff (as resolved values would be
-            // wrong), so we can't limit the diff to pending changes here if the flag is turned on.
-            // TODO: Remove when the new plan computation is stable in production.
-            getSaltoFlagBool(WORKSPACE_FLAGS.computePlanOnFetch) ? serviceChangeIdsFilter : pendingChangeIdsFilter,
-          ],
+          [accountFetchFilter, partialFetchFilter, pendingChangeIdsFilter],
           'service',
         ),
       'calculate service-workspace changes',

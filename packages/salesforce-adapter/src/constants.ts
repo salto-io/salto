@@ -113,6 +113,24 @@ export enum FLOW_NODE_FIELD_NAMES {
   LOCATION_X = 'locationX',
   LOCATION_Y = 'locationY',
 }
+export const FLOW_ELEMENTS_WITH_UNIQUE_NAMES = [
+  'FlowChoice',
+  'FlowConstant',
+  'FlowDynamicChoiceSet',
+  'FlowExitRule',
+  'FlowExperimentPath',
+  'FlowFormula',
+  'FlowNode',
+  'FlowRule',
+  'FlowScheduledPath',
+  'FlowScreenField',
+  'FlowStage',
+  'FlowCapability',
+  'FlowCapabilityInput',
+  'FlowTextTemplate',
+  'FlowVariable',
+  'FlowWaitEvent',
+]
 
 export const FLOW_FIELD_TYPE_NAMES = {
   FLOW_ASSIGNMENT_ITEM: 'FlowAssignmentItem',
@@ -808,11 +826,12 @@ export const isSalesforceError = (error: Error): error is SalesforceError => {
   return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
 }
 
-// Salesforce Deploy Problems
-export const SALESFORCE_DEPLOY_PROBLEMS = {
+// Salesforce Deploy Error Messages
+export const SALESFORCE_DEPLOY_ERROR_MESSAGES = {
   SCHEDULABLE_CLASS: 'This schedulable class has jobs pending or in progress',
   MAX_METADATA_DEPLOY_LIMIT: 'Maximum size of request reached. Maximum size of request is 52428800 bytes.',
   INVALID_DASHBOARD_UNIQUE_NAME: 'Invalid dashboard Unique Name',
+  FIELD_CUSTOM_VALIDATION_EXCEPTION: 'FIELD_CUSTOM_VALIDATION_EXCEPTION',
 } as const
 
 // Artifacts

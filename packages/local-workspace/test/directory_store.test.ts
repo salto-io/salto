@@ -41,9 +41,13 @@ isEmptyDir.notFoundAsUndefined = notFoundAsUndefined(isEmptyDir)
 rename.notFoundAsUndefined = notFoundAsUndefined(rename)
 jest.mock('readdirp')
 describe('localDirectoryStore', () => {
+  let mockStatOrUndefined: jest.Mock
+
   const encoding = 'utf8'
   beforeEach(() => {
     jest.clearAllMocks()
+    mockStatOrUndefined = jest.fn()
+    stat.notFoundAsUndefined = mockStatOrUndefined
   })
 
   const mockStat = stat as unknown as jest.Mock
@@ -125,7 +129,7 @@ describe('localDirectoryStore', () => {
       const content = 'content'
       mockFileExists.mockResolvedValue(true)
       mockReadFile.mockResolvedValue(content)
-      mockStat.mockResolvedValue({ mtimeMs: 7 })
+      mockStatOrUndefined.mockResolvedValue({ mtimeMs: 7 })
       const dirStore = localDirectoryStore({ baseDir, name: '', encoding })
       await dirStore.delete(naclFileName)
       const naclFile = await dirStore.get(naclFileName)
@@ -140,7 +144,7 @@ describe('localDirectoryStore', () => {
       const content = 'content'
       mockFileExists.mockResolvedValue(true)
       mockReadFile.mockResolvedValue(content)
-      mockStat.mockResolvedValue({ mtimeMs: 7 })
+      mockStatOrUndefined.mockResolvedValue({ mtimeMs: 7 })
       const dirStore = localDirectoryStore({ baseDir, name: '', encoding })
       await dirStore.delete(naclFileName)
       const naclFile = await dirStore.get(naclFileName, { ignoreDeletionsCache: true })
@@ -156,7 +160,7 @@ describe('localDirectoryStore', () => {
       const content = 'content'
       mockFileExists.mockResolvedValue(true)
       mockReadFile.mockResolvedValue(content)
-      mockStat.mockResolvedValue({ mtimeMs: 7 })
+      mockStatOrUndefined.mockResolvedValue({ mtimeMs: 7 })
       const naclFile = await localDirectoryStore({ baseDir, name: '', encoding }).get(naclFileName)
       expect(naclFile?.buffer).toBe(content)
       expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(baseDir, naclFileName))
@@ -171,7 +175,7 @@ describe('localDirectoryStore', () => {
       const content = Buffer.from('content')
       mockFileExists.mockReturnValue(true)
       mockReadFile.mockReturnValueOnce(content)
-      mockStat.mockReturnValue({ mtimeMs: 7 })
+      mockStatOrUndefined.mockReturnValue({ mtimeMs: 7 })
       const bufferFile = await bufferStore.get(bufferFileName)
       expect(bufferFile?.buffer).toBe(content)
       expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(baseDir, bufferFileName))
@@ -185,13 +189,13 @@ describe('localDirectoryStore', () => {
       const baseDir = 'exists'
       const naclFileName = 'blabla/exist.nacl'
       mockFileExists.mockResolvedValue(true)
-      mockStat.mockResolvedValue({ mtimeMs: 7 })
+      mockStatOrUndefined.mockResolvedValue({ mtimeMs: 7 })
       const dirStore = localDirectoryStore({ baseDir, name: '', encoding })
       await dirStore.delete(naclFileName)
       const timestamp = await dirStore.mtimestamp(naclFileName)
       expect(timestamp).toBeUndefined()
       expect(mockFileExists).not.toHaveBeenCalled()
-      expect(mockStat).not.toHaveBeenCalled()
+      expect(mockStatOrUndefined).not.toHaveBeenCalled()
     })
   })
 
@@ -264,7 +268,7 @@ describe('localDirectoryStore', () => {
     it('return multiple files', async () => {
       mockFileExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true).mockResolvedValueOnce(true)
       mockReadFile.mockResolvedValueOnce('bla1').mockResolvedValueOnce('bla2')
-      mockStat.mockResolvedValue({ mtimeMs: 7 })
+      mockStatOrUndefined.mockResolvedValue({ mtimeMs: 7 })
       const files = await localDirectoryStore({ baseDir: '', name: '', encoding }).getFiles(['', '', ''])
       expect(files[0]).toBeUndefined()
       expect(files[1]?.buffer).toEqual('bla1')
@@ -278,7 +282,7 @@ describe('localDirectoryStore', () => {
     it('Should return deleted file when requested to ignore cache', async () => {
       mockFileExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true).mockResolvedValueOnce(true)
       mockReadFile.mockResolvedValueOnce('bla1').mockResolvedValueOnce('bla2')
-      mockStat.mockResolvedValue({ mtimeMs: 7 })
+      mockStatOrUndefined.mockResolvedValue({ mtimeMs: 7 })
       const dirStore = localDirectoryStore({ baseDir: '', name: '', encoding })
       await dirStore.delete('b')
       const files = await dirStore.getFiles(['a', 'b', 'c'], { ignoreDeletionsCache: true })
@@ -467,6 +471,8 @@ describe('localDirectoryStore', () => {
 
   describe('flush', () => {
     let dirStore: workspaceDirStore.DirectoryStore<workspaceDirStore.ContentType>
+    let flushResult: workspaceDirStore.FlushResult<workspaceDirStore.ContentType> | void
+
     const buffer = Buffer.from('bla')
     const removedFlat = 'a'
     const createdNested = 'a/a'
@@ -505,6 +511,42 @@ describe('localDirectoryStore', () => {
       expect(mockRm.mock.calls[1][0]).toMatch(removedNested)
       expect(mockReplaceContents.mock.calls[0][0]).toMatch(createdNested)
       expect(mockReplaceContents.mock.calls[1][0]).toMatch(createdFlat)
+    })
+
+    describe('without flush result', () => {
+      beforeEach(async () => {
+        await dirStore.set({ filename: createdNested, buffer })
+        await dirStore.set({ filename: createdFlat, buffer })
+        await dirStore.delete(removedFlat)
+        await dirStore.delete(removedNested)
+        flushResult = await dirStore.flush()
+      })
+      it('should not return a flush result', async () => {
+        expect(flushResult).toBeUndefined()
+      })
+      it('should not get files timestamp', () => {
+        expect(mockStatOrUndefined).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('with flush result', () => {
+      beforeEach(async () => {
+        mockStatOrUndefined.mockResolvedValueOnce({ mtimeMs: 7 })
+        await dirStore.set({ filename: createdNested, buffer })
+        await dirStore.set({ filename: createdFlat, buffer })
+        await dirStore.delete(removedFlat)
+        await dirStore.delete(removedNested)
+        flushResult = await dirStore.flush(true)
+      })
+      it('should return a flush result', async () => {
+        expect(flushResult).toEqual({
+          deletions: [removedFlat, removedNested],
+          updates: [
+            { filename: createdNested, buffer, timestamp: 7 },
+            { filename: createdFlat, buffer },
+          ],
+        })
+      })
     })
   })
 })

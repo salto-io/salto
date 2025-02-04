@@ -25,7 +25,6 @@ import {
   TypeElement,
   ChangeDataType,
   FixElementsFunc,
-  SaltoElementError,
   SaltoError,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -130,6 +129,7 @@ import { SystemInformation } from './client/suiteapp_client/types'
 import { getOrCreateObjectIdListElements } from './scriptid_list'
 import { getUpdatedSuiteQLNameToInternalIdsMap } from './account_specific_values_resolver'
 import { getTypesToInternalId } from './data_elements/types'
+import { createLargeFilesCountFolderFetchWarnings } from './client/file_cabinet_utils'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -373,11 +373,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const importFileCabinetContent = async (): Promise<ImportFileCabinetResult> => {
       progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
-      const result = await this.client.importFileCabinetContent(
-        updatedFetchQuery,
-        this.config.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
-        this.config.fetch.exclude.fileCabinet.filter(reg => reg.startsWith(EXTENSION_REGEX)),
-      )
+      const result = await this.client.importFileCabinetContent({
+        query: updatedFetchQuery,
+        maxFileCabinetSizeInGB: this.config.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
+        extensionsToExclude: this.config.fetch.exclude.fileCabinet.filter(reg => reg.startsWith(EXTENSION_REGEX)),
+        maxFilesPerFileCabinetFolder: this.config.client?.maxFilesPerFileCabinetFolder ?? [],
+      })
       progressReporter.reportProgress({ message: 'Fetching instances' })
       return result
     }
@@ -421,12 +422,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       customRecordTypes: ObjectType[]
       lockedCustomRecordTypes: ObjectType[]
       customRecords: InstanceElement[]
-      customRecordErrors: SaltoElementError[]
+      errors: SaltoError[]
       instancesIds: ObjectID[]
-      failures: Omit<FetchByQueryFailures, 'largeSuiteQLTables'>
+      failures: FetchByQueryFailures
     }> => {
       const [
-        { elements: fileCabinetContent, failedPaths: failedFilePaths },
+        { elements: fileCabinetContent, failedPaths: failedFilePaths, largeFilesCountFolderWarnings },
         { elements: customObjects, instancesIds, failedToFetchAllAtOnce, failedTypes },
       ] = await Promise.all([
         importFileCabinetContent(),
@@ -461,13 +462,17 @@ export default class NetsuiteAdapter implements AdapterOperations {
         this.config.fetch.singletonCustomRecords ?? [],
         this.getElemIdFunc,
       )
+      const largeFilesCountFolderFetchWarnings = createLargeFilesCountFolderFetchWarnings(
+        standardInstances,
+        largeFilesCountFolderWarnings,
+      )
       return {
         standardInstances,
         standardTypes: [...standardTypes, ...otherTypes],
         customRecordTypes,
         lockedCustomRecordTypes,
         customRecords,
-        customRecordErrors,
+        errors: largeFilesCountFolderFetchWarnings.concat(customRecordErrors),
         instancesIds,
         failures: { failedCustomRecords, failedFilePaths, failedToFetchAllAtOnce, failedTypes },
       }
@@ -480,7 +485,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         customRecordTypes,
         lockedCustomRecordTypes,
         customRecords,
-        customRecordErrors,
+        errors,
         instancesIds,
         failures,
       },
@@ -530,7 +535,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(serverTimeElements)
       .concat(scriptIdListElements)
 
-    const fetchErrors = ([] as SaltoError[]).concat(customRecordErrors).concat(deletedElementErrors)
+    const fetchErrors = errors.concat(deletedElementErrors)
 
     await this.createFiltersRunner({
       operation: 'fetch',

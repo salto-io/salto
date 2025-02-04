@@ -20,10 +20,9 @@ import {
   TemplateExpression,
   Values,
 } from '@salto-io/adapter-api'
-import { config as configUtils, fetch as fetchUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { e2eUtils } from '@salto-io/zendesk-adapter'
+import { elements as elementUtils, e2eUtils } from '@salto-io/adapter-components'
+import { e2eUtils as zendeskE2eUtils } from '@salto-io/zendesk-adapter'
 import _ from 'lodash'
-import { naclCase } from '@salto-io/adapter-utils'
 import { v4 as uuidv4 } from 'uuid'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -31,7 +30,8 @@ import { parserUtils } from '@salto-io/parser'
 import { mockDefaultValues } from './mock_elements'
 
 const {
-  API_DEFINITIONS_CONFIG,
+  TRIGGER_CATEGORY_TYPE_NAME,
+  TRIGGER_TYPE_NAME,
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ATTACHMENTS_FIELD,
   ARTICLE_ORDER_TYPE_NAME,
@@ -57,10 +57,11 @@ const {
   USER_SEGMENT_TYPE_NAME,
   VIEW_TYPE_NAME,
   ZENDESK,
-} = e2eUtils
+  createFetchDefinitions,
+} = zendeskE2eUtils
 
 export const TYPES_NOT_TO_REMOVE = new Set<string>([
-  SUPPORT_ADDRESS_TYPE_NAME, // this is usually the defult of the brand and zendesk does not allow deleting the default
+  SUPPORT_ADDRESS_TYPE_NAME, // this is usually the default of the brand and zendesk does not allow deleting the default
 ])
 export const UNIQUE_NAME = 'E2ETestName'
 export const HELP_CENTER_BRAND_NAME = 'e2eHelpCenter'
@@ -70,49 +71,38 @@ export const HIDDEN_PER_TYPE: Record<string, string[]> = {
 }
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
-const createInstanceElement = ({
-  type,
-  valuesOverride,
-  fields,
-  parent,
-  name,
-}: {
-  type: string
-  valuesOverride: Values
-  fields?: Record<string, FieldDefinition>
-  parent?: InstanceElement
-  name?: string
-}): InstanceElement => {
-  const instValues = {
-    ...mockDefaultValues[type],
-    ...valuesOverride,
-  }
-  const { idFields, nameMapping } = configUtils.getConfigWithDefault(
-    DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].types[type].transformation ?? {},
-    DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
-  )
+const fetchDefinitions = createFetchDefinitions({})
 
-  const nameWithMapping = fetchUtils.element.getNameMapping({
-    name: idFields
-      .map(field => _.get(instValues, field))
-      .map(String)
-      .join('_'),
-    nameMapping,
-  })
-  return new InstanceElement(
-    name ?? naclCase(nameWithMapping),
-    new ObjectType({ elemID: new ElemID(ZENDESK, type), fields }),
-    instValues,
-    undefined,
-    parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] } : undefined,
-  )
-}
+const createInstanceElementFunc =
+  (types: ObjectType[]) =>
+  ({
+    type,
+    valuesOverride,
+    parent,
+  }: {
+    type: string
+    valuesOverride: Values
+    fields?: Record<string, FieldDefinition>
+    parent?: InstanceElement
+  }): InstanceElement => {
+    const instValues = {
+      ...mockDefaultValues[type],
+      ...valuesOverride,
+    }
+    return e2eUtils.createInstance({
+      fetchDefinitions,
+      typeName: type,
+      types,
+      values: instValues,
+      parent,
+    })
+  }
 
 const createRootForTheme = async (
   buffer: Buffer,
   brand: InstanceElement,
   name: string,
-): Promise<e2eUtils.ThemeDirectory> => {
+): Promise<zendeskE2eUtils.ThemeDirectory> => {
   const root = await unzipFolderToElements({
     buffer,
     currentBrandName: brand.value.name,
@@ -156,14 +146,17 @@ const createSubdomainName = (): string => `test${testSuffix}`
 export const getAllInstancesToDeploy = async ({
   brandInstanceE2eHelpCenter,
   defaultGroup,
+  types,
 }: {
   brandInstanceE2eHelpCenter: InstanceElement
   defaultGroup: InstanceElement
+  types: ObjectType[]
 }): Promise<{
   instancesToDeploy: InstanceElement[]
   guideInstances: InstanceElement[]
   guideThemeInstance: InstanceElement
 }> => {
+  const createInstanceElement = createInstanceElementFunc(types)
   const automationInstance = createInstanceElement({
     type: 'automation',
     valuesOverride: {
@@ -313,19 +306,16 @@ export const getAllInstancesToDeploy = async ({
     valuesOverride: { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
   })
 
-  // Adding explicitly the `name` here as layout isn't in the old infra, so the transformation isn't in the config.
   const layoutInstance = createInstanceElement({
     type: 'layout',
     valuesOverride: { title: createName('layout') },
-    name: createName('layout'),
   })
 
   const workspaceInstance = createInstanceElement({
     type: 'workspace',
     valuesOverride: {
       title: createName('workspace'),
-      // This doesn't currently work in the test suite, revisit after the new infra is in place
-      // layout_uuid: new ReferenceExpression(layoutInstance.elemID, layoutInstance),
+      layout_uuid: new ReferenceExpression(layoutInstance.elemID, layoutInstance),
     },
   })
 
@@ -342,7 +332,6 @@ export const getAllInstancesToDeploy = async ({
 
   const customObjectFieldInstance1Key = `key1${testSuffix}`
   const customObjectFieldInstance1 = createInstanceElement({
-    name: `${customObjectInstance.elemID.name}__${customObjectFieldInstance1Key}`,
     type: CUSTOM_OBJECT_FIELD_TYPE_NAME,
     valuesOverride: {
       type: 'dropdown',
@@ -357,7 +346,6 @@ export const getAllInstancesToDeploy = async ({
 
   const customObjectFieldInstance2Key = `key2${testSuffix}`
   const customObjectFieldInstance2 = createInstanceElement({
-    name: `${customObjectInstance.elemID.name}__${customObjectFieldInstance2Key}`,
     type: CUSTOM_OBJECT_FIELD_TYPE_NAME,
     valuesOverride: {
       type: 'lookup',
@@ -373,7 +361,6 @@ export const getAllInstancesToDeploy = async ({
 
   const customObjectFieldOptionInstance1Value = `value1${testSuffix}`
   const customObjectFieldOptionInstance1 = createInstanceElement({
-    name: `${customObjectFieldInstance1.elemID.name}__${customObjectFieldOptionInstance1Value}`,
     type: CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
     valuesOverride: {
       raw_name: `name1${testSuffix}`,
@@ -384,7 +371,6 @@ export const getAllInstancesToDeploy = async ({
 
   const customObjectFieldOptionInstance2Value = `value2${testSuffix}`
   const customObjectFieldOptionInstance2 = createInstanceElement({
-    name: `${customObjectFieldInstance1.elemID.name}__${customObjectFieldOptionInstance2Value}`,
     type: CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
     valuesOverride: {
       raw_name: `name2${testSuffix}`,
@@ -402,6 +388,61 @@ export const getAllInstancesToDeploy = async ({
     new ReferenceExpression(customObjectFieldOptionInstance2.elemID, customObjectFieldOptionInstance2),
   ]
 
+  const triggerCategoryName = createName('trigger_category')
+  const triggerCategoryInstance = createInstanceElement({
+    type: TRIGGER_CATEGORY_TYPE_NAME,
+    valuesOverride: { name: triggerCategoryName },
+  })
+
+  const triggerName = createName('trigger')
+  const triggerInstance = createInstanceElement({
+    type: TRIGGER_TYPE_NAME,
+    valuesOverride: {
+      title: triggerName,
+      active: true,
+      default: false,
+      actions: [
+        {
+          field: 'status',
+          value: 'open',
+        },
+        {
+          field: 'group_id',
+          value: new ReferenceExpression(defaultGroup.elemID),
+        },
+      ],
+      conditions: {
+        all: [
+          {
+            field: 'status',
+            operator: 'is',
+            value: 'new',
+          },
+          {
+            field: 'group_id',
+            operator: 'is',
+            value: new ReferenceExpression(defaultGroup.elemID),
+          },
+        ],
+        any: [
+          {
+            field: 'brand_id',
+            operator: 'is',
+            value: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID),
+          },
+          {
+            field: new ReferenceExpression(ticketFieldInstance.elemID),
+            operator: 'is',
+            value: new ReferenceExpression(ticketFieldOption1.elemID),
+          },
+        ],
+      },
+      description: '',
+      raw_title: triggerName,
+      category_id: new ReferenceExpression(triggerCategoryInstance.elemID),
+    },
+  })
+
   // ***************** guide instances ******************* //
 
   const guideLanguageSettingsEn = createInstanceElement({
@@ -409,16 +450,16 @@ export const getAllInstancesToDeploy = async ({
     valuesOverride: {
       locale: 'en-us',
       name: 'english',
+      brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
-    name: `${HELP_CENTER_BRAND_NAME}_en_us@ub`,
   })
   const guideLanguageSettingsHe = createInstanceElement({
     type: 'guide_language_settings',
     valuesOverride: {
       locale: 'he',
       name: 'hebrew',
+      brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
-    name: `${HELP_CENTER_BRAND_NAME}_he`,
   })
 
   const categoryName = createName('category')
@@ -426,15 +467,16 @@ export const getAllInstancesToDeploy = async ({
     instance: createInstanceElement({
       type: CATEGORY_TYPE_NAME,
       valuesOverride: {
+        name: categoryName,
         locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
         source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
         brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
       },
       fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-      name: `${categoryName}_${HELP_CENTER_BRAND_NAME}`,
     }),
     config: DEFAULT_CONFIG.apiDefinitions,
   })
+  categoryInstance.value.name = undefined // we add the name only to generate the elemId, it's added and removed in packages/zendesk-adapter/src/filters/guide_section_and_category.ts
   const categoryEnTranslationInstance = createInstanceElement({
     type: CATEGORY_TRANSLATION_TYPE_NAME,
     valuesOverride: {
@@ -447,7 +489,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: categoryInstance,
-    name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuum`,
   })
 
   const categoryHeTranslationInstance = createInstanceElement({
@@ -462,7 +503,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: categoryInstance,
-    name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_he`,
   })
 
   categoryInstance.value.translations = [
@@ -474,6 +514,7 @@ export const getAllInstancesToDeploy = async ({
   const sectionInstance = createInstanceElement({
     type: SECTION_TYPE_NAME,
     valuesOverride: {
+      name: sectionName,
       locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
       source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -482,8 +523,8 @@ export const getAllInstancesToDeploy = async ({
       direct_parent_type: CATEGORY_TYPE_NAME,
     },
     fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
   })
+  sectionInstance.value.name = undefined // we add the name only to generate the elemId, it's added and removed in packages/zendesk-adapter/src/filters/guide_section_and_category.ts
   const sectionEnTranslationInstance = createInstanceElement({
     type: SECTION_TRANSLATION_TYPE_NAME,
     valuesOverride: {
@@ -496,7 +537,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: sectionInstance,
-    name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuum`,
   })
   const sectionHeTranslationInstance = createInstanceElement({
     type: SECTION_TRANSLATION_TYPE_NAME,
@@ -510,7 +550,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: sectionInstance,
-    name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_he`,
   })
   sectionInstance.value.translations = [
     new ReferenceExpression(sectionEnTranslationInstance.elemID, sectionEnTranslationInstance),
@@ -520,6 +559,7 @@ export const getAllInstancesToDeploy = async ({
   const section2Instance = createInstanceElement({
     type: SECTION_TYPE_NAME,
     valuesOverride: {
+      name: section2Name,
       locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
       source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -528,8 +568,8 @@ export const getAllInstancesToDeploy = async ({
       direct_parent_type: CATEGORY_TYPE_NAME,
     },
     fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    name: `${section2Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
   })
+  section2Instance.value.name = undefined // we add the name only to generate the elemId, it's added and removed in packages/zendesk-adapter/src/filters/guide_section_and_category.ts
   const section2EnTranslationInstance = createInstanceElement({
     type: SECTION_TRANSLATION_TYPE_NAME,
     valuesOverride: {
@@ -542,7 +582,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: section2Instance,
-    name: `${section2Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuum`,
   })
   section2Instance.value.translations = [
     new ReferenceExpression(section2EnTranslationInstance.elemID, section2EnTranslationInstance),
@@ -551,6 +590,7 @@ export const getAllInstancesToDeploy = async ({
   const section3Instance = createInstanceElement({
     type: SECTION_TYPE_NAME,
     valuesOverride: {
+      name: section3Name,
       locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
       source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -559,8 +599,8 @@ export const getAllInstancesToDeploy = async ({
       direct_parent_type: CATEGORY_TYPE_NAME,
     },
     fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    name: `${section3Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
   })
+  section3Instance.value.name = undefined // we add the name only to generate the elemId, it's added and removed in packages/zendesk-adapter/src/filters/guide_section_and_category.ts
   const section3EnTranslationInstance = createInstanceElement({
     type: SECTION_TRANSLATION_TYPE_NAME,
     valuesOverride: {
@@ -573,7 +613,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: section3Instance,
-    name: `${section3Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuum`,
   })
   section3Instance.value.translations = [
     new ReferenceExpression(section3EnTranslationInstance.elemID, section3EnTranslationInstance),
@@ -589,13 +628,13 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: categoryInstance,
-    name: `${categoryName}_${HELP_CENTER_BRAND_NAME}`,
   })
 
   const insideSectionName = createName('section')
   const insideSectionInstance = createInstanceElement({
     type: SECTION_TYPE_NAME,
     valuesOverride: {
+      name: insideSectionName,
       locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
       source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -605,8 +644,8 @@ export const getAllInstancesToDeploy = async ({
       direct_parent_type: SECTION_TYPE_NAME,
     },
     fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    name: `${insideSectionName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
   })
+  insideSectionInstance.value.name = undefined // we add the name only to generate the elemId, it's added and removed in packages/zendesk-adapter/src/filters/guide_section_and_category.ts
   const insideSectionEnTranslationInstance = createInstanceElement({
     type: SECTION_TRANSLATION_TYPE_NAME,
     valuesOverride: {
@@ -619,7 +658,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: insideSectionInstance,
-    name: `${insideSectionName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
   })
   insideSectionInstance.value.translations = [
     new ReferenceExpression(insideSectionEnTranslationInstance.elemID, insideSectionEnTranslationInstance),
@@ -647,6 +685,7 @@ export const getAllInstancesToDeploy = async ({
   const articleInstance = createInstanceElement({
     type: ARTICLE_TYPE_NAME,
     valuesOverride: {
+      title: articleName,
       promoted: false,
       section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
       source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
@@ -656,8 +695,8 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
       user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
     },
-    name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
   })
+  articleInstance.value.title = undefined // we add the title only to generate the elemId, it's removed in a filter
 
   const attachmentName = createName('attachment')
   const fileName = `nacl${attachmentName}`
@@ -670,7 +709,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: articleInstance,
-    name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${fileName}_false`,
   })
   articleAttachment.value.content = new StaticFile({
     filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${fileName}/${shortElemIdHash(articleAttachment.elemID)}_80f6f478ed_${fileName}`,
@@ -686,7 +724,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: articleInstance,
-    name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${inlineFileName}_true`,
   })
   articleInlineAttachment.value.content = new StaticFile({
     filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${inlineFileName}/${shortElemIdHash(articleInlineAttachment.elemID)}_80f6f478ed_${inlineFileName}`,
@@ -713,7 +750,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: articleInstance,
-    name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
   })
   articleTranslationEn.value.body = parserUtils.templateExpressionToStaticFile(
     new TemplateExpression({
@@ -738,7 +774,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: articleInstance,
-    name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_he`,
   })
   articleTranslationHe.value.body = new StaticFile({
     content: Buffer.from('זאת בדיקה בעברית'),
@@ -753,6 +788,7 @@ export const getAllInstancesToDeploy = async ({
   const article2Instance = createInstanceElement({
     type: ARTICLE_TYPE_NAME,
     valuesOverride: {
+      title: article2Name,
       promoted: false,
       section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
       source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
@@ -762,8 +798,8 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
       user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
     },
-    name: `${article2Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
   })
+  article2Instance.value.title = undefined // we add the title only to generate the elemId, it's removed in a filter
 
   const article2TranslationEn = createInstanceElement({
     type: ARTICLE_TRANSLATION_TYPE_NAME,
@@ -775,7 +811,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: article2Instance,
-    name: `${article2Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
   })
   article2TranslationEn.value.body = new StaticFile({
     content: Buffer.from('this is a test'),
@@ -788,6 +823,7 @@ export const getAllInstancesToDeploy = async ({
   const article3Instance = createInstanceElement({
     type: ARTICLE_TYPE_NAME,
     valuesOverride: {
+      title: article3Name,
       promoted: false,
       section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
       source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
@@ -797,8 +833,8 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
       user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
     },
-    name: `${article3Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
   })
+  article3Instance.value.title = undefined // we add the title only to generate the elemId, it's removed in a filter
 
   const article3TranslationEn = createInstanceElement({
     type: ARTICLE_TRANSLATION_TYPE_NAME,
@@ -810,7 +846,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: article3Instance,
-    name: `${article3Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
   })
   article3TranslationEn.value.body = new StaticFile({
     content: Buffer.from('this is a test'),
@@ -830,7 +865,6 @@ export const getAllInstancesToDeploy = async ({
       brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
     parent: sectionInstance,
-    name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
   })
 
   const guideThemeName = createName('theme')
@@ -845,7 +879,6 @@ export const getAllInstancesToDeploy = async ({
       ),
       brand_id: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
     },
-    name: `${HELP_CENTER_BRAND_NAME}_${guideThemeName}`,
   })
 
   const customObjectInstances = [
@@ -884,6 +917,8 @@ export const getAllInstancesToDeploy = async ({
   ]
 
   const instancesToAdd = [
+    triggerCategoryInstance,
+    triggerInstance,
     ticketFieldInstance,
     ticketFieldOption1,
     ticketFieldOption2,

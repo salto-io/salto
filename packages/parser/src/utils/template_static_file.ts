@@ -9,16 +9,15 @@ import { isReferenceExpression, StaticFile, TemplateExpression } from '@salto-io
 import { logger } from '@salto-io/logging'
 import type { Token } from 'moo'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
-import { escapeTemplateMarker } from '../parser/internal/utils'
-import { unescapeTemplateMarker } from '../parser/internal/native/helpers'
+import { escapeTemplateMarker, unescapeTemplateMarker } from '../parser/internal/utils'
 import { stringLexerFromString } from '../parser/internal/native/lexer'
 import { createStringValue } from '../parser/internal/native/consumers/values'
-import type { ParseError } from '../parser'
+import { ParseError } from '../parser'
 
 const log = logger(module)
 
-const createSimpleStringValue = (_context: unknown, tokens: Required<Token>[]): string =>
-  unescapeTemplateMarker(tokens.map(token => token.text).join(''))
+const createSimpleStringValue = (_context: unknown, tokens: Required<Token>[], isNextPartReference?: boolean): string =>
+  unescapeTemplateMarker(tokens.map(token => token.text).join(''), { isNextPartReference })
 
 const parseBufferToTemplateExpression = (
   buffer: Buffer,
@@ -39,7 +38,11 @@ const parseBufferToTemplateExpression = (
 
 export const templateExpressionToStaticFile = (expression: TemplateExpression, filepath: string): StaticFile => {
   const string = expression.parts
-    .map(part => (isReferenceExpression(part) ? `\${ ${[part.elemID.getFullName()]} }` : escapeTemplateMarker(part)))
+    .map((part, idx) =>
+      isReferenceExpression(part)
+        ? `\${ ${[part.elemID.getFullName()]} }`
+        : escapeTemplateMarker(part, { isNextPartReference: isReferenceExpression(expression.parts[idx + 1]) }),
+    )
     .join('')
   return new StaticFile({ filepath, content: Buffer.from(string), isTemplate: true, encoding: 'utf8' })
 }

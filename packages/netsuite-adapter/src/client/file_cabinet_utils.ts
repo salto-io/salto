@@ -9,8 +9,11 @@ import _ from 'lodash'
 import { posix } from 'path'
 import { strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { FILE_CABINET_PATH_SEPARATOR as sep } from '../constants'
+import { ERROR_MESSAGES } from '@salto-io/adapter-utils'
+import { InstanceElement, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
+import { FOLDER, PATH, FILE_CABINET_PATH_SEPARATOR as sep } from '../constants'
 import { WARNING_MAX_FILE_CABINET_SIZE_IN_GB } from '../config/constants'
+import { LargeFilesCountFolderWarning } from './types'
 
 const log = logger(module)
 
@@ -133,3 +136,36 @@ export const filterFilePathsInFolders = <T extends { path: string[] }>(files: T[
 
 export const filterFolderPathsInFolders = <T extends { path: string[] }>(files: T[], folders: string[]): T[] =>
   filterPathsInFoldersByFunc(files, folders, file => `${sep}${file.path.join(sep)}${sep}`)
+
+export const createLargeFilesCountFolderFetchWarnings = (
+  instances: InstanceElement[],
+  largeFilesCountFolderWarnings: LargeFilesCountFolderWarning[],
+): (SaltoError | SaltoElementError)[] => {
+  if (largeFilesCountFolderWarnings.length === 0) {
+    return []
+  }
+  const folderInstances = _.keyBy(
+    instances.filter(instance => instance.elemID.typeName === FOLDER),
+    instance => instance.value[PATH] as string,
+  )
+  return largeFilesCountFolderWarnings.map(({ folderPath, limit, current }) => {
+    const severity = 'Warning'
+    const message = ERROR_MESSAGES.OTHER_ISSUES
+    const detailedMessage =
+      `The File Cabinet folder "${folderPath}" is close to exceed the limit of allowed amount of files in a folder.` +
+      ` There are currently ${current} files in the folder and the limit for this folder is ${limit} files.` +
+      ' It will be automatically excluded in case of reaching that limit.' +
+      ' In order to keep managing this folder in Salto, add it to the `client.maxFilesPerFileCabinetFolder` config with a matching limit.' +
+      ' To learn more visit https://github.com/salto-io/salto/blob/main/packages/netsuite-adapter/config_doc.md'
+
+    const folderInstance = folderInstances[folderPath]
+    if (folderInstance === undefined) {
+      log.warn(
+        'missing folder instance with path %s . returning LargeFilesCountFolderFetchWarning without instance elemID.',
+        folderPath,
+      )
+      return { severity, message, detailedMessage }
+    }
+    return { severity, message, detailedMessage, elemID: folderInstance.elemID }
+  })
+}

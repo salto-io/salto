@@ -7,10 +7,10 @@
  */
 import _ from 'lodash'
 import { hash } from '@salto-io/lowerdash'
-import { StaticFile } from '@salto-io/adapter-api'
-import { mockFunction } from '@salto-io/test-utils'
+import { calculateStaticFileHash, StaticFile } from '@salto-io/adapter-api'
+import { mockFunction, setupEnvVar } from '@salto-io/test-utils'
 import { mockStaticFilesCache } from '../../common/static_files_cache'
-import { DirectoryStore } from '../../../src/workspace/dir_store'
+import { DirectoryStore, FlushResult } from '../../../src/workspace/dir_store'
 import {
   buildStaticFilesSource,
   StaticFilesCache,
@@ -32,6 +32,7 @@ import {
   defaultBuffer,
   defaultFile,
 } from '../../utils'
+import { WORKSPACE_FLAGS } from '../../../src/flags'
 
 describe('Static Files', () => {
   describe('Static Files Source', () => {
@@ -293,12 +294,72 @@ describe('Static Files', () => {
             .catch(e => expect(e.message).toEqual('Missing content on static file: path')))
       })
       describe('Flush', () => {
-        it('should flush all directory stores', async () => {
-          mockDirStore.flush = jest.fn().mockResolvedValue(Promise.resolve())
-          mockCacheStore.flush = jest.fn().mockResolvedValue(Promise.resolve())
-          await staticFilesSource.flush()
-          expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
-          expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
+        let flushResult: FlushResult<Buffer>
+        beforeEach(async () => {
+          flushResult = {
+            updates: [{ filename: 'file.txt', buffer: Buffer.from('hello'), timestamp: 1234 }],
+            deletions: ['file2.txt'],
+          }
+          mockDirStore.flush = jest.fn(async withFlushResult => (withFlushResult ? flushResult : undefined))
+        })
+        describe('with valid flush result', () => {
+          beforeEach(async () => {
+            await staticFilesSource.flush()
+          })
+          it('should flush all directory stores', async () => {
+            expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
+            expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
+          })
+          it('should update the static files cache with the dirStore flush result', () => {
+            expect(mockCacheStore.putMany).toHaveBeenCalledWith([
+              {
+                filepath: 'file.txt',
+                hash: calculateStaticFileHash(Buffer.from('hello')),
+                modified: 1234,
+              },
+            ])
+            expect(mockCacheStore.deleteMany).toHaveBeenCalledWith(['file2.txt'])
+          })
+        })
+        describe('with skipStaticFilesCacheUpdate flag', () => {
+          setupEnvVar(`SALTO_${WORKSPACE_FLAGS.skipStaticFilesCacheUpdate}`, 'true', 'each')
+          beforeEach(async () => {
+            await staticFilesSource.flush()
+          })
+          it('should flush all directory stores', async () => {
+            expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
+            expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
+          })
+          it('should not update the static files cache with the flush result', () => {
+            expect(mockCacheStore.putMany).not.toHaveBeenCalled()
+            expect(mockCacheStore.deleteMany).not.toHaveBeenCalled()
+          })
+        })
+        describe('with some invalid items in the flush result', () => {
+          beforeEach(async () => {
+            flushResult = {
+              updates: [
+                { filename: 'file1.txt', buffer: Buffer.from('hello') },
+                { filename: 'file2.txt', buffer: Buffer.from('world'), timestamp: 1234 },
+              ],
+              deletions: ['file3.txt'],
+            }
+            await staticFilesSource.flush()
+          })
+          it('should flush all directory stores', async () => {
+            expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
+            expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
+          })
+          it('should update the static files cache with the valid results', () => {
+            expect(mockCacheStore.putMany).toHaveBeenCalledWith([
+              {
+                filepath: 'file2.txt',
+                hash: calculateStaticFileHash(Buffer.from('world')),
+                modified: 1234,
+              },
+            ])
+            expect(mockCacheStore.deleteMany).toHaveBeenCalledWith(['file3.txt'])
+          })
         })
       })
       describe('isPathIncluded', () => {

@@ -37,11 +37,13 @@ export interface TemplateCustomTypeInfo extends CustomTypeInfo {
 }
 
 export interface FileCustomizationInfo extends CustomizationInfo {
+  typeName: 'file'
   path: string[]
-  fileContent: Buffer
+  fileContent?: Buffer
 }
 
 export interface FolderCustomizationInfo extends CustomizationInfo {
+  typeName: 'folder'
   path: string[]
 }
 
@@ -63,12 +65,20 @@ export type GetCustomObjectsResult = {
 export type FailedFiles = {
   lockedError: NetsuiteFilePathsQueryParams
   otherError: NetsuiteFilePathsQueryParams
-  largeFolderError: NetsuiteFilePathsQueryParams
+  largeSizeFoldersError: NetsuiteFilePathsQueryParams
+  largeFilesCountFoldersError: NetsuiteFilePathsQueryParams
+}
+
+export type LargeFilesCountFolderWarning = {
+  folderPath: string
+  limit: number
+  current: number
 }
 
 export type ImportFileCabinetResult = {
   elements: FileCabinetCustomizationInfo[]
   failedPaths: FailedFiles
+  largeFilesCountFolderWarnings: LargeFilesCountFolderWarning[]
 }
 
 export type FailedImport = {

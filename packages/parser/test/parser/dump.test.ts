@@ -156,6 +156,26 @@ describe('Salto Dump', () => {
     template: new TemplateExpression({ parts: ['Hello ', new ReferenceExpression(new ElemID('salto', 'ref'))] }),
   })
 
+  const instanceWithEscapedTemplateExpression = new InstanceElement('escaped_template_inst', model, {
+    template: new TemplateExpression({
+      parts: [
+        // eslint-disable-next-line no-template-curly-in-string
+        'Hello \\${ not.reference } and \n line with escaped ref \\',
+        new ReferenceExpression(new ElemID('salto', 'ref')),
+        '\n and another \\\\ line\\',
+      ],
+    }),
+    doubleEscapedTemplate: new TemplateExpression({
+      parts: ['double escaped ref \\\\\\', new ReferenceExpression(new ElemID('salto', 'ref'))],
+    }),
+    singleLineNonTemplate:
+      // eslint-disable-next-line no-template-curly-in-string
+      'string with two backslashes before template marker \\\\${ not.reference } and after \\',
+    multiLineNonTemplate:
+      // eslint-disable-next-line no-template-curly-in-string
+      'multi line string\nwith two \\\\ before template marker \\\\${ not.reference } \\\n and one at the end \\',
+  })
+
   describe('dump elements', () => {
     let body: string
 
@@ -175,6 +195,7 @@ describe('Salto Dump', () => {
           instanceWithArray,
           instanceWithTemplateExpression,
           unknownType,
+          instanceWithEscapedTemplateExpression,
         ],
         functions,
       )
@@ -263,6 +284,39 @@ describe('Salto Dump', () => {
       })
     })
 
+    describe('dumped escaped multi line template expression', () => {
+      it('should escape backslashes that appear before a reference', () => {
+        expect(body).toMatch(/line with escaped ref \\\\\$\{ salto.ref \}/m)
+      })
+      it('should escape backslashes that appear before a non reference ${', () => {
+        expect(body).toMatch(/Hello \\\\\\\$\{ not.reference \}/m)
+      })
+      it('should not escape backslashes that do not appear before ${', () => {
+        expect(body).toMatch(/and another \\\\ line\\\n\s*'''/m)
+      })
+    })
+
+    describe('dumped multi line string with escaped template marker', () => {
+      it('should escape the template marker and all leading backslashes before it', () => {
+        expect(body).toMatch(
+          /multi line string\nwith two \\\\ before template marker \\\\\\\\\\\$\{ not.reference \} \\\n and one at the end \\/m,
+        )
+      })
+    })
+
+    describe('dumped escaped single line template expression', () => {
+      it('should escape all leading backslashes before a reference', () => {
+        // Original string had 3 backslashes before the reference, so we expect there to be 6 backslashes in the output
+        expect(body).toMatch(/"double escaped ref \\\\\\\\\\\\\$\{ salto.ref \}"/)
+      })
+      it('should escape all leading backslashes before an escaped reference marker in a string that is not a reference', () => {
+        // Original string had 2 backslashes, and the ${ should also be escaped, so we expect a total of 5 backslashes before the $
+        expect(body).toMatch(
+          /"string with two backslashes before template marker \\\\\\\\\\\$\{ not.reference \} and after \\\\"/,
+        )
+      })
+    })
+
     describe('indentation', () => {
       it('should indent attributes', () => {
         expect(body).toMatch(/LeadConvertSettings = {\s*\n {4}account = \[\s*\n {6}{\s*\n {8}input/m)
@@ -318,7 +372,7 @@ describe('Salto Dump', () => {
       const { elements, errors } = result
       const [listTypes, nonListElements] = _.partition(elements, e => isContainerType(e))
       expect(errors).toHaveLength(0)
-      expect(elements).toHaveLength(15)
+      expect(elements).toHaveLength(16)
       expect(nonListElements[0]).toEqual(strType)
       expect(nonListElements[1]).toEqual(numType)
       expect(nonListElements[2]).toEqual(boolType)
@@ -333,6 +387,7 @@ describe('Salto Dump', () => {
       expectInstancesToMatch(nonListElements[10] as InstanceElement, instanceWithArray)
       expectInstancesToMatch(nonListElements[11] as InstanceElement, instanceWithTemplateExpression)
       expect(nonListElements[12]).toEqual(unknownType)
+      expectInstancesToMatch(nonListElements[13] as InstanceElement, instanceWithEscapedTemplateExpression)
     })
   })
   describe('dump field', () => {

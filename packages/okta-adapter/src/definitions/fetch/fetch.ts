@@ -1072,6 +1072,10 @@ const createCustomizations = ({
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'language' }], extendsParent: true },
         serviceUrl: { path: '/admin/customizations/brands/{_parent.0.brandId}/emails/{_parent.0.name}' },
+        importantValues: [
+          { value: 'language', indexed: true, highlighted: true },
+          { value: 'subject', indexed: false, highlighted: true },
+        ],
       },
       fieldCustomizations: {
         id: { hide: true },
@@ -1522,7 +1526,11 @@ const createCustomizations = ({
     ],
     resource: { directFetch: false },
     element: {
-      topLevel: { isTopLevel: true, elemID: { extendsParent: true } },
+      topLevel: {
+        isTopLevel: true,
+        elemID: { extendsParent: true },
+        importantValues: [{ value: 'claimType', indexed: true, highlighted: true }],
+      },
       fieldCustomizations: {
         id: { hide: true },
         _links: { omit: true },
@@ -1573,6 +1581,7 @@ const createCustomizations = ({
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'profile.login' }] },
         serviceUrl: { path: '/admin/user/profile/view/{id}#tab-account' },
+        importantValues: [{ value: 'profile.login', indexed: false, highlighted: true }],
       },
       fieldCustomizations: {
         id: { hide: true },
@@ -1807,6 +1816,11 @@ export const createFetchDefinitions = ({
           topLevel: {
             elemID: { parts: DEFAULT_ID_PARTS, useOldFormat: true },
             serviceUrl: { baseUrl },
+            importantValues: [
+              { value: 'status', indexed: true, highlighted: true },
+              { value: 'type', indexed: true, highlighted: true },
+              { value: 'name', indexed: false, highlighted: true },
+            ],
           },
           fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
         },

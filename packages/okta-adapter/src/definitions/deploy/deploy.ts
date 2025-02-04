@@ -873,6 +873,24 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/brands/{id}', method: 'put' },
+                transformation: {
+                  adjust: async ({ value }) => {
+                    validatePlainObject(value, BRAND_TYPE_NAME)
+                    if (value.emailDomainId !== undefined && !_.isString(value.emailDomainId)) {
+                      log.debug(
+                        'Email domain ID is not a string, this is expected when an email domain is added alongside its brand. Removing email domain ID from request',
+                      )
+                    }
+                    return {
+                      value: {
+                        ...value,
+                        // When adding an email domain alongside its brand, the brand is added first, in which case the
+                        // email domain ID won't be available in this request.
+                        emailDomainId: _.isString(value.emailDomainId) ? value.emailDomainId : undefined,
+                      },
+                    }
+                  },
+                },
               },
             },
           ],

@@ -7,8 +7,24 @@
  */
 
 import { definitions } from '@salto-io/adapter-components'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { isEmpty } from 'lodash'
 import { transformGraphQLItem } from '.'
 import { getFullLanguageName } from '../../shared/transforms/bot_adjuster'
+
+const transformNodes = (nodes: unknown[] | undefined): void => {
+  if (nodes) {
+    nodes.forEach(node => {
+      if (!lowerdashValues.isPlainRecord(node)) {
+        throw new Error('unexpected value for graphql bot node, not transforming')
+      }
+      if (isEmpty(node?.externalId)) {
+        // Element id is based on externalId
+        node.externalId = node.id
+      }
+    })
+  }
+}
 
 export const transform: definitions.AdjustFunctionMulti = async item => {
   const values = await transformGraphQLItem('flows')(item)
@@ -16,6 +32,7 @@ export const transform: definitions.AdjustFunctionMulti = async item => {
     if (value?.enabledLanguages) {
       value.enabledLanguages = value.enabledLanguages.map(getFullLanguageName)
     }
+    ;(value?.subflows ?? []).forEach((answer: { nodes?: unknown[] }) => transformNodes(answer?.nodes))
     return { value }
   })
 }

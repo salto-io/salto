@@ -11,9 +11,10 @@ import wu from 'wu'
 import { values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { StaticFilesCache, StaticFilesData } from './cache'
-import { DirectoryStore } from '../dir_store'
+import { DirectoryStore, FlushResult } from '../dir_store'
 
 import { InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile } from './common'
+import { getSaltoFlagBool, WORKSPACE_FLAGS } from '../../flags'
 
 const log = logger(module)
 
@@ -126,6 +127,23 @@ export const buildStaticFilesSource = (
     }
   }
 
+  const updateCacheWithFlushResult = async (flushResult: FlushResult<Buffer>): Promise<void> => {
+    const { updates, deletions } = flushResult
+    const cacheUpdates = updates.flatMap(file => {
+      if (file.timestamp === undefined) {
+        log.warn('received undefined timestamp for file %s', file.filename)
+        return []
+      }
+      return {
+        filepath: file.filename,
+        hash: calculateStaticFileHash(file.buffer),
+        modified: file.timestamp,
+      }
+    })
+    await staticFilesCache.deleteMany(deletions)
+    await staticFilesCache.putMany(cacheUpdates)
+  }
+
   const staticFilesSource: Required<StaticFilesSource> = {
     load: async () => {
       const existingFiles = new Set(await staticFilesDirStore.list())
@@ -136,6 +154,11 @@ export const buildStaticFilesSource = (
       const deletedFiles = wu(cachedFileNames.keys())
         .filter(name => !existingFiles.has(name))
         .toArray()
+
+      if (deletedFiles.length > 0) {
+        log.debug('deleting %d files from static files cache', deletedFiles.length)
+        await staticFilesCache.deleteMany(deletedFiles)
+      }
 
       const modifiedFilesSet = new Set(
         (
@@ -243,7 +266,13 @@ export const buildStaticFilesSource = (
       return staticFilesDirStore.set({ filename: staticFile.filepath, buffer })
     },
     flush: async () => {
-      await staticFilesDirStore.flush()
+      const skipStaticFilesCacheUpdate = getSaltoFlagBool(WORKSPACE_FLAGS.skipStaticFilesCacheUpdate)
+      const flushResult = await staticFilesDirStore.flush(!skipStaticFilesCacheUpdate)
+      if (flushResult !== undefined) {
+        await updateCacheWithFlushResult(flushResult)
+      } else {
+        log.info('skipping static files cache update from dirStore flush')
+      }
       await staticFilesCache.flush()
     },
     clear: async () => {

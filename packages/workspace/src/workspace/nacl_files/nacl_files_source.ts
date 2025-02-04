@@ -636,6 +636,9 @@ const buildNaclFilesSource = (
         newNaclFiles: parsedModifiedFiles,
         currentState,
       })
+      if (result.changes.changes.length > 0) {
+        log.info('loading nacl file source found %d changes', result.changes.changes.length)
+      }
       result.changes.preChangeHash = preChangeHash
       return result
     }

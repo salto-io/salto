@@ -107,6 +107,7 @@ const OPTIONAL_FEATURES = [
   'shouldPopulateInternalIdAfterDeploy',
   'packageVersionReference',
   'omitTotalTrustedRequestsUsageField',
+  'supportProfileTabVisibilities',
   'disablePermissionsOmissions',
   'omitStandardFieldsNonDeployableValues',
 ] as const
@@ -189,6 +190,7 @@ const CHANGE_VALIDATORS = [
   'flowReferencedElements',
   'liveChatButtonRoutingType',
   'flexiPageUnusedOrMissingFacets',
+  'uniqueFlowElementName',
 ] as const
 const DEPRECATED_CHANGE_VALIDATORS = ['multipleDefaults'] as const
 export type ChangeValidatorName = (typeof CHANGE_VALIDATORS)[number]

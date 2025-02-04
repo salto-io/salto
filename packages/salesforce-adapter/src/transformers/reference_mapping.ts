@@ -999,6 +999,10 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'assignToReferenceField',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
+  {
+    src: { field: 'logo', parentTypes: ['CustomApplication'] },
+    target: { type: 'Document' },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>

@@ -55,11 +55,14 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       .startsWith(`..${path.sep}`)
   }
 
-  const getRelativeFileName = (filename: string): string => {
+  const assertFilePathInBaseDir = (filename: string): void => {
     if (!isContainedInDirStore(filename)) {
       throw new Error(`Filepath not contained in dir store base dir: ${filename}`)
     }
+  }
 
+  const getRelativeFileName = (filename: string): string => {
+    assertFilePathInBaseDir(filename)
     return path.isAbsolute(filename) ? path.relative(currentBaseDir, filename) : filename
   }
 
@@ -74,23 +77,30 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
           .then(entries => entries.map(e => e.fullPath).map(x => getRelativeFileName(x)))
       : []
 
+  const getFileModificationTime = async (filename: string): Promise<number | undefined> =>
+    (await fileUtils.stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs
+
   const readFile = async (filename: string): Promise<dirStore.File<T> | undefined> => {
     const absFileName = getAbsFileName(filename)
     return (await fileUtils.exists(absFileName))
       ? {
           filename,
           buffer: (await fileUtils.readFile(absFileName, { encoding })) as T,
-          timestamp: (await fileUtils.stat(absFileName)).mtimeMs,
+          timestamp: await getFileModificationTime(filename),
         }
       : undefined
   }
 
-  const writeFile = async (file: dirStore.File<T>): Promise<void> => {
+  const writeFile = async (file: dirStore.File<T>, withTimestamp?: boolean): Promise<dirStore.File<T>> => {
     const absFileName = getAbsFileName(file.filename)
     if (!(await fileUtils.exists(path.dirname(absFileName)))) {
       await fileUtils.mkdirp(path.dirname(absFileName))
     }
-    return fileUtils.replaceContents(absFileName, file.buffer, encoding)
+    await fileUtils.replaceContents(absFileName, file.buffer, encoding)
+    if (withTimestamp) {
+      return { ...file, timestamp: await getFileModificationTime(file.filename) }
+    }
+    return file
   }
 
   const removeDirIfEmpty = async (dirPath: string): Promise<void> => {
@@ -105,11 +115,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
   const deleteFile = async (filename: string, shouldDeleteEmptyDir = false): Promise<void> => {
     const absFileName = getAbsFileName(filename)
-    try {
-      getRelativeFileName(absFileName)
-    } catch (err) {
-      return Promise.reject(err)
-    }
+    assertFilePathInBaseDir(absFileName)
 
     if (await fileUtils.exists(absFileName)) {
       await fileUtils.rm(absFileName)
@@ -117,26 +123,10 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
         await removeDirIfEmpty(path.dirname(absFileName))
       }
     }
-    return Promise.resolve()
-  }
-
-  const mtimestampFile = async (filename: string): Promise<number | undefined> => {
-    if (deleted.has(filename)) {
-      return undefined
-    }
-
-    return updated[filename]
-      ? updated[filename].timestamp
-      : (await fileUtils.stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs
   }
 
   const get = async (filename: string, options?: dirStore.GetFileOptions): Promise<dirStore.File<T> | undefined> => {
-    let relFilename: string
-    try {
-      relFilename = getRelativeFileName(filename)
-    } catch (err) {
-      return Promise.reject(err)
-    }
+    const relFilename = getRelativeFileName(filename)
 
     if (!options?.ignoreDeletionsCache && deleted.has(relFilename)) {
       return undefined
@@ -154,19 +144,19 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
   const isEmpty = async (): Promise<boolean> => (await list()).length === 0
 
-  const flush = async (): Promise<void> => {
-    const deletesToHandle = deleted
+  const flush = async (withFlushResult?: boolean): Promise<dirStore.FlushResult<T> | void> => {
+    const deletesToHandle = Array.from(deleted)
     deleted = new Set()
     const updatesToHandle = updated
     updated = {}
     // first delete the files, so that we can create files nested under deleted-file paths and vice versa
     // (e.g., removing a and creating a/b)
     await withLimitedConcurrency(
-      Array.from(deletesToHandle).map(f => () => deleteFile(f, true)),
+      deletesToHandle.map(f => () => deleteFile(f, true)),
       DELETE_CONCURRENCY,
     )
-    await withLimitedConcurrency(
-      Object.values(updatesToHandle).map(f => () => writeFile(f)),
+    const updates = await withLimitedConcurrency(
+      Object.values(updatesToHandle).map(f => () => writeFile(f, withFlushResult)),
       WRITE_CONCURRENCY,
     )
     if (deleted.size > 0 || Object.keys(updated).length > 0) {
@@ -176,6 +166,12 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
         Object.keys(updated).length,
       )
     }
+    if (!withFlushResult) {
+      return undefined
+    }
+    // this filter should be removed when SALTO-7377 is done, because we won't write to the disk files that are in `deletesToHandle`
+    const deletions = deletesToHandle.filter(f => updatesToHandle[f] === undefined)
+    return { updates, deletions }
   }
 
   const deleteAllEmptyDirectories = async (): Promise<void> => {
@@ -202,27 +198,14 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     isEmpty,
     get,
     set: async (file: dirStore.File<T>): Promise<void> => {
-      let relFilename: string
-      try {
-        relFilename = getRelativeFileName(file.filename)
-      } catch (err) {
-        return Promise.reject(err)
-      }
-      file.timestamp = Date.now()
-      updated[relFilename] = file
+      const relFilename = getRelativeFileName(file.filename)
+      updated[relFilename] = { ...file, timestamp: Date.now() }
       deleted.delete(relFilename)
-      return Promise.resolve()
     },
 
     delete: async (filename: string): Promise<void> => {
-      let relFilename: string
-      try {
-        relFilename = getRelativeFileName(filename)
-      } catch (err) {
-        return Promise.reject(err)
-      }
+      const relFilename = getRelativeFileName(filename)
       deleted.add(relFilename)
-      return Promise.resolve()
     },
 
     clear: async (): Promise<void> => {
@@ -260,14 +243,16 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       fileUtils.rename.notFoundAsUndefined(getAbsFileName(name), getAbsFileName(newName)),
 
     mtimestamp: async (filename: string): Promise<undefined | number> => {
-      let relFilename: string
-      try {
-        relFilename = getRelativeFileName(filename)
-      } catch (err) {
-        return Promise.reject(err)
+      const relFilename = getRelativeFileName(filename)
+      if (deleted.has(relFilename)) {
+        return undefined
       }
 
-      return mtimestampFile(relFilename)
+      if (updated[relFilename] !== undefined) {
+        return updated[relFilename].timestamp
+      }
+
+      return getFileModificationTime(relFilename)
     },
 
     flush,

@@ -183,6 +183,7 @@ import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_
 import { fixElementsFunc } from './custom_references/handlers'
 import { createListApexClassesDef, createListMissingWaveDataflowsDef } from './client/custom_list_funcs'
 import { SalesforceAdapterDeployOptions } from './adapter_creator'
+import { enrichSaltoDeployErrors, getUserFriendlyDeployErrorMessage } from './client/user_facing_errors'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -814,6 +815,11 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     // Check old configuration flag for backwards compatibility (SALTO-2700)
     const checkOnly = this.userConfig?.client?.deploy?.checkOnly ?? false
     const result = await this.deployOrValidate(deployOptions, checkOnly)
+    const groupTypeName = getChangeData(deployOptions.changeGroup.changes[0]).elemID.typeName
+    result.errors = (await enrichSaltoDeployErrors(result.errors, this.elementsSource, groupTypeName)).map(error => ({
+      ...error,
+      detailedMessage: getUserFriendlyDeployErrorMessage(error),
+    }))
     // If we got here with checkOnly we must not return any applied changes
     // to maintain the old deploy interface (SALTO-2700)
     if (checkOnly) {

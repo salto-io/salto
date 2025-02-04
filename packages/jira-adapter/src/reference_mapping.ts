@@ -103,6 +103,9 @@ const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   if (val === 'issuetype') {
     return ISSUE_TYPE_NAME
   }
+  if (val === 'com.atlassian.servicedesk:vp-origin') {
+    return REQUEST_TYPE_NAME
+  }
   return _.capitalize(val)
 }
 
@@ -881,6 +884,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: GROUP_TYPE_NAME },
   },
   {
+    src: { field: 'value', parentTypes: [AUTOMATION_EMAIL_RECIPENT] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
     src: { field: 'field', parentTypes: [AUTOMATION_CONDITION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
@@ -1382,6 +1390,18 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'cmdbField', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'customFieldId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'fieldId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',
     target: { type: FIELD_TYPE_NAME },

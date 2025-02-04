@@ -11,6 +11,9 @@ import { StaticFilesCache } from '../../src/workspace/static_files/cache'
 export const mockStaticFilesCache = (): MockInterface<StaticFilesCache> => ({
   get: mockFunction<StaticFilesCache['get']>().mockResolvedValue(undefined),
   put: mockFunction<StaticFilesCache['put']>(),
+  putMany: mockFunction<StaticFilesCache['putMany']>(),
+  delete: mockFunction<StaticFilesCache['delete']>(),
+  deleteMany: mockFunction<StaticFilesCache['deleteMany']>(),
   flush: mockFunction<StaticFilesCache['flush']>(),
   clear: mockFunction<StaticFilesCache['clear']>(),
   rename: mockFunction<StaticFilesCache['rename']>(),

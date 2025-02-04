@@ -10,7 +10,7 @@ const deepMerge = require('../../build_utils/deep_merge')
 module.exports = deepMerge(require('../../jest.base.config.js'), {
   displayName: '@salto/logging',
   rootDir: `${__dirname}`,
-  coveragePathIgnorePatterns: ['src/index.ts'],
+  coveragePathIgnorePatterns: ['index.ts'],
   coverageThreshold: {
     global: {
       branches: 96,

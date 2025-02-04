@@ -35,7 +35,6 @@ const REQUEST_TYPE_REQUEST_FORM_ITEMS_COMPONENT_SCHEME = Joi.array().items(
 
 const isRequestTypeRequestFormItemsComponent = createSchemeGuard<requestTypeRequestFormItemComponent[]>(
   REQUEST_TYPE_REQUEST_FORM_ITEMS_COMPONENT_SCHEME,
-  'invalid request form items component',
 )
 
 const removePropertiesWithEmptyValues = (elements: Element[]): void => {

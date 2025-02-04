@@ -34,6 +34,15 @@ export const buildStaticFilesCache = (
     put: async (item: staticFiles.StaticFilesData): Promise<void> => {
       await (await cache).set(item.filepath, item)
     },
+    putMany: async (items: staticFiles.StaticFilesData[]): Promise<void> => {
+      await (await cache).setAll(items.map(item => ({ key: item.filepath, value: item })))
+    },
+    delete: async (filepath: string): Promise<void> => {
+      await (await cache).delete(filepath)
+    },
+    deleteMany: async (filepaths: string[]): Promise<void> => {
+      await (await cache).deleteAll(filepaths)
+    },
     flush: async () => {
       await (await cache).flush()
     },

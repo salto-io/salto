@@ -391,7 +391,7 @@ const getGuideElements = async ({
   const typesConfigWithNoStandaloneFields = _.mapValues(apiDefinitions.types, config =>
     _.omit(config, ['transformation.standaloneFields']),
   )
-  if (useGuideNewInfra !== true) {
+  if (useGuideNewInfra === false) {
     const fetchResultWithDuplicateTypes = await Promise.all(
       brandsList.map(async brandInstance => {
         const brandsPaginator = brandToPaginator[brandInstance.elemID.name]

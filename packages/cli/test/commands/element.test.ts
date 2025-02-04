@@ -16,7 +16,7 @@ import {
   isObjectType,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
+import { errors, UnresolvedElemIDs, createElementSelector, serialization } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { SelectorsError, fixElements } from '@salto-io/core'
 import { CliExitCode } from '../../src/types'
@@ -1611,6 +1611,7 @@ Moving the specified elements to common.
             selectors: ['a.b.c.d'],
             source: 'nacl',
             onlyValue: false,
+            format: 'nacl',
           },
           workspace,
         })
@@ -1635,6 +1636,7 @@ Moving the specified elements to common.
             selectors: ['test.type'],
             source: 'nacl',
             onlyValue: false,
+            format: 'nacl',
           },
           workspace,
         })
@@ -1660,6 +1662,7 @@ Moving the specified elements to common.
             selectors: ['test.*'],
             source: 'state',
             onlyValue: true,
+            format: 'nacl',
           },
           workspace,
         })
@@ -1684,6 +1687,7 @@ Moving the specified elements to common.
             selectors: ['salto.*.field.*.label'],
             source: 'state',
             onlyValue: false,
+            format: 'nacl',
           },
           workspace,
         })
@@ -1701,6 +1705,63 @@ Moving the specified elements to common.
           expect(output.stdout.content).toContain(field.elemID.createNestedID('label').getFullName())
           expect(output.stdout.content).toContain(field.annotations.label)
         })
+      })
+    })
+    describe('with serialize format', () => {
+      let result: CliExitCode
+      let output: mocks.MockCliOutput
+      let element: ObjectType
+      beforeEach(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        const workspace = mocks.mockWorkspace({})
+        const elements = await workspace.elements()
+        element = new ObjectType({ elemID: new ElemID('test', 'type') })
+        await elements.set(element)
+        result = await printElementAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            selectors: ['test.type'],
+            source: 'nacl',
+            onlyValue: true,
+            format: 'serialize',
+          },
+          workspace,
+        })
+      })
+      it('should return success exit code', () => {
+        expect(result).toEqual(CliExitCode.Success)
+      })
+      it('should print the element in JSON like format', async () => {
+        const [parsed] = await serialization.deserialize(`[${output.stdout.content}]`)
+        expect(parsed).toEqual(element)
+      })
+    })
+    describe('with inspect format', () => {
+      let result: CliExitCode
+      let output: mocks.MockCliOutput
+      beforeEach(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        const workspace = mocks.mockWorkspace({})
+        const elements = await workspace.elements()
+        await elements.set(new ObjectType({ elemID: new ElemID('test', 'type') }))
+        result = await printElementAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            selectors: ['test.type'],
+            source: 'nacl',
+            onlyValue: true,
+            format: 'inspect',
+          },
+          workspace,
+        })
+      })
+      it('should return success exit code', () => {
+        expect(result).toEqual(CliExitCode.Success)
+      })
+      it('should print the element with the ID as a prefix', () => {
+        expect(output.stdout.content).toMatch(/^ObjectType \{.*ElemID\(test.type\).*/ms)
       })
     })
   })

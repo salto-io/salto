@@ -17,6 +17,11 @@ export type GetFileOptions = {
   ignoreDeletionsCache?: boolean
 }
 
+export type FlushResult<T extends ContentType> = {
+  updates: File<T>[]
+  deletions: string[]
+}
+
 export type DirectoryStore<T extends ContentType> = {
   list(): Promise<string[]>
   get(filename: string, options?: GetFileOptions): Promise<File<T> | undefined>
@@ -25,7 +30,7 @@ export type DirectoryStore<T extends ContentType> = {
   clear(): Promise<void>
   rename(name: string): Promise<void>
   renameFile(name: string, newName: string): Promise<void>
-  flush(): Promise<void>
+  flush(withFlushResult?: boolean): Promise<FlushResult<T> | void>
   mtimestamp(filename: string): Promise<number | undefined>
   getFiles(filenames: string[], options?: GetFileOptions): Promise<(File<T> | undefined)[]>
   getTotalSize(): Promise<number>

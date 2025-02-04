@@ -109,23 +109,19 @@ describe('adapters config', () => {
       configOverrides,
     })
 
-    jest
-      .spyOn(validator, 'validateElements')
-      .mockImplementation(async (_elements, _elemenetsSource, consumeErrorsFunc) =>
-        consumeErrorsFunc([
-          {
-            key: 'someID',
-            value: [
-              new validator.InvalidValueValidationError({
-                elemID: new ElemID('someID'),
-                value: 'val',
-                fieldName: 'field',
-                expectedValue: 'expVal',
-              }),
-            ],
-          },
-        ]),
-      )
+    jest.spyOn(validator, 'validateElements').mockResolvedValue([
+      {
+        key: 'someID',
+        value: [
+          new validator.InvalidValueValidationError({
+            elemID: new ElemID('someID'),
+            value: 'val',
+            fieldName: 'field',
+            expectedValue: 'expVal',
+          }),
+        ],
+      },
+    ])
   })
 
   describe('initialization', () => {

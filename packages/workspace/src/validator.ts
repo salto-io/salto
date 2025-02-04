@@ -846,27 +846,29 @@ const validateElement = (element: Element): ValidationError[] => {
   return []
 }
 
-export const validateElements = async <T>(
+export const validateElements = async (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
-  consumeErrorsFunc: (errors: Iterable<RemoteMapEntry<ValidationError[]>>) => T | Promise<T>,
-): Promise<T> => {
+): Promise<Iterable<RemoteMapEntry<ValidationError[]>>> => {
   const resolved = await resolve(elements, elementsSource)
   const groupedByTopLevelId = _.groupBy(resolved, elem => elem.elemID.createTopLevelParentID().parent.getFullName())
-  const errorsIterator = wu(Object.entries(groupedByTopLevelId))
-    .map(([key, elems]) => {
-      const topLevelID = ElemID.fromFullName(key)
-      const errors = elems.flatMap(validateElement)
-      const [errorsWithRightTopLevel, errorsWithWrongTopLevel] = _.partition(
-        errors,
-        err => topLevelID.isEqual(err.elemID) || topLevelID.isParentOf(err.elemID),
-      )
-      if (errorsWithWrongTopLevel.length > 0) {
-        log.warn('expected errors to have top level id %s but received: %o', key, errorsWithWrongTopLevel)
-      }
-      return { key, value: errorsWithRightTopLevel }
-    })
-    .filter(errors => errors.value.length > 0)
 
-  return log.timeDebug(() => consumeErrorsFunc(errorsIterator), 'validateElements with %d elements', resolved.length)
+  return log.timeIteratorDebug(
+    wu(Object.entries(groupedByTopLevelId))
+      .map(([key, elems]) => {
+        const topLevelID = ElemID.fromFullName(key)
+        const errors = elems.flatMap(validateElement)
+        const [errorsWithRightTopLevel, errorsWithWrongTopLevel] = _.partition(
+          errors,
+          err => topLevelID.isEqual(err.elemID) || topLevelID.isParentOf(err.elemID),
+        )
+        if (errorsWithWrongTopLevel.length > 0) {
+          log.warn('expected errors to have top level id %s but received: %o', key, errorsWithWrongTopLevel)
+        }
+        return { key, value: errorsWithRightTopLevel }
+      })
+      .filter(errors => errors.value.length > 0),
+    'validateElements with %d elements',
+    resolved.length,
+  )
 }

@@ -290,7 +290,7 @@ describe('Elements validation', () => {
     elements: Element[],
     elementsSource: ReadOnlyElementsSource,
   ): Promise<ValidationError[]> => {
-    const errors = await validateElements(elements, elementsSource, res => Array.from(res))
+    const errors = Array.from(await validateElements(elements, elementsSource))
 
     // we expect each key in `errors` to appear once
     expect(errors.length).toEqual(_.uniqBy(errors, entry => entry.key).length)

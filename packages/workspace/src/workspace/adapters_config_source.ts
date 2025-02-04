@@ -73,7 +73,8 @@ const updateValidationErrorsCache = async (
 ): Promise<void> => {
   const elementsToValidate = await awu(await naclSource.getAll()).toArray()
   await validationErrorsMap.clear()
-  await validateElements(elementsToValidate, elementsSource, errors => validationErrorsMap.setAll(errors))
+  const errors = await validateElements(elementsToValidate, elementsSource)
+  await validationErrorsMap.setAll(errors)
 }
 
 export type AdaptersConfigSourceArgs = {

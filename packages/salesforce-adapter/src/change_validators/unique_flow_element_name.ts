@@ -9,6 +9,7 @@ import {
   ChangeError,
   ChangeValidator,
   ElemID,
+  FieldMap,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
@@ -16,9 +17,12 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import { apiNameSync, isInstanceOfTypeSync } from '../filters/utils'
-import { FLOW_ELEMENTS_WITH_UNIQUE_NAMES, FLOW_METADATA_TYPE } from '../constants'
+import { FLOW_ELEMENTS_WITH_UNIQUE_NAMES, FLOW_METADATA_TYPE, FLOW_NODE_FIELD_NAMES } from '../constants'
 
 const { DefaultMap } = collections.map
+
+const isFlowNode = (fields: FieldMap): boolean =>
+  FLOW_NODE_FIELD_NAMES.LOCATION_X in fields && FLOW_NODE_FIELD_NAMES.LOCATION_Y in fields
 
 const createChangeErrors = (element: InstanceElement): ChangeError[] => {
   const duplicates = new Set<string>()
@@ -27,8 +31,8 @@ const createChangeErrors = (element: InstanceElement): ChangeError[] => {
     if (
       field === undefined ||
       path === undefined ||
-      !FLOW_ELEMENTS_WITH_UNIQUE_NAMES.includes(apiNameSync(field.parent) ?? '') ||
-      path.name !== 'name'
+      path.name !== 'name' ||
+      (!FLOW_ELEMENTS_WITH_UNIQUE_NAMES.includes(apiNameSync(field.parent) ?? '') && !isFlowNode(field.parent.fields))
     )
       return value
     if (nameToElemIds.get(value).length > 0) {

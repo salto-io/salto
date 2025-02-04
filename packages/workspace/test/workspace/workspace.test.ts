@@ -4134,7 +4134,7 @@ salesforce.staticFile staticFileInstance {
       expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
     })
 
-    it('returns correct validation errors', () => {
+    it('should return updated validation errors', () => {
       expect(validationErrs.map(err => err.elemID.getFullName()).sort()).toEqual([
         'salto.base.instance.baseInst.str',
         'salto.base.instance.baseInst2.str',

@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import wu from 'wu'
 import * as fs from 'fs'
 import * as tmp from 'tmp-promise'
 import { EOL } from 'os'
@@ -603,6 +604,51 @@ describe('pino based logger', () => {
       })
     })
   })
+
+  describe('time iterator', () => {
+    let firstResult: number[]
+    let secondResult: number[]
+    let logLines: string[]
+
+    beforeEach(async () => {
+      initialConfig.minLevel = 'debug'
+      initialConfig.colorize = false
+      logger = createLogger()
+
+      let i = 0
+      jest.spyOn(Date, 'now').mockImplementation(() => {
+        i += 1
+        return i
+      })
+
+      const firstIterator = logger.timeIteratorDebug(wu([1, 2, 3]), 'first func %o', 12)
+      const secondIterator = logger.timeIteratorDebug(wu([4, 5, 6]), 'second func')
+
+      secondResult = Array.from(secondIterator)
+      firstResult = Array.from(firstIterator)
+
+      await repo.end()
+      logLines = consoleStream
+        .contents()
+        .split(EOL)
+        .filter(l => l.length > 0)
+    })
+
+    it('should return the input iterator', () => {
+      expect(firstResult).toEqual([1, 2, 3])
+      expect(secondResult).toEqual([4, 5, 6])
+    })
+
+    it('should log the different running times', () => {
+      expect(logLines).toEqual([
+        expect.stringContaining(`debug ${NAMESPACE} first func 12 starting`),
+        expect.stringContaining(`debug ${NAMESPACE} second func starting`),
+        expect.stringContaining(`debug ${NAMESPACE} second func took 9 ms (tts=2 net=4)`),
+        expect.stringContaining(`debug ${NAMESPACE} first func 12 took 20 ms (tts=13 net=4)`),
+      ])
+    })
+  })
+
   describe('logger creation', () => {
     beforeEach(() => {
       logger = createLogger()

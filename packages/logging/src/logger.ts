@@ -51,6 +51,8 @@ export type Logger = BaseLogger &
     readonly time: <T>(inner: () => T, desc: string, ...descArgs: unknown[]) => T
     readonly timeDebug: <T>(inner: () => T, desc: string, ...descArgs: unknown[]) => T
     readonly timeTrace: <T>(inner: () => T, desc: string, ...descArgs: unknown[]) => T
+    readonly timeIteratorDebug: <T>(iterable: Iterable<T>, desc: string, ...descArgs: unknown[]) => Iterable<T>
+    readonly timeIteratorTrace: <T>(iterable: Iterable<T>, desc: string, ...descArgs: unknown[]) => Iterable<T>
     assignGlobalLogTimeDecorator: <T>(decorator: LogTimeDecorator<T>) => void
   }
 
@@ -91,11 +93,59 @@ function timeMethod<T>(
   return result
 }
 
+function timeIterator<T>(
+  this: BaseLogger,
+  level: LogLevel,
+  iterable: Iterable<T>,
+  desc: string,
+  ...descArgs: unknown[]
+): Iterable<T> {
+  const before = Date.now()
+  let start: number | undefined
+  let netTimeTaken = 0
+
+  const formattedDescription = format(desc, ...descArgs)
+
+  this.log(level, '%s starting', formattedDescription)
+
+  return {
+    [Symbol.iterator]: () => {
+      const iter = iterable[Symbol.iterator]()
+
+      return {
+        ...iter,
+        next: () => {
+          const callStartTime = Date.now()
+          if (start === undefined) {
+            start = callStartTime
+          }
+          const res = iter.next()
+          const endTime = Date.now()
+          netTimeTaken += endTime - callStartTime
+          if (res.done) {
+            this.log(
+              level,
+              '%s took %o ms (tts=%o net=%o)',
+              formattedDescription,
+              endTime - before,
+              start - before,
+              netTimeTaken,
+            )
+          }
+          return res
+        },
+      }
+    },
+  }
+}
+
 const addLogMethods = (logger: BaseLogger): Logger =>
   Object.assign(logger, ...LOG_LEVELS.map(level => ({ [level]: logger.log.bind(logger, level) })), {
     time: timeMethod.bind(logger, 'debug'),
     timeDebug: timeMethod.bind(logger, 'debug'),
     timeTrace: timeMethod.bind(logger, 'trace'),
+    timeIteratorDebug: timeIterator.bind(logger, 'debug'),
+    timeIteratorTrace: timeIterator.bind(logger, 'trace'),
   })
 
 export const logger = (

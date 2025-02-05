@@ -283,6 +283,40 @@ describe('automationIssueTypeValidator', () => {
             ],
           },
         },
+        {
+          component: 'ACTION',
+          type: 'jira.issue.create',
+          value: {
+            operations: [
+              {
+                field: {
+                  type: 'ID',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
+                },
+                fieldType: PROJECT_FIELD,
+                type: 'SET',
+                value: {
+                  value: someOtherProjectInstance,
+                  type: 'ID',
+                },
+              },
+              {
+                field: {
+                  type: 'ID',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
+                },
+                fieldType: ISSUE_TYPE_FIELD,
+                type: 'SET',
+                value: {
+                  type: 'COPY',
+                  value: 'current',
+                },
+              },
+            ],
+          },
+        },
       ],
       projects: [
         {
@@ -293,7 +327,7 @@ describe('automationIssueTypeValidator', () => {
         },
       ],
     }) // this suppose to be valid, multiple projects scope & project value is "current", issue type from other project
-    globalValidInstance = new InstanceElement('globalInstance', automationType, {
+    globalValidInstance = new InstanceElement('globalValidInstance', automationType, {
       name: '4',
       components: [
         {
@@ -345,8 +379,8 @@ describe('automationIssueTypeValidator', () => {
                 fieldType: PROJECT_FIELD,
                 type: 'SET',
                 value: {
-                  value: 'current',
-                  type: 'COPY',
+                  value: testProjectReference,
+                  type: 'ID',
                 },
               },
               {
@@ -366,8 +400,44 @@ describe('automationIssueTypeValidator', () => {
             ],
           },
         },
+        {
+          component: 'ACTION',
+          type: 'jira.issue.create',
+          value: {
+            operations: [
+              {
+                field: {
+                  type: 'ID',
+                  value: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project')),
+                },
+                fieldType: PROJECT_FIELD,
+                type: 'SET',
+                value: {
+                  value: 'current',
+                  type: 'COPY',
+                },
+              },
+              {
+                field: {
+                  type: 'ID',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Issue_Type__issuetype@suu'),
+                  ),
+                },
+                fieldType: ISSUE_TYPE_FIELD,
+                type: 'SET',
+                value: {
+                  type: 'ID',
+                  value: new ReferenceExpression(
+                    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'someValidIssueTypeFromTestProject'),
+                  ),
+                },
+              },
+            ],
+          },
+        },
       ],
-    }) // this suppose to be valid, global automation, component with issue type from project, component with current project & issue type
+    }) // this suppose to be valid, global automation, component with issue type from project, component with current project, component with current issue type
     globalInvalidInstance = new InstanceElement('globalInvalidInstance', automationType, {
       name: '4',
       components: [
@@ -801,38 +871,18 @@ describe('automationIssueTypeValidator', () => {
     // should return in 2 errors for invalidAfterInstance, none for instance2
     expect(await validator(changes, elementsSource)).toEqual([
       {
-        elemID: new ElemID(
-          'jira',
-          'Automation',
-          'instance',
-          'invalidAfterInstance',
-          'components',
-          '0',
-          'value',
-          'operations',
-          '1',
-        ),
+        elemID: new ElemID('jira', 'Automation', 'instance', 'invalidAfterInstance', 'components', '0'),
         severity: 'Error',
-        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project issue type scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the relevant project issue type scheme: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes. To fix it, change this issue type: someInvalidIssueType',
+          'In order to deploy an automation you must use issue types from the relevant project issue type scheme. To fix it, change this issue type: someInvalidIssueType to one of the following issue types: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes',
       },
       {
-        elemID: new ElemID(
-          'jira',
-          'Automation',
-          'instance',
-          'invalidAfterInstance',
-          'components',
-          '0',
-          'value',
-          'operations',
-          '1',
-        ),
+        elemID: new ElemID('jira', 'Automation', 'instance', 'invalidAfterInstance', 'components', '0'),
         severity: 'Error',
-        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project issue type scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the relevant project issue type scheme: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes. To fix it, change this issue type: someInvalidIssueType',
+          'In order to deploy an automation you must use issue types from the relevant project issue type scheme. To fix it, change this issue type: someInvalidIssueType to one of the following issue types: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes',
       },
     ])
   })
@@ -845,55 +895,25 @@ describe('automationIssueTypeValidator', () => {
     // should return in total 4 errors - 2 for invalidInstance, 2 for invalidNestedComponentsInstance, none for instance2
     expect(await validator(changes, elementsSource)).toEqual([
       {
-        elemID: new ElemID(
-          'jira',
-          'Automation',
-          'instance',
-          'invalidTwoComponentsInstance',
-          'components',
-          '0',
-          'value',
-          'operations',
-          '1',
-        ),
+        elemID: new ElemID('jira', 'Automation', 'instance', 'invalidTwoComponentsInstance', 'components', '0'),
         severity: 'Error',
-        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project issue type scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the relevant project issue type scheme: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes. To fix it, change this issue type: someIssueTypeFromAnotherProject',
+          'In order to deploy an automation you must use issue types from the relevant project issue type scheme. To fix it, change this issue type: someIssueTypeFromAnotherProject to one of the following issue types: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes',
       },
       {
-        elemID: new ElemID(
-          'jira',
-          'Automation',
-          'instance',
-          'invalidTwoComponentsInstance',
-          'components',
-          '1',
-          'value',
-          'operations',
-          '1',
-        ),
+        elemID: new ElemID('jira', 'Automation', 'instance', 'invalidTwoComponentsInstance', 'components', '1'),
         severity: 'Error',
-        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project issue type scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the relevant project issue type scheme: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes. To fix it, change this issue type: someIssueTypeFromAnotherProject',
+          'In order to deploy an automation you must use issue types from the relevant project issue type scheme. To fix it, change this issue type: someIssueTypeFromAnotherProject to one of the following issue types: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes',
       },
       {
-        elemID: new ElemID(
-          'jira',
-          'Automation',
-          'instance',
-          'invalidNestedComponentsInstance',
-          'components',
-          '0',
-          'value',
-          'operations',
-          '1',
-        ),
+        elemID: new ElemID('jira', 'Automation', 'instance', 'invalidNestedComponentsInstance', 'components', '0'),
         severity: 'Error',
-        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project issue type scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the relevant project issue type scheme: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/SOMEOTHERPROJECT/issuetypes. To fix it, change this issue type: someInvalidIssueType',
+          'In order to deploy an automation you must use issue types from the relevant project issue type scheme. To fix it, change this issue type: someInvalidIssueType to one of the following issue types: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/SOMEOTHERPROJECT/issuetypes',
       },
       {
         elemID: new ElemID(
@@ -907,14 +927,11 @@ describe('automationIssueTypeValidator', () => {
           '1',
           'children',
           '0',
-          'value',
-          'operations',
-          '1',
         ),
         severity: 'Error',
-        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project issue type scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the relevant project issue type scheme: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes. To fix it, change this issue type: someIssueTypeFromAnotherProject',
+          'In order to deploy an automation you must use issue types from the relevant project issue type scheme. To fix it, change this issue type: someIssueTypeFromAnotherProject to one of the following issue types: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes',
       },
     ])
   })
@@ -923,21 +940,11 @@ describe('automationIssueTypeValidator', () => {
     const changes = [toChange({ after: invalidInstance })]
     expect(await validator(changes, elementsSource)).toEqual([
       {
-        elemID: new ElemID(
-          'jira',
-          'Automation',
-          'instance',
-          'invalidInstance',
-          'components',
-          '0',
-          'value',
-          'operations',
-          '1',
-        ),
+        elemID: new ElemID('jira', 'Automation', 'instance', 'invalidInstance', 'components', '0'),
         severity: 'Error',
-        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project issue type scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the relevant project issue type scheme: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes. To fix it, change this issue type: someInvalidIssueType',
+          'In order to deploy an automation you must use issue types from the relevant project issue type scheme. To fix it, change this issue type: someInvalidIssueType to one of the following issue types: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes',
       },
     ])
   })
@@ -946,21 +953,11 @@ describe('automationIssueTypeValidator', () => {
     const changes = [toChange({ after: globalInvalidInstance })]
     expect(await validator(changes, elementsSource)).toEqual([
       {
-        elemID: new ElemID(
-          'jira',
-          'Automation',
-          'instance',
-          'globalInvalidInstance',
-          'components',
-          '0',
-          'value',
-          'operations',
-          '1',
-        ),
+        elemID: new ElemID('jira', 'Automation', 'instance', 'globalInvalidInstance', 'components', '0'),
         severity: 'Error',
-        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
+        message: 'Cannot deploy automation due to issue types not aligned with the relevant project issue type scheme.',
         detailedMessage:
-          'In order to deploy an automation you must use issue types from the relevant project issue type scheme: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes. To fix it, change this issue type: someInvalidIssueType',
+          'In order to deploy an automation you must use issue types from the relevant project issue type scheme. To fix it, change this issue type: someInvalidIssueType to one of the following issue types: https://ori-salto-test.atlassian.net/plugins/servlet/project-config/TESTPROJECT/issuetypes',
       },
     ])
   })
@@ -977,11 +974,11 @@ describe('automationIssueTypeValidator', () => {
     expect(await validator([toChange({ after: instanceIssueTypeCurrentValue })])).toEqual([])
   })
 
-  it('should not return an error for a global automation with issue type from the project referenced, and for "current" issue type and project', async () => {
+  it('should not return an error for a global automation with issue type from the project referenced, and for "current" issue type or "current" project', async () => {
     expect(await validator([toChange({ after: globalValidInstance })])).toEqual([])
   })
 
-  it('should not return an error for a multiple project scope when the project value is "current"', async () => {
+  it('should not return an error for a multiple project scope when the project value is "current" or the issue type is "current"', async () => {
     expect(await validator([toChange({ after: multipleProjectsScopeInstance })])).toEqual([])
   })
 })

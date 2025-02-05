@@ -30,24 +30,29 @@ import _ from 'lodash'
 import { AUTOMATION_TYPE, PROJECT_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 
-type IssueTypeObject = {
+type OperationValue = {
+  type: string
+  value: ReferenceExpression | string
+}
+
+type OperationObject = {
   fieldType: string
-  value: ReferenceExpression
+  value: OperationValue
 }
 
 type IssueTypeError = {
   componentElemID: ElemID
   invalidIssueType: string
-  serviceUrl: string
+  projectKey: string
 }
 
 type ProjectWithIssueTypeScheme = InstanceElement & { value: { issueTypeScheme: ReferenceExpression } }
 
-const AUTOMATION_ISSUE_TYPE_OBJECT_SCHEME = Joi.object({
+const AUTOMATION_OPERATION_OBJECT_SCHEME = Joi.object({
   fieldType: Joi.string().required(),
   value: Joi.object({
     type: Joi.string().required(),
-    value: Joi.object().required(),
+    value: Joi.alternatives().try(Joi.object().required(), Joi.string().required()).required(),
   })
     .unknown(true)
     .required(),
@@ -55,7 +60,7 @@ const AUTOMATION_ISSUE_TYPE_OBJECT_SCHEME = Joi.object({
   .unknown(true)
   .required()
 
-const isIssueTypeObject = createSchemeGuard<IssueTypeObject>(AUTOMATION_ISSUE_TYPE_OBJECT_SCHEME)
+const isOperationObject = createSchemeGuard<OperationObject>(AUTOMATION_OPERATION_OBJECT_SCHEME)
 
 const isProjectInstanceWithIssueTypeScheme = (instance: InstanceElement): instance is ProjectWithIssueTypeScheme =>
   isReferenceExpression(instance.value.issueTypeScheme)
@@ -83,13 +88,8 @@ const getIssueCreateActionProject = (
 const isInstanceWithInvalidIssueType = (
   instance: InstanceElement,
   projectNameToIssueTypeNames: Record<string, string[]>,
-  baseUrl: string,
 ): IssueTypeError[] => {
   const invalidIssueTypes: IssueTypeError[] = []
-  let projectFullName: string | undefined
-  let projectKey: string | undefined
-  let insideIssueCreateComponent = false
-
   const instanceProject =
     Array.isArray(instance.value.projects) && instance.value.projects.length === 1
       ? instance.value.projects[0].projectId
@@ -100,33 +100,25 @@ const isInstanceWithInvalidIssueType = (
     value: instance.value.components,
     func: ({ value, path }) => {
       if (_.isPlainObject(value) && value.component === 'ACTION' && value.type === 'jira.issue.create') {
-        insideIssueCreateComponent = true
-      }
-
-      if (insideIssueCreateComponent) {
-        if (_.isPlainObject(value) && value.fieldType === PROJECT_FIELD) {
-          ;({ projectFullName, projectKey } = getIssueCreateActionProject(value, instanceProject))
-          return WALK_NEXT_STEP.RECURSE
-        }
-
-        if (
-          isIssueTypeObject(value) &&
-          value.fieldType === ISSUE_TYPE_FIELD &&
-          isReferenceExpression(value.value.value)
-        ) {
-          const issueTypeElemID = value.value.value.elemID
-          const isValidIssueType = projectFullName
+        const operations = Array.isArray(value.value.operations) ? value.value.operations : undefined
+        const projectOperation = operations.find(
+          (op: unknown): op is OperationObject => isOperationObject(op) && op.fieldType === PROJECT_FIELD,
+        )
+        const issueTypeOperation = operations.find(
+          (op: unknown): op is OperationObject =>
+            isOperationObject(op) && op.fieldType === ISSUE_TYPE_FIELD && isReferenceExpression(op.value?.value),
+        )
+        const { projectFullName, projectKey } = getIssueCreateActionProject(projectOperation, instanceProject)
+        const issueTypeElemID = issueTypeOperation ? issueTypeOperation.value.value.elemID : undefined
+        const isValidIssueType =
+          projectFullName && issueTypeElemID
             ? projectNameToIssueTypeNames[projectFullName]?.includes(issueTypeElemID.getFullName())
             : true
 
-          if (!isValidIssueType && projectKey) {
-            const serviceUrl = `${baseUrl}plugins/servlet/project-config/${projectKey}/issuetypes`
-            invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueTypeElemID.name, serviceUrl })
-          }
-          insideIssueCreateComponent = false
+        if (!isValidIssueType && projectKey) {
+          invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueTypeElemID.name, projectKey })
         }
       }
-
       return WALK_NEXT_STEP.RECURSE
     },
   })
@@ -158,8 +150,8 @@ export const automationIssueTypeValidator: (client: JiraClient) => ChangeValidat
     const projectNameToIssueTypeNames: Record<string, string[]> = Object.fromEntries(
       await Promise.all(
         projectsWithSchemes.map(async project => {
-          const issueTypeSchemeElemID = await elementsSource.get(project.value.issueTypeScheme.elemID)
-          const resolvedIssueTypeSchemeReferences = issueTypeSchemeElemID?.value.issueTypeIds ?? []
+          const issueTypeSchemeInstance = await elementsSource.get(project.value.issueTypeScheme.elemID)
+          const resolvedIssueTypeSchemeReferences = issueTypeSchemeInstance?.value.issueTypeIds ?? []
 
           const issueTypeNames = resolvedIssueTypeSchemeReferences
             .filter(isReferenceExpression)
@@ -173,11 +165,15 @@ export const automationIssueTypeValidator: (client: JiraClient) => ChangeValidat
     const { baseUrl } = client
 
     return relevantChanges
-      .flatMap(instance => isInstanceWithInvalidIssueType(instance, projectNameToIssueTypeNames, baseUrl))
-      .map(IssueTypeError => ({
-        elemID: IssueTypeError.componentElemID,
-        severity: 'Error' as SeverityLevel,
-        message: 'Cannot deploy automation due to issue types not aligned with the relevant project type issue scheme.',
-        detailedMessage: `In order to deploy an automation you must use issue types from the relevant project issue type scheme: ${IssueTypeError.serviceUrl}. To fix it, change this issue type: ${IssueTypeError.invalidIssueType}`,
-      }))
+      .flatMap(instance => isInstanceWithInvalidIssueType(instance, projectNameToIssueTypeNames))
+      .map(IssueTypeError => {
+        const issueTypesSchemeUrl = `${baseUrl}plugins/servlet/project-config/${IssueTypeError.projectKey}/issuetypes`
+        return {
+          elemID: IssueTypeError.componentElemID,
+          severity: 'Error' as SeverityLevel,
+          message:
+            'Cannot deploy automation due to issue types not aligned with the relevant project issue type scheme.',
+          detailedMessage: `In order to deploy an automation you must use issue types from the relevant project issue type scheme. To fix it, change this issue type: ${IssueTypeError.invalidIssueType} to one of the following issue types: ${issueTypesSchemeUrl}`,
+        }
+      })
   }

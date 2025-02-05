@@ -32,7 +32,7 @@ describe('automationIssueTypeValidator', () => {
   let multipleProjectsScopeInstance: InstanceElement
   let globalValidInstance: InstanceElement
   let globalInvalidInstance: InstanceElement
-  let invalidInstance: InstanceElement
+  let invalidSingleProjectScopeInstance: InstanceElement
   let invalidTwoComponentsInstance: InstanceElement
   let invalidNestedComponentsInstance: InstanceElement
   let invalidAfterInstance: InstanceElement
@@ -570,7 +570,7 @@ describe('automationIssueTypeValidator', () => {
         },
       ],
     }) // this suppose to be invalid, issue type not from the project referenced
-    invalidInstance = new InstanceElement('invalidInstance', automationType, {
+    invalidSingleProjectScopeInstance = new InstanceElement('invalidSingleProjectScopeInstance', automationType, {
       name: '2',
       components: [
         {
@@ -615,7 +615,7 @@ describe('automationIssueTypeValidator', () => {
           projectId: testProjectReference,
         },
       ],
-    }) // this suppose to be invalid, single projects scope & project value is "current", issue type not from the project referenced
+    }) // this suppose to be invalid, single project scope & project value is "current", issue type not from the project referenced
     invalidTwoComponentsInstance = new InstanceElement('invalidTwoComponentsInstance', automationType, {
       name: 'invalidTwoComponentsInstance',
       components: [
@@ -849,7 +849,7 @@ describe('automationIssueTypeValidator', () => {
       instance3,
       multipleProjectsScopeInstance,
       instanceIssueTypeCurrentValue,
-      invalidInstance,
+      invalidSingleProjectScopeInstance,
       invalidAfterInstance,
       invalidTwoComponentsInstance,
       invalidNestedComponentsInstance,
@@ -892,7 +892,7 @@ describe('automationIssueTypeValidator', () => {
       toChange({ after: invalidTwoComponentsInstance }),
       toChange({ after: invalidNestedComponentsInstance }),
     ]
-    // should return in total 4 errors - 2 for invalidInstance, 2 for invalidNestedComponentsInstance, none for instance2
+    // should return in total 4 errors - 2 for invalidTwoComponentsInstance, 2 for invalidNestedComponentsInstance, none for instance2
     expect(await validator(changes, elementsSource)).toEqual([
       {
         elemID: new ElemID('jira', 'Automation', 'instance', 'invalidTwoComponentsInstance', 'components', '0'),
@@ -936,11 +936,11 @@ describe('automationIssueTypeValidator', () => {
     ])
   })
 
-  it('should return an error when the issue type is not from the relevant project issue type scheme, and the project value is "current"', async () => {
-    const changes = [toChange({ after: invalidInstance })]
+  it('should return an error when it is a single project scope, the project value is "current", and the issue type is not from the relevant project issue type scheme', async () => {
+    const changes = [toChange({ after: invalidSingleProjectScopeInstance })]
     expect(await validator(changes, elementsSource)).toEqual([
       {
-        elemID: new ElemID('jira', 'Automation', 'instance', 'invalidInstance', 'components', '0'),
+        elemID: new ElemID('jira', 'Automation', 'instance', 'invalidSingleProjectScopeInstance', 'components', '0'),
         severity: 'Error',
         message: 'Cannot deploy automation due to issue types not aligned with the relevant project issue type scheme.',
         detailedMessage:

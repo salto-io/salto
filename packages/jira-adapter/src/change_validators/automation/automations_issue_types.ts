@@ -106,13 +106,10 @@ const isInstanceWithInvalidIssueType = (
         _.isPlainObject(value) &&
         _.isPlainObject(value.value) &&
         value.component === 'ACTION' &&
-        value.type === 'jira.issue.create'
+        value.type === 'jira.issue.create' &&
+        Array.isArray(value.value.operations)
       ) {
-        const operations = Array.isArray(value.value.operations) ? value.value.operations : undefined
-        if (operations === undefined) {
-          return WALK_NEXT_STEP.SKIP
-        }
-
+        const { operations } = value.value
         const projectOperation = getOperations(operations, PROJECT_FIELD)
         const issueTypeOperation = getOperations(operations, ISSUE_TYPE_FIELD)
 

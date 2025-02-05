@@ -67,6 +67,9 @@ const excludedTypes = [
 const nullProgressReporter: ProgressReporter = {
   reportProgress: () => {},
 }
+
+const deleteElementsAtTheEnd = true // use for debugging
+
 each([
   ['Cloud', false],
   ['Data Center', true],
@@ -250,6 +253,9 @@ each([
     })
 
     afterAll(async () => {
+      if (!deleteElementsAtTheEnd) {
+        return
+      }
       const removalChangeGroups = addDeployResults
         .map(res => res.appliedChanges)
         .map(changeGroup =>

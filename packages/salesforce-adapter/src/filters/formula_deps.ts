@@ -8,7 +8,15 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { CORE_ANNOTATIONS, Element, Field, isInstanceElement, ReferenceExpression, Value } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  Element,
+  Field,
+  InstanceElement,
+  isInstanceElement,
+  ReferenceExpression,
+  Value,
+} from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, inspectValue } from '@salto-io/adapter-utils'
 import {
   parseFormulaIdentifier,
@@ -24,24 +32,46 @@ import { logInvalidReferences, referencesFromIdentifiers, referenceValidity } fr
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const getFormulaFromField = (element: Element): string | undefined => {
+const getFieldParent = (field: Field): Element => field.parent
+const getInstanceElementParent = (validationRule: InstanceElement): Element =>
+  validationRule.annotations[CORE_ANNOTATIONS.PARENT][0]
+
+const getFormulaFromField = (
+  element: Element,
+): { formula: string; getParentFunc: (value: Value) => Element } | undefined => {
   const formula = element.annotations[FORMULA]
-  return _.isString(formula) ? formula : undefined
+  return _.isString(formula) ? { formula, getParentFunc: getFieldParent } : undefined
 }
 
-const getFormulaFromValidationRule = (element: Element): string | undefined => {
+const getFormulaFromValidationRule = (
+  element: Element,
+): { formula: string; getParentFunc: (value: Value) => Element } | undefined => {
   if (!isInstanceElement(element)) {
     return undefined
   }
   const formula = element.value.errorConditionFormula
-  return _.isString(formula) ? formula : undefined
+  return _.isString(formula) ? { formula, getParentFunc: getInstanceElementParent } : undefined
 }
 
-const getFormula = (element: Element): string | undefined =>
-  getFormulaFromField(element) || getFormulaFromValidationRule(element)
+const getFormulaFromWorkflowRule = (
+  element: Element,
+): { formula: string; getParentFunc: (value: Value) => Element } | undefined => {
+  if (!isInstanceElement(element)) {
+    return undefined
+  }
+  const { formula } = element.value
+  return _.isString(formula) ? { formula, getParentFunc: getInstanceElementParent } : undefined
+}
+
+const getFormula = (element: Element): { formula: string; getParentFunc: (value: Value) => Element } | undefined =>
+  getFormulaFromField(element) || getFormulaFromValidationRule(element) || getFormulaFromWorkflowRule(element)
 
 const addDependenciesAnnotation = (element: Element, potentialReferenceTargets: Map<string, Element>): void => {
-  const formula = getFormula(element)
+  const formulaAndFunc = getFormula(element)
+  if (!formulaAndFunc) {
+    return
+  }
+  const { formula, getParentFunc } = formulaAndFunc
   if (!_.isString(formula)) {
     log.error(
       `The value of the formula field ${element.elemID.getFullName()} is not a string: ${inspectValue(formula)}`,
@@ -55,7 +85,7 @@ const addDependenciesAnnotation = (element: Element, potentialReferenceTargets: 
   let identifiersCount: number = 0
   try {
     const formulaInfo = extractFormulaIdentifiers(formula).map(identifier =>
-      parseFormulaIdentifier(identifier, element.annotations[CORE_ANNOTATIONS.PARENT].elemID.typeName),
+      parseFormulaIdentifier(identifier, getParentFunc(element).elemID.typeName),
     )
     identifiersInfo = formulaInfo.flat()
     identifiersCount = formulaInfo.length
@@ -77,7 +107,7 @@ const addDependenciesAnnotation = (element: Element, potentialReferenceTargets: 
   }
 
   const referencesWithValidity = _.groupBy(references, refElemId =>
-    referenceValidity(refElemId, element.annotations[CORE_ANNOTATIONS.PARENT].elemID, potentialReferenceTargets),
+    referenceValidity(refElemId, getParentFunc(element).elemID, potentialReferenceTargets),
   )
 
   logInvalidReferences(element.elemID, referencesWithValidity.invalid ?? [], formula, identifiersInfo)
@@ -90,7 +120,10 @@ const addDependenciesAnnotation = (element: Element, potentialReferenceTargets: 
 }
 
 const isFormulaOrValidationRule = (field: Element): field is Field =>
-  isFormulaField(field) || field.elemID.typeName === 'ValidationRule' || field.elemID.typeName === 'WorkflowRule'
+  isFormulaField(field) ||
+  field.elemID.typeName === 'ValidationRule' ||
+  field.elemID.typeName === 'WorkflowRule' ||
+  field.elemID.typeName === 'fieldUpdater'
 
 const getFields = (element: Value): Value[] => extractFlatCustomObjectFields(element) ?? [element].concat(element.value)
 

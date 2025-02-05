@@ -50,7 +50,7 @@ describe('formDependencyChanger', () => {
     const inputChanges = new Map([
       [0, toChange({ after: formInstance1 })],
       [1, toChange({ before: formInstance2, after: formInstance2 })],
-      [2, toChange({ after: formInstance3 })],
+      [2, toChange({ before: formInstance3 })],
     ])
     const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
 
@@ -63,22 +63,6 @@ describe('formDependencyChanger', () => {
     expect(dependencyChanges[1].action).toEqual('add')
     expect(dependencyChanges[1].dependency.source).toEqual(1)
     expect(dependencyChanges[1].dependency.target).toEqual(2)
-  })
-
-  it('should not add dependency to deletion form changes', async () => {
-    const inputChanges = new Map([
-      [0, toChange({ after: formInstance1 })],
-      [1, toChange({ before: formInstance2 })],
-      [2, toChange({ after: formInstance3 })],
-    ])
-    const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
-
-    const dependencyChanges = [...(await formsDependencyChanger(inputChanges, inputDeps))]
-
-    expect(dependencyChanges).toHaveLength(1)
-    expect(dependencyChanges[0].action).toEqual('add')
-    expect(dependencyChanges[0].dependency.source).toEqual(0)
-    expect(dependencyChanges[0].dependency.target).toEqual(2)
   })
 
   describe('forms from several projects', () => {
@@ -101,7 +85,7 @@ describe('formDependencyChanger', () => {
         [0, toChange({ after: formInstance1 })],
         [1, toChange({ before: formInstance2, after: formInstance2 })],
         [2, toChange({ after: formInstance4DifferentProject })],
-        [3, toChange({ before: formInstance5DifferentProject, after: formInstance5DifferentProject })],
+        [3, toChange({ before: formInstance5DifferentProject })],
       ])
       const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
 

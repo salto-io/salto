@@ -6,13 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import {
-  dependencyChange,
-  DependencyChanger,
-  getChangeData,
-  isAdditionOrModificationChange,
-  isInstanceChange,
-} from '@salto-io/adapter-api'
+import { dependencyChange, DependencyChanger, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FORM_TYPE } from '../constants'
@@ -20,12 +14,7 @@ import { FORM_TYPE } from '../constants'
 export const formsDependencyChanger: DependencyChanger = async changes => {
   const formChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
-    .filter(
-      change =>
-        isInstanceChange(change.change) &&
-        isAdditionOrModificationChange(change.change) &&
-        getChangeData(change.change).elemID.typeName === FORM_TYPE,
-    )
+    .filter(change => isInstanceChange(change.change) && getChangeData(change.change).elemID.typeName === FORM_TYPE)
 
   const formsByProject = _.groupBy(formChanges, ({ change }) => getParent(getChangeData(change)).elemID.getFullName())
 

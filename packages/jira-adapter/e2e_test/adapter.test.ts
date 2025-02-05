@@ -297,11 +297,11 @@ each([
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.name.includes('createdByOssE2e'))
         .filter(instance => !removalInstancesNames.includes(instance.elemID.getFullName()))
-        .filter(instance => instance.elemID.typeName !== FIELD_TYPE_NAME || instance.value.isLocked === false) // do not delete locked fields
+        .filter(instance => instance.elemID.typeName !== FIELD_TYPE_NAME || !instance.value.isLocked) // do not delete locked fields, isLocked can also be undefined
         .filter(
           instance =>
             instance.elemID.typeName !== FIELD_CONTEXT_TYPE_NAME ||
-            instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0].value.isLocked === false,
+            !instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0].value.isLocked,
         ) // do not delete contexts of locked fields
         .filter(instance => instance.elemID.typeName !== FIELD_CONTEXT_OPTION_TYPE_NAME) // do not delete options, they will be deleted with their contexts
         .map(instance => toChange({ before: instance }))

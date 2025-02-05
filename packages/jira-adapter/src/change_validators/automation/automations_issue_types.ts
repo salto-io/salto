@@ -52,7 +52,7 @@ const AUTOMATION_OPERATION_OBJECT_SCHEME = Joi.object({
   fieldType: Joi.string().required(),
   value: Joi.object({
     type: Joi.string().required(),
-    value: Joi.alternatives().try(Joi.object().required(), Joi.string().required()).required(),
+    value: Joi.alternatives(Joi.object().required(), Joi.string().required()).required(),
   })
     .unknown(true)
     .required(),
@@ -66,24 +66,27 @@ const isProjectInstanceWithIssueTypeScheme = (instance: InstanceElement): instan
   isReferenceExpression(instance.value.issueTypeScheme)
 
 const getIssueCreateActionProject = (
-  value: Values,
+  projectOperation: Values,
   instanceProject: ReferenceExpression | string | undefined,
 ): { projectFullName: string | undefined; projectKey: string | undefined } => {
-  if (value.value?.value === 'current') {
+  if (projectOperation.value?.value === 'current') {
     const projectFullName = isReferenceExpression(instanceProject) ? instanceProject.elemID.getFullName() : undefined
     const projectKey =
       projectFullName && isResolvedReferenceExpression(instanceProject) ? instanceProject.value.value.key : undefined
     return { projectFullName, projectKey }
   }
-  if (isReferenceExpression(value.value?.value)) {
-    const projectFullName = value.value.value.elemID.getFullName()
-    const projectKey = isResolvedReferenceExpression(value.value?.value)
-      ? value.value?.value.resValue.value.key
+  if (isReferenceExpression(projectOperation.value?.value)) {
+    const projectFullName = projectOperation.value.value.elemID.getFullName()
+    const projectKey = isResolvedReferenceExpression(projectOperation.value?.value)
+      ? projectOperation.value?.value.resValue.value.key
       : undefined
     return { projectFullName, projectKey }
   }
   return { projectFullName: undefined, projectKey: undefined }
 }
+
+const getOperations = (operations: unknown[], fieldType: string): OperationObject | undefined =>
+  operations.find((op: unknown): op is OperationObject => isOperationObject(op) && op.fieldType === fieldType)
 
 const isInstanceWithInvalidIssueType = (
   instance: InstanceElement,
@@ -99,21 +102,33 @@ const isInstanceWithInvalidIssueType = (
     elemId: instance.elemID.createNestedID('components'),
     value: instance.value.components,
     func: ({ value, path }) => {
-      if (_.isPlainObject(value) && value.component === 'ACTION' && value.type === 'jira.issue.create') {
+      if (
+        _.isPlainObject(value) &&
+        _.isPlainObject(value.value) &&
+        value.component === 'ACTION' &&
+        value.type === 'jira.issue.create'
+      ) {
         const operations = Array.isArray(value.value.operations) ? value.value.operations : undefined
-        const projectOperation = operations.find(
-          (op: unknown): op is OperationObject => isOperationObject(op) && op.fieldType === PROJECT_FIELD,
-        )
-        const issueTypeOperation = operations.find(
-          (op: unknown): op is OperationObject =>
-            isOperationObject(op) && op.fieldType === ISSUE_TYPE_FIELD && isReferenceExpression(op.value?.value),
-        )
+        if (operations === undefined) {
+          return WALK_NEXT_STEP.SKIP
+        }
+
+        const projectOperation = getOperations(operations, PROJECT_FIELD)
+        const issueTypeOperation = getOperations(operations, ISSUE_TYPE_FIELD)
+
+        if (
+          projectOperation === undefined ||
+          issueTypeOperation === undefined ||
+          !isReferenceExpression(issueTypeOperation.value.value)
+        ) {
+          return WALK_NEXT_STEP.SKIP
+        }
+
         const { projectFullName, projectKey } = getIssueCreateActionProject(projectOperation, instanceProject)
-        const issueTypeElemID = issueTypeOperation ? issueTypeOperation.value.value.elemID : undefined
-        const isValidIssueType =
-          projectFullName && issueTypeElemID
-            ? projectNameToIssueTypeNames[projectFullName]?.includes(issueTypeElemID.getFullName())
-            : true
+        const issueTypeElemID = issueTypeOperation.value.value.elemID
+        const isValidIssueType = projectFullName
+          ? projectNameToIssueTypeNames[projectFullName]?.includes(issueTypeElemID.getFullName())
+          : true
 
         if (!isValidIssueType && projectKey) {
           invalidIssueTypes.push({ componentElemID: path, invalidIssueType: issueTypeElemID.name, projectKey })

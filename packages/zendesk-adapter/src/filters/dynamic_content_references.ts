@@ -76,7 +76,7 @@ const transformDynamicContentDependencies = async (
         return value
       },
       allowEmptyArrays: true,
-      allowEmptyObjects: true,
+      allowExistingEmptyObjects: true,
     })) ?? instance.value
 }
 
@@ -116,7 +116,7 @@ const returnDynamicContentsToApiValue = async (
         return value
       },
       allowEmptyArrays: true,
-      allowEmptyObjects: true,
+      allowExistingEmptyObjects: true,
     })) ?? instance.value
 }
 
@@ -165,7 +165,7 @@ const filterCreator: FilterCreator = ({ config }) => {
               return value
             },
             allowEmptyArrays: true,
-            allowEmptyObjects: true,
+            allowExistingEmptyObjects: true,
             strict: false,
           })) ?? instance.value
       }),

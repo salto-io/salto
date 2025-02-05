@@ -401,7 +401,7 @@ const filter: FilterCreator = ({ client }) => {
               element: instance,
               strict: false,
               allowEmptyArrays: true,
-              allowEmptyObjects: true,
+              allowExistingEmptyObjects: true,
               transformFunc: automationTransformFunc,
             })
           ).value
@@ -438,7 +438,7 @@ const filter: FilterCreator = ({ client }) => {
                 element: resolvedInstance,
                 strict: false,
                 allowEmptyArrays: true,
-                allowEmptyObjects: true,
+                allowExistingEmptyObjects: true,
                 transformFunc: automationTransformFunc,
               })
             ).value
@@ -465,7 +465,7 @@ const filter: FilterCreator = ({ client }) => {
                 element: instance,
                 strict: false,
                 allowEmptyArrays: true,
-                allowEmptyObjects: true,
+                allowExistingEmptyObjects: true,
                 transformFunc: automationTransformFunc,
               })
             ).value

@@ -366,7 +366,7 @@ export const transformFieldAnnotations = async (
       transformFunc: transformPrimitive,
       strict: false,
       allowEmptyArrays: true,
-      allowEmptyObjects: true,
+      allowExistingEmptyObjects: true,
     })) || {}
   )
 }
@@ -381,7 +381,7 @@ const transformObjectAnnotationValues = (
     type: annotationsObject,
     transformFunc: transformPrimitive,
     allowEmptyArrays: true,
-    allowEmptyObjects: true,
+    allowExistingEmptyObjects: true,
   })
 }
 

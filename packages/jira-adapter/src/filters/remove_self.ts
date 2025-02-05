@@ -23,7 +23,7 @@ const filter: FilterCreator = () => ({
           pathID: instance.elemID,
           strict: false,
           allowEmptyArrays: true,
-          allowEmptyObjects: true,
+          allowExistingEmptyObjects: true,
           transformFunc: ({ value, path }) => {
             if (path?.name === 'self') {
               return undefined

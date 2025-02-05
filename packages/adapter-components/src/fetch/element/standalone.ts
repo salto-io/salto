@@ -190,7 +190,7 @@ export const extractStandaloneInstances = <Options extends FetchApiDefinitionsOp
         definedTypes,
       }),
       allowEmptyArrays: true,
-      allowEmptyObjects: true,
+      allowExistingEmptyObjects: true,
     })
     if (value !== undefined) {
       inst.value = value

@@ -150,7 +150,7 @@ const sortLists = (instance: InstanceElement): void => {
       type: instance.getTypeSync(),
       strict: false,
       allowEmptyArrays: true,
-      allowEmptyObjects: true,
+      allowExistingEmptyObjects: true,
       transformFunc: ({ value, field }) => {
         if (field === undefined || !Array.isArray(value)) {
           return value

@@ -19,9 +19,9 @@ export const formsDependencyChanger: DependencyChanger = async changes => {
   const formsByProject = _.groupBy(formChanges, ({ change }) => getParent(getChangeData(change)).elemID.getFullName())
 
   return Object.values(formsByProject).flatMap(formList =>
-    formList.slice(1).map((currentPolicyChange, index) => {
-      const previousPolicyChange = formList[index]
-      return dependencyChange('add', previousPolicyChange.key, currentPolicyChange.key)
+    formList.slice(1).map((currentForm, index) => {
+      const previousForm = formList[index]
+      return dependencyChange('add', previousForm.key, currentForm.key)
     }),
   )
 }

@@ -317,6 +317,33 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
       ],
       conditions: [],
     },
+    {
+      component: 'ACTION',
+      type: 'jira.issue.edit',
+      value: {
+        operations: [
+          {
+            field: {
+              type: 'ID',
+              value: createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Assignee__user'), allElements),
+            },
+            fieldType: 'assignee',
+            type: 'SET',
+            value: {
+              type: 'CLEAR',
+              value: 'clear',
+            },
+          },
+        ],
+        advancedFields: new TemplateExpression({
+          parts: [
+            '{\n"update": {\n"',
+            createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Sprint__gh_sprint__c@uubuu'), allElements),
+            '" : [\n{\n"remove": {\n"value":"Pre-ship containment"\n}\n}\n]\n}\n}',
+          ],
+        }),
+      },
+    },
   ],
   canOtherRuleTrigger: false,
   notifyOnError: 'FIRSTERROR',

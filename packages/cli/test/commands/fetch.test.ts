@@ -282,11 +282,11 @@ describe('fetch command', () => {
         let newConfig: InstanceElement
 
         beforeEach(async () => {
-          const { plan, updatedConfig } = mocks.configChangePlan()
+          const { configChanges, updatedConfig } = mocks.configChanges()
           newConfig = updatedConfig
           const mockFetchWithChanges = jest.fn().mockResolvedValue({
             changes: [],
-            configChanges: plan,
+            configChanges,
             updatedConfig: { [newConfig.elemID.adapter]: [newConfig] },
             mergeErrors: [],
             success: true,

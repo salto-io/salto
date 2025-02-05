@@ -576,8 +576,7 @@ const createShowOnFailureDummyChangeError = ({
   }
 }
 
-export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement } => {
-  const result = new DataNodeMap<Group<Change>>()
+export const configChanges = (): { configChanges: Change[]; updatedConfig: InstanceElement } => {
   const configElemID = new ElemID('salesforce')
   const configType = new ObjectType({
     elemID: configElemID,
@@ -597,29 +596,7 @@ export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement
       after: updatedConfig,
     },
   }
-  const instancePlanItem = toPlanItem(
-    configChange,
-    [],
-    [
-      {
-        id: configInstance.elemID.createNestedID('test'),
-        action: 'modify',
-        data: { before: configInstance.value.test, after: updatedConfig.value.test },
-      },
-    ],
-  )
-  result.addNode(_.uniqueId('instance'), [], instancePlanItem)
-
-  Object.assign(result, {
-    itemsByEvalOrder(): Iterable<PlanItem> {
-      return [instancePlanItem]
-    },
-    getItem(_id: string): PlanItem {
-      return instancePlanItem
-    },
-    changeErrors: [],
-  })
-  return { plan: result as Plan, updatedConfig }
+  return { configChanges: [configChange], updatedConfig }
 }
 
 export const preview = (): Plan => {

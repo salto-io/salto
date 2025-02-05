@@ -22,7 +22,12 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { CUSTOM_METADATA, CUSTOM_METADATA_META_TYPE, CUSTOM_METADATA_SUFFIX, CUSTOM_OBJECT } from '../constants'
-import { createCustomObjectChange, createCustomTypeFromCustomObjectInstance } from './custom_objects_to_object_type'
+import {
+  createCustomObjectChange,
+  createFromInstance,
+  TypesFromInstance,
+  typesToMergeFromInstance,
+} from './custom_objects_to_object_type'
 import { apiName, createMetaType, isMetadataObjectType } from '../transformers/transformer'
 import {
   apiNameSync,
@@ -39,20 +44,17 @@ const { awu, groupByAsync } = collections.asynciterable
 
 const createCustomMetadataRecordType = async (
   instance: InstanceElement,
+  typesFromInstance: TypesFromInstance,
   customMetadataType: ObjectType,
   metaType?: ObjectType,
-): Promise<ObjectType> => {
-  const objectType = await createCustomTypeFromCustomObjectInstance({
-    instance,
-    metadataType: CUSTOM_METADATA,
-    metaType,
-  })
-  objectType.fields = {
-    ...objectType.fields,
+): Promise<[ObjectType, ...Element[]]> => {
+  const result = await createFromInstance(instance, typesFromInstance, metaType, undefined, CUSTOM_METADATA)
+  result[0].fields = {
+    ...result[0].fields,
     // We omit the "values" field, since it will be destructed in the instances later.
     ..._.omit(customMetadataType.fields, 'values'),
   }
-  return objectType
+  return result
 }
 
 const isCustomMetadataRecordTypeField = async (element: Element): Promise<boolean> =>
@@ -88,8 +90,11 @@ const filterCreator: FilterCreator = ({ config }) => {
       const customMetadataMetaType = config.fetchProfile.isFeatureEnabled('metaTypes')
         ? createMetaType(CUSTOM_METADATA_META_TYPE, undefined, 'Custom Metadata')
         : undefined
+      const typesFromInstance = await typesToMergeFromInstance(elements)
       const customMetadataRecordTypes = await awu(customMetadataInstances)
-        .map(instance => createCustomMetadataRecordType(instance, customMetadataType, customMetadataMetaType))
+        .flatMap(instance =>
+          createCustomMetadataRecordType(instance, typesFromInstance, customMetadataType, customMetadataMetaType),
+        )
         .toArray()
       _.pullAll(elements, customMetadataInstances)
       customMetadataRecordTypes.forEach(e => elements.push(e))

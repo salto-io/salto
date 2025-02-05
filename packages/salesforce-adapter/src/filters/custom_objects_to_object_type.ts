@@ -183,7 +183,7 @@ export const NESTED_INSTANCE_VALUE_TO_TYPE_NAME: Record<string, CustomObjectFiel
   [NESTED_INSTANCE_VALUE_NAME.INDEXES]: NESTED_INSTANCE_TYPE_NAME.INDEX,
 }
 
-type TypesFromInstance = {
+export type TypesFromInstance = {
   standardAnnotationTypes: TypeMap
   customAnnotationTypes: TypeMap
   customSettingsAnnotationTypes: TypeMap
@@ -522,20 +522,19 @@ export const createCustomTypeFromCustomObjectInstance = async ({
   return object
 }
 
-const createFromInstance = async (
+export const createFromInstance = async (
   instance: InstanceElement,
   typesFromInstance: TypesFromInstance,
-  metaTypes?: MetaTypes,
+  metaType?: ObjectType,
   fieldsToSkip?: string[],
-): Promise<Element[]> => {
+  metadataTypeName?: string,
+): Promise<[ObjectType, ...Element[]]> => {
   const object = await createCustomTypeFromCustomObjectInstance({
     instance,
     typesFromInstance,
-    metaType:
-      metaTypes !== undefined
-        ? getMetaType(metaTypes, instance, hasCustomSuffix(instance.value[INSTANCE_FULL_NAME_FIELD]))
-        : undefined,
+    metaType,
     fieldsToSkip,
+    metadataType: metadataTypeName,
   })
   const nestedMetadataInstances = await createNestedMetadataInstances(
     instance,
@@ -822,7 +821,7 @@ const isSideEffectRemoval =
     )
   }
 
-const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromInstance> => {
+export const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromInstance> => {
   const fixTypesDefinitions = (typesFromInstance: TypeMap): void => {
     const listViewType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS]
     if (isObjectType(listViewType)) {
@@ -948,7 +947,13 @@ const filterCreator: FilterCreator = ({ config, client }) => {
       )
 
       await awu(customObjectInstances)
-        .flatMap(instance => createFromInstance(instance, typesFromInstance, metaTypes, fieldsToSkip))
+        .flatMap(instance => {
+          const metaType =
+            metaTypes !== undefined
+              ? getMetaType(metaTypes, instance, hasCustomSuffix(instance.value[INSTANCE_FULL_NAME_FIELD]))
+              : undefined
+          return createFromInstance(instance, typesFromInstance, metaType, fieldsToSkip)
+        })
         // Make sure we do not override existing metadata types with custom objects
         // this can happen with standard objects having the same name as a metadata type
         .filter(elem => !existingElementIDs.has(elem.elemID.getFullName()))

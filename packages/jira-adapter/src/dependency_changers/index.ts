@@ -9,6 +9,7 @@ import { DependencyChanger } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { dashboardGadgetsDependencyChanger } from './dashboard_gadgets'
+import { formsDependencyChanger } from './forms'
 import { globalFieldContextsDependencyChanger } from './global_field_contexts'
 import { projectDependencyChanger } from './project'
 import { projectContextsDependencyChanger } from './project_contexts'
@@ -28,6 +29,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   projectDependencyChanger,
   workflowDependencyChanger,
   dashboardGadgetsDependencyChanger,
+  formsDependencyChanger,
   rootObjectTypeToObjectSchemaDependencyChanger, // Must run before removalsDependencyChanger
   objectTypeParentDependencyChanger,
   removalsDependencyChanger,

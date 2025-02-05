@@ -222,7 +222,7 @@ const removeHiddenFromValues = (
     strict: false,
     allowEmptyArrays: true,
     allowExistingEmptyObjects: true,
-    allowNewEmptyObjects: true
+    allowNewEmptyObjects: true,
   })
 
 const isAttributeChangeToHidden = (change: DetailedChange, hiddenValue: boolean): boolean =>

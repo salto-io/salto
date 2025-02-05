@@ -34,10 +34,11 @@ import {
   LABEL,
   METADATA_TYPE,
   PLURAL_LABEL,
+  VALIDATION_RULES_METADATA_TYPE,
 } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { apiName, Types } from '../../src/transformers/transformer'
-import { apiNameSync, isInstanceOfTypeChangeSync } from '../../src/filters/utils'
+import { apiNameSync, isInstanceOfTypeChangeSync, isInstanceOfTypeSync } from '../../src/filters/utils'
 import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
@@ -50,7 +51,8 @@ describe('customMetadataToObjectTypeFilter', () => {
   const CHECKBOX_FIELD_NAME = 'checkBox__c'
   const PICKLIST_FIELD_NAME = 'picklist__c'
   const CUSTOM_METADATA_DESCRIPTION = 'description test'
-
+  const VALIDATION_RULE_NAME = 'Must_Be_Cool'
+  const VALIDATION_RULE_NAME2 = 'Invalid_Name'
   let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
   beforeEach(() => {
@@ -104,15 +106,30 @@ describe('customMetadataToObjectTypeFilter', () => {
           },
         },
       }
+      const validationRules = [
+        {
+          fullName: VALIDATION_RULE_NAME,
+          active: true,
+          errorConditionFormula: 'Is_Cool__c = false',
+          errorMessage: 'This instance is not cool enough',
+        },
+        {
+          fullName: VALIDATION_RULE_NAME2,
+          active: true,
+          errorConditionFormula: 'Name__c = "invalid"',
+          errorMessage: 'Name is invalid',
+        },
+      ]
       customMetadataInstance = new InstanceElement(CUSTOM_METADATA_RECORD_TYPE_NAME, mockTypes.CustomObject, {
         [INSTANCE_FULL_NAME_FIELD]: CUSTOM_METADATA_RECORD_TYPE_NAME,
         [LABEL]: CUSTOM_METADATA_RECORD_LABEL,
         [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
         [INTERNAL_ID_FIELD]: CUSTOM_METADATA_RECORD_INTERNAL_ID,
         fields: [checkboxField, picklistField],
+        validationRules,
         [DESCRIPTION]: CUSTOM_METADATA_DESCRIPTION,
       })
-      afterOnFetchElements = [customMetadataInstance, mockTypes.CustomMetadata]
+      afterOnFetchElements = [customMetadataInstance, mockTypes.CustomMetadata, mockTypes.CustomObject]
       await filter.onFetch(afterOnFetchElements)
       customMetadataRecordType = (await awu(afterOnFetchElements)
         .filter(isObjectType)
@@ -127,6 +144,7 @@ describe('customMetadataToObjectTypeFilter', () => {
         [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
         [CORE_ANNOTATIONS.ALIAS]: CUSTOM_METADATA_RECORD_LABEL,
         [DESCRIPTION]: CUSTOM_METADATA_DESCRIPTION,
+        [INTERNAL_ID_FIELD]: CUSTOM_METADATA_RECORD_INTERNAL_ID,
       })
     })
     it('should create type with both the RecordType fields and CustomMetadata metadata type fields', () => {
@@ -135,6 +153,13 @@ describe('customMetadataToObjectTypeFilter', () => {
         PICKLIST_FIELD_NAME,
         ...Object.keys(mockTypes.CustomMetadata.fields),
       ])
+    })
+    it('should extract sub instances from CustomMetadata type', () => {
+      expect(
+        afterOnFetchElements
+          .filter(isInstanceOfTypeSync(VALIDATION_RULES_METADATA_TYPE))
+          .map(instance => apiNameSync(instance, true)),
+      ).toIncludeSameMembers([VALIDATION_RULE_NAME, VALIDATION_RULE_NAME2])
     })
     it('should remove the original CustomObject instance', () => {
       expect(afterOnFetchElements.filter(isInstanceElement)).not.toSatisfyAny(e =>

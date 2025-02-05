@@ -63,6 +63,7 @@ import {
   ASSIGN_TO_REFERENCE,
   LIVE_CHAT_BUTTON,
   APPROVAL_PROCESS_METADATA_TYPE,
+  VALIDATION_RULES_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -182,6 +183,16 @@ const compactLayoutType = createMetadataObjectType({
   },
 })
 
+const validationRuleType = createMetadataObjectType({
+  annotations: { metadataType: VALIDATION_RULES_METADATA_TYPE },
+  fields: {
+    fullName: { refType: BuiltinTypes.STRING },
+    active: { refType: BuiltinTypes.BOOLEAN },
+    errorConditionFormula: { refType: BuiltinTypes.STRING },
+    errorMessage: { refType: BuiltinTypes.STRING },
+  },
+})
+
 export const mockTypes = {
   ApexClass: createMetadataObjectType({
     annotations: {
@@ -247,6 +258,7 @@ export const mockTypes = {
       listViews: { refType: listViewType },
       fieldSets: { refType: fieldSetType },
       compactLayouts: { refType: compactLayoutType },
+      validationRules: { refType: validationRuleType },
     },
   }),
   StaticResource: createMetadataObjectType({

@@ -23,9 +23,9 @@ import {
   ReferenceExpression,
   SaltoElementError,
   StaticFile,
+  normalizeFilePathPart,
 } from '@salto-io/adapter-api'
 import {
-  normalizeFilePathPart,
   naclCase,
   safeJsonStringify,
   pathNaclCase,

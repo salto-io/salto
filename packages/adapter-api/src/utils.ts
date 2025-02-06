@@ -6,6 +6,9 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import * as pathUtils from 'path'
+import truncate from 'truncate-utf8-bytes'
+import { hash as hashUtils } from '@salto-io/lowerdash'
 import {
   TypeElement,
   ObjectType,
@@ -18,6 +21,12 @@ import {
   isMapType,
   ReadOnlyElementsSource,
 } from './elements'
+
+// Windows has the lowest known limit, of 255
+// This can have an effect at a time we add a ~15 chars suffix
+// So we are taking an extra buffer and limit it to 200
+export const MAX_PATH_LENGTH = 200
+const MAX_PATH_EXTENSION_LENGTH = 20
 
 type SubElementSearchResult = {
   field?: Field
@@ -138,4 +147,21 @@ export const getFieldNames = async (
     return _.keys(fieldType.fields)
   }
   return []
+}
+
+// Trim part of a file name to comply with filesystem restrictions
+// This assumes the filesystem does not allow path parts to be over
+// MAX_PATH_LENGTH long in byte length
+export const normalizeFilePathPart = (name: string): string => {
+  if (Buffer.byteLength(name) <= MAX_PATH_LENGTH) {
+    return name
+  }
+  const nameHash = hashUtils.toMD5(name)
+  let extension = pathUtils.extname(name)
+  if (extension.length > MAX_PATH_EXTENSION_LENGTH || Buffer.byteLength(extension) !== extension.length) {
+    // Heuristic guess - a valid extension must be short and ascii
+    extension = ''
+  }
+  const suffix = `_${nameHash}${extension}`
+  return truncate(name, MAX_PATH_LENGTH - suffix.length).concat(suffix)
 }

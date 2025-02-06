@@ -158,6 +158,18 @@ describe('Values', () => {
         const SFile = new StaticFile({ filepath: 'some//path.ext', content: Buffer.from('VERY SURPRISING DATA') })
         expect(SFile.filepath).toEqual('some/path.ext')
       })
+      it('should shorten names that are too long', () => {
+        const SFile = new StaticFile({
+          filepath: `some/path/${'a'.repeat(300)}.html`,
+          content: Buffer.from('VERY SURPRISING DATA'),
+        })
+        const filePathParts = SFile.filepath.split('/')
+        expect(filePathParts.length).toEqual(3)
+        expect(filePathParts[0]).toEqual('some')
+        expect(filePathParts[1]).toEqual('path')
+        expect(filePathParts[2].length).toBeLessThanOrEqual(255)
+        expect(filePathParts[2].endsWith('.html')).toBeTruthy()
+      })
       it('should override encoding for templates', () => {
         const SFile = new StaticFile({
           filepath: 'some/path.ext',

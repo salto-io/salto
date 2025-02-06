@@ -20,16 +20,11 @@ import {
   isAdditionOrModificationChange,
   isRemovalChange,
   isStaticFile,
+  normalizeFilePathPart,
 } from '@salto-io/adapter-api'
 import FormData from 'form-data'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import {
-  getParent,
-  getParents,
-  fileNameFromNaclCase,
-  normalizeFilePathPart,
-  pathNaclCase,
-} from '@salto-io/adapter-utils'
+import { getParent, getParents, fileNameFromNaclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import OktaClient from './client/client'
 import { getOktaError } from './deprecated_deployment'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'

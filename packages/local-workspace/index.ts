@@ -33,7 +33,6 @@ export {
 export {
   createRemoteMapCreator,
   closeAllRemoteMaps,
-  closeRemoteMapsOfLocation,
   replicateDB,
   createReadOnlyRemoteMap,
   cleanDatabases,

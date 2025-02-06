@@ -20,7 +20,6 @@ import {
   TMP_DB_DIR,
   cleanDatabases,
   closeAllRemoteMaps,
-  closeRemoteMapsOfLocation,
 } from '../../src/remote_map/remote_map'
 import { remoteMapLocations } from '../../src/remote_map/location_pool'
 
@@ -901,37 +900,6 @@ describe('test operations on remote db', () => {
   })
   it('should throw exception if the namespace is invalid', async () => {
     await expect(createMap('inval:d')).rejects.toThrow()
-  })
-
-  describe('closeRemoteMapsOfLocation', () => {
-    const location = '/tmp/test_db_location'
-    let didClose: boolean
-
-    describe('when no connection was opened', () => {
-      beforeEach(async () => {
-        didClose = await closeRemoteMapsOfLocation(location)
-      })
-      it('should return false', async () => {
-        expect(didClose).toEqual(false)
-      })
-    })
-
-    describe('when there are opened connections', () => {
-      beforeEach(async () => {
-        const result = await createMap('namespace', true, location)
-        await result.remoteMap.has('key')
-        didClose = await closeRemoteMapsOfLocation(location)
-      })
-
-      it('should return true', async () => {
-        expect(didClose).toEqual(true)
-      })
-
-      it('should return false the second time', async () => {
-        didClose = await closeRemoteMapsOfLocation(location)
-        expect(didClose).toEqual(false)
-      })
-    })
   })
 
   describe('closeAllRemoteMaps', () => {

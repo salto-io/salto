@@ -261,10 +261,7 @@ const closeTmpConnection = async (
   log.debug('closed temporary connection to %s', tmpLocation)
 }
 
-/**
- * @deprecated use `workspace.close()` / `remoteMapCreator.close()` instead.
- */
-export const closeRemoteMapsOfLocation = async (location: string): Promise<boolean> =>
+const closeRemoteMapsOfLocation = async (location: string): Promise<boolean> =>
   log.timeDebug(
     async () => {
       let didClose = false

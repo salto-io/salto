@@ -4062,6 +4062,13 @@ salesforce.staticFile staticFileInstance {
         }
       `
 
+    const willBeDeleted = `
+        salto.base willBeDeleted {
+          str = "STR"
+          num = false
+        }
+      `
+
     const files = {
       primFile,
       baseFile,
@@ -4072,12 +4079,13 @@ salesforce.staticFile staticFileInstance {
       inst2updateFile,
       startsAsErr,
       willRemainErr,
+      willBeDeleted,
     }
 
     let workspace: Workspace
     const naclFileStore = mockDirStore(undefined, undefined, files)
     const primElemID = new ElemID('salto', 'prim')
-    const changes = [
+    const changes: DetailedChange[] = [
       {
         id: new ElemID('salto', 'obj', 'instance', 'objInst', 'baseField', 'str'),
         action: 'remove',
@@ -4096,16 +4104,26 @@ salesforce.staticFile staticFileInstance {
           after: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.STRING }),
         },
       },
-    ] as DetailedChange[]
+      {
+        id: new ElemID('salto', 'base', 'instance', 'willBeDeleted'),
+        action: 'remove',
+        data: {
+          before: new InstanceElement('willBeDeleted', new TypeReference(new ElemID('salto', 'base')), {
+            str: 'STR',
+            num: false,
+          }),
+        },
+      },
+    ]
 
     let validationErrs: ReadonlyArray<ValidationError>
     let resultNumber: UpdateNaclFilesResult
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
-      // Verify that the two errors we are starting with (that should be deleted in the update
+      // Verify that the errors we are starting with (that should be deleted in the update
       // since the update resolves them ) are present. This check will help debug situations in
       // which the entire flow is broken and errors are not created at all...
-      expect((await workspace.errors()).validation).toHaveLength(2)
+      expect((await workspace.errors()).validation).toHaveLength(3)
       resultNumber = await workspace.updateNaclFiles(
         await addBaseChangeToDetailedChanges(await workspace.elements(false), workspace.state(), changes),
       )
@@ -4117,14 +4135,21 @@ salesforce.staticFile staticFileInstance {
     })
 
     it('create validation errors in the updated elements', () => {
-      const objInstToUpdateErr = validationErrs.find(
+      const objInstToUpdateErrOnStr = validationErrs.find(
         err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.str',
       )
+      expect(objInstToUpdateErrOnStr).toBeDefined()
+      expect(objInstToUpdateErrOnStr?.message).toContain('Element has invalid NaCl content')
+      expect(objInstToUpdateErrOnStr?.detailedMessage).toContain('Invalid value type for string')
 
-      expect(objInstToUpdateErr).toBeDefined()
-      expect(objInstToUpdateErr?.message).toContain('Element has invalid NaCl content')
-      expect(objInstToUpdateErr?.detailedMessage).toContain('Invalid value type for string')
+      const objInstToUpdateErrOnNum = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.num',
+      )
+      expect(objInstToUpdateErrOnNum).toBeDefined()
+      expect(objInstToUpdateErrOnNum?.message).toContain('Element has invalid NaCl content')
+      expect(objInstToUpdateErrOnNum?.detailedMessage).toContain('Invalid value type for salto.prim')
     })
+
     it('create validation errors where the updated elements are used as value type', () => {
       const usedAsTypeErr = validationErrs.find(
         err => err.elemID.getFullName() === 'salto.obj.instance.objInst.baseField.num',
@@ -4165,6 +4190,14 @@ salesforce.staticFile staticFileInstance {
       )
 
       expect(usedAsChainedReference).not.toBeDefined()
+    })
+
+    it('should remove error of deleted element', () => {
+      const deletedElementErr = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.base.instance.willBeDeleted.num',
+      )
+
+      expect(deletedElementErr).not.toBeDefined()
     })
   })
 

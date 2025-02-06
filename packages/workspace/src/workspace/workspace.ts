@@ -907,34 +907,13 @@ export async function loadWorkspace(params: LoadWorkspaceParams): Promise<Worksp
             stateToBuild.states[envName].merged,
             stateToBuild.states[envName].referenceSources,
           )
+
+          const keysToDelete = changeIDs.concat(dependents.map(elem => elem.elemID)).map(id => id.getFullName())
+          await stateToBuild.states[envName].validationErrors.deleteAll(keysToDelete)
+
           const elementsToValidate = changedElements.concat(dependents)
-          const validationErrors = await validateElements(elementsToValidate, stateToBuild.states[envName].merged)
-          const validatedElementsIDs = _.uniqBy(elementsToValidate.map(elem => elem.elemID).concat(changeIDs), e =>
-            e.getFullName(),
-          )
-          const validationErrorsById = await awu(validationErrors).groupBy(err =>
-            err.elemID.createTopLevelParentID().parent.getFullName(),
-          )
-
-          const errorsToUpdate = Object.entries(validationErrorsById).map(([elemID, errors]) => ({
-            key: elemID,
-            value: errors,
-          }))
-
-          const elementsWithNoErrors = validatedElementsIDs
-            .map(id => id.getFullName())
-            .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
-          const currentValidationErrors = Object.fromEntries(
-            await awu(stateToBuild.states[envName].validationErrors.entries())
-              .map(error => [error.key, error.value] as [string, ValidationError[]])
-              .toArray(),
-          )
-          await stateToBuild.states[envName].validationErrors.setAll(
-            errorsToUpdate.filter(error => !_.isEqual(error.value, currentValidationErrors[error.key] ?? [])),
-          )
-          await stateToBuild.states[envName].validationErrors.deleteAll(
-            elementsWithNoErrors.filter(error => !_.isEmpty(currentValidationErrors[error])),
-          )
+          const errors = await validateElements(elementsToValidate, stateToBuild.states[envName].merged)
+          await stateToBuild.states[envName].validationErrors.setAll(errors)
         }
       }
 

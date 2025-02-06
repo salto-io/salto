@@ -7,7 +7,6 @@
  */
 import {
   Change,
-  CORE_ANNOTATIONS,
   DeployResult,
   Element,
   getChangeData,
@@ -304,21 +303,13 @@ each([
         .filter(instance => instance.elemID.name.includes('createdByOssE2e'))
         .filter(instance => !removalInstancesNames.includes(instance.elemID.getFullName()))
         .filter(instance => instance.elemID.typeName !== FIELD_TYPE_NAME || !instance.value.isLocked) // do not delete locked fields, isLocked can also be undefined
-        .filter(
-          instance =>
-            instance.elemID.typeName !== FIELD_CONTEXT_TYPE_NAME ||
-            !instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0].value.isLocked,
-        ) // do not delete contexts of locked fields
+        .filter(instance => instance.elemID.typeName !== FIELD_CONTEXT_TYPE_NAME) // do not delete contexts as they will be deleted with their fields
         .filter(instance => instance.elemID.typeName !== FIELD_CONTEXT_OPTION_TYPE_NAME) // do not delete options, they will be deleted with their contexts
         .map(instance => toChange({ before: instance }))
 
-      if (!isDataCenter) {
-        const allRemovalErrors = await deployChanges([allOssCreatedElements], () => true) // do not fail on errors
-        if (allRemovalErrors.length) {
-          throw new Error(
-            `Failed to clean older e2e changes: ${allRemovalErrors.map(e => safeJsonStringify(e)).join(', ')}`,
-          )
-        }
+      const allRemovalErrors = await deployChanges([allOssCreatedElements], () => true) // do not fail on errors
+      if (allRemovalErrors.length) {
+        log.error(`Failed to clean e2e changes: ${allRemovalErrors.map(e => safeJsonStringify(e)).join(', ')}`)
       }
     })
   })

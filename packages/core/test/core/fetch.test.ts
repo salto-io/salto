@@ -57,6 +57,7 @@ import {
   fetchChangesFromWorkspace,
   calcFetchChanges,
   createElemIdGetters,
+  unmergeElements,
 } from '../../src/core/fetch'
 import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from '../common/helpers'
@@ -2491,5 +2492,117 @@ describe('calc fetch changes', () => {
         ])
       })
     })
+  })
+})
+
+describe('unmergeElements', () => {
+  let elements: Element[]
+  const noPathElemID = ElemID.fromFullName('salto.partially')
+  const noPathElementFull = new ObjectType({
+    elemID: noPathElemID,
+    annotations: {
+      inNacl: 'Im in nacl',
+      inState: 'Im in state',
+    },
+    path: ['salto', 'nopath'],
+  })
+  const noPathElementNACL = new ObjectType({
+    elemID: noPathElemID,
+    annotations: {
+      inNacl: 'Im in nacl',
+    },
+    path: ['salto', 'nopath'],
+  })
+  const noPathElement = new ObjectType({
+    elemID: noPathElemID,
+  })
+  const objElemId = new ElemID('salto', 'obj')
+  const objFragStdFields = new ObjectType({
+    elemID: objElemId,
+    fields: {
+      stdField: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          test: 'test',
+        },
+      },
+    },
+    path: ['salto', 'obj', 'standardFields'],
+  })
+  const objFragCustomFields = new ObjectType({
+    elemID: objElemId,
+    fields: {
+      customField: {
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        annotations: {
+          test: 'test',
+        },
+      },
+    },
+    path: ['salto', 'obj', 'customFields'],
+  })
+  const objFragAnnotations = new ObjectType({
+    elemID: objElemId,
+    annotationRefsOrTypes: {
+      anno: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    annotations: {
+      anno: 'Anno!!!! Anno!!!! Annnooooooooooo!!!!!!!!',
+    },
+    path: ['salto', 'obj', 'annotations'],
+  })
+  const objFull = new ObjectType({
+    elemID: objElemId,
+    fields: {
+      stdField: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          test: 'test',
+        },
+      },
+      customField: {
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        annotations: {
+          test: 'test',
+        },
+      },
+    },
+    annotationRefsOrTypes: {
+      anno: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    annotations: {
+      anno: 'Anno!!!! Anno!!!! Annnooooooooooo!!!!!!!!',
+    },
+  })
+  const mergedElements = [objFull, noPathElementFull]
+  const stateElements = [objFull]
+  const unmergedElements = [objFragStdFields, objFragCustomFields, objFragAnnotations]
+  beforeEach(async () => {
+    const pi = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
+    await pathIndex.updatePathIndex({
+      pathIndex: pi,
+      unmergedElements: unmergedElements.filter(e => !e.elemID.isEqual(noPathElemID)),
+    })
+
+    elements = await unmergeElements(
+      mockWorkspace({
+        elements: mergedElements,
+        index: await awu(pi.entries()).toArray(),
+        stateElements,
+        parsedNaclFiles: {
+          'salto/nopath.nacl': [noPathElementNACL],
+        },
+      }),
+      'env1',
+      [noPathElement, objFull],
+    )
+  })
+  it('should return elements split back to fragments', () => {
+    expect(elements).toEqual(expect.arrayContaining([objFragStdFields, objFragCustomFields, objFragAnnotations]))
+  })
+  it('should add the path to elements without path', () => {
+    expect(elements.find(elem => elem.elemID === noPathElemID)).toEqual(
+      expect.objectContaining({ path: ['salto', 'nopath'] }),
+    )
   })
 })

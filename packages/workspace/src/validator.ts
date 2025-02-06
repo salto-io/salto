@@ -855,20 +855,9 @@ export const validateElements = async (
 
   return log.timeIteratorDebug(
     wu(Object.entries(groupedByTopLevelId))
-      .map(([key, elems]) => {
-        const topLevelID = ElemID.fromFullName(key)
-        const errors = elems.flatMap(validateElement)
-        const [errorsWithRightTopLevel, errorsWithWrongTopLevel] = _.partition(
-          errors,
-          err => topLevelID.isEqual(err.elemID) || topLevelID.isParentOf(err.elemID),
-        )
-        if (errorsWithWrongTopLevel.length > 0) {
-          log.warn('expected errors to have top level id %s but received: %o', key, errorsWithWrongTopLevel)
-        }
-        return { key, value: errorsWithRightTopLevel }
-      })
+      .map(([key, elems]) => ({ key, value: elems.flatMap(validateElement) }))
       .filter(errors => errors.value.length > 0),
     'validateElements with %d elements',
-    resolved.length,
+    elements.length,
   )
 }

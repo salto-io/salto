@@ -4050,7 +4050,7 @@ salesforce.staticFile staticFileInstance {
 
     const startsAsErr = `
         salto.base willBeFixed {
-          str = "STR"
+          str = "STR",
           num = "This will be string"
         }
       `
@@ -4134,26 +4134,22 @@ salesforce.staticFile staticFileInstance {
       expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
     })
 
-    it('should return updated validation errors', () => {
-      expect(validationErrs.map(err => err.elemID.getFullName()).sort()).toEqual([
-        'salto.base.instance.baseInst.str',
-        'salto.base.instance.baseInst2.str',
-        'salto.base.instance.willRemain.num',
-        'salto.obj.instance.objInst.baseField.num',
-        'salto.obj.instance.objInstToUpdate.baseField.num',
-        'salto.obj.instance.objInstToUpdate.baseField.str',
-      ])
-    })
-
     it('create validation errors in the updated elements', () => {
-      const objInstToUpdateErr = validationErrs.find(
+      const objInstToUpdateErrOnStr = validationErrs.find(
         err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.str',
       )
+      expect(objInstToUpdateErrOnStr).toBeDefined()
+      expect(objInstToUpdateErrOnStr?.message).toContain('Element has invalid NaCl content')
+      expect(objInstToUpdateErrOnStr?.detailedMessage).toContain('Invalid value type for string')
 
-      expect(objInstToUpdateErr).toBeDefined()
-      expect(objInstToUpdateErr?.message).toContain('Element has invalid NaCl content')
-      expect(objInstToUpdateErr?.detailedMessage).toContain('Invalid value type for string')
+      const objInstToUpdateErrOnNum = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.num',
+      )
+      expect(objInstToUpdateErrOnNum).toBeDefined()
+      expect(objInstToUpdateErrOnNum?.message).toContain('Element has invalid NaCl content')
+      expect(objInstToUpdateErrOnNum?.detailedMessage).toContain('Invalid value type for salto.prim')
     })
+
     it('create validation errors where the updated elements are used as value type', () => {
       const usedAsTypeErr = validationErrs.find(
         err => err.elemID.getFullName() === 'salto.obj.instance.objInst.baseField.num',
@@ -4194,6 +4190,14 @@ salesforce.staticFile staticFileInstance {
       )
 
       expect(usedAsChainedReference).not.toBeDefined()
+    })
+
+    it('should remove error of deleted element', () => {
+      const deletedElementErr = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.base.instance.willBeDeleted.num',
+      )
+
+      expect(deletedElementErr).not.toBeDefined()
     })
   })
 

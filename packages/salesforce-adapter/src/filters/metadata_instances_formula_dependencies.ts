@@ -28,6 +28,8 @@ import { buildElementsSourceForFetch, ensureSafeFilterFetch } from './utils'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
+const FORMULA_FIELDS = ['formula', 'errorConditionFormula']
+
 const addDependenciesAnnotation = (
   element: Element,
   formula: string,
@@ -43,9 +45,6 @@ const addDependenciesAnnotation = (
     log.warn(`Failed to extract references from formula ${formula}: ${e}`)
     return
   }
-
-  // We check the # of refs before we filter bad refs out because otherwise the # of refs will be affected by the
-  // filtering.
   const references = referencesFromIdentifiers(identifiersInfo)
 
   const referencesWithValidity = _.groupBy(references, refElemId =>
@@ -67,7 +66,7 @@ const addFormulaDependenciesFunc = (
 ): void => {
   const elementsFormulas: string[] = []
   const walkOnFunc: WalkOnFunc = ({ value, path }) => {
-    if (path.name === 'formula' || path.name === 'errorConditionFormula') {
+    if (FORMULA_FIELDS.includes(path.name)) {
       elementsFormulas.push(value)
     }
     return WALK_NEXT_STEP.RECURSE

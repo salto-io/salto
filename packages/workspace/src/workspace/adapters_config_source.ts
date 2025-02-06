@@ -160,7 +160,7 @@ export const buildAdaptersConfigSource = async ({
         element: instance,
         strict: false,
         allowEmptyArrays: true,
-        allowEmptyObjects: true,
+        allowExistingEmptyObjects: true,
         transformFunc: ({ value }) => value,
         elementsSource: naclSource,
       })

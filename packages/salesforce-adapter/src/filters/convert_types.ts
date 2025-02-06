@@ -35,7 +35,7 @@ const filterCreator: FilterCreator = () => ({
             transformFunc: transformPrimitive,
             strict: false,
             allowEmptyArrays: true,
-            allowEmptyObjects: true,
+            allowExistingEmptyObjects: true,
           }) || {}
       })
   },

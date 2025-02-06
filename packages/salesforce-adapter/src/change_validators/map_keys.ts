@@ -85,7 +85,7 @@ const getMapKeyErrors = (after: InstanceElement, fetchProfile: FetchProfile): Ch
         transformFunc: findInvalidPaths,
         strict: false,
         allowEmptyArrays: true,
-        allowEmptyObjects: true,
+        allowExistingEmptyObjects: true,
         pathID: after.elemID.createNestedID(fieldName),
       })
     })

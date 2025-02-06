@@ -204,7 +204,7 @@ export const removeHiddenFromElement = <T extends Element>(
     elementsSource,
     allowEmptyArrays: true,
     allowExistingEmptyObjects: true,
-    allowNewEmptyObjects: true,
+    allowAllEmptyObjects: true,
   })
 
 const removeHiddenFromValues = (
@@ -222,7 +222,7 @@ const removeHiddenFromValues = (
     strict: false,
     allowEmptyArrays: true,
     allowExistingEmptyObjects: true,
-    allowNewEmptyObjects: true,
+    allowAllEmptyObjects: true,
   })
 
 const isAttributeChangeToHidden = (change: DetailedChange, hiddenValue: boolean): boolean =>

@@ -643,8 +643,8 @@ describe('pino based logger', () => {
       expect(logLines).toEqual([
         expect.stringContaining(`debug ${NAMESPACE} first func 12 starting`),
         expect.stringContaining(`debug ${NAMESPACE} second func starting`),
-        expect.stringContaining(`debug ${NAMESPACE} second func took 9 ms (tts=2 net=4)`),
-        expect.stringContaining(`debug ${NAMESPACE} first func 12 took 20 ms (tts=13 net=4)`),
+        expect.stringContaining(`debug ${NAMESPACE} second func took 9 ms (tts=2 ms net=4 ms)`),
+        expect.stringContaining(`debug ${NAMESPACE} first func 12 took 20 ms (tts=13 ms net=4 ms)`),
       ])
     })
   })

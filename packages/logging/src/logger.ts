@@ -100,8 +100,8 @@ function timeIterator<T>(
   desc: string,
   ...descArgs: unknown[]
 ): Iterable<T> {
-  const before = Date.now()
-  let start: number | undefined
+  const createTime = Date.now()
+  let startTime: number | undefined
   let netTimeTaken = 0
 
   const formattedDescription = format(desc, ...descArgs)
@@ -116,8 +116,8 @@ function timeIterator<T>(
         ...iter,
         next: () => {
           const callStartTime = Date.now()
-          if (start === undefined) {
-            start = callStartTime
+          if (startTime === undefined) {
+            startTime = callStartTime
           }
           const res = iter.next()
           const endTime = Date.now()
@@ -125,10 +125,10 @@ function timeIterator<T>(
           if (res.done) {
             this.log(
               level,
-              '%s took %o ms (tts=%o net=%o)',
+              '%s took %o ms (tts=%o ms net=%o ms)',
               formattedDescription,
-              endTime - before,
-              start - before,
+              endTime - createTime,
+              startTime - createTime,
               netTimeTaken,
             )
           }

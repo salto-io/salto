@@ -4057,7 +4057,7 @@ salesforce.staticFile staticFileInstance {
 
     const willRemainErr = `
         salto.base willRemain {
-          str = "STR"
+          str = "STR",
           num = false
         }
       `

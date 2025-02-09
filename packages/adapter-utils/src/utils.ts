@@ -183,12 +183,8 @@ const removeEmptyParts = ({
   }
   if (_.isPlainObject(value)) {
     const filtered = _.omitBy(value, _.isUndefined)
-    const isExistingEmptyObject = _.isEmpty(filtered) && _.isEmpty(value)
-    const isNewEmptyObject = _.isEmpty(filtered) && !_.isEmpty(value)
-    return (isExistingEmptyObject && !allowExistingEmptyObjects && !allowAllEmptyObjects) ||
-      (isNewEmptyObject && !allowAllEmptyObjects)
-      ? undefined
-      : filtered
+    const isEmptyAllowed = allowAllEmptyObjects || (allowExistingEmptyObjects && _.isEmpty(value))
+    return _.isEmpty(filtered) && !isEmptyAllowed : undefined : filtered
   }
   return value
 }

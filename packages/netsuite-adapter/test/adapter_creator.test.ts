@@ -6,7 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, isAdapterSuccessInstallResult, ObjectType } from '@salto-io/adapter-api'
-import * as legacySuitecloud from '@salto-io/suitecloud-cli-legacy'
 import * as newSuitecloud from '@salto-io/suitecloud-cli-new'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import Bottleneck from 'bottleneck'
@@ -24,13 +23,10 @@ jest.mock('../src/client/suiteapp_client/suiteapp_client')
 jest.mock('../src/adapter')
 
 describe('NetsuiteAdapter creator', () => {
-  let mockLegacyDownload: jest.SpyInstance
   let mockNewDownload: jest.SpyInstance
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    mockLegacyDownload = jest.spyOn(legacySuitecloud.SdkDownloadService, 'download')
-    mockLegacyDownload.mockResolvedValue({ success: true, installedVersion: '123' })
     mockNewDownload = jest.spyOn(newSuitecloud.SdkDownloadService, 'download')
     mockNewDownload.mockResolvedValue({ success: true, installedVersion: '456' })
   })
@@ -850,23 +846,9 @@ describe('NetsuiteAdapter creator', () => {
       expect(res).toEqual({
         success: true,
         installedVersion: '456',
-        installedVersions: ['123', '456'],
+        installedVersions: ['456'],
       })
-      expect(mockLegacyDownload).toHaveBeenCalled()
       expect(mockNewDownload).toHaveBeenCalled()
-    })
-    it('when legacy installation fails with an expection', async () => {
-      mockLegacyDownload.mockImplementationOnce(() => {
-        throw new Error('FAILED')
-      })
-      const res = await install()
-      expect(isAdapterSuccessInstallResult(res)).toBe(false)
-      expect(res).toEqual({
-        success: false,
-        errors: ['FAILED'],
-      })
-      expect(mockLegacyDownload).toHaveBeenCalled()
-      expect(mockNewDownload).not.toHaveBeenCalled()
     })
     it('when new installation fails with an expection', async () => {
       mockNewDownload.mockImplementationOnce(() => {
@@ -878,19 +860,7 @@ describe('NetsuiteAdapter creator', () => {
         success: false,
         errors: ['FAILED'],
       })
-      expect(mockLegacyDownload).toHaveBeenCalled()
       expect(mockNewDownload).toHaveBeenCalled()
-    })
-    it('when legacy installation fails with sdf errors in return value', async () => {
-      mockLegacyDownload.mockImplementationOnce(() => ({ errors: ['FAILED'], success: false }))
-      const res = await install()
-      expect(isAdapterSuccessInstallResult(res)).toBe(false)
-      expect(res).toEqual({
-        success: false,
-        errors: ['FAILED'],
-      })
-      expect(mockLegacyDownload).toHaveBeenCalled()
-      expect(mockNewDownload).not.toHaveBeenCalled()
     })
     it('when new installation fails with sdf errors in return value', async () => {
       mockNewDownload.mockImplementationOnce(() => ({ errors: ['FAILED'], success: false }))
@@ -900,7 +870,6 @@ describe('NetsuiteAdapter creator', () => {
         success: false,
         errors: ['FAILED'],
       })
-      expect(mockLegacyDownload).toHaveBeenCalled()
       expect(mockNewDownload).toHaveBeenCalled()
     })
   })

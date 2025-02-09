@@ -16,7 +16,6 @@ import {
   AdapterOperationsContext,
   AdapterOperations,
 } from '@salto-io/adapter-api'
-import { SdkDownloadService as LegacySdkDownloadService } from '@salto-io/suitecloud-cli-legacy'
 import { SdkDownloadService as NewSdkDownloadService } from '@salto-io/suitecloud-cli-new'
 import { combineCustomReferenceGetters } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -211,17 +210,12 @@ export const adapter: Adapter = {
   configType,
   install: async (): Promise<AdapterInstallResult> => {
     try {
-      const legacyResult = await LegacySdkDownloadService.download()
-      log.info('Legacy SDF installation result: %o', legacyResult)
-      if (!legacyResult.success) {
-        return legacyResult
-      }
       const newResult = await NewSdkDownloadService.download()
       log.info('New SDF installation result: %o', newResult)
       if (!newResult.success) {
         return newResult
       }
-      const installedVersions = [legacyResult.installedVersion, newResult.installedVersion]
+      const installedVersions = [newResult.installedVersion]
       return { ...newResult, installedVersions }
     } catch (err) {
       return { success: false, errors: [err.message ?? err] }

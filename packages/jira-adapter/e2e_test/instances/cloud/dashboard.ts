@@ -12,6 +12,7 @@ export const createDashboardValues = (name: string): Values => ({
   description: 'desc!',
   layout: 'AAA',
   sharePermissions: [{ type: 'authenticated' }],
+  owner: { id: '123', displayName: 'Testing salto' },
 })
 
 export const createGadget1Values = (name: string): Values => ({

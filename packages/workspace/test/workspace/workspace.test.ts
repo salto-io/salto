@@ -959,7 +959,7 @@ describe('workspace', () => {
 
     it('should return the correct changes', async () => {
       const primaryEnvChanges = changes.default.changes
-      expect(primaryEnvChanges).toHaveLength(26)
+      expect(primaryEnvChanges).toHaveLength(27)
       expect((primaryEnvChanges.find(c => c.action === 'add') as AdditionChange<Element>).data.after).toEqual(
         newAddedObject,
       )

@@ -43,16 +43,47 @@ export type ReferenceFinder<T extends SupportedRecipeBlock> = (value: T, path: E
 
 export type FormulaReferenceFinder = (value: string, path: ElemID) => MappedReference[]
 
+export type ConditionBlock = {
+  operand: string
+  lhs: string
+  rhs: string
+}
+
+export type ConditionsFullBlock = {
+  keyword: string
+  input: {
+    operand: string
+    conditions: ConditionBlock[]
+  }
+}
+
+export type ConditionReferenceFinder = (
+  value: ConditionsFullBlock,
+  path: ElemID,
+) => MappedReference[]
+
 export const addReferencesForService = async <T extends SupportedRecipeBlock>(
   inst: InstanceElement,
   appName: string,
   typeGuard: (value: Value, app: string) => value is T,
   addReferences: ReferenceFinder<T>,
   addFormulaReferences?: FormulaReferenceFinder,
+  isConditionsBlock?: (value: Value) => boolean,
+  addMatchReferences?: ConditionReferenceFinder,
 ): Promise<void> => {
   const dependencyMapping: MappedReference[] = []
 
   const findReferences: TransformFunc = ({ value, path }) => {
+    if (path !== undefined
+    && isConditionsBlock !== undefined
+    && addMatchReferences !== undefined // Cross-service adapter support conditions
+    && isConditionsBlock(value)) { // The block is a condition block
+      dependencyMapping.push(...addMatchReferences(
+        value,
+        path,
+      ))
+    }
+
     if (typeGuard(value, appName)) {
       dependencyMapping.push(...addReferences(value, path ?? inst.elemID))
       // we can't have both cases because on expects an object and the other a string

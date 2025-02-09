@@ -23,14 +23,20 @@ import {
   SETTINGS_METADATA_TYPE,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../../src/constants'
-import { MetadataInstance, MetadataQuery } from '../../src/types'
+import { MetadataInstance, MetadataQuery, MetadataQueryParams } from '../../src/types'
 import { mockInstances } from '../mock_elements'
 import { mockFileProperties } from '../connection'
 import { emptyLastChangeDateOfTypesWithNestedInstances } from '../utils'
 import { getMetadataIncludeFromFetchTargets } from '../../src/filters/utils'
 
 describe('validateMetadataParams', () => {
-  describe('invalid regex in include list', () => {
+  describe('invalid include list', () => {
+    it('non array value', () => {
+      expect(() => {
+        validateMetadataParams({ include: {} as unknown as MetadataQueryParams[] }, ['aaa'])
+      }).toThrow('Metadata query parameters must be a list, got:')
+    })
+
     it('invalid metadataType', () => {
       expect(() =>
         validateMetadataParams(
@@ -71,7 +77,13 @@ describe('validateMetadataParams', () => {
     })
   })
 
-  describe('invalid regex in exclude list', () => {
+  describe('invalid exclude list', () => {
+    it('non array value', () => {
+      expect(() => {
+        validateMetadataParams({ exclude: {} as unknown as MetadataQueryParams[] }, ['aaa'])
+      }).toThrow('Metadata query parameters must be a list, got:')
+    })
+
     it('invalid metadataType', () => {
       expect(() =>
         validateMetadataParams(

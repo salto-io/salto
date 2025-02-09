@@ -297,6 +297,11 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
 }
 
 const validateMetadataQueryParams = (params: MetadataQueryParams[], fieldPath: string[]): void => {
+  if (!Array.isArray(params)) {
+    const errMessage = `Metadata query parameters must be a list, got: ${inspectValue(params)}`
+    throw new ConfigValidationError(fieldPath, errMessage)
+  }
+
   params.forEach(queryParams =>
     Object.entries(queryParams).forEach(([queryField, pattern]) => {
       if (pattern === undefined) {

@@ -42,7 +42,7 @@ const addDependenciesAnnotation = (
     )
     identifiersInfo = formulaInfo.flat()
   } catch (e) {
-    log.warn(`Failed to extract references from formula ${formula}: ${e}`)
+    log.trace(`Failed to extract references from formula ${formula}: ${e}`)
     return
   }
   const references = referencesFromIdentifiers(identifiersInfo)

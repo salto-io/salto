@@ -170,12 +170,12 @@ const removeEmptyParts = ({
   value,
   allowEmptyArrays,
   allowExistingEmptyObjects,
-  allowAllEmptyObjects = false,
+  allowAllEmptyObjects,
 }: {
   value: Value
   allowEmptyArrays: boolean
   allowExistingEmptyObjects: boolean
-  allowAllEmptyObjects?: boolean
+  allowAllEmptyObjects: boolean
 }): Value => {
   if (Array.isArray(value)) {
     const filtered = value.filter(isDefined)
@@ -294,6 +294,10 @@ export const transformValues = async ({
   allowExistingEmptyObjects = false,
   allowAllEmptyObjects = false,
 }: TransformValuesArgs): Promise<Values | undefined> => {
+  if (allowAllEmptyObjects && !allowExistingEmptyObjects) {
+    throw new Error('allowExistingEmptyObjects must be true when allowAllEmptyObjects is true')
+  }
+
   const transformValue = async (value: Value, keyPathID?: ElemID, field?: Field): Promise<Value> => {
     if (field === undefined && strict) {
       return undefined

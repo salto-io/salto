@@ -917,6 +917,9 @@ describe('Test utils.ts', () => {
               emptyObj: {
                 nested: {},
               },
+              newEmptyObj: {
+                deletedNested: undefined,
+              },
             },
             type,
             transformFunc: ({ value }) => value,
@@ -931,6 +934,53 @@ describe('Test utils.ts', () => {
               nested: {},
             },
           })
+        })
+      })
+
+      describe('with allowExistingEmptyObjects and allowAllEmptyObjects', () => {
+        it('should remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+              newEmptyObj: {
+                deletedNested: undefined,
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowExistingEmptyObjects: true,
+            allowAllEmptyObjects: true,
+          })
+
+          expect(result).toEqual({
+            obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+            newEmptyObj: {},
+          })
+        })
+      })
+
+      describe('with allowAllEmptyObjects but not allowExistingEmptyObjects', () => {
+        it('should throw an error', async () => {
+          await expect(
+            transformValues({
+              values: {},
+              type,
+              transformFunc: ({ value }) => value,
+              allowAllEmptyObjects: true,
+            }),
+          ).rejects.toThrow()
         })
       })
 

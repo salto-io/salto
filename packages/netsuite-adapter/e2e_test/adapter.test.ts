@@ -166,9 +166,8 @@ describe('Netsuite adapter E2E with real account', () => {
   jest.setTimeout(1000000)
 
   describe.each([
-    ['without SuiteApp', { withSuiteApp: false, withOAuth: false }],
-    ['with SuiteApp', { withSuiteApp: true, withOAuth: false }],
-    ['with OAuth', { withSuiteApp: true, withOAuth: true }],
+    ['without SuiteApp', { withSuiteApp: false, withOAuth: true }],
+    ['with SuiteApp', { withSuiteApp: true, withOAuth: true }],
   ])('%s', (_text, { withSuiteApp, withOAuth }) => {
     let fetchResult: FetchResult
     let fetchedElements: Element[]

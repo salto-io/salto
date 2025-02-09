@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/file",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "license": "SEE LICENSE IN LICENSE",
   "description": "File System Utils",
   "repository": {
@@ -29,7 +29,7 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/lowerdash": "0.5.0",
+    "@salto-io/lowerdash": "0.5.1",
     "mkdirp": "^0.5.1",
     "rimraf": "^3.0.2",
     "stream-chain": "^2.2.5"

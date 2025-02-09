@@ -1020,14 +1020,15 @@ const createFetchChanges = async ({
           after: elementSource.createInMemoryElementSource(configs),
         }),
       ).toArray()
-    : Array.from((
+    : Array.from(
+        (
           await getPlan({
             before: elementSource.createInMemoryElementSource(
               currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
             ),
             after: elementSource.createInMemoryElementSource(configs),
           })
-        ).itemsByEvalOrder()
+        ).itemsByEvalOrder(),
       ).flatMap(item => Array.from(item.changes()))
 
   const accountNameToConfig = _.keyBy(updatedConfigs, config => config.config[0].elemID.adapter)

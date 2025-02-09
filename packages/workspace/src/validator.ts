@@ -838,18 +838,24 @@ export const validateElements = async (
   log.timeDebug(
     async () => {
       const resolved = await resolve(elements, elementsSource)
-      const errors = resolved.flatMap(e => {
-        if (isInstanceElement(e)) {
-          return validateInstanceElements(e)
-        }
-        if (isVariable(e)) {
-          return validateVariable(e)
-        }
-        if (isType(e)) {
-          return validateType(e)
-        }
-        return []
-      })
+      const errors = resolved.flatMap(e =>
+        log.timeDebug(
+          () => {
+            if (isInstanceElement(e)) {
+              return validateInstanceElements(e)
+            }
+            if (isVariable(e)) {
+              return validateVariable(e)
+            }
+            if (isType(e)) {
+              return validateType(e)
+            }
+            return []
+          },
+          'validate %s',
+          e.elemID.getFullName(),
+        ),
+      )
 
       return errors
     },

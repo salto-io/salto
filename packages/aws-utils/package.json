@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/aws-utils",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto AWS Utils",
   "repository": {
@@ -31,10 +31,10 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.198.0",
     "@aws-sdk/middleware-retry": "3.198.0",
-    "@salto-io/logging": "0.5.0"
+    "@salto-io/logging": "0.5.1"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.5.0",
+    "@salto-io/test-utils": "0.5.1",
     "@types/jest": "^29.5.12",
     "@types/node": "^18.9.0",
     "eslint": "^9.16.0",

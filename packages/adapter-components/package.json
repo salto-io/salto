@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/adapter-components",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto Adapter Components",
   "repository": {
@@ -32,12 +32,12 @@
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.0.3",
-    "@salto-io/adapter-api": "0.5.0",
-    "@salto-io/adapter-utils": "0.5.0",
-    "@salto-io/dag": "0.5.0",
-    "@salto-io/logging": "0.5.0",
-    "@salto-io/lowerdash": "0.5.0",
-    "@salto-io/parser": "0.5.0",
+    "@salto-io/adapter-api": "0.5.1",
+    "@salto-io/adapter-utils": "0.5.1",
+    "@salto-io/dag": "0.5.1",
+    "@salto-io/logging": "0.5.1",
+    "@salto-io/lowerdash": "0.5.1",
+    "@salto-io/parser": "0.5.1",
     "axios": "^1.7.2",
     "axios-retry": "^4.4.2",
     "bottleneck": "^2.19.5",
@@ -53,8 +53,8 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.0",
-    "@salto-io/test-utils": "0.5.0",
+    "@salto-io/element-test-utils": "0.5.1",
+    "@salto-io/test-utils": "0.5.1",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "@types/node": "^18.9.0",

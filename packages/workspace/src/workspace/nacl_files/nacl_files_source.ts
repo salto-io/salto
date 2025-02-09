@@ -56,7 +56,6 @@ import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile, SyncParsedNaclFile } from './parsed_nacl_file'
 import { createParseResultCache, ParsedNaclFileCache } from './parsed_nacl_files_cache'
 import { isInvalidStaticFile } from '../static_files/common'
-import { getSaltoFlagBool, WORKSPACE_FLAGS } from '../../flags'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -311,21 +310,13 @@ const buildNaclFilesState = async ({
   const relevantElementIDs: ElemID[] = []
   const newElementsToMerge: Element[] = []
 
-  const shouldCreateFilenameToElementIDsMapping = getSaltoFlagBool(WORKSPACE_FLAGS.createFilenamesToElementIdsMapping)
-  log.debug('shouldCreateFilenameToElementIDsMapping is %s', shouldCreateFilenameToElementIDsMapping)
-
-  const filenameToElementIDFullNames =
-    !_.isEmpty(newParsed) && shouldCreateFilenameToElementIDsMapping
-      ? await createFilenameToElementIDFullNamesMapping(currentState, newParsed)
-      : {}
+  const filenameToElementIDFullNames = !_.isEmpty(newParsed)
+    ? await createFilenameToElementIDFullNamesMapping(currentState, newParsed)
+    : {}
 
   const getElementIDsFromNaclFile = async (naclFile: ParsedNaclFile): Promise<ElemID[]> => {
-    if (shouldCreateFilenameToElementIDsMapping) {
-      const elementIDFullnamesInNaclFile = filenameToElementIDFullNames[naclFile.filename] ?? []
-      return elementIDFullnamesInNaclFile.map(({ path }) => ElemID.fromFullName(path))
-    }
-    const elementsInNaclFile = (await naclFile.elements()) ?? []
-    return elementsInNaclFile.map(element => element.elemID)
+    const elementIDFullnamesInNaclFile = filenameToElementIDFullNames[naclFile.filename] ?? []
+    return elementIDFullnamesInNaclFile.map(({ path }) => ElemID.fromFullName(path))
   }
 
   const updateIndex = async <T>(
@@ -851,28 +842,12 @@ const buildNaclFilesSource = (
     return changesWithLocationsByFiles.flat()
   }
 
-  const getChangesWithLocationsUnifiedSourceMap = async (
-    changes: DetailedChangeWithBaseChange[],
-  ): Promise<DetailedChangeWithSource[]> => {
-    // Create a unified source map for all files and find the locations for all changes together
-    const naclFiles = _.uniq(
-      await awu(changes)
-        .map(change => change.id)
-        .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
-        .toArray(),
-    )
-    log.debug('Nacl source %s getting source maps for %d nacl files', sourceName, naclFiles.length)
-    return getChangeLocationsForFiles(changes, naclFiles)
-  }
-
   const groupChangesByFilename = (
     changes: DetailedChangeWithBaseChange[],
   ): Promise<Record<string, DetailedChangeWithSource[]>> =>
     log.timeDebug(
       async () => {
-        const changesWithLocation = getSaltoFlagBool(WORKSPACE_FLAGS.useSplitSourceMapInUpdate)
-          ? await getChangesWithLocationsSplitSourceMap(changes)
-          : await getChangesWithLocationsUnifiedSourceMap(changes)
+        const changesWithLocation = await getChangesWithLocationsSplitSourceMap(changes)
 
         return _.groupBy(
           changesWithLocation,

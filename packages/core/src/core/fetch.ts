@@ -453,7 +453,7 @@ export type FetchChangesResult = {
   unmergedElements: Element[]
   mergeErrors: MergeErrorWithElements[]
   updatedConfig: Record<string, InstanceElement[]>
-  configChanges?: Change[]
+  configChanges: Change[]
   accountNameToConfigMessage?: Record<string, string>
   partiallyFetchedAccounts: Set<string>
 }
@@ -1109,6 +1109,7 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
     elements: [],
     mergeErrors: [],
     unmergedElements: [],
+    configChanges: [],
     updatedConfig: {},
     errors: [
       {

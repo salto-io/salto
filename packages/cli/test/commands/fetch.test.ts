@@ -658,6 +658,7 @@ describe('fetch command', () => {
               },
             },
           ],
+          configChanges: [],
           updatedConfig: {},
           success: true,
           partiallyFetchedAccounts: new Set(['salesforce']),

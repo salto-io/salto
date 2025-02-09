@@ -33,7 +33,7 @@ export type FetchResult = {
   mergeErrors: MergeErrorWithElements[]
   fetchErrors: SaltoError[]
   success: boolean
-  configChanges?: Change[]
+  configChanges: Change[]
   updatedConfig: Record<string, InstanceElement[]>
   accountNameToConfigMessage?: Record<string, string>
   partiallyFetchedAccounts: Set<string>

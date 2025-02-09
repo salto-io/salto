@@ -56,8 +56,8 @@ const BRACKETS = [
 const REFERENCE_MARKER_REGEX = /\$\{({{.+?}})\}/
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
 const DYNAMIC_CONTENT_REGEX_WITH_BRACKETS = /({{dc\.[\w-]+}})/g
-const INNER_HELP_CENTER_URL = /\/?hc\/[^"\s]+?/g
-const HELP_CENTER_URL = new RegExp(`"(${INNER_HELP_CENTER_URL})["\\s]`, 'g')
+// The non capturing group inside the group is needed because of the way regex.split consumes the matched groups
+const HELP_CENTER_URL = /("\/?hc\/[^"\s]+?(?:["\s]|$))/g
 const TICKET_FIELD_SPLIT = '(?:(ticket.ticket_field|ticket.ticket_field_option_title)_([\\d]+))'
 const KEY_SPLIT = '(?:([^ ]+\\.custom_fields)\\.)'
 const TITLE_SPLIT = '(?:([^ ]+)\\.(title))'
@@ -336,8 +336,7 @@ const formulaToTemplate = ({
     }
     if (extractReferencesFromFreeText) {
       // There are multiple regexes that can reach this part, only one section is relevant here
-      // We use the INNER_HELP_CENTER_URL regex because we don't capture the wrapping quotes (or chars)
-      const isHelpCenterUrlMatch = expression.match(INNER_HELP_CENTER_URL)
+      const isHelpCenterUrlMatch = expression.match(HELP_CENTER_URL)
       if (isHelpCenterUrlMatch !== null) {
         const transformedUrl = extractTemplate(
           expression,

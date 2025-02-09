@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import wu from 'wu'
 import { logger } from '@salto-io/logging'
 import { types, collections, values } from '@salto-io/lowerdash'
 import {
@@ -51,6 +52,7 @@ import { ERROR_MESSAGES, safeJsonStringify, toObjectType } from '@salto-io/adapt
 import { parser } from '@salto-io/parser'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { CircularReference, resolve } from './expressions'
+import { RemoteMapEntry } from './workspace/remote_map'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -831,28 +833,31 @@ const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] 
 
 const validateVariable = (element: Variable): ValidationError[] => validateVariableValue(element.elemID, element.value)
 
+const validateElement = (element: Element): ValidationError[] => {
+  if (isInstanceElement(element)) {
+    return validateInstanceElements(element)
+  }
+  if (isVariable(element)) {
+    return validateVariable(element)
+  }
+  if (isType(element)) {
+    return validateType(element)
+  }
+  return []
+}
+
 export const validateElements = async (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
-): Promise<ValidationError[]> =>
-  log.timeDebug(
-    async () => {
-      const resolved = await resolve(elements, elementsSource)
-      const errors = resolved.flatMap(e => {
-        if (isInstanceElement(e)) {
-          return validateInstanceElements(e)
-        }
-        if (isVariable(e)) {
-          return validateVariable(e)
-        }
-        if (isType(e)) {
-          return validateType(e)
-        }
-        return []
-      })
+): Promise<Iterable<RemoteMapEntry<ValidationError[]>>> => {
+  const resolved = await resolve(elements, elementsSource)
+  const groupedByTopLevelId = _.groupBy(resolved, elem => elem.elemID.createTopLevelParentID().parent.getFullName())
 
-      return errors
-    },
+  return log.timeIteratorDebug(
+    wu(Object.entries(groupedByTopLevelId))
+      .map(([key, elems]) => ({ key, value: elems.flatMap(validateElement) }))
+      .filter(errors => errors.value.length > 0),
     'validateElements with %d elements',
     elements.length,
   )
+}

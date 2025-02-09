@@ -19,7 +19,7 @@ import {
 } from '../types'
 import { profilesAndPermissionSetsHandler } from './profiles_and_permission_sets'
 import { managedElementsHandler } from './managed_elements'
-import { formulaRefsHandler } from './formula_refs'
+import { formulaRefsHandler } from './flow_and_flexi_page'
 import { omitNonExistingFieldsHandler } from './omit_non_existing_fields'
 
 const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
@@ -32,14 +32,14 @@ const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
 const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> = {
   profilesAndPermissionSets: true,
   managedElements: true,
-  formulaRefs: false,
+  formulaRefs: true,
   omitNonExistingFields: false,
 }
 
 const defaultFixElementsConfiguration: Required<FixElementsSettings> = {
   profilesAndPermissionSets: true,
   managedElements: true,
-  formulaRefs: false,
+  formulaRefs: true,
   omitNonExistingFields: true,
 }
 

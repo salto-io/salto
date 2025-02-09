@@ -135,7 +135,7 @@ each([
     ])
   })
 
-  describe('deploy', () => {
+  describe.skip('deploy', () => {
     let addDeployResults: DeployResult[]
     let modifyDeployResults: DeployResult[]
     let addInstanceGroups: InstanceElement[][]

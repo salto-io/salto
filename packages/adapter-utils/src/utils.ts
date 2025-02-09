@@ -185,7 +185,8 @@ const removeEmptyParts = ({
     const filtered = _.omitBy(value, _.isUndefined)
     const isExistingEmptyObject = _.isEmpty(filtered) && _.isEmpty(value)
     const isNewEmptyObject = _.isEmpty(filtered) && !_.isEmpty(value)
-    return (isExistingEmptyObject && !allowExistingEmptyObjects) || (isNewEmptyObject && !allowAllEmptyObjects)
+    return (isExistingEmptyObject && !allowExistingEmptyObjects && !allowAllEmptyObjects) ||
+      (isNewEmptyObject && !allowAllEmptyObjects)
       ? undefined
       : filtered
   }
@@ -294,10 +295,6 @@ export const transformValues = async ({
   allowExistingEmptyObjects = false,
   allowAllEmptyObjects = false,
 }: TransformValuesArgs): Promise<Values | undefined> => {
-  if (allowAllEmptyObjects && !allowExistingEmptyObjects) {
-    throw new Error('allowExistingEmptyObjects must be true when allowAllEmptyObjects is true')
-  }
-
   const transformValue = async (value: Value, keyPathID?: ElemID, field?: Field): Promise<Value> => {
     if (field === undefined && strict) {
       return undefined
@@ -385,7 +382,7 @@ export const transformValuesSync = ({
       _.mapValues(newVal ?? {}, (value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key))),
       _.isUndefined,
     )
-    return _.isEmpty(result) && !allowExistingEmptyObjects ? undefined : result
+    return _.isEmpty(result) && !allowExistingEmptyObjects && !allowAllEmptyObjects ? undefined : result
   }
   if (_.isArray(newVal)) {
     const result = newVal

@@ -579,6 +579,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
       runOnFields: true,
       allowEmptyArrays: true,
       allowExistingEmptyObjects: true,
+      allowAllEmptyObjects: true,
     })
 
     return clonedVisibleElement

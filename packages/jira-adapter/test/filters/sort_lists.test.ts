@@ -195,6 +195,11 @@ describe('sortListsFilter', () => {
           projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'a'), {}),
         },
       ],
+      collaborators: [
+        '712020:386ad937-3ff4-437e-ab8e-07d08d3703ed',
+        '5d53f3cbc6b9320d9ea5bdc2',
+        '63a22fb348b367d78a14c15b',
+      ],
     })
     sortedAutomationValues = {
       projects: [
@@ -207,6 +212,11 @@ describe('sortListsFilter', () => {
         {
           projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'c'), {}),
         },
+      ],
+      collaborators: [
+        '5d53f3cbc6b9320d9ea5bdc2',
+        '63a22fb348b367d78a14c15b',
+        '712020:386ad937-3ff4-437e-ab8e-07d08d3703ed',
       ],
     }
     const workflowType = new ObjectType({
@@ -295,7 +305,7 @@ describe('sortListsFilter', () => {
       await filter.onFetch?.([permissionSchemeInstance])
       expect(permissionSchemeInstance.value).toEqual(sortedPermissionValues)
     })
-    it('should sort the automation projects', async () => {
+    it('should sort the automation projects and collaborators', async () => {
       await filter.onFetch?.([automationInstance])
       expect(automationInstance.value).toEqual(sortedAutomationValues)
     })

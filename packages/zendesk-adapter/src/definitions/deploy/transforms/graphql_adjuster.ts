@@ -5,8 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { isRemovalChange } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { get } from 'lodash'
 import { transform as transformMulti } from '../../shared/transforms/graphql_adjuster'
@@ -35,14 +36,21 @@ export const transformRequest: (
     }
   }
 
-// this transformer extracts the data from a graphql response,
+// We use this instead of `root` in the copyFromResponse.additional field because we also extract the graphQL errors.
+// this transformer extracts the id from a graphql response because it's nested in the data object,
 // it assumes the data is the first and only element in the data array
 export const transformResponse: (
   innerRoot: string,
 ) => definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndExtendedContext> = innerRoot => async item => {
   const value = await transformMulti(innerRoot)(item)
   if (value.length !== 1) {
-    throw new Error(`unexpected response amount for graphql item, not transforming: ${safeJsonStringify(value)}`)
+    throw new Error(`unexpected response amount for graphql item, not transforming: ${inspectValue(value)}`)
   }
-  return { value: value[0].value }
+  if (isRemovalChange(item.context.change)) {
+    return { value }
+  }
+  if (value[0].value?.id === undefined) {
+    throw new Error(`unexpected value without id for graphql item, not transforming: ${inspectValue(value)}`)
+  }
+  return { value: { id: value[0].value.id } }
 }

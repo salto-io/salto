@@ -97,7 +97,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(inst => inst.elemID.typeName === CONVERSATION_BOT)
 
     botBuilderFlowInstances.forEach(flowInstance => {
-      const brandName = flowInstance.value.brandId?.value.value?.name
+      const brandName = flowInstance.value.brandId?.value?.value?.name
       const flowPath = pathForFlowElements(flowInstance, brandName)
       flowInstance.path = flowPath
       flowInstance.value.subflows?.filter(isReferenceExpression).forEach((botBuilderAnswerRef: ReferenceExpression) => {

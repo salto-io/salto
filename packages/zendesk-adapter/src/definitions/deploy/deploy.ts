@@ -19,7 +19,6 @@ import {
   updateSubFlowMutation,
 } from './graphql_schemas'
 import {
-  transformBotResponse,
   transformNodeRequest,
   transformNodeResponse,
   transformReqGraphQLItem,
@@ -72,7 +71,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
               },
               copyFromResponse: {
-                additional: { adjust: transformBotResponse('updateFlowName') },
+                additional: { adjust: transformResGraphQLItem('updateFlowName') },
               },
             },
             {
@@ -90,7 +89,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
               },
               copyFromResponse: {
-                additional: { adjust: transformBotResponse('updateLanguageSettings') },
+                additional: { adjust: transformResGraphQLItem('updateLanguageSettings') },
               },
             },
           ],

@@ -64,7 +64,7 @@ export type ParsedFinancialLayout = {
   flags?: InnerFields
 }
 
-export type FinancialLayoutType = {
+type FinancialLayoutType = {
   scriptid: string
   layout: string
   name: string

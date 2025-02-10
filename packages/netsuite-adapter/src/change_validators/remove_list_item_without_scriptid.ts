@@ -41,7 +41,7 @@ export const getMessageByElementNameAndListItems = (elemName: string, removedLis
       'Salto will ignore this change for this deployment. ' +
       "Please use Netuiste's UI to remove it"
 
-export type ItemListGetters = {
+type ItemListGetters = {
   getItemList: GetItemList
   getItemString: GetItemString
   getListPath: GetListPath

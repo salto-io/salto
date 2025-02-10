@@ -145,7 +145,7 @@ export type Transition = {
   to?: unknown
 }
 
-export const transitionsSchema = Joi.object({
+const transitionsSchema = Joi.object({
   id: Joi.string().optional(),
   type: Joi.string().optional(),
   rules: rulesSchema.optional(),
@@ -168,7 +168,7 @@ const statusSchema = Joi.object({
   properties: Joi.alternatives(Joi.object(), Joi.array()).optional(),
 }).unknown(true)
 
-export type Workflow = {
+type Workflow = {
   id?: Id
   entityId?: string
   name?: string
@@ -192,12 +192,12 @@ export const WORKFLOW_RESPONSE_SCHEMA = Joi.object({
   .unknown(true)
   .required()
 
-export const workflowSchema = WORKFLOW_RESPONSE_SCHEMA.keys({
+const workflowSchema = WORKFLOW_RESPONSE_SCHEMA.keys({
   transitions: Joi.object().pattern(Joi.string(), transitionsSchema).required(),
 })
 
 export type WorkflowV1Instance = InstanceElement & { value: InstanceElement['value'] & Workflow }
-export type WorkflowResponseInstance = InstanceElement & { value: InstanceElement['value'] & WorkflowResponse }
+type WorkflowResponseInstance = InstanceElement & { value: InstanceElement['value'] & WorkflowResponse }
 
 const isWorkflowResponseValues = createSchemeGuard<WorkflowResponse>(
   WORKFLOW_RESPONSE_SCHEMA,
@@ -209,7 +209,7 @@ export const isWorkflowV1Transition = createSchemeGuard<Transition>(
   'Received an invalid workflowV1 transition',
 )
 
-export const isWorkflowValues = (values: unknown): values is Workflow => {
+const isWorkflowValues = (values: unknown): values is Workflow => {
   const { error } = workflowSchema.validate(values)
   if (error !== undefined) {
     log.warn(`Received an invalid workflow: ${error.message}`)
@@ -224,13 +224,13 @@ export const isWorkflowV1Instance = (instance: InstanceElement): instance is Wor
 export const isWorkflowResponseInstance = (instance: InstanceElement): instance is WorkflowResponseInstance =>
   instance.elemID.typeName === WORKFLOW_TYPE_NAME && isWorkflowResponseValues(instance.value)
 
-export type PostFetchWorkflow = Workflow & {
+type PostFetchWorkflow = Workflow & {
   name: string
 }
 
 export type PostFetchWorkflowInstance = WorkflowV1Instance & { value: WorkflowV1Instance['value'] & PostFetchWorkflow }
 
-export const isPostFetchWorkflowInstance = (instance: InstanceElement): instance is PostFetchWorkflowInstance =>
+const isPostFetchWorkflowInstance = (instance: InstanceElement): instance is PostFetchWorkflowInstance =>
   isWorkflowValues(instance.value) && instance.value.name !== undefined
 
 export const isPostFetchWorkflowChange = (change: Change<Element>): change is Change<PostFetchWorkflowInstance> =>

@@ -13,17 +13,12 @@ import {
   Value,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import {
-  buildElementsSourceFromElements,
-  createDefaultInstanceFromType,
-  WALK_NEXT_STEP,
-  walkOnValue,
-} from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, WALK_NEXT_STEP, walkOnValue } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { adapter } from '../src/adapter_creator'
 import { Credentials } from '../src/auth'
-import { JiraConfig, configType, getDefaultConfig } from '../src/config/config'
+import { JiraConfig, getDefaultConfig } from '../src/config/config'
 import JiraClient, { GET_CLOUD_ID_URL } from '../src/client/client'
 import { EXTENSION_ID_ARI_PREFIX } from '../src/common/extensions'
 import { FilterCreator } from '../src/filter'
@@ -44,7 +39,7 @@ export const createConfigInstance = (config: JiraConfig): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, config)
 
 export const DEFAULT_CLOUD_ID = 'cloudId'
-export const DEFAULT_RESPONSE = { status: 200, data: '' }
+const DEFAULT_RESPONSE = { status: 200, data: '' }
 const mockConnection = (): MockInterface<clientUtils.APIConnection> => ({
   get: mockFunction<clientUtils.APIConnection['get']>().mockResolvedValue(DEFAULT_RESPONSE),
   head: mockFunction<clientUtils.APIConnection['head']>().mockResolvedValue(DEFAULT_RESPONSE),
@@ -97,11 +92,6 @@ export const mockClient = (
   })
 
   return { client, paginator, connection, getUserMapFunc, scriptRunnerClient }
-}
-
-export const getDefaultAdapterConfig = async (): Promise<JiraConfig> => {
-  const defaultConfigInstance = await createDefaultInstanceFromType('jira', configType)
-  return defaultConfigInstance.value as JiraConfig
 }
 
 export const getFilterParams = (

@@ -179,7 +179,7 @@ const convertTransitionParametersFields = (
   })
 }
 
-export const convertParametersFieldsToList = (parameters: Values, listFields: Set<string>): void => {
+const convertParametersFieldsToList = (parameters: Values, listFields: Set<string>): void => {
   if (parameters === undefined) {
     return
   }

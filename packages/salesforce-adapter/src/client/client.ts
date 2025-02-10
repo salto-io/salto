@@ -924,7 +924,7 @@ export default class SalesforceClient implements ISalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
-    return flatValues(await this.conn.metadata.retrieve(retrieveRequest).complete())
+    return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
   }
 
   private async reportDeployProgressUntilComplete(

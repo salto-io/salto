@@ -20,7 +20,7 @@ const DEFAULT_OPTS: RetryOpts = Object.freeze({
   description: '',
 })
 
-export const timeout = (interval: number): Promise<void> =>
+const timeout = (interval: number): Promise<void> =>
   new Promise(resolve => {
     setTimeout(resolve, interval)
   })

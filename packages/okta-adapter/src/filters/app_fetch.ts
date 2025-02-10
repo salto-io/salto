@@ -6,32 +6,13 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import Joi from 'joi'
 import { Element, isInstanceElement, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { APPLICATION_TYPE_NAME, ORG_SETTING_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 import { isCustomApp } from '../definitions/fetch/types/application'
 
 const log = logger(module)
-
-type Application = {
-  id: string
-  name: string
-  signOnMode: string
-}
-
-const EXPECTED_APP_SCHEMA = Joi.object({
-  id: Joi.string().required(),
-  name: Joi.string().required(),
-  signOnMode: Joi.string().required(),
-}).unknown(true)
-
-export const isAppResponse = createSchemeGuard<Application>(
-  EXPECTED_APP_SCHEMA,
-  'Received an invalid application response',
-)
 
 /**
  * Handle custom apps and set deployment annotations for `features` field.

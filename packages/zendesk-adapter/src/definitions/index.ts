@@ -8,4 +8,3 @@
 
 export * from './fetch'
 export * from './requests'
-export { ClientOptions } from './types'

@@ -8,10 +8,7 @@
 import { definitions } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from '../types'
 
-export type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<
-  AdditionalAction,
-  ClientOptions
->
+type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployCustomDefinitions = Record<string, InstanceDeployApiDefinitions>
 export type DeployRequestDefinition = definitions.deploy.DeployRequestDefinition<ClientOptions>
 export type DeployableRequestDefinition = definitions.deploy.DeployableRequestDefinition<ClientOptions>

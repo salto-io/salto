@@ -60,17 +60,6 @@ export const findObject = (elements: Element[], name: string): ObjectType | unde
   return type
 }
 
-export const findObjects = (elements: Element[], names: string[]): ObjectType[] | undefined => {
-  const types = elements.filter(isObjectType).filter(element => names.includes(element.elemID.name))
-
-  if (types.length !== names.length) {
-    const missingTypes = names.filter(name => !types.map(t => t.elemID.name).includes(name)).join(', ')
-    log.warn(`could not find the following objects: ${missingTypes}`)
-    return undefined
-  }
-  return types
-}
-
 export const addAnnotationRecursively = async (type: ObjectType, annotation: string): Promise<void> =>
   awu(Object.values(type.fields)).forEach(async field => {
     if (!field.annotations[annotation]) {
@@ -222,7 +211,7 @@ export const convertPropertiesToMap = (fields: Values[]): void => {
   })
 }
 
-export const jitterWait = async (delay: number): Promise<void> => {
+const jitterWait = async (delay: number): Promise<void> => {
   const jitter = Math.random() * 3000 // random delay between 0 and 3 seconds
   log.debug(`Waiting for ${delay + jitter}ms`)
   await new Promise(resolve => setTimeout(resolve, delay + jitter))

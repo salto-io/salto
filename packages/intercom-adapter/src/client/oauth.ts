@@ -18,7 +18,7 @@ import {
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME } from '../constants'
 
-export type OauthRequestParameters = {
+type OauthRequestParameters = {
   clientId: string
   clientSecret: string
   port: number

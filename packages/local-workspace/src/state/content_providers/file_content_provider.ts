@@ -20,7 +20,7 @@ import { localDirectoryStore } from '../../dir_store'
 const { awu } = collections.asynciterable
 const glob = promisify(origGlob)
 
-export const STATE_STATIC_FILES_LOCAL_DIR = 'static-resources'
+const STATE_STATIC_FILES_LOCAL_DIR = 'static-resources'
 
 export const createFileStateContentProvider = (localStorageDir: string): StateContentProvider => {
   const buildLocalStateFileName = (prefix: string, account: string): string => `${prefix}.${account}.jsonl.zip`

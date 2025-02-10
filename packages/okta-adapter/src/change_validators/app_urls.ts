@@ -8,8 +8,6 @@
 import { ChangeValidator, getChangeData, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { APPLICATION_TYPE_NAME } from '../constants'
 
-export const DEFAULT_APP_URLS_VALIDATOR_VALUE = false
-
 /**
  * Remind users to update environment-specific fields when moving applications between Okta tenants
  */

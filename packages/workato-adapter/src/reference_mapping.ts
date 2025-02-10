@@ -43,7 +43,7 @@ const WorkatoReferenceSerializationStrategyLookup: Record<
   },
 }
 
-export class WorkatoFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
+class WorkatoFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
   never,
   WorkatoReferenceSerializationStrategyName
 > {
@@ -93,7 +93,7 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
   },
 ]
 
-export const deployResolveRules: WorkatoFieldReferenceDefinition[] = [
+const deployResolveRules: WorkatoFieldReferenceDefinition[] = [
   // This rule is needed while deploying the recipe using rlm
   // While importing zip by rlm we need to get all resolved data from the connection to the recipe config
   {

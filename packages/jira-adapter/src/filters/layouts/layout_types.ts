@@ -67,14 +67,7 @@ export const createLayoutType = (
   }
 }
 
-export type ScreenScheme = {
-  id: string
-  name: string
-  description: string
-  screens: {}
-}
-
-export type ContainerIssueLayoutResponse = {
+type ContainerIssueLayoutResponse = {
   containerType: string
   items: {
     nodes: {

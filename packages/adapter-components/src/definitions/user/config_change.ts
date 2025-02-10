@@ -14,7 +14,7 @@ const FETCH_CONFIG = 'fetch'
 const CLIENT_CONFIG = 'client'
 
 export const TYPE_TO_EXCLUDE = 'typeToExclude'
-export const DISABLE_PRIVATE_API = 'disablePrivateAPI'
+const DISABLE_PRIVATE_API = 'disablePrivateAPI'
 type ConfigSuggestionType = 'typeToExclude' | 'disablePrivateAPI' | 'enableFetchFlag'
 
 export type ConfigChangeSuggestion = {

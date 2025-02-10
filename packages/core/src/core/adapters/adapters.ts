@@ -90,7 +90,7 @@ const getAdapterConfigFromType = async (
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
 
-export const getAdaptersConfigTypesMap = (adapterCreators: Record<string, Adapter>): Record<string, ObjectType[]> =>
+const getAdaptersConfigTypesMap = (adapterCreators: Record<string, Adapter>): Record<string, ObjectType[]> =>
   getAdaptersConfigTypesMapImplementation(adapterCreators)
 export const getAdaptersConfigTypes = async (adapterCreators: Record<string, Adapter>): Promise<ObjectType[]> =>
   Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat()
@@ -138,7 +138,7 @@ const getMergedDefaultAdapterConfig = async (
   return defaultConfig && merger.mergeSingleElement(defaultConfig)
 }
 
-export const createElemIDReplacedElementsSource = (
+const createElemIDReplacedElementsSource = (
   elementsSource: ReadOnlyElementsSource,
   account: string,
   adapter: string,

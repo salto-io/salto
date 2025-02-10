@@ -27,7 +27,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-export const isIssueTypeUsed = async (instance: InstanceElement, client: JiraClient): Promise<boolean> => {
+const isIssueTypeUsed = async (instance: InstanceElement, client: JiraClient): Promise<boolean> => {
   let response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
   try {
     response = await client.get({

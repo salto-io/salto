@@ -17,7 +17,7 @@ export const { filtersRunner } = filterUtils
 export type Filter = filterUtils.Filter<filterUtils.FilterResult>
 export type FilterResult = filterUtils.FilterResult
 
-export type FilterAdditionalParams = {
+type FilterAdditionalParams = {
   elementsSource: ReadOnlyElementsSource
   fetchQuery: elementUtils.query.ElementQuery
   // A context for deployment that should be persistent across all the deployment steps.

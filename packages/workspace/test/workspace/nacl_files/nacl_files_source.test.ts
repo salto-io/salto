@@ -41,7 +41,12 @@ import { mockStaticFilesSource } from '../../utils'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
-import { getDanglingStaticFiles } from '../../../src/workspace/nacl_files/nacl_files_source'
+import {
+  getDanglingStaticFiles,
+  // Importing getElementsStaticFiles since this file is the only place it's used but it's only referenced by name for spying
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getElementsStaticFiles as _getElementsStaticFiles,
+} from '../../../src/workspace/nacl_files/nacl_files_source'
 import { DetailedChangeWithSource, getChangeLocations } from '../../../src/workspace/nacl_files/nacl_file_update'
 
 const { awu } = collections.asynciterable

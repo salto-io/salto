@@ -6,20 +6,18 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType, SaltoError, Value } from '@salto-io/adapter-api'
-import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { mockFunction } from '@salto-io/test-utils'
 import * as workspace from '@salto-io/workspace'
 import { elementSource, errors as wsErrors, staticFiles } from '@salto-io/workspace'
 import { mockState } from './state'
 
-type AdaptersConfigSource = workspace.adaptersConfigSource.AdaptersConfigSource
-
 const mockService = 'salto'
 const emptyMockService = 'salto2'
 
-export const ACCOUNTS = [mockService, emptyMockService]
+const ACCOUNTS = [mockService, emptyMockService]
 
-export const configID = new ElemID(mockService)
-export const emptyConfigID = new ElemID(emptyMockService)
+const configID = new ElemID(mockService)
+const emptyConfigID = new ElemID(emptyMockService)
 export const mockConfigType = new ObjectType({
   elemID: configID,
   fields: {
@@ -54,7 +52,7 @@ const mockEmptyConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockEmpt
   sandbox: false,
 })
 
-export const mockErrors = (errors: SaltoError[]): wsErrors.Errors =>
+const mockErrors = (errors: SaltoError[]): wsErrors.Errors =>
   new wsErrors.Errors({
     parse: [],
     merge: [],
@@ -150,41 +148,4 @@ export const mockWorkspace = ({
       hash?: string
     }) => (staticFilesSource ? staticFilesSource.getStaticFile({ filepath, encoding, isTemplate, hash }) : undefined),
   } as unknown as workspace.Workspace
-}
-
-export const mockAdaptersConfigSource = (): MockInterface<AdaptersConfigSource> => {
-  const adapters: Record<string, InstanceElement> = {}
-
-  const getAdapter = async (adapterName: string): Promise<InstanceElement | undefined> => adapters[adapterName]
-  const setAdapter = async (
-    accountName: string,
-    _adapterName: string,
-    config: Readonly<InstanceElement> | Readonly<InstanceElement>[],
-  ): Promise<void> => {
-    if (!Array.isArray(config)) {
-      adapters[accountName] = config as InstanceElement
-    }
-  }
-
-  return {
-    getAdapter: mockFunction<AdaptersConfigSource['getAdapter']>().mockImplementation(getAdapter),
-    setAdapter: mockFunction<AdaptersConfigSource['setAdapter']>().mockImplementation(setAdapter),
-    getElementNaclFiles: mockFunction<AdaptersConfigSource['getElementNaclFiles']>(),
-    getErrors: mockFunction<AdaptersConfigSource['getErrors']>().mockResolvedValue(
-      new workspace.errors.Errors({
-        parse: [],
-        validation: [],
-        merge: [],
-      }),
-    ),
-    getSourceRanges: mockFunction<AdaptersConfigSource['getSourceRanges']>().mockResolvedValue([]),
-    getNaclFile: mockFunction<AdaptersConfigSource['getNaclFile']>(),
-    setNaclFiles: mockFunction<AdaptersConfigSource['setNaclFiles']>(),
-    flush: mockFunction<AdaptersConfigSource['flush']>(),
-    getElements: mockFunction<AdaptersConfigSource['getElements']>(),
-    getParsedNaclFile: mockFunction<AdaptersConfigSource['getParsedNaclFile']>(),
-    getSourceMap: mockFunction<AdaptersConfigSource['getSourceMap']>(),
-    listNaclFiles: mockFunction<AdaptersConfigSource['listNaclFiles']>(),
-    isConfigFile: mockFunction<AdaptersConfigSource['isConfigFile']>(),
-  }
 }

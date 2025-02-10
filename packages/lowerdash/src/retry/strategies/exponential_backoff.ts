@@ -9,7 +9,7 @@ import defaultOpts from '../../functions/default_opts'
 import { validators } from '../../validators'
 import { RetryStrategy } from '../strategy'
 
-export type ExponentialBackoffOpts = {
+type ExponentialBackoffOpts = {
   initial: number
   multiplier: number
   max: number

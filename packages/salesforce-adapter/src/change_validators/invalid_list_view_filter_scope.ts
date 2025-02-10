@@ -34,7 +34,7 @@ const INVALID_FILTERSCOPES: ForbiddenFilterScope[] = [
   },
 ]
 
-export const isFilterScopeInvalid = (instance: InstanceElement): boolean => {
+const isFilterScopeInvalid = (instance: InstanceElement): boolean => {
   if (apiNameSync(instance.getTypeSync()) !== 'ListView') {
     return false
   }

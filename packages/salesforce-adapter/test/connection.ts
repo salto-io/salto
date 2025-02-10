@@ -31,7 +31,7 @@ import {
 import Connection, { Metadata, Soap, Bulk, Tooling, RunTestsResult, RunTestFailure } from '../src/client/jsforce'
 import { createEncodedZipContent, ZipFile } from './utils'
 
-export const MOCK_INSTANCE_URL = 'https://url.com/'
+const MOCK_INSTANCE_URL = 'https://url.com/'
 
 const { sleep } = promises.timeout
 
@@ -53,7 +53,7 @@ export const mockDescribeResult = (
   partialSaveAllowed: true,
 })
 
-export type MockValueTypeFieldInput = Pick<ValueTypeField, 'name' | 'soapType'> &
+type MockValueTypeFieldInput = Pick<ValueTypeField, 'name' | 'soapType'> &
   Partial<Omit<ValueTypeField, 'fields'> & { fields: MockValueTypeFieldInput[] }>
 
 export const mockValueTypeField = (props: MockValueTypeFieldInput): ValueTypeField => ({
@@ -99,7 +99,7 @@ export const mockFileProperties = (props: MockFilePropertiesInput): FileProperti
   ...props,
 })
 
-export type MockRetrieveResultInput = Partial<Omit<RetrieveResult, 'zipFile'>> & {
+type MockRetrieveResultInput = Partial<Omit<RetrieveResult, 'zipFile'>> & {
   zipFiles?: ZipFile[]
 }
 export const mockRetrieveResult = async (props: MockRetrieveResultInput): Promise<RetrieveResult> => ({
@@ -147,7 +147,7 @@ type PartialRunTestResult = Omit<Partial<RunTestsResult>, 'failures'> & {
   failures?: Partial<RunTestFailure>[]
 }
 
-export const mockRunTestResult = (params?: PartialRunTestResult): RunTestsResult | undefined =>
+const mockRunTestResult = (params?: PartialRunTestResult): RunTestsResult | undefined =>
   params === undefined
     ? undefined
     : {
@@ -225,7 +225,7 @@ export const mockDeployResultComplete = ({
   }
 }
 
-export const mockDeployResultInProgress = ({
+const mockDeployResultInProgress = ({
   id,
   runTestResult = undefined,
   ignoreWarnings = true,

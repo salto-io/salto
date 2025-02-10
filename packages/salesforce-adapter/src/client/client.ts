@@ -73,7 +73,7 @@ const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = 
 type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
 
 export const API_VERSION = '62.0'
-export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
+const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
 // Salesforce limitation of maximum number of items per create/update/delete call
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_createMetadata.htm
@@ -193,7 +193,7 @@ const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorat
 const validateDeleteResult = validateCRUDResult(true)
 const validateSaveResult = validateCRUDResult(false)
 
-export type SalesforceClientOpts = {
+type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
   config?: SalesforceClientConfig
@@ -205,29 +205,25 @@ const DEFAULT_POLLING_CONFIG = {
   fetchTimeout: 1000 * 60 * 30, // 30 minutes
 }
 
-export const setPollIntervalForConnection = (
-  connection: Connection,
-  pollingConfig: Required<ClientPollingConfig>,
-): void => {
+const setPollIntervalForConnection = (connection: Connection, pollingConfig: Required<ClientPollingConfig>): void => {
   // Set poll interval for fetch & bulk ops (e.g. CSV deletes)
   connection.metadata.pollInterval = pollingConfig.interval
   connection.bulk.pollInterval = pollingConfig.interval
 }
 
-export const createRequestModuleFunction =
-  (retryOptions: RequestRetryOptions) => (opts: Options, callback: RequestCallback) =>
-    requestretry({ ...retryOptions, ...opts }, (err, response, body) => {
-      const attempts = _.get(response, 'attempts') || _.get(err, 'attempts')
-      if (attempts && attempts > 1) {
-        log.warn('sfdc client retry attempts: %o', attempts)
-      }
-      // Temp code to check to have more details to fix https://salto-io.atlassian.net/browse/SALTO-1600
-      // response can be undefined when there was an error
-      if (response !== undefined && !response.request.path.startsWith('/services/Soap')) {
-        log.debug('Received headers: %o from request to path: %s', response.headers, response.request.path)
-      }
-      return callback(err, response, body)
-    })
+const createRequestModuleFunction = (retryOptions: RequestRetryOptions) => (opts: Options, callback: RequestCallback) =>
+  requestretry({ ...retryOptions, ...opts }, (err, response, body) => {
+    const attempts = _.get(response, 'attempts') || _.get(err, 'attempts')
+    if (attempts && attempts > 1) {
+      log.warn('sfdc client retry attempts: %o', attempts)
+    }
+    // Temp code to check to have more details to fix https://salto-io.atlassian.net/browse/SALTO-1600
+    // response can be undefined when there was an error
+    if (response !== undefined && !response.request.path.startsWith('/services/Soap')) {
+      log.debug('Received headers: %o from request to path: %s', response.headers, response.request.path)
+    }
+    return callback(err, response, body)
+  })
 
 type OauthConnectionParams = {
   instanceUrl: string
@@ -293,7 +289,7 @@ type SendChunkedError<TIn> = {
   error: Error
 }
 
-export type SendChunkedResult<TIn, TOut> = {
+type SendChunkedResult<TIn, TOut> = {
   result: TOut[]
   errors: SendChunkedError<TIn>[]
 }
@@ -443,7 +439,7 @@ const retryOnBadResponse = async <T extends object>(
   return requestWithRetry(retryAttempts)
 }
 
-export const loginFromCredentialsAndReturnOrgId = async (
+const loginFromCredentialsAndReturnOrgId = async (
   connection: Connection,
   credentials: Credentials,
 ): Promise<string> => {
@@ -584,7 +580,7 @@ interface ISalesforceClient {
 }
 
 type ListMetadataObjectsResult = ReturnType<ISalesforceClient['listMetadataObjects']>
-export type CustomListFunc = (client: ISalesforceClient) => ListMetadataObjectsResult
+type CustomListFunc = (client: ISalesforceClient) => ListMetadataObjectsResult
 
 type CustomListFuncMode = 'partial' | 'full' | 'extendsOriginal'
 

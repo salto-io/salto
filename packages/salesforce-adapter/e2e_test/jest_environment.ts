@@ -25,7 +25,7 @@ const log = logger(module)
 const MIN_API_REQUESTS_NEEDED = 2000
 const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
 
-export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentials> => {
+const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentials> => {
   const addEnvName = (varName: string): string => (envName === undefined ? varName : [varName, envName].join('_'))
   const userEnvVarName = addEnvName('SF_USER')
   const passwordEnvVarName = addEnvName('SF_PASSWORD')
@@ -63,7 +63,7 @@ export default class SalesforceE2EJestEnvironment extends SaltoE2EJestEnvironmen
   }
 }
 
-export type TestHelpers = {
+type TestHelpers = {
   credentials: (envName?: string) => Promise<CredsLease<UsernamePasswordCredentials>>
   CUSTOM_OBJECT: string
 }

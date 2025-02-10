@@ -47,7 +47,7 @@ const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
 const log = logger(module)
 
-export const DEFAULT_ENABLE_TOPICS_VALUE = false
+const DEFAULT_ENABLE_TOPICS_VALUE = false
 
 const getTopicsForObjects = (obj: ObjectType): Values => obj.annotations[TOPICS_FOR_OBJECTS_ANNOTATION] || {}
 

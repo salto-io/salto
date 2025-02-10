@@ -50,7 +50,7 @@ const getLastSharingRuleFileProperties = (
   return rules[rules.length - 1]
 }
 
-export const WARNING_MESSAGE =
+const WARNING_MESSAGE =
   'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'
 
 /*

@@ -42,7 +42,7 @@ const addDependenciesAnnotation = (field: Field, potentialReferenceTargets: Map<
     identifiersInfo = formulaInfo.flat()
     identifiersCount = formulaInfo.length
   } catch (e) {
-    log.warn(`Failed to extract references from formula ${formula}: ${e}`)
+    log.trace(`Failed to extract references from formula ${formula}: ${e}`)
     return
   }
 

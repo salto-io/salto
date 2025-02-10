@@ -15,7 +15,7 @@ import { extractStatus } from './circus_events'
 
 const STILL_RUNNING_WARN_INTERVAL = 1000 * 30
 
-export type CredsNodeEnvironmentOpts = {
+type CredsNodeEnvironmentOpts = {
   logBaseName: string
 }
 

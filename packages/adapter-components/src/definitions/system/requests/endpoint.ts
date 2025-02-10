@@ -8,7 +8,7 @@
 import { DefaultWithCustomizations } from '../shared'
 import { EndpointPath, HTTPEndpointDetails, HTTPMethod } from './types'
 
-export type ClientEndpoints<PaginationOptions extends string> = Partial<
+type ClientEndpoints<PaginationOptions extends string> = Partial<
   Record<HTTPMethod, HTTPEndpointDetails<PaginationOptions>>
 >
 

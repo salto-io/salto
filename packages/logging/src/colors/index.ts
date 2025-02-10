@@ -7,15 +7,15 @@
  */
 import colorData from './colors.json'
 
-export type ColorName = string
-export type HexString = string
+type ColorName = string
+type HexString = string
 
-export type Color = {
+type Color = {
   name: ColorName
   hexString: HexString
 }
 
-export const all = colorData as Color[]
+const all = colorData as Color[]
 
 export const safe = Object.freeze(colorData.filter(c => c.colorId >= 17 && c.colorId <= 51)) as ReadonlyArray<Color>
 

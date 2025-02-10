@@ -115,7 +115,7 @@ const NO_CONFLICT_CORE_ANNOTATIONS = [
 const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChangeMetadata =>
   getAuthorInformation(changedElement)
 
-export const toAddFetchChange = (elem: Element): FetchChange => {
+const toAddFetchChange = (elem: Element): FetchChange => {
   const change = toDetailedChangeFromBaseChange(toChange({ after: elem }))
   return { change, serviceChanges: [change], metadata: getFetchChangeMetadata(elem) }
 }

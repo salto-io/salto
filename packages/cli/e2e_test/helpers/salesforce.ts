@@ -9,7 +9,6 @@ import SalesforceAdapter, {
   SalesforceClient,
   adapter as salesforceAdapter,
   UsernamePasswordCredentials,
-  OauthAccessTokenCredentials,
   DeployProgressReporter,
 } from '@salto-io/salesforce-adapter'
 // eslint-disable-next-line no-restricted-imports
@@ -80,26 +79,6 @@ export const getSalesforceCredsInstance = (creds: UsernamePasswordCredentials): 
   return new InstanceElement(ElemID.CONFIG_NAME, authenticationMethods.basic.credentialsType, configValues)
 }
 
-export const getSalesforceOAuthCreds = (creds: OauthAccessTokenCredentials): InstanceElement => {
-  const configValues = {
-    accessToken: creds.accessToken,
-    refreshToken: creds.refreshToken,
-    instanceUrl: creds.instanceUrl,
-    sandbox: creds.isSandbox,
-    clientId: creds.clientId,
-    clientSecret: creds.clientSecret,
-    authType: 'oauth',
-  }
-
-  const { authenticationMethods } = salesforceAdapter
-
-  return new InstanceElement(
-    ElemID.CONFIG_NAME,
-    authenticationMethods.oauth?.credentialsType as ObjectType,
-    configValues,
-  )
-}
-
 export const getSalesforceClient = (credentials: UsernamePasswordCredentials): SalesforceClient =>
   new SalesforceClient({
     credentials: new UsernamePasswordCredentials(credentials),
@@ -107,7 +86,7 @@ export const getSalesforceClient = (credentials: UsernamePasswordCredentials): S
     config: { deploy: { purgeOnDelete: true } },
   })
 
-export const nullProgressReporter: DeployProgressReporter = {
+const nullProgressReporter: DeployProgressReporter = {
   reportProgress: () => {},
   reportMetadataProgress: () => {},
   reportDataProgress: () => {},

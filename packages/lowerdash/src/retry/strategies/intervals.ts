@@ -9,7 +9,7 @@ import defaultOpts from '../../functions/default_opts'
 import { RetryStrategy } from '../strategy'
 import { validators } from '../../validators'
 
-export type IntervalsRetryOpts = {
+type IntervalsRetryOpts = {
   maxRetries: number
   interval: number
 }

@@ -115,7 +115,7 @@ const setTypeAnnotations = async (
   })
 }
 
-export const addDeploymentAnnotationsFromSwagger = async (
+const addDeploymentAnnotationsFromSwagger = async (
   type: ObjectType,
   swagger: LoadedSwagger,
   endpointDetails: DeploymentRequestsByAction,

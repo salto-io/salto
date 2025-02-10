@@ -21,7 +21,7 @@ import { AbortFetchOnFailure } from '../errors'
 
 const log = logger(module)
 
-export type ResourceManager = {
+type ResourceManager = {
   // orchestrate all requests and transformations needed to fetch all entries matching the specified query,
   // and pass them to the element generator that will turn them into elements
   fetch: (query: ElementQuery) => Promise<void>

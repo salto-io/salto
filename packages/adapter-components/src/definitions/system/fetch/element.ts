@@ -37,7 +37,7 @@ export type FieldIDPart<TCustomNameMappingOptions extends string = never> = Args
   Values
 >
 
-export type IDPartsDefinition<TCustomNameMappingOptions extends string = never> = {
+type IDPartsDefinition<TCustomNameMappingOptions extends string = never> = {
   parts?: FieldIDPart<TCustomNameMappingOptions>[]
   // the delimiter to use between parts - default is '_'
   delimiter?: string
@@ -80,7 +80,7 @@ export type PropertySortDefinition = {
 }
 
 // Settings for sorting a list field.
-export type SortFieldDefinition = {
+type SortFieldDefinition = {
   // The properties to sort the field by, in order of precedence.
   // Selected properties should be env-independent to avoid sorting differences between envs.
   properties: PropertySortDefinition[]

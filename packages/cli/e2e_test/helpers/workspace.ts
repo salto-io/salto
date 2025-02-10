@@ -63,7 +63,7 @@ expect.extend({
   },
 })
 
-export type ReplacementPair = [string | RegExp, string]
+type ReplacementPair = [string | RegExp, string]
 
 const { parse } = parser
 

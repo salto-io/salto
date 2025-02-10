@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import objectHash from 'object-hash'
-import { ElemID, isPrimitiveValue, Values } from '@salto-io/adapter-api'
+import { ElemID, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementQuery } from '../query'
@@ -18,22 +18,12 @@ import { GeneratedItem } from '../../definitions/system/shared'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
 import { recurseIntoSubresources } from './subresources'
 import { createValueTransformer } from '../utils'
-import { ARG_PLACEHOLDER_MATCHER } from '../request'
 import { DependsOnDefinition } from '../../definitions/system/fetch/dependencies'
 import { serviceIDKeyCreator } from '../element/id_utils'
 import { ElementGenerator } from '../element/element'
 
 const { mapValuesAsync } = promises.object
 const log = logger(module)
-
-export const replaceParams = (origValue: string, paramValues: Record<string, unknown>): string =>
-  origValue.replace(ARG_PLACEHOLDER_MATCHER, val => {
-    const replacement = _.get(paramValues, val.slice(1, -1)) ?? val
-    if (!isPrimitiveValue(replacement)) {
-      throw new Error(`Cannot replace param ${val} in ${origValue} with non-primitive value ${replacement}`)
-    }
-    return replacement.toString()
-  })
 
 const calculateContextArgs = async ({
   contextDef,

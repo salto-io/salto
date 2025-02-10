@@ -8,12 +8,8 @@
 import { streams, types } from '@salto-io/lowerdash'
 import { Telemetry, Tags, CommandConfig } from '@salto-io/local-workspace'
 
-export type WriteStream = streams.MaybeTty & {
+type WriteStream = streams.MaybeTty & {
   write(s: string): void
-}
-
-export interface ReadStream {
-  // TODO
 }
 
 export enum CliExitCode {
@@ -23,7 +19,7 @@ export enum CliExitCode {
 }
 
 export class CliError extends Error {
-  // The constructor of CliError does not have message as a param becuase
+  // The constructor of CliError does not have message as a param because
   // the message would not written to stderr at any time in the flow
   // When using it handle the writing yourself
   constructor(readonly exitCode: CliExitCode) {

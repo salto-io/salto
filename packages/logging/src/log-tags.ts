@@ -29,7 +29,7 @@ export const formatPrimitiveLogTagValue = (value: unknown): string => {
   return ''
 }
 
-export const isErrorType = (value: unknown): value is Error => value instanceof Error
+const isErrorType = (value: unknown): value is Error => value instanceof Error
 
 const formatKeyValue = (key: string, value: string): string => `${key}=${value}`
 

@@ -139,7 +139,7 @@ export const getElementHiddenParts = async <T extends Element>(
       path !== undefined && (isAncestorOfHiddenPath(path) || isNestedHiddenPath(path)) ? value : undefined,
     strict: true,
     allowEmptyArrays: true,
-    allowExistingEmptyObjects: true,
+    allowAllEmptyObjects: true,
     elementsSource,
   })
   // remove all annotation types from the hidden element so they don't cause merge conflicts
@@ -203,7 +203,6 @@ export const removeHiddenFromElement = <T extends Element>(
     strict: false,
     elementsSource,
     allowEmptyArrays: true,
-    allowExistingEmptyObjects: true,
     allowAllEmptyObjects: true,
   })
 
@@ -221,7 +220,6 @@ const removeHiddenFromValues = (
     elementsSource,
     strict: false,
     allowEmptyArrays: true,
-    allowExistingEmptyObjects: true,
     allowAllEmptyObjects: true,
   })
 
@@ -578,7 +576,6 @@ const getHiddenFieldAndAnnotationValueChanges = async (
       elementsSource: state,
       runOnFields: true,
       allowEmptyArrays: true,
-      allowExistingEmptyObjects: true,
       allowAllEmptyObjects: true,
     })
 

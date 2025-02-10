@@ -335,6 +335,9 @@ const formulaToTemplate = ({
       return handleDynamicContentReference(expression, dynamicContentReference)
     }
     if (extractReferencesFromFreeText) {
+      // Check if the expression is a link to a zendesk page without a subdomain
+      // href="/hc/en-us/sections/5678/articles/123123"
+
       // There are multiple regexes that can reach this part, only one section is relevant here
       const isHelpCenterUrlMatch = expression.match(HELP_CENTER_URL)
       if (isHelpCenterUrlMatch !== null) {

@@ -134,6 +134,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Dashboard: {
     transformation: {
+      idFields: ['name', 'owner.accountId'],
       fieldTypeOverrides: [
         { fieldName: 'gadgets', fieldType: 'List<DashboardGadget>' },
         { fieldName: 'layout', fieldType: 'string' },

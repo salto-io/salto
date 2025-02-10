@@ -602,7 +602,7 @@ const buildNaclFilesSource = (
     if (!ignoreFileChanges) {
       const preChangeHash = await currentState.parsedNaclFiles.getHash()
       const cacheFilenames = await currentState.parsedNaclFiles.list()
-      const modifiedStaticFiles = (await staticFilesSource.load?.()) ?? [] // TODO: add log time
+      const modifiedStaticFiles = (await staticFilesSource.load?.()) ?? []
       const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
       const modifiedNaclFiles: NaclFile[] = []

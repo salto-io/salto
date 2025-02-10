@@ -58,8 +58,6 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   { metadataType: 'EscalationRule' },
   // May conflict with the MetadataType ForecastingCategoryMapping
   { metadataType: 'CustomObject', name: 'ForecastingCategoryMapping' },
-  // Retrieve on GenAiPromptTemplate fails on INSUFFICIENT_ACCESS
-  { metadataType: 'GenAiPromptTemplate' },
 ]
 
 // Instances of these types will match all namespaces

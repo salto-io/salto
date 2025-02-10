@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import JSZip from 'jszip'
 import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
-import { FileProperties, MetadataInfo, MetadataObject } from '@salto-io/jsforce-types'
+import { FileProperties, MetadataInfo, MetadataObject, RetrieveRequest, RetrieveResult } from '@salto-io/jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { collections, objects, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -458,7 +458,37 @@ export const retrieveMetadataInstances = async ({
     const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
     log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)
-    const result = await client.retrieve(request)
+
+    const typesWithInsufficientAccess = new Set<string>()
+    const retrieveWithRetry = async (
+      currentRequest: RetrieveRequest,
+      CurrentFilesToRetrieve: FileProperties[],
+    ): Promise<RetrieveResult> => {
+      try {
+        return await client.retrieve(currentRequest)
+      } catch (error) {
+        const errorPattern = /INSUFFICIENT_ACCESS: insufficient access rights on entity: (\w+)/g
+        const matches = [...error.message.matchAll(errorPattern)]
+        if (matches.length > 0) {
+          matches.forEach(match => {
+            const failedEntity = match[1]
+            log.debug(`Failed to retrieve ${failedEntity} due to insufficient access rights`)
+            typesWithInsufficientAccess.add(failedEntity)
+          })
+          const updatedFilesToRetrieve = CurrentFilesToRetrieve.filter(
+            fileProp => ![...matches.map(match => match[1])].includes(fileProp.type),
+          )
+          if (updatedFilesToRetrieve.length === 0) {
+            throw new Error('No files left to retrieve after filtering out failed entities')
+          }
+          const updatedRequest = toRetrieveRequest(updatedFilesToRetrieve)
+          return retrieveWithRetry(updatedRequest, updatedFilesToRetrieve)
+        }
+        throw error
+      }
+    }
+
+    const result = await retrieveWithRetry(request, filesToRetrieve)
 
     log.debug('retrieve result for types %s: %o', typesToRetrieve, _.omit(result, ['zipFile', 'fileProperties']))
 
@@ -505,7 +535,14 @@ export const retrieveMetadataInstances = async ({
         )
       ).flat()
     }
-
+    typesWithInsufficientAccess.forEach(entity => {
+      configChanges.push(
+        createSkippedListConfigChange({
+          type: entity,
+          reason: `Insufficient access rights on entity: ${entity}`,
+        }),
+      )
+    })
     const newConfigChanges = createRetrieveConfigChange(result).filter(change => !configChangeAlreadyExists(change))
     configChanges.push(...newConfigChanges)
     // if we get an error then result.zipFile will be a single 'nil' XML element, which will be parsed as an object by

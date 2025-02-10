@@ -14,7 +14,7 @@ const log = logger(module)
 
 export const VALIDATE_CREDENTIALS_URL = '/JSSResource/classes'
 
-export const validateCredentials = async ({
+const validateCredentials = async ({
   connection,
   credentials,
 }: {

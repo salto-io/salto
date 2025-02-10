@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ActionName } from '@salto-io/adapter-api'
-import { config as configUtils, definitions } from '@salto-io/adapter-components'
+import { config as configUtils } from '@salto-io/adapter-components'
 import {
   ACCESS_POLICY_TYPE_NAME,
   IDP_POLICY_TYPE_NAME,
@@ -19,8 +19,6 @@ import {
 import { AdditionalAction } from './definitions/types'
 import { POLICY_PRIORITY_TYPE_NAMES, POLICY_RULE_PRIORITY_TYPE_NAMES } from './filters/policy_priority'
 
-type UserDeployConfig = definitions.UserDeployConfig
-
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
@@ -28,8 +26,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export const PRIVATE_API_DEFINITIONS_CONFIG = 'privateApiDefinitions'
 
 export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<ActionName | AdditionalAction>
-export type OktaDuckTypeApiConfig = configUtils.AdapterDuckTypeApiConfig
-export type OktaDeployConfig = UserDeployConfig & { omitMissingUsers?: boolean }
+type OktaDuckTypeApiConfig = configUtils.AdapterDuckTypeApiConfig
 
 // TODO remove as part of SALTO-5692
 export type OldOktaDefinitionsConfig = {
@@ -443,7 +440,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
 }
 
-export const SUPPORTED_TYPES = {
+const SUPPORTED_TYPES = {
   Application: ['api__v1__apps'],
   Authenticator: ['api__v1__authenticators'],
   AuthorizationServer: ['api__v1__authorizationServers'],
@@ -608,7 +605,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
   },
 }
 
-export const DUCKTYPE_SUPPORTED_TYPES = {
+const DUCKTYPE_SUPPORTED_TYPES = {
   EmailNotifications: ['EmailNotifications'],
   EndUserSupport: ['EndUserSupport'],
   ThirdPartyAdmin: ['ThirdPartyAdmin'],
@@ -619,7 +616,7 @@ export const DUCKTYPE_SUPPORTED_TYPES = {
   Reauthentication: ['Reauthentication'],
 }
 
-export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
+const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
   typeDefaults: {
     transformation: TRANSFORMATION_DEFAULTS,
   },
@@ -627,7 +624,7 @@ export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
   supportedTypes: DUCKTYPE_SUPPORTED_TYPES,
 }
 
-export const DEFAULT_API_DEFINITIONS: OktaSwaggerApiConfig = {
+const DEFAULT_API_DEFINITIONS: OktaSwaggerApiConfig = {
   swagger: { url: '' }, // TODO remove in SALTO-5692
   typeDefaults: { transformation: TRANSFORMATION_DEFAULTS },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
@@ -638,5 +635,3 @@ export const OLD_API_DEFINITIONS_CONFIG: OldOktaDefinitionsConfig = {
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
   [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
 }
-
-export type FilterContext = OldOktaDefinitionsConfig

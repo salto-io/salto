@@ -56,7 +56,7 @@ const USER_SCHEMA = Joi.object({
 
 const USERS_RESPONSE_SCHEMA = Joi.array().items(USER_SCHEMA).required()
 
-export const areUsers = createSchemeGuard<User[]>(USERS_RESPONSE_SCHEMA, 'Received an invalid response for the users')
+const areUsers = createSchemeGuard<User[]>(USERS_RESPONSE_SCHEMA, 'Received an invalid response for the users')
 
 export const shouldConvertUserIds = (
   fetchQuery: elementsUtils.query.ElementQuery,
@@ -96,7 +96,7 @@ const getUsersQuery = (userIds: string[], property: SearchProperty): string =>
   userIds.map(userId => `${property} eq "${userId}"`).join(' or ')
 
 // the header omits credentials and other unnecessary fields from the response
-export const OMIT_CREDS_HEADER = {
+const OMIT_CREDS_HEADER = {
   'Content-Type': 'application/json; okta-response=omitCredentials,omitCredentialsLinks',
 }
 

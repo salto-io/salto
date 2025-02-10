@@ -13,7 +13,7 @@ import { Credentials } from '../auth'
 
 const log = logger(module)
 
-const validateCredentials = async ({
+export const validateCredentials = async ({
   connection,
   credentials,
 }: {

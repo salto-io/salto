@@ -49,7 +49,7 @@ type AdditionOrModificationRelevantChange =
   | AdditionChange<ObjectTypeOrInstanceElement>
   | ModificationChange<ObjectTypeOrInstanceElement>
 
-export const isCustomRecordTypePermissionObject = (obj: unknown): obj is CustomRecordTypePermission =>
+const isCustomRecordTypePermissionObject = (obj: unknown): obj is CustomRecordTypePermission =>
   values.isPlainRecord(obj) &&
   (typeof obj.permittedrole === 'string' || isReferenceExpression(obj.permittedrole)) &&
   typeof obj.permittedlevel === 'string' &&

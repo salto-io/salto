@@ -180,7 +180,7 @@ export type ParsedReportDefinition = {
   flags?: ReportDefinitionInnerFields
 }
 
-export type ReportDefinitionType = {
+type ReportDefinitionType = {
   scriptid: string
   definition: string
   audience?: ReportDefinitionAccessAudience

@@ -81,7 +81,7 @@ export const datasetDefinitionFields: types.TypeKeysEnum<DatasetDefinitionType> 
   version: 'version',
 }
 
-export type Dataset = AnalyticOriginalFields & DatasetDefinitionType
+type Dataset = AnalyticOriginalFields & DatasetDefinitionType
 
 export const parsedDatasetType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}

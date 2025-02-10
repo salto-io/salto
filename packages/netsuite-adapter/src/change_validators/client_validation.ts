@@ -97,7 +97,7 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
     .concat(missingFeatureChangeErrors)
 }
 
-export type ClientChangeValidator = (
+type ClientChangeValidator = (
   changes: ReadonlyArray<Change>,
   client: NetsuiteClient,
   additionalDependencies: AdditionalDependencies,

@@ -12,7 +12,7 @@ import { getChangeGroupIdFromDefinition } from './functions'
 import { DeployApiDefinitions } from '../../definitions/system/deploy'
 
 const { awu } = collections.asynciterable
-export type ChangeIdFunction = (change: Change) => Promise<string | undefined>
+type ChangeIdFunction = (change: Change) => Promise<string | undefined>
 
 /**
  * Make a unified ChangeGroupIdFunction that classifies changes into distinct groupIDs

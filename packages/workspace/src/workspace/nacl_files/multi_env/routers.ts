@@ -44,7 +44,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-export interface RoutedChangesByRole {
+interface RoutedChangesByRole {
   primarySource?: DetailedChangeWithBaseChange[]
   commonSource?: DetailedChangeWithBaseChange[]
   secondarySources?: Record<string, DetailedChangeWithBaseChange[]>
@@ -320,7 +320,7 @@ const routeDefaultRemoveOrModify = async (
   }
 }
 
-export const routeOverride = async (
+const routeOverride = async (
   change: DetailedChangeWithBaseChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
@@ -346,7 +346,7 @@ export const routeOverride = async (
   return routeDefaultRemoveOrModify(change, primarySource, commonSource, secondarySources)
 }
 
-export const routeAlign = async (
+const routeAlign = async (
   change: DetailedChangeWithBaseChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
@@ -371,7 +371,7 @@ export const routeAlign = async (
   }
 }
 
-export const routeDefault = async (
+const routeDefault = async (
   change: DetailedChangeWithBaseChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
@@ -410,7 +410,7 @@ const getChangePathHint = async (
   return refFilename ? toPathHint(refFilename) : undefined
 }
 
-export const routeIsolated = async (
+const routeIsolated = async (
   change: DetailedChangeWithBaseChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,

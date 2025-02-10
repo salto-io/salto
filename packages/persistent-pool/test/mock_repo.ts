@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { mockFunction } from '@salto-io/test-utils'
-import { Repo, Pool, LeaseWithStatus } from '../src/types'
+import { Pool, LeaseWithStatus } from '../src/types'
 
 export const createMockPool = <T>(): jest.Mocked<Pool<T>> => ({
   [Symbol.asyncIterator]: jest.fn<AsyncIterator<LeaseWithStatus<T>>, []>(),
@@ -18,8 +18,4 @@ export const createMockPool = <T>(): jest.Mocked<Pool<T>> => ({
   updateTimeout: mockFunction<Pool<T>['updateTimeout']>(),
   return: mockFunction<Pool<T>['return']>(),
   clear: mockFunction<Pool<T>['clear']>(),
-})
-
-export const createMockRepo = (): Repo => ({
-  pool: <T>(): Promise<Pool<T>> => Promise.resolve(createMockPool<T>()),
 })

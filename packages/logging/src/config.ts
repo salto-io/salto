@@ -12,8 +12,8 @@ import { LogLevel } from './level'
 import { Namespace } from './namespace'
 import { LogTags } from './log-tags'
 
-export type Format = 'json' | 'text'
-export const FORMATS: ReadonlyArray<Format> = Object.freeze(['json', 'text'])
+type Format = 'json' | 'text'
+const FORMATS: ReadonlyArray<Format> = Object.freeze(['json', 'text'])
 export const validateFormat = (f: string): Format => validateOneOf(FORMATS, 'log format', f)
 
 export type NamespaceFilter = (namespace: Namespace) => boolean

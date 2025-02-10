@@ -30,7 +30,7 @@ type BasicCommandProperties = {
   summary?: string
 }
 
-export type CommandOptions<T> = BasicCommandProperties & {
+type CommandOptions<T> = BasicCommandProperties & {
   aliases?: string[]
   keyedOptions?: KeyedOption<T>[]
   positionalOptions?: PositionalOption<T>[]

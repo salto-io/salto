@@ -18,7 +18,7 @@ const { isDefined } = lowerdashValues
 const { makeArray } = collections.array
 const log = logger(module)
 
-export type ReferenceObject = OpenAPIV2.ReferenceObject | OpenAPIV3.ReferenceObject
+type ReferenceObject = OpenAPIV2.ReferenceObject | OpenAPIV3.ReferenceObject
 export type SchemaObject = OpenAPIV2.SchemaObject | OpenAPIV3.SchemaObject | IJsonSchema
 export type SwaggerRefs = Pick<SwaggerParser.$Refs, 'get'>
 

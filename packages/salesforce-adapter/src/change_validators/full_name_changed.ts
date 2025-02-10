@@ -15,7 +15,7 @@ import {
 } from '@salto-io/adapter-api'
 import { INSTANCE_FULL_NAME_FIELD } from '../constants'
 
-export const wasFullNameChanged = (change: ModificationChange<InstanceElement>): boolean => {
+const wasFullNameChanged = (change: ModificationChange<InstanceElement>): boolean => {
   const { before, after } = change.data
   return before.value[INSTANCE_FULL_NAME_FIELD] !== after.value[INSTANCE_FULL_NAME_FIELD]
 }

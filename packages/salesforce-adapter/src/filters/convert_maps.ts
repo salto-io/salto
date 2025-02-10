@@ -91,7 +91,7 @@ type MapDef = {
 }
 
 export const ORDERED_MAP_VALUES_FIELD = 'values'
-export const ORDERED_MAP_ORDER_FIELD = 'order'
+const ORDERED_MAP_ORDER_FIELD = 'order'
 
 export const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =>
   new ObjectType({
@@ -129,7 +129,7 @@ const BUSINESS_HOURS_MAP_FIELD_DEF: Record<string, MapDef> = {
   businessHours: { key: 'name' },
 }
 
-export const PERMISSIONS_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
+const PERMISSIONS_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
   // One-level maps
   applicationVisibilities: { key: 'application' },
   classAccesses: { key: 'apexClass' },
@@ -148,7 +148,7 @@ export const PERMISSIONS_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
   recordTypeVisibilities: { key: 'recordType', nested: true },
 }
 
-export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
+const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   // sharing map field def with permission set
   ...PERMISSIONS_SET_MAP_FIELD_DEF,
 
@@ -590,7 +590,7 @@ const convertFieldTypesBackToLists = async (
   })
 }
 
-export const getInstanceChanges = (
+const getInstanceChanges = (
   changes: ReadonlyArray<Change>,
   targetMetadataType: string,
 ): Promise<ReadonlyArray<Change<InstanceElement>>> =>
@@ -624,7 +624,7 @@ export const findInstancesToConvert = (elements: Element[], targetMetadataType: 
   return instances.filter(e => metadataTypeSync(e) === targetMetadataType)
 }
 
-export const findTypeToConvert = (elements: Element[], targetMetadataType: string): ObjectType | undefined => {
+const findTypeToConvert = (elements: Element[], targetMetadataType: string): ObjectType | undefined => {
   const types = elements.filter(isObjectType)
   return types.filter(e => metadataTypeSync(e) === targetMetadataType)[0]
 }

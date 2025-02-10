@@ -1435,8 +1435,6 @@ export const toDeployableInstance = async (element: InstanceElement): Promise<In
   })
 }
 
-export const fromMetadataInfo = (info: MetadataInfo): Values => info
-
 export const toMetadataInfo = async (instance: InstanceElement): Promise<MetadataInfo> => ({
   fullName: await apiName(instance),
   ...(await toDeployableInstance(instance)).value,

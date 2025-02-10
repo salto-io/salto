@@ -27,7 +27,7 @@ import {
 } from '../filters/convert_maps'
 import { FetchProfile } from '../types'
 
-export const getOrderedMapErrors = (element: Element, fieldName: string): ChangeError[] => {
+const getOrderedMapErrors = (element: Element, fieldName: string): ChangeError[] => {
   const elementValues = getElementValueOrAnnotations(element)
   const fieldValue = _.get(elementValues, fieldName)
   if (fieldValue === undefined) {

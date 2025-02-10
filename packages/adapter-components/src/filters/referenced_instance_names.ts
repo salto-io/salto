@@ -125,9 +125,9 @@ const createNewInstance = async (
     element: currentInstance,
     transformFunc: createReferencesTransformFunc(currentInstance.elemID, newElemId),
     strict: false,
-    // We don't want to update the element, so we are permissive with the allowEmptyArrays and allowEmptyObjects
+    // We don't want to update the element, so we are permissive with the allowEmptyArrays and allowExistingEmptyObjects
     allowEmptyArrays: true,
-    allowEmptyObjects: true,
+    allowExistingEmptyObjects: true,
   })
   return new InstanceElement(
     newElemId.name,

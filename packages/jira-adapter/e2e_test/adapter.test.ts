@@ -135,8 +135,7 @@ each([
     ])
   })
 
-  // eslint-disable-next-line jest/no-disabled-tests
-  describe.skip('deploy', () => {
+  describe('deploy', () => {
     let addDeployResults: DeployResult[]
     let modifyDeployResults: DeployResult[]
     let addInstanceGroups: InstanceElement[][]

@@ -184,7 +184,7 @@ const removeEmptyParts = ({
   if (_.isPlainObject(value)) {
     const filtered = _.omitBy(value, _.isUndefined)
     const isEmptyAllowed = allowAllEmptyObjects || (allowExistingEmptyObjects && _.isEmpty(value))
-    return _.isEmpty(filtered) && !isEmptyAllowed : undefined : filtered
+    return _.isEmpty(filtered) && !isEmptyAllowed ? undefined : filtered
   }
   return value
 }
@@ -317,23 +317,18 @@ export const transformValues = async ({
   const fieldMapper = fieldMapperGenerator(type, values)
 
   const newVal = isTopLevel ? await transformFunc({ value: values, path: pathID }) : values
+  let result = newVal
   if (_.isPlainObject(newVal)) {
-    const result = _.omitBy(
-      await mapValuesAsync(newVal ?? {}, (value, key) =>
-        transformValue(value, pathID?.createNestedID(key), fieldMapper(key)),
-      ),
-      _.isUndefined,
+    result = await mapValuesAsync(newVal ?? {}, (value, key) =>
+      transformValue(value, pathID?.createNestedID(key), fieldMapper(key)),
     )
-    return _.isEmpty(result) && (!allowExistingEmptyObjects || !allowAllEmptyObjects) ? undefined : result
   }
   if (_.isArray(newVal)) {
-    const result = await awu(newVal)
+    result = await awu(newVal)
       .map((value, index) => transformValue(value, pathID?.createNestedID(String(index)), fieldMapper(String(index))))
-      .filter(value => !_.isUndefined(value))
       .toArray()
-    return result.length === 0 && !allowEmptyArrays ? undefined : result
   }
-  return newVal
+  return removeEmptyParts({ value: result, allowEmptyArrays, allowExistingEmptyObjects, allowAllEmptyObjects })
 }
 
 export const transformValuesSync = ({
@@ -373,20 +368,18 @@ export const transformValuesSync = ({
   const fieldMapper = fieldMapperGenerator(type, values)
 
   const newVal = isTopLevel ? transformFunc({ value: values, path: pathID }) : values
+  let result = newVal
   if (_.isPlainObject(newVal)) {
-    const result = _.omitBy(
-      _.mapValues(newVal ?? {}, (value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key))),
-      _.isUndefined,
+    result = _.mapValues(newVal ?? {}, (value, key) =>
+      transformValue(value, pathID?.createNestedID(key), fieldMapper(key)),
     )
-    return _.isEmpty(result) && !allowExistingEmptyObjects && !allowAllEmptyObjects ? undefined : result
   }
   if (_.isArray(newVal)) {
-    const result = newVal
-      .map((value, index) => transformValue(value, pathID?.createNestedID(String(index)), fieldMapper(String(index))))
-      .filter(value => !_.isUndefined(value))
-    return result.length === 0 && !allowEmptyArrays ? undefined : result
+    result = newVal.map((value, index) =>
+      transformValue(value, pathID?.createNestedID(String(index)), fieldMapper(String(index))),
+    )
   }
-  return newVal
+  return removeEmptyParts({ value: result, allowEmptyArrays, allowExistingEmptyObjects, allowAllEmptyObjects })
 }
 
 export const elementAnnotationTypes = async (

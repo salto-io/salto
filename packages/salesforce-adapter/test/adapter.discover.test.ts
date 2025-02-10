@@ -27,7 +27,7 @@ import {
 import { MetadataInfo } from '@salto-io/jsforce'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
-import { FileProperties } from '@salto-io/jsforce-types'
+import { FileProperties, RetrieveRequest } from '@salto-io/jsforce-types'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
@@ -47,7 +47,7 @@ import {
   mockRetrieveLocator,
   mockRetrieveResult,
 } from './connection'
-import { ConfigChangeSuggestion, FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import { ConfigChangeSuggestion, FetchElements, FetchProfile, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import * as fetchModule from '../src/fetch'
 import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
@@ -68,7 +68,7 @@ import {
   SOCKET_TIMEOUT,
 } from '../src/constants'
 import { apiNameSync, isInstanceOfType, isInstanceOfTypeSync } from '../src/filters/utils'
-import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
+import { createSkippedListConfigChange, NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
 import SalesforceClient from '../src/client/client'
 import createMockClient from './client'
 import { mockInstances, mockTypes } from './mock_elements'
@@ -2750,6 +2750,81 @@ describe('Fetch via retrieve API', () => {
       })
     },
   )
+
+  describe('when retrieve fails for INSUFFICIENT_ACCESS rights on entity', () => {
+    let fetchProfile: FetchProfile
+    let mockRetrieve: jest.Mock
+
+    beforeEach(async () => {
+      const instances = [
+        {
+          type: mockTypes.CustomObject,
+          instanceName: 'CustomObject1',
+        },
+        {
+          type: mockTypes.CustomObject,
+          instanceName: 'CustomObject2',
+        },
+        {
+          type: mockTypes.Flow,
+          instanceName: 'Flow1',
+        },
+        {
+          type: mockTypes.Flow,
+          instanceName: 'Flow2',
+        },
+        {
+          type: mockTypes.Opportunity,
+          instanceName: 'Opportunity1',
+        },
+        {
+          type: mockTypes.Opportunity,
+          instanceName: 'Opportunity2',
+        },
+      ]
+      await setupMocks(instances)
+      fetchProfile = buildFetchProfile({
+        fetchParams: {},
+      })
+      mockRetrieve = jest.fn().mockImplementation((retrieveRequest: RetrieveRequest) => {
+        if (
+          retrieveRequest.unpackaged?.types.some(t => t.name === 'CustomObject') &&
+          retrieveRequest.unpackaged?.types.some(t => t.name === 'Flow')
+        ) {
+          throw new Error(
+            `Retrieve request for ${retrieveRequest.unpackaged.types} failed. messages: INSUFFICIENT_ACCESS: insufficient access rights on entity: CustomObject INSUFFICIENT_ACCESS: insufficient access rights on entity: Flow`,
+          )
+        }
+        if (retrieveRequest.unpackaged?.types.some(t => t.name === 'CustomObject')) {
+          throw new Error(
+            `Retrieve request for ${retrieveRequest.unpackaged.types} failed. messages: INSUFFICIENT_ACCESS: insufficient access rights on entity: CustomObject`,
+          )
+        }
+        return connection.metadata.retrieve(retrieveRequest).complete()
+      })
+    })
+    it('should try again without the failed entity and create a config suggestion', async () => {
+      const expectedConfigChanges = [
+        createSkippedListConfigChange({
+          type: 'CustomObject',
+          reason: 'Insufficient access rights on entity: CustomObject',
+        }),
+        createSkippedListConfigChange({
+          type: 'Flow',
+          reason: 'Insufficient access rights on entity: Flow',
+        }),
+      ]
+      jest.spyOn(client, 'retrieve').mockImplementation(mockRetrieve)
+      const { configChanges } = await retrieveMetadataInstances({
+        client,
+        types: [mockTypes.CustomObject, mockTypes.Flow, mockTypes.Opportunity],
+        fetchProfile,
+      })
+      // expect(elements).toHaveLength(2)
+      expect(client.retrieve).toHaveBeenCalledTimes(2)
+      expect(configChanges).toIncludeSameMembers(expectedConfigChanges)
+    })
+  })
 
   describe('Config changes', () => {
     let configChanges: ConfigChangeSuggestion[]

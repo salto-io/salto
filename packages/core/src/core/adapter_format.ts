@@ -287,6 +287,7 @@ export const calculatePatch = async ({
       mergeErrors: beforeMergeErrors,
       fetchErrors: [],
       success: false,
+      configChanges: [],
       updatedConfig: {},
       partiallyFetchedAccounts,
     }
@@ -303,6 +304,7 @@ export const calculatePatch = async ({
       mergeErrors: afterMergeErrors,
       fetchErrors: [],
       success: false,
+      configChanges: [],
       updatedConfig: {},
       partiallyFetchedAccounts,
     }
@@ -327,6 +329,7 @@ export const calculatePatch = async ({
     mergeErrors: [],
     fetchErrors: [...(beforeLoadErrors ?? []), ...(afterLoadErrors ?? [])],
     success: true,
+    configChanges: [],
     updatedConfig: {},
     partiallyFetchedAccounts,
   }

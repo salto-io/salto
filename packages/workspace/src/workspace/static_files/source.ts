@@ -70,6 +70,8 @@ export class LazyStaticFile extends AbsoluteStaticFile {
   }
 }
 
+export class PlaceholderStaticFile extends StaticFile {}
+
 export const buildStaticFilesSource = (
   staticFilesDirStore: DirectoryStore<Buffer>,
   staticFilesCache: StaticFilesCache,
@@ -182,12 +184,12 @@ export const buildStaticFilesSource = (
       try {
         const staticFileData = await getStaticFileData(args.filepath)
         if (args.hash !== undefined && staticFileData.hash !== args.hash) {
-          // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
+          // We return a PlaceholderStaticFile in this case and not a MissingStaticFile to be able to differ
           // in the elements cache between a file that was really missing when the cache was
           // written, and a file that existed but was modified since the cache was written,
           // as the latter should not be represented in the element that is returned from
           // the cache as MissingStaticFile
-          return new StaticFile({
+          return new PlaceholderStaticFile({
             filepath: args.filepath,
             encoding: args.encoding,
             hash: args.hash,
@@ -227,12 +229,12 @@ export const buildStaticFilesSource = (
         )
       } catch (e) {
         if (args.hash !== undefined) {
-          // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
+          // We return a PlaceholderStaticFile in this case and not a MissingStaticFile to be able to differ
           // in the elements cache between a file that was really missing when the cache was
           // written, and a file that existed but was removed since the cache was written,
           // as the latter should not be represented in the element that is returned from
           // the cache as MissingStaticFile
-          return new StaticFile({
+          return new PlaceholderStaticFile({
             filepath: args.filepath,
             encoding: args.encoding,
             hash: args.hash,

@@ -42,7 +42,7 @@ import {
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
-import { MissingStaticFile } from '../../static_files'
+import { PlaceholderStaticFile, MissingStaticFile } from '../../static_files'
 import { ReferenceIndexEntry } from '../../reference_indexes'
 
 const log = logger(module)
@@ -194,7 +194,8 @@ const buildMultiEnvSource = (
     if (sourcesFiles.length > 1 && !_.every(sourcesFiles, sf => sf.hash === sourcesFiles[0].hash)) {
       log.warn(`Found different hashes for static file ${filePath}`)
     }
-    return sourcesFiles[0] ?? new MissingStaticFile(filePath)
+    const fileWithContent = sourcesFiles.find(sf => !(sf instanceof PlaceholderStaticFile))
+    return fileWithContent ?? sourcesFiles[0] ?? new MissingStaticFile(filePath)
   }
 
   const buildStateForSingleEnv = async (envName: string): Promise<SingleState> => {

@@ -205,8 +205,8 @@ describe('bot_builder_node_adjuster', () => {
         value: {
           data: {
             applyNodeListTransactionByFlowId: [
-              { externalId: '3', data: { for: 'event' } },
-              { externalId: '4', some: { other: 'event' } },
+              { id: '3', externalId: '3', data: { for: 'event' } },
+              { id: '4', externalId: '4', some: { other: 'event' } },
             ],
           },
         },
@@ -215,7 +215,18 @@ describe('bot_builder_node_adjuster', () => {
           change: toChange({ after: nodeInstance }),
         } as unknown as definitions.deploy.ChangeAndExtendedContext,
       })
-      expect(response).toEqual({ value: { externalId: '3', data: { for: 'event' } } })
+      expect(response).toEqual({ value: { id: '3' } })
+    })
+
+    it('should throw an error if the response is missing the node id', async () => {
+      const value = { data: { applyNodeListTransactionByFlowId: [{ externalId: '3', data: { for: 'event' } }] } }
+      await expect(
+        transformResponse()({
+          value,
+          typeName: 'test',
+          context: { change: toChange({ after: nodeInstance }) } as definitions.deploy.ChangeAndExtendedContext,
+        }),
+      ).rejects.toThrow('unexpected value without id for graphql item')
     })
 
     it('should throw an error if the response contains errors', async () => {

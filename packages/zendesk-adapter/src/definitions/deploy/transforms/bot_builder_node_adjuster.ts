@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import KSUID from 'ksuid'
-import { getChangeData } from '@salto-io/adapter-api'
+import { getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { getParents, inspectValue } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
@@ -83,7 +83,7 @@ export const transformRequest: (
   }
 }
 
-// Node responses contain all nodes, we select the relevant node by id
+// Node responses contain all nodes, we select the relevant node by externalId and return it's id
 export const transformResponse: (
   isDeleted?: boolean,
 ) => definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndExtendedContext> = isDeleted => async item => {
@@ -101,7 +101,13 @@ export const transformResponse: (
       }
       throw new Error(`Failed to find node with externalId ${externalId}`)
     }
-    return { value: value.value }
+    if (isRemovalChange(item.context.change)) {
+      return { value }
+    }
+    if (value.value?.id === undefined) {
+      throw new Error(`unexpected value without id for graphql item, not transforming: ${inspectValue(value)}`)
+    }
+    return { value: { id: value.value.id } }
   } catch (e) {
     if (isDeleted === true && e.message.includes('NODE_ACCESS_NOT_AUTHORISED')) {
       return { value: { id: getChangeData(item.context.change).value.id.toString() } }

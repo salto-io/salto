@@ -20,7 +20,6 @@ import { consumeValue } from './internal/native/consumers/values'
 import { unexpectedPromise } from './internal/native/errors'
 
 export { parseTopLevelID } from './internal/native/helpers'
-export { IllegalReference } from './internal/types'
 
 const log = logger(module)
 

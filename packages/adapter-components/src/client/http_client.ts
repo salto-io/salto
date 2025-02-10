@@ -61,7 +61,7 @@ export type ClientDataParams = ClientBaseParams & {
   data?: unknown
 }
 
-export type ClientParams = ClientBaseParams | ClientDataParams
+type ClientParams = ClientBaseParams | ClientDataParams
 
 export interface HTTPReadClientInterface<TAdditionalArgs = {}> {
   get(params: ClientBaseParams & TAdditionalArgs): Promise<Response<ResponseValue | ResponseValue[]>>

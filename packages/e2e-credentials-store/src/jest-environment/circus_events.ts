@@ -16,9 +16,9 @@ type TestBlock = {
 const testBlockId = (b: TestBlock): string =>
   b.parent ? [testBlockId(b.parent), b.name].filter(x => x).join(' | ') : ''
 
-export type EventStatus = 'start' | 'success' | 'failure'
+type EventStatus = 'start' | 'success' | 'failure'
 
-export type TestStatusChangeEvent = {
+type TestStatusChangeEvent = {
   id: string
   type: 'test' | 'hook'
   status: EventStatus

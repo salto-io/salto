@@ -12,7 +12,7 @@ export type Credentials = { username: string; password: string }
 
 export const BASE_URL = 'http://localhost:1234/api/v1'
 
-export const validateCredentials = async ({
+const validateCredentials = async ({
   credentials,
   connection,
 }: {

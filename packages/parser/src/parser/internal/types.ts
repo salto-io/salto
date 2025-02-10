@@ -7,7 +7,7 @@
  */
 import { Values } from '@salto-io/adapter-api'
 
-export type ExpressionType = 'list' | 'map' | 'template' | 'literal' | 'reference' | 'dynamic' | 'func'
+type ExpressionType = 'list' | 'map' | 'template' | 'literal' | 'reference' | 'dynamic' | 'func'
 
 export interface SourcePos {
   line: number
@@ -21,7 +21,7 @@ export interface SourceRange {
   end: SourcePos
 }
 
-export type HclExpression = {
+type HclExpression = {
   type: ExpressionType
   expressions: HclExpression[]
   source: SourceRange
@@ -29,20 +29,15 @@ export type HclExpression = {
   value?: any
 }
 
-export type HclAttribute = {
+type HclAttribute = {
   source: SourceRange
   expressions: HclExpression[]
 }
 
-export type HclBlock<AttrT = HclAttribute | Values> = {
+type HclBlock<AttrT = HclAttribute | Values> = {
   type: string
   labels: string[]
   attrs: Record<string, AttrT>
-}
-
-export type ParsedHclBlock = HclBlock<HclAttribute> & {
-  blocks: ParsedHclBlock[]
-  source: SourceRange
 }
 
 export type DumpedHclBlock = HclBlock<Values> & {
@@ -59,18 +54,7 @@ export interface HclParseError {
   context: SourceRange
 }
 
-export type ParsedHclBody = Pick<ParsedHclBlock, 'attrs' | 'blocks'>
-export interface HclParseReturn {
-  body: ParsedHclBody
-  errors: HclParseError[]
-}
-
 export type DumpedHclBody = Pick<DumpedHclBlock, 'attrs' | 'blocks'>
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isSourceRange(v: any): v is SourceRange {
-  return v && typeof v.filename === 'string' && v.start && v.end
-}
 
 export class IllegalReference {
   constructor(

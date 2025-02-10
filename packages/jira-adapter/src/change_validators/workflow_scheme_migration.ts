@@ -38,7 +38,7 @@ const { addUrlToInstance, configDefToInstanceFetchApiDefinitionsForServiceUrl } 
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
-export type WorkflowSchemeItem = {
+type WorkflowSchemeItem = {
   workflow: ReferenceExpression
   issueType: ReferenceExpression
 }

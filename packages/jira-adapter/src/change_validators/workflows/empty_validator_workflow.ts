@@ -25,7 +25,7 @@ import {
 } from '../../filters/workflowV2/types'
 
 const { isDefined } = values
-export const CONFIGURATION_VALIDATOR_TYPE = new Set([
+const CONFIGURATION_VALIDATOR_TYPE = new Set([
   'FieldChangedValidator',
   'FieldHasSingleValueValidator',
   'ParentStatusValidator',

@@ -29,7 +29,7 @@ import {
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from './filters/fields/constants'
 import { getContextParent } from './common/fields'
 
-export const getWorkflowGroup: deployment.grouping.ChangeIdFunction = async change =>
+const getWorkflowGroup: deployment.grouping.ChangeIdFunction = async change =>
   isModificationChange(change) && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
     ? 'Workflow Modifications'
     : undefined
@@ -39,7 +39,7 @@ const getIssueLinkTypeGroup: deployment.grouping.ChangeIdFunction = async change
     ? 'IssueLinkType Removals'
     : undefined
 
-export const getSecurityLevelGroup: deployment.grouping.ChangeIdFunction = async change => {
+const getSecurityLevelGroup: deployment.grouping.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
   if (!isAdditionChange(change) || instance.elemID.typeName !== SECURITY_LEVEL_TYPE) {
     return undefined

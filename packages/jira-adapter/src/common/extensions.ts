@@ -67,7 +67,7 @@ const UPM_INSTALLED_APPS_RESPONSE_SCHEME = Joi.object({
 })
   .unknown(true)
   .required()
-export const isUPMInstalledAppsResponse = createSchemeGuard<UPMInstalledAppsResponseType>(
+const isUPMInstalledAppsResponse = createSchemeGuard<UPMInstalledAppsResponseType>(
   UPM_INSTALLED_APPS_RESPONSE_SCHEME,
   'Failed to get UPM Installed Apps response',
 )
@@ -141,7 +141,7 @@ const getInstalledExtensionsGQL = async (client: JiraClient): Promise<ExtensionT
   throw new Error('Failed to get GQL Gateway Installed Apps response')
 }
 
-export const getInstalledExtensions = async (client: JiraClient): Promise<ExtensionType[]> =>
+const getInstalledExtensions = async (client: JiraClient): Promise<ExtensionType[]> =>
   (await Promise.all([getInstalledExtensionsUPM(client), getInstalledExtensionsGQL(client)])).flat()
 
 export const getInstalledExtensionsMap = async (client: JiraClient): Promise<Record<string, ExtensionType>> =>

@@ -29,7 +29,7 @@ type PromiseClientResponse = Promise<
   clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]> | undefined
 >
 
-export type InstanceToResponse = {
+type InstanceToResponse = {
   instance: InstanceElement
   PromiseResponse: PromiseClientResponse
 }

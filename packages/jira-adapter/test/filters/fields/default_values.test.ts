@@ -313,12 +313,9 @@ describe('default values', () => {
         id: 3,
       })
       optionInstances = [
-        new InstanceElement('option1', createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME), {
-          id: 1,
-        }),
-        new InstanceElement('option2', createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME), {
-          id: 2,
-        }),
+        new InstanceElement('option1', createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME), {}),
+        new InstanceElement('option2', createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME), {}),
+        new InstanceElement('option3', createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME), {}),
       ]
     })
     it('should not run if there are no default values', async () => {
@@ -326,6 +323,37 @@ describe('default values', () => {
       updateDefaultValueIds({ contextInstances: [contextInstance], addedOptionInstances: optionInstances })
       expect(contextInstance.value.defaultValue).toBeUndefined()
     })
-    // it('should ')
+    it('should update value id in optionId', async () => {
+      contextInstance.value.defaultValue = {
+        optionId: new ReferenceExpression(optionInstances[0].elemID, optionInstances[0].clone()),
+      }
+      optionInstances[0].value.id = '1'
+      updateDefaultValueIds({ contextInstances: [contextInstance], addedOptionInstances: optionInstances })
+      expect(contextInstance.value.defaultValue.optionId.value.value.id).toEqual('1')
+    })
+    it('should update value id in optionIds', async () => {
+      contextInstance.value.defaultValue = {
+        optionIds: [
+          new ReferenceExpression(optionInstances[0].elemID, optionInstances[0].clone()),
+          new ReferenceExpression(optionInstances[1].elemID, optionInstances[1].clone()),
+        ],
+      }
+      optionInstances[0].value.id = '1'
+      optionInstances[1].value.id = '2'
+      updateDefaultValueIds({ contextInstances: [contextInstance], addedOptionInstances: optionInstances })
+      expect(contextInstance.value.defaultValue.optionIds[0].value.value.id).toEqual('1')
+      expect(contextInstance.value.defaultValue.optionIds[1].value.value.id).toEqual('2')
+    })
+    it('should update value id in cascadingOptionId', async () => {
+      contextInstance.value.defaultValue = {
+        optionId: new ReferenceExpression(optionInstances[0].elemID, optionInstances[0].clone()),
+        cascadingOptionId: new ReferenceExpression(optionInstances[1].elemID, optionInstances[1].clone()),
+      }
+      optionInstances[0].value.id = '1'
+      optionInstances[1].value.id = '2'
+      updateDefaultValueIds({ contextInstances: [contextInstance], addedOptionInstances: optionInstances })
+      expect(contextInstance.value.defaultValue.cascadingOptionId.value.value.id).toEqual('2')
+      expect(contextInstance.value.defaultValue.optionId.value.value.id).toEqual('1')
+    })
   })
 })

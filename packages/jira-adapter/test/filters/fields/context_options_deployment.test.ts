@@ -325,6 +325,7 @@ describe('ContextOptionsDeployment', () => {
     expect(result.deployResult.appliedChanges).toHaveLength(2)
   })
   describe('add cascading options', () => {
+    let contextInstance2: InstanceElement
     beforeEach(() => {
       const optionType = createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME)
       connection.post.mockResolvedValueOnce({
@@ -366,7 +367,7 @@ describe('ContextOptionsDeployment', () => {
         },
       })
       const orderType = createEmptyType(OPTIONS_ORDER_TYPE_NAME)
-      const contextInstance2 = new InstanceElement(
+      contextInstance2 = new InstanceElement(
         'context2',
         createEmptyType(FIELD_CONTEXT_TYPE_NAME),
         { id: '2context' },
@@ -485,6 +486,11 @@ describe('ContextOptionsDeployment', () => {
           [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(addOption2.elemID, addOption2),
         },
       )
+      contextInstance2.value.defaultValue = {
+        // done here as there are circular references
+        optionId: new ReferenceExpression(addOption1.elemID, addOption1),
+        cascadingOptionId: new ReferenceExpression(cascadeInstance20.elemID, cascadeInstance20),
+      }
       elementsSource = buildElementsSourceFromElements([
         ...elements,
         orderInstance1,
@@ -575,6 +581,12 @@ describe('ContextOptionsDeployment', () => {
       optionChanges.forEach((change, i) => {
         expect(change).toEqual(originalOptionChanges[i])
       })
+    })
+    it('should update the context default value with option ids', async () => {
+      changes.push(toChange({ after: contextInstance2 }))
+      await filter.deploy(changes)
+      expect(contextInstance2.value.defaultValue.optionId.value.value.id).toEqual('4')
+      expect(contextInstance2.value.defaultValue.cascadingOptionId.value.value.id).toEqual('20')
     })
   })
   it('should call post with 1000 or less batches', async () => {

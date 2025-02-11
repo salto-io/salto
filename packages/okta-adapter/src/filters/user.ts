@@ -37,7 +37,7 @@ const replaceValues = (instance: InstanceElement, mapping: Record<string, string
   })
 }
 
-export const replaceValuesForChanges = async (
+const replaceValuesForChanges = async (
   changes: Change<InstanceElement>[],
   mapping: Record<string, string>,
 ): Promise<void> => {

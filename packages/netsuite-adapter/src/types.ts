@@ -40,6 +40,7 @@ import {
   CUSTOM_RECORD_TYPE_NAME_PREFIX,
   BUNDLE,
   INTEGRATION,
+  PLUGIN_IMPLEMENTATION,
 } from './constants'
 import { SUPPORTED_TYPES } from './data_elements/types'
 import { bundleType } from './types/bundle_type'
@@ -152,7 +153,7 @@ export const PLUGIN_IMPLEMENTATION_TYPES = [
   'fiparserplugin',
   'promotionsplugin',
   'workbookbuilderplugin',
-  'pluginimplementation',
+  PLUGIN_IMPLEMENTATION,
 ]
 
 export const FIELD_TYPES = [

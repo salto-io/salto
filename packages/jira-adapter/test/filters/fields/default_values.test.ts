@@ -18,6 +18,7 @@ import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import {
   setDefaultValueTypeDeploymentAnnotations,
+  updateDefaultValueIds,
   updateDefaultValues,
 } from '../../../src/filters/fields/default_values'
 import { JIRA } from '../../../src/constants'
@@ -302,5 +303,29 @@ describe('default values', () => {
       const contextType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') })
       await expect(setDefaultValueTypeDeploymentAnnotations(contextType)).rejects.toThrow()
     })
+  })
+  describe('updateDefaultValueIds', () => {
+    let contextInstance: InstanceElement
+    let optionInstances: InstanceElement[]
+    beforeEach(() => {
+      contextInstance = new InstanceElement('instance', createEmptyType(FIELD_CONTEXT_TYPE_NAME), {
+        name: 'a',
+        id: 3,
+      })
+      optionInstances = [
+        new InstanceElement('option1', createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME), {
+          id: 1,
+        }),
+        new InstanceElement('option2', createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME), {
+          id: 2,
+        }),
+      ]
+    })
+    it('should not run if there are no default values', async () => {
+      delete contextInstance.value.defaultValue
+      updateDefaultValueIds({ contextInstances: [contextInstance], addedOptionInstances: optionInstances })
+      expect(contextInstance.value.defaultValue).toBeUndefined()
+    })
+    // it('should ')
   })
 })

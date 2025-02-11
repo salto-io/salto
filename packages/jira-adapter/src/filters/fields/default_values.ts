@@ -33,6 +33,44 @@ import { getLookUpName } from '../../reference_mapping'
 import { addAnnotationRecursively, setFieldDeploymentAnnotations } from '../../utils'
 import { JiraConfig } from '../../config/config'
 
+const ApplyOnDefaultValues = (defaultValue: Value, applyFunc: (value: Value, path: string[]) => void): void => {
+  const valueLocations = [['optionId'], ['cascadingOptionId']]
+  if (Array.isArray(defaultValue.optionIds)) {
+    valueLocations.push(..._.range(0, defaultValue.optionIds.length).map(index => ['optionIds', `${index}`]))
+  }
+  valueLocations.forEach(pathArray => {
+    applyFunc(defaultValue, pathArray)
+  })
+}
+
+// called only for splitted options
+export const updateDefaultValueIds = ({
+  contextInstances,
+  addedOptionInstances,
+}: {
+  contextInstances: InstanceElement[]
+  addedOptionInstances: InstanceElement[]
+}): void => {
+  const relevantContexts = contextInstances.filter(contextInstance => contextInstance.value.defaultValue !== undefined)
+  if (relevantContexts.length === 0) {
+    return
+  }
+  const optionsIdByElemId: Record<string, string> = Object.fromEntries(
+    addedOptionInstances.map(option => [option.elemID.getFullName(), option.value.id]),
+  )
+
+  relevantContexts.forEach(contextInstance => {
+    ApplyOnDefaultValues(contextInstance.value.defaultValue, (value, path) => {
+      if (
+        isResolvedReferenceExpression(_.get(value, path)) &&
+        optionsIdByElemId[_.get(value, path).elemID.getFullName()] !== undefined
+      ) {
+        _.get(value, path).value.value.id = optionsIdByElemId[_.get(value, path).elemID.getFullName()]
+      }
+    })
+  })
+}
+
 const resolveDefaultOption = (
   contextChange: Change<InstanceElement>,
   config: JiraConfig,

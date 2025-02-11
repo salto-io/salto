@@ -12,7 +12,9 @@ import {
   SeverityLevel,
   getChangeData,
   isAdditionChange,
+  isAdditionOrModificationChange,
   isInstanceChange,
+  isInstanceElement,
   isModificationChange,
 } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
@@ -20,9 +22,10 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { FIELD_CONTEXT_OPTION_TYPE_NAME } from './constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from './constants'
 import { setContextOptionsSplitted } from './context_options_splitted'
 import { getContextAndFieldIds } from '../../common/fields'
+import { updateDefaultValueIds } from './default_values'
 
 const log = logger(module)
 
@@ -106,6 +109,14 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
         appliedChanges = []
       }
     }
+    updateDefaultValueIds({
+      contextInstances: leftoverChanges
+        .filter(isAdditionOrModificationChange)
+        .map(getChangeData)
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME),
+      addedOptionInstances: addChanges.map(getChangeData),
+    })
 
     return {
       leftoverChanges,

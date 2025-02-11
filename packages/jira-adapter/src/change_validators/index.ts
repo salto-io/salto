@@ -65,7 +65,7 @@ import { jsmPermissionsValidator } from './jsm/jsm_permissions'
 import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
 import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/missing_extensions_transition_rules'
 import { fieldContextOptionsValidator } from './field_contexts/field_context_options'
-import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE, SLA_TYPE_NAME } from '../constants'
+import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE, SCREEN_TYPE_NAME, SLA_TYPE_NAME } from '../constants'
 import { assetsObjectFieldConfigurationAqlValidator } from './field_contexts/assets_object_field_configuration_aql'
 import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
@@ -90,6 +90,7 @@ const TYPE_TO_UNIQUE_FIELD: Record<string, deployment.changeValidators.ScopeAndU
   [PROJECT_TYPE]: { scope: SCOPE.global, uniqueFields: ['name', 'key'] },
   [FIELD_CONTEXT_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
   [FIELD_CONTEXT_OPTION_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['value'] },
+  [SCREEN_TYPE_NAME]: { scope: SCOPE.global, uniqueFields: ['name'] }
 }
 
 export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator): ChangeValidator => {

@@ -90,7 +90,7 @@ const TYPE_TO_UNIQUE_FIELD: Record<string, deployment.changeValidators.ScopeAndU
   [PROJECT_TYPE]: { scope: SCOPE.global, uniqueFields: ['name', 'key'] },
   [FIELD_CONTEXT_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
   [FIELD_CONTEXT_OPTION_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['value'] },
-  [SCREEN_TYPE_NAME]: { scope: SCOPE.global, uniqueFields: ['name'] }
+  [SCREEN_TYPE_NAME]: { scope: SCOPE.global, uniqueFields: ['name'] },
 }
 
 export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator): ChangeValidator => {

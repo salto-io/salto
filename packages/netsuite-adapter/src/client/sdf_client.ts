@@ -47,6 +47,8 @@ import {
   FILE_CABINET_PATH_SEPARATOR,
   CUSTOM_SEGMENT,
   CUSTOM_RECORD_TYPE,
+  SAVED_CSV_IMPORT,
+  PLUGIN_IMPLEMENTATION,
 } from '../constants'
 import { addCustomRecordTypePrefix } from '../types'
 import {
@@ -135,10 +137,14 @@ const { isDefined } = valuesUtils
 const { concatObjects } = lowerdashObjects
 const log = logger(module)
 
-const RESPONSE_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
-  csvimport: 'savedcsvimport',
-  plugintypeimpl: 'pluginimplementation',
+const RESPONSE_NAME_TO_TYPE_NAME: Record<string, string> = {
+  csvimport: SAVED_CSV_IMPORT,
+  plugintypeimpl: PLUGIN_IMPLEMENTATION,
 }
+
+const TYPE_NAME_TO_REQUEST_NAME = Object.fromEntries(
+  Object.entries(RESPONSE_NAME_TO_TYPE_NAME).map(([requestName, typeName]) => [typeName, requestName]),
+)
 
 const logDecorator = decorators.wrapMethodWith(async ({ call }: decorators.OriginalCall): Promise<unknown> => {
   try {
@@ -800,7 +806,7 @@ export default class SdfClient {
 
   private static createFailedImportsMap(failedImports: FailedImport[]): NetsuiteTypesQueryParams {
     return _(failedImports)
-      .groupBy(failedImport => SdfClient.fixTypeName(failedImport.customObject.type))
+      .groupBy(failedImport => SdfClient.fixResponseTypeName(failedImport.customObject.type))
       .mapValues(failedImportsGroup => failedImportsGroup.map(failedImport => failedImport.customObject.id))
       .value()
   }
@@ -815,7 +821,7 @@ export default class SdfClient {
       COMMANDS.IMPORT_OBJECTS,
       {
         destinationfolder: `${FILE_CABINET_PATH_SEPARATOR}${OBJECTS_DIR}`,
-        type,
+        type: SdfClient.fixRequestTypeName(type),
         scriptid: scriptIds,
         maxItemsInImportObjectsRequest: this.maxItemsInImportObjectsRequest,
         excludefiles: true,
@@ -830,7 +836,7 @@ export default class SdfClient {
         if (fetchUnexpectedErrorRegex.test(failedImport.customObject.result.message)) {
           log.debug(
             'Failed to fetch (%s) instance with id (%s) due to SDF unexpected error',
-            SdfClient.fixTypeName(failedImport.customObject.type),
+            SdfClient.fixResponseTypeName(failedImport.customObject.type),
             failedImport.customObject.id,
           )
           return true
@@ -844,7 +850,7 @@ export default class SdfClient {
         if (fetchLockedObjectErrorRegex.test(failedImport.customObject.result.message)) {
           log.debug(
             'Failed to fetch (%s) instance with id (%s) due to the instance being locked',
-            SdfClient.fixTypeName(failedImport.customObject.type),
+            SdfClient.fixResponseTypeName(failedImport.customObject.type),
             failedImport.customObject.id,
           )
           return true
@@ -856,10 +862,15 @@ export default class SdfClient {
     return { unexpectedError, lockedError, excludedTypes: [] }
   }
 
-  private static fixTypeName(typeName: string): string {
+  private static fixResponseTypeName(typeName: string): string {
     // For some type names, SDF might return different names in its
     // response, so we replace it with the original name
-    return RESPONSE_TYPE_NAME_TO_REAL_NAME[typeName] ?? typeName
+    return RESPONSE_NAME_TO_TYPE_NAME[typeName] ?? typeName
+  }
+
+  private static fixRequestTypeName(typeName: string): string {
+    // For some type names, the request should be done with a different name then the original type name
+    return TYPE_NAME_TO_REQUEST_NAME[typeName] ?? typeName
   }
 
   async listInstances(
@@ -870,14 +881,14 @@ export default class SdfClient {
     const results = await this.executeProjectAction(
       COMMANDS.LIST_OBJECTS,
       {
-        type: types.join(' '),
+        type: types.map(SdfClient.fixRequestTypeName).join(' '),
         appid: suiteAppId,
       },
       executor,
     )
     const instancesIds = results.data as Array<{ type: string; scriptId: string }>
     return instancesIds.map(({ type, scriptId }) => ({
-      type: SdfClient.fixTypeName(type),
+      type: SdfClient.fixResponseTypeName(type),
       instanceId: scriptId,
       suiteAppId,
     }))

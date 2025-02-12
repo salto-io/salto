@@ -70,7 +70,7 @@ export const TICKET_USER_FIELD = 'ticket.requester.custom_fields'
 const ID = 'id'
 const KEY = 'key'
 
-export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
+const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
   [TICKET_TICKET_FIELD_OPTION_TITLE]: TICKET_FIELD_TYPE_NAME,
   [TICKET_ORGANIZATION_FIELD]: ORG_FIELD_TYPE_NAME,

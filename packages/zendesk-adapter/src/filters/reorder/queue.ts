@@ -8,7 +8,7 @@
 import { QUEUE_TYPE_NAME } from '../../constants'
 import { createReorderFilterCreator } from './creator'
 
-export const TYPE_NAME = QUEUE_TYPE_NAME
+const TYPE_NAME = QUEUE_TYPE_NAME
 
 /**
  * Add sla policy order element with all the sla policies ordered

@@ -29,7 +29,7 @@ export type UnresolvedField = {
   annotations: Values
 }
 
-export type UnresolvedExtension = {
+type UnresolvedExtension = {
   resolveType: 'extension'
   type: string
 }

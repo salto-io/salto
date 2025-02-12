@@ -75,8 +75,6 @@ export const invalidDefinition = (range: SourceRange, labels: string[]): ParseEr
   )
 }
 
-export const ambiguousBlock = (range: SourceRange): ParseError => createError(range, 'Ambiguous block definition')
-
 export const missingLabelsError = (range: SourceRange, token: string): ParseError =>
   createError(range, 'Expected block labels', `Expected block labels, found ${token} instead.`)
 

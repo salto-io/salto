@@ -21,9 +21,9 @@ const O_ARR = '['
 const C_ARR = ']'
 const O_PAREN = '('
 const C_PAREN = ')'
-export const INDENTATION = '  '
-export const MULTILINE_STRING_PREFIX = "'''\n"
-export const MULTILINE_STRING_SUFFIX = "\n'''"
+const INDENTATION = '  '
+const MULTILINE_STRING_PREFIX = "'''\n"
+const MULTILINE_STRING_SUFFIX = "\n'''"
 
 const createIndentation = (indentationLevel: number): string => INDENTATION.repeat(indentationLevel)
 

@@ -44,7 +44,7 @@ export const TOKEN_TYPES = {
 const WORD_PART = '[a-zA-Z_][\\w.@]*'
 const NEWLINE_CHARS = '\r\n\u2028\u2029'
 const MULTILINE_CONTENT = new RegExp(`.*[${NEWLINE_CHARS}]`)
-export const REFERENCE_PART = `\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`
+const REFERENCE_PART = `\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`
 const REFERENCE = new RegExp(REFERENCE_PART)
 
 export const rules: Record<string, moo.Rules> = {

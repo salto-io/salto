@@ -11,9 +11,9 @@ import { toTags } from './log-tags'
 import { validateLogFile } from './log-file'
 import { ValidationError } from './common'
 
-export type Env = { [key: string]: string | undefined }
+type Env = { [key: string]: string | undefined }
 
-export const ENV_KEY_PREFIX = 'SALTO_LOG_'
+const ENV_KEY_PREFIX = 'SALTO_LOG_'
 
 const BOOLEAN_TRUE_VALUES = Object.freeze(['true', '1', 'yes'])
 

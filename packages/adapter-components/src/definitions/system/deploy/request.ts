@@ -6,10 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { types } from '@salto-io/lowerdash'
-import { ArgsWithCustomizer, ContextParams, EndpointExtractionParams } from '../shared'
+import { EndpointExtractionParams } from '../shared'
 import { ChangeAndExtendedContext } from './types'
-
-export type ContextParamDefinitions = ArgsWithCustomizer<ContextParams, { args: ContextParams }>
 
 export type DeployRequestEndpointDefinition<ClientOptions extends string = 'main'> = EndpointExtractionParams<
   ChangeAndExtendedContext,

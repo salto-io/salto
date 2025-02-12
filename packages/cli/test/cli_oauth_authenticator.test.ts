@@ -10,6 +10,9 @@ import supertest from 'supertest'
 import waitForExpect from 'wait-for-expect'
 import http from 'http'
 import * as cliOauthAuthenticator from '../src/cli_oauth_authenticator'
+// Importing createServer since this file is the only place it's used but it's only referenced by name for spying
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { createServer as _cerateServer } from '../src/cli_oauth_authenticator'
 import { MockWriteStream } from './mocks'
 
 let mockWriteStream: MockWriteStream

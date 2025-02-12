@@ -85,15 +85,12 @@ export type MaskingConfig = {
 
 export const CUSTOM_REFERENCES_CONFIG = 'customReferences'
 
-export const customReferencesHandlersNames = [
-  'automationProjects',
-  'fieldConfigurationsHandler',
-  'queueFieldsHandler',
-  'contextProjectsHandler',
-  'fieldContextsHandler',
-] as const
-
-export type CustomReferencesHandlers = (typeof customReferencesHandlersNames)[number]
+export type CustomReferencesHandlers =
+  | 'automationProjects'
+  | 'fieldConfigurationsHandler'
+  | 'queueFieldsHandler'
+  | 'contextProjectsHandler'
+  | 'fieldContextsHandler'
 
 export type JiraCustomReferencesConfig = Record<CustomReferencesHandlers, boolean>
 
@@ -159,7 +156,7 @@ const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
   },
 })
 
-export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
+const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
   client: {
     // Jira does not allow more items in a single request than this
     fieldConfigurationItemsDeploymentLimit: 100,

@@ -17,12 +17,12 @@ import { credsSpec } from './jest_environment'
 
 const log = logger(module)
 
-export type Reals = {
+type Reals = {
   client: JiraClient
   adapter: JiraAdapter
 }
 
-export type Opts = {
+type Opts = {
   adapterParams?: Partial<JiraAdapterParams>
   credentials: Credentials
   elementsSource: ReadOnlyElementsSource

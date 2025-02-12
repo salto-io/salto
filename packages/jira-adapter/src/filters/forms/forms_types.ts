@@ -37,7 +37,7 @@ type FormsResponse = {
   data: FormResponse[]
 }
 
-export const FORMS_RESPONSE_SCHEME = Joi.object({
+const FORMS_RESPONSE_SCHEME = Joi.object({
   data: Joi.array().items(
     Joi.object({
       id: Joi.string().required(),
@@ -50,7 +50,7 @@ export const FORMS_RESPONSE_SCHEME = Joi.object({
   .unknown(true)
   .required()
 
-export const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
+const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
   id: Joi.string().required(),
   design: Joi.object({
     settings: Joi.object({

@@ -123,7 +123,7 @@ const factorKeyTypeMapper: referenceUtils.ContextValueMapperFunc = val => {
   return undefined
 }
 
-export type ReferenceContextStrategyName =
+type ReferenceContextStrategyName =
   | 'parentSelectedFieldType'
   | 'parentFieldType'
   | 'workflowStatusPropertiesContext'
@@ -1459,7 +1459,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
 /* Due to changes in the form structure during preDeploy and the resolution of references occurring during deploy,
  * the resolved reference definitions are unavailable. As a result, we need to explicitly specify the serialization strategy.
  */
-export const getConditionsLookUpName: GetLookupNameFunc = ({ ref, path }) => {
+const getConditionsLookUpName: GetLookupNameFunc = ({ ref, path }) => {
   if (path !== undefined && path.typeName === 'Form' && path.getFullName().includes('cIds')) {
     return ref.value.value.id
   }

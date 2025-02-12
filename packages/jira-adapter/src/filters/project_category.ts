@@ -18,7 +18,7 @@ import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { PROJECT_TYPE } from '../constants'
 
-export const DELETED_CATEGORY = -1
+const DELETED_CATEGORY = -1
 
 export const isNeedToDeleteCategory = (change: Change<InstanceElement>): boolean =>
   isModificationChange(change) &&

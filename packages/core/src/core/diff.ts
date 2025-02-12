@@ -118,7 +118,7 @@ const createMatchers = async (
   }
 }
 
-export async function createDiffChangesWithCalculateDiff({
+async function createDiffChangesWithCalculateDiff({
   toElementsSrc,
   fromElementsSrc,
   referenceSourcesIndex = new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
@@ -135,48 +135,36 @@ export async function createDiffChangesWithCalculateDiff({
   compareOptions?: CompareOptions
   resultType?: 'changes' | 'detailedChanges'
 }): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
-  if (elementSelectors.length > 0) {
-    const matchers = await createMatchers(toElementsSrc, fromElementsSrc, referenceSourcesIndex, elementSelectors)
-    const changes = await calculateDiff({
-      before: toElementsSrc,
-      after: fromElementsSrc,
-      topLevelFilters: topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors),
-      compareOptions,
-    })
-    return resultType === 'changes'
-      ? awu(changes)
-          .map(change => {
-            const filteredDetailedChanges = getDetailedChangesFromChange(change).filter(matchers.isChangeMatchSelectors)
-            if (filteredDetailedChanges.length > 0) {
-              // we return the whole change even if only some of the detailed changes match the selectors.
-              return { ...change, detailedChanges: () => filteredDetailedChanges }
-            }
-            return undefined
-          })
-          .filter(values.isDefined)
-          .toArray()
-      : awu(changes)
-          .flatMap(change => getDetailedChangesFromChange(change))
-          .filter(matchers.isChangeMatchSelectors)
-          .toArray()
-  }
+  const matchers = await createMatchers(toElementsSrc, fromElementsSrc, referenceSourcesIndex, elementSelectors)
   const changes = await calculateDiff({
     before: toElementsSrc,
     after: fromElementsSrc,
-    topLevelFilters,
+    topLevelFilters:
+      elementSelectors.length > 0 ? topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors) : topLevelFilters,
     compareOptions,
   })
-  if (resultType === 'changes') {
-    return awu(changes)
-      .map(change => ({ ...change, detailedChanges: () => getDetailedChangesFromChange(change, compareOptions) }))
-      .toArray()
-  }
-  return awu(changes)
-    .flatMap(change => getDetailedChangesFromChange(change, compareOptions))
-    .toArray()
+  return resultType === 'changes'
+    ? awu(changes)
+        .map(change => {
+          const filteredDetailedChanges = getDetailedChangesFromChange(change, compareOptions).filter(
+            matchers.isChangeMatchSelectors,
+          )
+          if (filteredDetailedChanges.length > 0) {
+            // we return the whole change even if only some of the detailed changes match the selectors.
+            return { ...change, detailedChanges: () => filteredDetailedChanges }
+          }
+          return undefined
+        })
+        .filter(values.isDefined)
+        .toArray()
+    : awu(changes)
+        .flatMap(change => getDetailedChangesFromChange(change, compareOptions))
+        .filter(matchers.isChangeMatchSelectors)
+        .toArray()
 }
 
-export async function createDiffChangesWithGetPlan({
+// TODO(SALTO-7272): Remove this function once the calculateDiff version is stable in production.
+async function createDiffChangesWithGetPlan({
   toElementsSrc,
   fromElementsSrc,
   referenceSourcesIndex = new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),

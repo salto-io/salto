@@ -50,7 +50,7 @@ const maskValues = (instance: InstanceElement, masking: MaskingConfig): void => 
       pathID: instance.elemID,
       strict: false,
       allowEmptyArrays: true,
-      allowEmptyObjects: true,
+      allowExistingEmptyObjects: true,
       transformFunc: ({ value, path }) => {
         if (path?.name === 'headers' && isHeaders(value)) {
           maskHeaders(value, masking.automationHeaders, instance.elemID)

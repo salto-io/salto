@@ -443,12 +443,14 @@ export const removeNullValues = ({
   values,
   type,
   allowEmptyArrays = false,
-  allowEmptyObjects = false,
+  allowExistingEmptyObjects = false,
+  allowAllEmptyObjects = false,
 }: {
   values: Values
   type: ObjectType
   allowEmptyArrays?: boolean
-  allowEmptyObjects?: boolean
+  allowExistingEmptyObjects?: boolean
+  allowAllEmptyObjects?: boolean
 }): Values =>
   transformValuesSync({
     values,
@@ -456,7 +458,8 @@ export const removeNullValues = ({
     transformFunc: removeNullValuesTransformFunc,
     strict: false,
     allowEmptyArrays,
-    allowEmptyObjects,
+    allowExistingEmptyObjects,
+    allowAllEmptyObjects,
   }) ?? {}
 
 /**

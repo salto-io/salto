@@ -77,7 +77,7 @@ export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, e
     strict: false,
     elementsSource,
     allowEmptyArrays: allowEmpty,
-    allowEmptyObjects: allowEmpty,
+    allowExistingEmptyObjects: allowEmpty,
   })
 }
 

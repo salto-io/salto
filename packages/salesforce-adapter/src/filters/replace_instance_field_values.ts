@@ -105,7 +105,7 @@ const replaceInstanceValues = async (
       transformFunc,
       strict: false,
       allowEmptyArrays: true,
-      allowExistingEmptyObjects: true,
+      allowEmptyObjects: true,
     })) ?? values
 }
 

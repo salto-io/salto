@@ -224,7 +224,7 @@ export const replaceReferenceValues = async <TContext extends string, CustomInde
       strict: false,
       pathID: instance.elemID,
       allowEmptyArrays: true,
-      allowExistingEmptyObjects: true,
+      allowEmptyObjects: true,
     })) ?? instance.value
   )
 }

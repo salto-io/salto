@@ -65,7 +65,7 @@ export const flattenAdditionalProperties = async (
       element,
       strict: false,
       allowEmptyArrays: true,
-      allowExistingEmptyObjects: true,
+      allowEmptyObjects: true,
       elementsSource,
       transformFunc: async ({ value, field, path }) => {
         const type = path?.isTopLevel() ? await element.getType(elementsSource) : await field?.getType(elementsSource)

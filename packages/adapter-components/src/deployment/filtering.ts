@@ -26,7 +26,7 @@ export const filterUndeployableValues = async (
     element: instance,
     strict: false,
     allowEmptyArrays: true,
-    allowExistingEmptyObjects: true,
+    allowEmptyObjects: true,
     elementsSource,
     transformFunc: ({ value, field }) => {
       // The === false is because if the value is undefined, we don't want to filter it out
@@ -48,7 +48,7 @@ export const filterIgnoredValues = async (
         element: instance,
         strict: false,
         allowEmptyArrays: true,
-        allowExistingEmptyObjects: true,
+        allowEmptyObjects: true,
         elementsSource,
         transformFunc: ({ value, path }) => {
           if (path !== undefined && fieldsToIgnore(path)) {

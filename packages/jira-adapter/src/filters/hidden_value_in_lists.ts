@@ -27,7 +27,7 @@ const filter: FilterCreator = () => ({
           type: instance.getTypeSync(),
           pathID: instance.elemID,
           allowEmptyArrays: true,
-          allowExistingEmptyObjects: true,
+          allowEmptyObjects: true,
           strict: false,
           transformFunc: ({ value, field, path }) => {
             const isInArray = path?.getFullNameParts().some(isStringNumber)

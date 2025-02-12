@@ -61,7 +61,7 @@ const transformFormValues = (form: InstanceElement): void => {
     pathID: form.elemID,
     strict: false,
     allowEmptyArrays: true,
-    allowExistingEmptyObjects: true,
+    allowEmptyObjects: true,
     transformFunc: ({ value, path }) => {
       if (
         path !== undefined &&
@@ -84,7 +84,7 @@ const transformFormValuesToOriginalValues = (form: InstanceElement): void => {
     pathID: form.elemID,
     strict: false,
     allowEmptyArrays: true,
-    allowExistingEmptyObjects: true,
+    allowEmptyObjects: true,
     transformFunc: ({ value, path }) => {
       if (path !== undefined && Array.isArray(value) && value.length > 0 && value.every(isTransformedFormObject)) {
         const originalValue = value.reduce((acc, { key, value: val }) => {

@@ -60,7 +60,7 @@ const extractToStaticFile = async (instance: InstanceElement): Promise<void> => 
       transformFunc,
       strict: false,
       allowEmptyArrays: true,
-      allowExistingEmptyObjects: true,
+      allowEmptyObjects: true,
     })) ?? values
 }
 

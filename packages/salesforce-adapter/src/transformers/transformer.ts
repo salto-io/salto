@@ -1431,7 +1431,7 @@ export const toDeployableInstance = async (element: InstanceElement): Promise<In
     transformFunc: removeNonDeployableValues,
     strict: false,
     allowEmptyArrays: true,
-    allowExistingEmptyObjects: true,
+    allowEmptyObjects: true,
   })
 }
 

@@ -39,7 +39,7 @@ const sortLists = (instance: InstanceElement, defQuery: DefQuery<ElementFetchDef
       type: instance.getTypeSync(),
       strict: false,
       allowEmptyArrays: true,
-      allowExistingEmptyObjects: true,
+      allowEmptyObjects: true,
       transformFunc: ({ value, field }: TransformFuncArgs) => {
         if (field === undefined || !Array.isArray(value)) {
           return value

@@ -78,18 +78,19 @@ const addFormulaDependenciesFunc = (
 }
 
 const filter: FilterCreator = ({ config }) => ({
-  name: 'addFormulaDependencies',
+  name: 'addFormulaDependenciesToMetadataInstances',
   onFetch: ensureSafeFilterFetch({
     warningMessage: 'Error while parsing formulas',
     config,
     fetchFilterFunc: async fetchedElements => {
-      const instanceElements = fetchedElements.filter(isInstanceElement)
       const allElements = await buildElementsSourceForFetch(fetchedElements, config).getAll()
       const elemIdToElement = await awu(allElements)
         .map(e => [e.elemID.getFullName(), e] as [string, Element])
         .toArray()
       const potentialReferenceTargets = new Map<string, Element>(elemIdToElement)
-      instanceElements.forEach(element => addFormulaDependenciesFunc(element, potentialReferenceTargets))
+      fetchedElements
+        .filter(isInstanceElement)
+        .forEach(element => addFormulaDependenciesFunc(element, potentialReferenceTargets))
     },
   }),
 })

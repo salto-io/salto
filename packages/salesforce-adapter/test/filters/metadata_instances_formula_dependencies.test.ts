@@ -18,8 +18,7 @@ describe('metadataInstancesFormulaDependencies', () => {
   let instanceElements: InstanceElement[]
   let types: ObjectType[]
   beforeEach(() => {
-    const config = { ...defaultFilterContext }
-    filter = getFormulaDependencies({ config }) as FilterWith<'onFetch'>
+    filter = getFormulaDependencies({ config: defaultFilterContext }) as FilterWith<'onFetch'>
     const customObjectTypeMock1 = createCustomObjectType('test_custom_object', {
       annotations: {
         metadataType: CUSTOM_OBJECT,
@@ -39,7 +38,7 @@ describe('metadataInstancesFormulaDependencies', () => {
         [CORE_ANNOTATIONS.PARENT]: [customObjectTypeMock1],
       },
     )
-    const workFlowRule = createInstanceElement(
+    const workflowRuleInstance = createInstanceElement(
       { fullName: 'workflow_rule', formula: 'another_field__c>fullName' },
       mockTypes.WorkflowRule,
       undefined,
@@ -47,29 +46,22 @@ describe('metadataInstancesFormulaDependencies', () => {
         [CORE_ANNOTATIONS.PARENT]: [customObjectTypeMock1],
       },
     )
-    instanceElements = [validationRuleInstance, workFlowRule]
+    instanceElements = [validationRuleInstance, workflowRuleInstance]
   })
   it('should add dependencies to the instances', async () => {
     await filter.onFetch([...instanceElements, ...types])
-    // eslint-disable-next-line no-underscore-dangle
-    expect(instanceElements[0].annotations._generated_dependencies).toBeDefined()
-    // eslint-disable-next-line no-underscore-dangle
-    expect(instanceElements[0].annotations._generated_dependencies).toHaveLength(1)
-    // eslint-disable-next-line no-underscore-dangle
-    expect(instanceElements[0].annotations._generated_dependencies[0].reference.elemID.getFullName()).toBe(
-      'salesforce.test_custom_object.field.one_text_field__c',
-    )
-    // eslint-disable-next-line no-underscore-dangle
-    expect(instanceElements[1].annotations._generated_dependencies).toBeDefined()
-    // eslint-disable-next-line no-underscore-dangle
-    expect(instanceElements[1].annotations._generated_dependencies).toHaveLength(2)
-    // eslint-disable-next-line no-underscore-dangle
-    expect(instanceElements[1].annotations._generated_dependencies[0].reference.elemID.getFullName()).toBe(
-      'salesforce.test_custom_object.field.another_field__c',
-    )
-    // eslint-disable-next-line no-underscore-dangle
-    expect(instanceElements[1].annotations._generated_dependencies[1].reference.elemID.getFullName()).toBe(
-      'salesforce.test_custom_object.field.fullName',
-    )
+    expect(instanceElements[0].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+    expect(instanceElements[0].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(1)
+    expect(
+      instanceElements[0].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES][0].reference.elemID.getFullName(),
+    ).toBe('salesforce.test_custom_object.field.one_text_field__c')
+    expect(instanceElements[1].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+    expect(instanceElements[1].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(2)
+    expect(
+      instanceElements[1].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES][0].reference.elemID.getFullName(),
+    ).toBe('salesforce.test_custom_object.field.another_field__c')
+    expect(
+      instanceElements[1].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES][1].reference.elemID.getFullName(),
+    ).toBe('salesforce.test_custom_object.field.fullName')
   })
 })

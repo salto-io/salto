@@ -79,7 +79,7 @@ const addDependenciesAnnotation = (field: Field, potentialReferenceTargets: Map<
  * Note: Currently (pending a fix to SALTO-3176) we only look at formula fields in custom objects.
  */
 const filter: FilterCreator = ({ config }) => ({
-  name: 'formulaDeps',
+  name: 'customObjectFormulaDependencies',
   onFetch: ensureSafeFilterFetch({
     warningMessage: 'Error while parsing formulas',
     config,

@@ -169,12 +169,12 @@ const RECIPE_SCHEMA = Joi.object({
   config: RECIPE_CONFIG_SCHEMA.required(),
 }).unknown(true)
 
-export const isConnection = createSchemeGuardForInstance<Connection & InstanceElement>(
+const isConnection = createSchemeGuardForInstance<Connection & InstanceElement>(
   CONNECTION_SCHEMA.required(),
   'Received an invalid value for connection',
 )
 
-export const isRecipe = createSchemeGuardForInstance<JsonRecipe & InstanceElement>(
+const isRecipe = createSchemeGuardForInstance<JsonRecipe & InstanceElement>(
   RECIPE_SCHEMA.required(),
   'Received an invalid value for recipe',
 )

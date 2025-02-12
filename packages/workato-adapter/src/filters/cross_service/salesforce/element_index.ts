@@ -11,7 +11,7 @@ import _ from 'lodash'
 export type SalesforceIndex = Record<string, Record<string, Readonly<Element>[]>>
 
 const API_NAME = 'apiName'
-export const METADATA_TYPE = 'metadataType'
+const METADATA_TYPE = 'metadataType'
 
 const metadataType: (elem: Readonly<Element>) => string | undefined = elem => elem.annotations[METADATA_TYPE]
 

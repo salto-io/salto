@@ -206,7 +206,7 @@ const formatRecordValuesForService = async (instance: InstanceElement): Promise<
 const getInstanceWithCorrectType = async (
   instance: InstanceElement,
   customMetadataRecordTypes: ObjectType[],
-): Promise<InstanceElement | undefined> => {
+): Promise<(InstanceElement | ObjectType)[] | undefined> => {
   const correctType = await getCustomMetadataType(instance, customMetadataRecordTypes)
   if (_.isUndefined(correctType)) {
     log.warn(
@@ -222,7 +222,7 @@ const getInstanceWithCorrectType = async (
     log.warn('CustomMetadata instance %s is missing the fullName field, skipping.', instance.elemID.getFullName())
     return undefined
   }
-  return createInstanceElement(formattedValues, correctType)
+  return [createInstanceElement(formattedValues, correctType), correctType]
 }
 
 const CUSTOM_METADATA_TYPE = new ObjectType({
@@ -263,6 +263,7 @@ const filterCreator: FilterCreator = ({ config }) => {
       const newInstances = await awu(oldInstances)
         .map(instance => getInstanceWithCorrectType(instance, customMetadataRecordTypes))
         .filter(isDefined)
+        .flat()
         .toArray()
       _.pullAll(elements, oldInstances)
       elements.push(...newInstances)

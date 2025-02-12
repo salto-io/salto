@@ -13,9 +13,15 @@ import {
   SaltoElementError,
   SaltoError,
   ChangeGroup,
+  InstanceElement,
+  Field,
+  isEqualElements,
+  isInstanceElement,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
+import _ from 'lodash'
 
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
@@ -74,6 +80,26 @@ export type RemoteFilterCreatorDefinition<R extends FilterResult | void, T, Depl
   addsNewInformation: true
 }
 
+const tempCheckFunc = (validAccountElements: Element[]): Element[] => {
+  const objectTypesByElemID = _.keyBy(validAccountElements.filter(isObjectType), e => e.elemID.getFullName())
+  const isInconsistentType = (e: InstanceElement | Field): boolean =>
+    e.refType.type !== undefined &&
+    objectTypesByElemID[e.refType.elemID.getFullName()] !== undefined &&
+    !isEqualElements(e.refType.type, objectTypesByElemID[e.refType.elemID.getFullName()])
+  const fields = Object.values(objectTypesByElemID)
+    .flatMap(obj => Object.values(obj.fields))
+    .filter(f => isObjectType(f.refType.type))
+  const elementsWithInconsistentTypes: (InstanceElement | Field)[] = validAccountElements
+    .filter(isInstanceElement)
+    .filter(isInconsistentType)
+  fields.forEach(f => {
+    if (isInconsistentType(f)) {
+      elementsWithInconsistentTypes.push(f)
+    }
+  })
+  return elementsWithInconsistentTypes
+}
+
 export const isLocalFilterCreator = <
   RLocal extends FilterResult | void,
   RRemote extends FilterResult | void,
@@ -86,7 +112,8 @@ export const isLocalFilterCreator = <
     | LocalFilterCreatorDefinition<RLocal, TLocal, DLocal>
     | RemoteFilterCreatorDefinition<RRemote, TRemote, DRemote>,
 ): filterDef is LocalFilterCreatorDefinition<RLocal, TLocal, DLocal> => filterDef.addsNewInformation !== true
-
+// eslint-disable-next-line import/no-mutable-exports
+export let c = 0
 export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = void>(
   opts: T,
   filterCreators: ReadonlyArray<FilterCreator<R, T, DeployInfo>>,
@@ -101,10 +128,27 @@ export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = voi
   return {
     name: '',
     onFetch: async elements => {
+      let tc = tempCheckFunc(elements)
+      c = tc.length
+      // eslint-disable-next-line no-console
+      console.log(`there are ${c} inconsistent types\n${tc.map(e => e.elemID.getFullName()).join('\n')}\n`)
       const filterResults = (
         await promises.array.series(
           filtersWith('onFetch').map(
-            filter => () => log.timeDebug(() => filter.onFetch(elements), `(${filter.name}):onFetch`),
+            filter => () =>
+              log.timeDebug(async () => {
+                const res = await filter.onFetch(elements)
+                tc = tempCheckFunc(elements)
+                if (c !== tc.length) {
+                  c = tc.length
+                  // eslint-disable-next-line no-console
+                  console.log(
+                    filter.name,
+                    `has ${c} inconsistent types\n${tc.map(e => e.elemID.getFullName()).join('\n')}\n`,
+                  )
+                }
+                return res
+              }, `(${filter.name}):onFetch`),
           ),
         )
       ).filter(isDefined)

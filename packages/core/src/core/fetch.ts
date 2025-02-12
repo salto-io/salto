@@ -581,6 +581,8 @@ const updateInconsistentTypes = (validAccountElements: Element[]): void =>
     })
 
     if (elementsWithInconsistentTypes.length > 0) {
+      // eslint-disable-next-line no-console
+      console.log(`found ${elementsWithInconsistentTypes.length} inconsistent types`)
       log.warn(
         'found inconsistent types in the following %d types (%d elements), the types will be resolved from the element source. %s',
         _.uniq(elementsWithInconsistentTypes.map(e => e.refType.elemID.getFullName())).length,
@@ -589,6 +591,8 @@ const updateInconsistentTypes = (validAccountElements: Element[]): void =>
       )
       elementsWithInconsistentTypes.forEach(e => {
         e.refType = new TypeReference(e.refType.elemID)
+        // eslint-disable-next-line no-console
+        console.log(`was ${e.elemID.getFullName()} fixed? ${isInconsistentType(e)}`)
       })
     }
   }, 'looking for inconsistent types (SALTO-5878)')

@@ -12,12 +12,16 @@ import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { e2eUtils, adapter } from '@salto-io/microsoft-security-adapter'
 import { Workspace } from '@salto-io/workspace'
 import { Element, InstanceElement, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
-import { e2eDeploy, fetchWorkspace, getElementsFromWorkspace, setupWorkspace } from '@salto-io/e2e-test-utils'
+import {
+  e2eDeploy,
+  fetchWorkspace,
+  getElementsFromWorkspace,
+  setupWorkspace,
+  helpers as e2eHelpers,
+} from '@salto-io/e2e-test-utils'
 import { credsLease } from './adapter'
 import { getAllInstancesToDeploy, UNIQUE_NAME } from './e2e_instance_generator'
 import {
-  getAdditionDetailedChangesFromInstances,
-  getDeletionDetailedChangesFromInstances,
   getModificationDetailedChangesForCleanup,
   getModificationDetailedChangesFromInstances,
   microsoftSecurityCleanupChangeErrorFilter,
@@ -51,7 +55,7 @@ const microsoftSecurityCleanUp = async (instances: InstanceElement[], workspace:
   const [instancesToModify, instancesToRemove] = _.partition(instancesToClean, instance =>
     typesToModify.includes(instance.elemID.typeName),
   )
-  const detailedChangesToRemove = getDeletionDetailedChangesFromInstances(instancesToRemove)
+  const detailedChangesToRemove = e2eHelpers.getDeletionDetailedChangesFromInstances(instancesToRemove)
   const detailedChangesToModify = getModificationDetailedChangesForCleanup(instancesToModify)
   const detailedChangesToClean = [...detailedChangesToRemove, ...detailedChangesToModify]
   if (detailedChangesToClean.length > 0) {
@@ -112,7 +116,7 @@ describe('Microsoft Security adapter E2E', () => {
         types,
       }))
 
-      const additionChanges = getAdditionDetailedChangesFromInstances(instancesToAdd)
+      const additionChanges = e2eHelpers.getAdditionDetailedChangesFromInstances(instancesToAdd)
       const modificationChanges = getModificationDetailedChangesFromInstances({
         firstFetchInstances,
         instancesToModify,

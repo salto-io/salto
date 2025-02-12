@@ -18,13 +18,6 @@ const {
   entraConstants: { TOP_LEVEL_TYPES: entraTopLevelTypes },
 } = e2eUtils
 
-export const getAdditionDetailedChangesFromInstances = (
-  instances: InstanceElement[],
-): DetailedChangeWithBaseChange[] => {
-  const changes = instances.map(inst => toChange({ after: inst }))
-  return changes.flatMap(change => getDetailedChanges(change))
-}
-
 export const getModificationDetailedChangesFromInstances = ({
   firstFetchInstances,
   instancesToModify,
@@ -51,13 +44,6 @@ export const getModificationDetailedChangesForCleanup = (
     _.merge(after.value, modificationChangesBeforeAndAfterOverrides[before.elemID.typeName].before)
     return toChange({ before, after })
   })
-  return changes.flatMap(change => getDetailedChanges(change))
-}
-
-export const getDeletionDetailedChangesFromInstances = (
-  instances: InstanceElement[],
-): DetailedChangeWithBaseChange[] => {
-  const changes = instances.map(inst => toChange({ before: inst }))
   return changes.flatMap(change => getDetailedChanges(change))
 }
 

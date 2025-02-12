@@ -60,7 +60,7 @@ const referenceCustomFields = (
     return new ReferenceExpression(instance.elemID, instance)
   })
 
-export const addTemplateReferences =
+const addTemplateReferences =
   (fieldInstancesById: Map<string, InstanceElement>): referenceFunc =>
   (value: Value, fieldName: string): void => {
     if (typeof value[fieldName] === 'string') {

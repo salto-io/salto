@@ -17,7 +17,7 @@ import {
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
 
-export const FOLDER_METADATA_TYPES = ['ReportFolder', 'DashboardFolder', 'DocumentFolder', 'EmailFolder'] as const
+const FOLDER_METADATA_TYPES = ['ReportFolder', 'DashboardFolder', 'DocumentFolder', 'EmailFolder'] as const
 
 export const CUSTOM_OBJECT_FIELDS = [
   'WebLink',
@@ -41,7 +41,7 @@ export const WORKFLOW_FIELDS = [
   'WorkflowRule',
 ] as const
 
-export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
+const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'AIApplication',
   'AIApplicationConfig',
   'AccessMapping',
@@ -585,7 +585,7 @@ export const METADATA_TYPES_WITH_DEPENDENCIES = [
   PROFILE_METADATA_TYPE,
 ] as const
 
-export const EXCLUDED_METADATA_TYPES = [
+const EXCLUDED_METADATA_TYPES = [
   'AssignmentRule', // Fetched through parent type
   'CustomField', // Has a specific handling in Salto
   'CustomIndex', // Cannot retrieve by Record name
@@ -605,15 +605,13 @@ export const SUPPORTED_METADATA_TYPES = [
 export const SALESFORCE_METADATA_TYPES = [...SUPPORTED_METADATA_TYPES, ...EXCLUDED_METADATA_TYPES] as const
 
 export type MetadataTypeWithoutDependencies = (typeof METADATA_TYPES_WITHOUT_DEPENDENCIES)[number]
-export type MetadataTypeWithDependencies = (typeof METADATA_TYPES_WITH_DEPENDENCIES)[number]
-export type ExcludedMetadataType = (typeof EXCLUDED_METADATA_TYPES)[number]
-export type SupportedMetadataType = (typeof SUPPORTED_METADATA_TYPES)[number]
-export type SalesforceMetadataType = (typeof SALESFORCE_METADATA_TYPES)[number]
+type MetadataTypeWithDependencies = (typeof METADATA_TYPES_WITH_DEPENDENCIES)[number]
+type SalesforceMetadataType = (typeof SALESFORCE_METADATA_TYPES)[number]
 
 export type CustomObjectField = (typeof CUSTOM_OBJECT_FIELDS)[number]
 export type WorkflowField = (typeof WORKFLOW_FIELDS)[number]
 
-export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies, SalesforceMetadataType[]> = {
+const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies, SalesforceMetadataType[]> = {
   CustomMetadata: ['CustomMetadata', 'CustomObject'],
   BusinessProcess: ['CustomObject'],
   CompactLayout: ['CustomObject'],
@@ -636,12 +634,7 @@ export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies,
   Profile: [...PROFILE_RELATED_METADATA_TYPES],
 }
 
-export const isMetadataTypeWithoutDependencies = (
-  metadataType: SalesforceMetadataType,
-): metadataType is MetadataTypeWithoutDependencies =>
-  (METADATA_TYPES_WITHOUT_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
-
-export const isMetadataTypeWithDependency = (metadataType: string): metadataType is MetadataTypeWithDependencies =>
+const isMetadataTypeWithDependency = (metadataType: string): metadataType is MetadataTypeWithDependencies =>
   (METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
 
 export const includesSettingsTypes = (typeNames: readonly string[]): boolean =>

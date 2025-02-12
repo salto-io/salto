@@ -222,103 +222,135 @@ describe('Adapter', () => {
   })
 
   describe('fetch', () => {
-    it('should fetch all types and instances that are not in fetch.exclude', async () => {
-      const folderCustomizationInfo: FolderCustomizationInfo = {
-        typeName: FOLDER,
-        values: {},
-        path: ['a', 'b'],
-      }
+    describe.each([false, true])('when fetch.fetchPluginImplementations is %s', fetchPluginImplementations => {
+      it(`should fetch all types and instances that are not in fetch.exclude ${fetchPluginImplementations ? 'including' : 'excluding'} pluginimplementation`, async () => {
+        const adapter = new NetsuiteAdapter({
+          client: new NetsuiteClient(client),
+          elementsSource: buildElementsSourceFromElements([]),
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: {
+            ...config,
+            fetch: {
+              ...config.fetch,
+              lockedElementsToExclude: {
+                types: [
+                  {
+                    name: 'customrecordtype',
+                    ids: ['customrecord_locked2', 'customrecord_locked3'],
+                  },
+                ],
+                fileCabinet: [],
+              },
+              fetchPluginImplementations,
+            },
+          },
+          originalConfig: config,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
 
-      const fileCustomizationInfo: FileCustomizationInfo = {
-        typeName: FILE,
-        values: {},
-        path: ['a', 'b'],
-        fileContent: Buffer.from('Dummy content'),
-      }
+        const folderCustomizationInfo: FolderCustomizationInfo = {
+          typeName: FOLDER,
+          values: {},
+          path: ['a', 'b'],
+        }
 
-      const featuresCustomTypeInfo: CustomTypeInfo = {
-        typeName: CONFIG_FEATURES,
-        scriptId: CONFIG_FEATURES,
-        values: {
-          feature: [{ id: 'feature', label: 'Feature', status: 'ENABLED' }],
-        },
-      }
+        const fileCustomizationInfo: FileCustomizationInfo = {
+          typeName: FILE,
+          values: {},
+          path: ['a', 'b'],
+          fileContent: Buffer.from('Dummy content'),
+        }
 
-      const customTypeInfo = {
-        typeName: 'entitycustomfield',
-        values: {
-          '@_scriptid': 'custentity_my_script_id',
-          label: 'elementName',
-        },
-        scriptId: 'custentity_my_script_id',
-      }
+        const featuresCustomTypeInfo: CustomTypeInfo = {
+          typeName: CONFIG_FEATURES,
+          scriptId: CONFIG_FEATURES,
+          values: {
+            feature: [{ id: 'feature', label: 'Feature', status: 'ENABLED' }],
+          },
+        }
 
-      client.importFileCabinetContent = mockFunction<SdfClient['importFileCabinetContent']>().mockResolvedValue({
-        elements: [folderCustomizationInfo, fileCustomizationInfo],
-        failedPaths: { lockedError: [], otherError: [], largeSizeFoldersError: [], largeFilesCountFoldersError: [] },
-        largeFilesCountFolderWarnings: [],
+        const customTypeInfo = {
+          typeName: 'entitycustomfield',
+          values: {
+            '@_scriptid': 'custentity_my_script_id',
+            label: 'elementName',
+          },
+          scriptId: 'custentity_my_script_id',
+        }
+
+        client.importFileCabinetContent = mockFunction<SdfClient['importFileCabinetContent']>().mockResolvedValue({
+          elements: [folderCustomizationInfo, fileCustomizationInfo],
+          failedPaths: { lockedError: [], otherError: [], largeSizeFoldersError: [], largeFilesCountFoldersError: [] },
+          largeFilesCountFolderWarnings: [],
+        })
+        client.getCustomObjects = mockFunction<SdfClient['getCustomObjects']>().mockResolvedValue({
+          elements: [customTypeInfo, featuresCustomTypeInfo],
+          instancesIds: [],
+          failedToFetchAllAtOnce: false,
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        })
+        const { elements, partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
+        const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION, REPORT_DEFINITION, FINANCIAL_LAYOUT].concat(
+          !fetchPluginImplementations ? 'pluginimplementation' : [],
+        )
+        expect(_.pull(getStandardTypesNames(), ...typesToSkip).every(customObjectsQuery.isTypeMatch)).toBeTruthy()
+        expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeFalsy()
+        expect(customObjectsQuery.isTypeMatch('subsidiary')).toBeFalsy()
+        expect(customObjectsQuery.isTypeMatch('account')).toBeTruthy()
+
+        const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
+        expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
+        expect(fileCabinetQuery.isFileMatch('Some/anotherFile/Regex')).toBeTruthy()
+
+        const scriptIdListElements = await getOrCreateObjectIdListElements(
+          [],
+          buildElementsSourceFromElements([]),
+          false,
+        )
+        const suiteQLTableElements = await getSuiteQLTableElements(config, buildElementsSourceFromElements([]), false)
+
+        expect(elements.map(elem => elem.elemID.getFullName()).sort()).toEqual(
+          [...metadataTypes, ...scriptIdListElements, ...suiteQLTableElements.elements]
+            .map(elem => elem.elemID.getFullName())
+            .concat([
+              'netsuite.companyFeatures.instance',
+              'netsuite.entitycustomfield.instance.custentity_my_script_id',
+              'netsuite.file.instance.a_b@d',
+              'netsuite.folder.instance.a_b@d',
+            ])
+            .sort(),
+        )
+
+        const customFieldType = elements.find(element =>
+          element.elemID.isEqual(new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)),
+        )
+        expect(isObjectType(customFieldType)).toBeTruthy()
+        expect(elements).toContainEqual(
+          await createInstanceElement(customTypeInfo, customFieldType as ObjectType, mockGetElemIdFunc),
+        )
+
+        const file = elements.find(element => element.elemID.isEqual(new ElemID(NETSUITE, FILE)))
+        expect(isObjectType(file)).toBeTruthy()
+        expect(elements).toContainEqual(
+          await createInstanceElement(fileCustomizationInfo, file as ObjectType, mockGetElemIdFunc),
+        )
+
+        const folder = elements.find(element => element.elemID.isEqual(new ElemID(NETSUITE, FOLDER)))
+        expect(isObjectType(folder)).toBeTruthy()
+        expect(elements).toContainEqual(
+          await createInstanceElement(folderCustomizationInfo, folder as ObjectType, mockGetElemIdFunc),
+        )
+
+        const featuresType = elements.find(element => element.elemID.isEqual(new ElemID(NETSUITE, CONFIG_FEATURES)))
+        expect(isObjectType(featuresType)).toBeTruthy()
+        expect(elements).toContainEqual(
+          await createInstanceElement(featuresCustomTypeInfo, featuresType as ObjectType, mockGetElemIdFunc),
+        )
+
+        expect(suiteAppImportFileCabinetMock).not.toHaveBeenCalled()
       })
-      client.getCustomObjects = mockFunction<SdfClient['getCustomObjects']>().mockResolvedValue({
-        elements: [customTypeInfo, featuresCustomTypeInfo],
-        instancesIds: [],
-        failedToFetchAllAtOnce: false,
-        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
-      })
-      const { elements, partialFetchData } = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(partialFetchData?.isPartial).toBeFalsy()
-      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
-      const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION, REPORT_DEFINITION, FINANCIAL_LAYOUT]
-      expect(_.pull(getStandardTypesNames(), ...typesToSkip).every(customObjectsQuery.isTypeMatch)).toBeTruthy()
-      expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeFalsy()
-      expect(customObjectsQuery.isTypeMatch('subsidiary')).toBeFalsy()
-      expect(customObjectsQuery.isTypeMatch('account')).toBeTruthy()
-
-      const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
-      expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
-      expect(fileCabinetQuery.isFileMatch('Some/anotherFile/Regex')).toBeTruthy()
-
-      const scriptIdListElements = await getOrCreateObjectIdListElements([], buildElementsSourceFromElements([]), false)
-      const suiteQLTableElements = await getSuiteQLTableElements(config, buildElementsSourceFromElements([]), false)
-
-      expect(elements.map(elem => elem.elemID.getFullName()).sort()).toEqual(
-        [...metadataTypes, ...scriptIdListElements, ...suiteQLTableElements.elements]
-          .map(elem => elem.elemID.getFullName())
-          .concat([
-            'netsuite.companyFeatures.instance',
-            'netsuite.entitycustomfield.instance.custentity_my_script_id',
-            'netsuite.file.instance.a_b@d',
-            'netsuite.folder.instance.a_b@d',
-          ])
-          .sort(),
-      )
-
-      const customFieldType = elements.find(element =>
-        element.elemID.isEqual(new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)),
-      )
-      expect(isObjectType(customFieldType)).toBeTruthy()
-      expect(elements).toContainEqual(
-        await createInstanceElement(customTypeInfo, customFieldType as ObjectType, mockGetElemIdFunc),
-      )
-
-      const file = elements.find(element => element.elemID.isEqual(new ElemID(NETSUITE, FILE)))
-      expect(isObjectType(file)).toBeTruthy()
-      expect(elements).toContainEqual(
-        await createInstanceElement(fileCustomizationInfo, file as ObjectType, mockGetElemIdFunc),
-      )
-
-      const folder = elements.find(element => element.elemID.isEqual(new ElemID(NETSUITE, FOLDER)))
-      expect(isObjectType(folder)).toBeTruthy()
-      expect(elements).toContainEqual(
-        await createInstanceElement(folderCustomizationInfo, folder as ObjectType, mockGetElemIdFunc),
-      )
-
-      const featuresType = elements.find(element => element.elemID.isEqual(new ElemID(NETSUITE, CONFIG_FEATURES)))
-      expect(isObjectType(featuresType)).toBeTruthy()
-      expect(elements).toContainEqual(
-        await createInstanceElement(featuresCustomTypeInfo, featuresType as ObjectType, mockGetElemIdFunc),
-      )
-
-      expect(suiteAppImportFileCabinetMock).not.toHaveBeenCalled()
     })
 
     describe('fetchConfig', () => {

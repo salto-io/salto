@@ -19,7 +19,7 @@ type UserFetchConfig = definitions.UserFetchConfig<{
 }>
 
 type DeployConfigFieldsNames = typeof ASSIGNMENT_FIELDS_STRATEGY_CONFIG_FIELD_NAME
-export type AdditionalDeployConfigFields = {
+type AdditionalDeployConfigFields = {
   [ASSIGNMENT_FIELDS_STRATEGY_CONFIG_FIELD_NAME]?: AssignmentFieldsConfig
 }
 export const additionalDeployConfigFieldsType: Record<DeployConfigFieldsNames, FieldDefinition> = {

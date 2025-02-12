@@ -16,11 +16,7 @@ const { oauthClientCredentialsBearerToken } = authUtils
 
 const BASE_SERVICE = '/odata/v4/api/mcm/v1/'
 
-export const validateCredentials = async ({
-  connection,
-}: {
-  connection: clientUtils.APIConnection
-}): Promise<AccountInfo> => {
+const validateCredentials = async ({ connection }: { connection: clientUtils.APIConnection }): Promise<AccountInfo> => {
   // oauth was already authenticated when the connection was created, but validating just in case
   try {
     const res = await connection.get('/')

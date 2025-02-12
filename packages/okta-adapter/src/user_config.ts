@@ -27,11 +27,11 @@ type OktaUserFetchConfig = definitions.UserFetchConfig<{
 
 export type OktaClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }
 
-export type OktaClientConfig = definitions.ClientBaseConfig<OktaClientRateLimitConfig> & {
+type OktaClientConfig = definitions.ClientBaseConfig<OktaClientRateLimitConfig> & {
   usePrivateAPI: boolean
 }
 
-export type OktaUserDeployConfig = definitions.UserDeployConfig & { omitMissingUsers?: boolean }
+type OktaUserDeployConfig = definitions.UserDeployConfig & { omitMissingUsers?: boolean }
 
 export type OktaUserConfig = definitions.UserConfig<never, OktaClientConfig, OktaUserFetchConfig, OktaUserDeployConfig>
 
@@ -72,7 +72,7 @@ export type ChangeValidatorName = (typeof changeValidatorNames)[number]
 
 // default config values
 export const DEFAULT_CONVERT_USERS_IDS_VALUE = true
-export const DEFAULT_GET_USERS_STRATEGY = 'searchQuery'
+const DEFAULT_GET_USERS_STRATEGY = 'searchQuery'
 const DEFAULT_INCLUDE_PROFILE_MAPPING_PROPERTIES = false
 const DEFAULT_APP_URLS_VALIDATOR_VALUE = false
 const DEFAULT_ENABLE_BRAND_REFERENCES_VALUE = false

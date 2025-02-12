@@ -126,7 +126,7 @@ const CUSTOM_OBJECT_SUB_INSTANCES_METADATA_TYPES: Set<string> = new Set(
 const isCustomObjectSubInstance = (instance: MetadataInstanceElement): boolean =>
   CUSTOM_OBJECT_SUB_INSTANCES_METADATA_TYPES.has(metadataTypeSync(instance))
 
-export const WARNING_MESSAGE =
+const WARNING_MESSAGE =
   'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'
 
 /*

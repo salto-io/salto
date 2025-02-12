@@ -9,10 +9,11 @@ import { logger } from '@salto-io/logging'
 import { PLUGIN_IMPLEMENTATION_TYPES, SCRIPT_TYPES } from '../../types'
 import { convertSuiteQLStringToDate, toSuiteQLSelectDateString } from '../date_formats'
 import { ChangedObject, DateRange, TypeChangesDetector } from '../types'
+import { PLUGIN_TYPE } from '../../constants'
 
 const log = logger(module)
 
-export const SUPPORTED_TYPES = [...SCRIPT_TYPES, ...PLUGIN_IMPLEMENTATION_TYPES, 'plugintype']
+export const SUPPORTED_TYPES = [...SCRIPT_TYPES, ...PLUGIN_IMPLEMENTATION_TYPES, PLUGIN_TYPE]
 
 const parseChanges = (
   queryName: string,

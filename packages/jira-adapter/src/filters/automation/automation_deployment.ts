@@ -117,7 +117,7 @@ const ASSET_COMPONENT_SCHEME = Joi.object({
     .required(),
 }).unknown(true)
 
-export const isAssetComponent = createSchemeGuard<AssetComponent>(ASSET_COMPONENT_SCHEME)
+const isAssetComponent = createSchemeGuard<AssetComponent>(ASSET_COMPONENT_SCHEME)
 
 type requestTypeComponent = {
   value: {

@@ -14,7 +14,7 @@ import { OauthAccessTokenCredentials } from './oauth'
 
 const log = logger(module)
 
-export const validateDirectoryCredentials = async ({
+const validateDirectoryCredentials = async ({
   connection,
 }: {
   connection: clientUtils.APIConnection
@@ -33,10 +33,10 @@ export const validateDirectoryCredentials = async ({
 }
 
 // There is no endPoints for groupSettings that we can use to validate the credentials with.
-export const validateGroupSettingsCredentials = async (): Promise<AccountInfo> => ({ accountId: 'googoo' })
+const validateGroupSettingsCredentials = async (): Promise<AccountInfo> => ({ accountId: 'googoo' })
 
 // There is no endPoints for groupSettings that we can use to validate the credentials with.
-export const validateCloudIdentityCredentials = async (): Promise<AccountInfo> => ({ accountId: 'googoo' })
+const validateCloudIdentityCredentials = async (): Promise<AccountInfo> => ({ accountId: 'googoo' })
 
 const validateCredentialsPerApp: Record<
   string,

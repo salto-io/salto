@@ -21,19 +21,19 @@ const isRelationshipFieldName = (fieldName: string): boolean => RELATIONSHIP_FIE
 
 export type JSONBool = boolean | 'true' | 'false'
 
-export type ObjectPermissionsOptionsFields =
+type ObjectPermissionsOptionsFields =
   | 'allowCreate'
   | 'allowDelete'
   | 'allowEdit'
   | 'allowRead'
   | 'modifyAllRecords'
   | 'viewAllRecords'
-export type ObjectPermissionsOptions = {
+type ObjectPermissionsOptions = {
   [option in ObjectPermissionsOptionsFields]: JSONBool
 }
 
-export type FieldPermissionsOptionsFields = 'editable' | 'readable'
-export type FieldPermissionsOptions = {
+type FieldPermissionsOptionsFields = 'editable' | 'readable'
+type FieldPermissionsOptions = {
   [option in FieldPermissionsOptionsFields]: JSONBool
 }
 
@@ -44,12 +44,6 @@ export interface ProfileInfo extends MetadataInfo {
   fullName: string
   fieldPermissions: FieldPermissions[]
   objectPermissions: ObjectPermissions[]
-}
-
-// https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_metadatawithcontent.htm
-export interface MetadataWithContent extends MetadataInfo {
-  fullName: string
-  content: string
 }
 
 export class TopicsForObjectsInfo implements MetadataInfo {
@@ -80,22 +74,17 @@ export class CustomPicklistValue implements MetadataInfo {
   }
 }
 
-export interface ValueSettings {
+interface ValueSettings {
   controllingFieldValue: string[]
   valueName: string
 }
 
-export interface PicklistValue {
+interface PicklistValue {
   fullName: string
   label: string
   default: boolean
   color: string
   isActive: boolean
-}
-
-export interface ValueSet {
-  restricted: boolean
-  valueSetDefinition: { value: PicklistValue[] }
 }
 
 export interface FilterItem {
@@ -105,7 +94,7 @@ export interface FilterItem {
   valueField: string
 }
 
-export interface LookupFilter {
+interface LookupFilter {
   active: boolean
   booleanFilter: string
   errorMessage: string

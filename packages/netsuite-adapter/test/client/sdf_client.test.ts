@@ -812,16 +812,16 @@ describe.each([
           return Promise.resolve({
             isSuccess: () => true,
             data: [
-              { type: 'savedcsvimport', scriptId: 'a' },
-              { type: 'savedcsvimport', scriptId: 'b' },
-              { type: 'savedcsvimport', scriptId: 'c' },
-              { type: 'savedcsvimport', scriptId: 'd' },
+              { type: 'csvimport', scriptId: 'a' },
+              { type: 'csvimport', scriptId: 'b' },
+              { type: 'csvimport', scriptId: 'c' },
+              { type: 'csvimport', scriptId: 'd' },
               { type: 'advancedpdftemplate', scriptId: 'a' },
             ],
           })
         }
         if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
-          if (context.arguments.type === 'savedcsvimport') {
+          if (context.arguments.type === 'csvimport') {
             const conditionalFailedForm = {
               customObject: {
                 id: 'b',

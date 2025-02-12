@@ -72,7 +72,7 @@ type TransitionDiagramDeploy = {
   targetId: string
 }
 
-export type WorkflowDiagramMaps = {
+type WorkflowDiagramMaps = {
   statusIdToStatus: Record<string, StatusDiagramFields>
   statusIdToStepId: Record<string, string>
   actionKeyToTransition: Record<string, TransitionDiagramFields>

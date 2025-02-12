@@ -53,9 +53,9 @@ const log = logger(module)
 
 export const WORKFLOW_ALERTS_FIELD = 'alerts'
 export const WORKFLOW_FIELD_UPDATES_FIELD = 'fieldUpdates'
-export const WORKFLOW_FLOW_ACTIONS_FIELD = 'flowActions'
-export const WORKFLOW_OUTBOUND_MESSAGES_FIELD = 'outboundMessages'
-export const WORKFLOW_KNOWLEDGE_PUBLISHES_FIELD = 'knowledgePublishes'
+const WORKFLOW_FLOW_ACTIONS_FIELD = 'flowActions'
+const WORKFLOW_OUTBOUND_MESSAGES_FIELD = 'outboundMessages'
+const WORKFLOW_KNOWLEDGE_PUBLISHES_FIELD = 'knowledgePublishes'
 export const WORKFLOW_TASKS_FIELD = 'tasks'
 export const WORKFLOW_RULES_FIELD = 'rules'
 

@@ -13,7 +13,7 @@ export const AVAILABLE_MICROSOFT_SECURITY_SERVICES = ['Entra', 'Intune'] as cons
 export type AvailableMicrosoftSecurityServices = (typeof AVAILABLE_MICROSOFT_SECURITY_SERVICES)[number]
 export type MicrosoftServicesToManage = Partial<Record<AvailableMicrosoftSecurityServices, boolean>>
 
-export type OauthRequestParameters = {
+type OauthRequestParameters = {
   tenantId: string
   clientId: string
   clientSecret: string

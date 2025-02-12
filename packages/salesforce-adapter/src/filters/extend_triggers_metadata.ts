@@ -46,7 +46,7 @@ export enum TriggerType {
   UsageAfterUpdate = 'UsageAfterUpdate',
   UsageAfterUndelete = 'UsageAfterUndelete',
 }
-export const TRIGGER_TYPE_FIELDS = Object.values(TriggerType)
+const TRIGGER_TYPE_FIELDS = Object.values(TriggerType)
 
 export const TRIGGER_TYPES_FIELD_NAME = 'triggerTypes'
 

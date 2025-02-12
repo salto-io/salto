@@ -8,8 +8,11 @@
 import _ from 'lodash'
 import { CORE_ANNOTATIONS, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { ERROR_MESSAGES } from './errors'
+import { inspectValue } from './utils'
 
+const log = logger(module)
 const { groupByAsync } = collections.asynciterable
 
 type InstanceDetail = {
@@ -106,6 +109,14 @@ export const getCollisionWarnings = ({
     _.groupBy(instances, instance => instance.elemID.getFullName()),
     collideInstances => collideInstances.length > 1,
   )
+
+  Object.entries(elemIDtoInstances).forEach(([elemID, collideInstances]) => {
+    const relevantInstanceValues = collideInstances.map(instance => _.pickBy(instance.value, val => val != null))
+    const relevantInstanceValuesStr = relevantInstanceValues.map(instValues => inspectValue(instValues)).join('\n')
+    log.debug(`Omitted instances with colliding ElemID ${elemID} with values - 
+${relevantInstanceValuesStr}`)
+  })
+
   const warningMessages = createWarningMessages({
     elemIDtoInstances,
     adapterName,

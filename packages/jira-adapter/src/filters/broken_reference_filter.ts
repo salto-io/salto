@@ -29,15 +29,14 @@ import { FilterCreator } from '../filter'
 
 export type ProjectType = { projectId: ReferenceExpression }
 
-export const isProjectType = (element: unknown): element is ProjectType => {
+const isProjectType = (element: unknown): element is ProjectType => {
   const projectId = _.get(element, 'projectId')
   return projectId !== undefined && isReferenceExpression(projectId)
 }
 
-export const isProjectReferenceBroken = (project: ProjectType): boolean =>
-  !isResolvedReferenceExpression(project.projectId)
+const isProjectReferenceBroken = (project: ProjectType): boolean => !isResolvedReferenceExpression(project.projectId)
 
-export type BrokenReferenceInfo = {
+type BrokenReferenceInfo = {
   location: string
   filter: (item: unknown) => boolean
   namePath: string

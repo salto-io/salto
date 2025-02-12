@@ -24,7 +24,7 @@ import { ObjectID } from './config/types'
 
 const log = logger(module)
 
-export const OBJECT_ID_TYPE_NAME = 'objectid'
+const OBJECT_ID_TYPE_NAME = 'objectid'
 export const OBJECT_ID_LIST_TYPE_NAME = 'objectid_list'
 export const OBJECT_ID_LIST_FIELD_NAME = 'objectid_list'
 

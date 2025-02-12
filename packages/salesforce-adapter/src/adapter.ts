@@ -430,7 +430,7 @@ export const NESTED_METADATA_TYPES = {
 }
 
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
-export const SYSTEM_FIELDS = [
+const SYSTEM_FIELDS = [
   'ConnectionReceivedId',
   'ConnectionSentId',
   'CreatedById',
@@ -449,7 +449,7 @@ export const SYSTEM_FIELDS = [
   'SetupOwnerId',
 ]
 
-export const UNSUPPORTED_SYSTEM_FIELDS = ['LastReferencedDate', 'LastViewedDate']
+const UNSUPPORTED_SYSTEM_FIELDS = ['LastReferencedDate', 'LastViewedDate']
 
 const getIncludedTypesFromElementsSource = async (
   elementsSource: ReadOnlyElementsSource,

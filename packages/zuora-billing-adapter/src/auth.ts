@@ -42,7 +42,7 @@ export type Credentials = OAuthClientCredentials
 
 // non-prod valid subdomain, based on https://www.zuora.com/developer/api-reference/#section/Introduction/Access-to-the-API
 // should all be lowercase
-export const KNOWN_SANDBOX_SUBDOMAIN_KEYWORDS = new Set(['apisandbox', 'sandbox', 'test', 'pt1'])
+const KNOWN_SANDBOX_SUBDOMAIN_KEYWORDS = new Set(['apisandbox', 'sandbox', 'test', 'pt1'])
 
 export const isSandboxSubdomain = (subdomain: string): boolean =>
   subdomain

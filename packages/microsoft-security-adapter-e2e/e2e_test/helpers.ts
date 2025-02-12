@@ -8,11 +8,15 @@
 
 import _ from 'lodash'
 import { ChangeError, DetailedChangeWithBaseChange, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { getDetailedChanges } from '@salto-io/adapter-utils'
+import { helpers } from '@salto-io/e2e-test-utils'
 import { e2eUtils } from '@salto-io/microsoft-security-adapter'
 import { ValidationError } from '@salto-io/workspace'
 import { modificationChangesBeforeAndAfterOverrides } from './mock_elements'
 import './jest_matchers'
+
+type FetchDefinitions = definitionsUtils.fetch.FetchApiDefinitions<e2eUtils.MicrosoftSecurityAdapterOptions>
 
 const {
   entraConstants: { TOP_LEVEL_TYPES: entraTopLevelTypes },
@@ -77,3 +81,20 @@ export const microsoftSecurityCleanupChangeErrorFilter = (error: ChangeError): b
     error.elemID.typeName === entraTopLevelTypes.GROUP_TYPE_NAME &&
     error.message === 'Some elements contain references to this deleted element'
   )
+
+export const verifyInstanceValues = ({
+  fetchDefinitions,
+  fetchedInstance,
+  originalInstance,
+}: {
+  fetchDefinitions: FetchDefinitions
+  fetchedInstance: InstanceElement | undefined
+  originalInstance: InstanceElement
+}): void => {
+  expect(fetchedInstance).toBeDefinedWithElemID(originalInstance.elemID)
+  const deployedInstance = fetchedInstance as InstanceElement
+  const fieldsToOmit = helpers.getHiddenFieldsToOmit({ fetchDefinitions, typeName: deployedInstance.elemID.typeName })
+  const originalValue = _.omit(originalInstance?.value, fieldsToOmit)
+  deployedInstance.value = _.omit(deployedInstance.value, fieldsToOmit)
+  expect(originalValue).toHaveEqualValues(deployedInstance)
+}

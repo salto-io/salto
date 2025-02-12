@@ -7,6 +7,7 @@
  */
 
 import { DetailedChangeWithBaseChange, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { getDetailedChanges } from '@salto-io/adapter-utils'
 
 export const getAdditionDetailedChangesFromInstances = (
@@ -21,4 +22,22 @@ export const getDeletionDetailedChangesFromInstances = (
 ): DetailedChangeWithBaseChange[] => {
   const changes = instances.map(inst => toChange({ before: inst }))
   return changes.flatMap(change => getDetailedChanges(change))
+}
+
+// Omit hidden fields that are not written to nacl after deployment
+export const getHiddenFieldsToOmit = <Options extends definitionsUtils.fetch.FetchApiDefinitionsOptions>({
+  fetchDefinitions,
+  typeName,
+  fieldNamesToIgnore = ['id'],
+}: {
+  fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<Options>
+  typeName: string
+  fieldNamesToIgnore?: string[]
+}): string[] => {
+  const customizations = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)
+    ?.element?.fieldCustomizations
+  return Object.entries(customizations ?? {})
+    .filter(([, customization]) => customization.hide === true)
+    .map(([fieldName]) => fieldName)
+    .filter(fieldName => !fieldNamesToIgnore.includes(fieldName))
 }

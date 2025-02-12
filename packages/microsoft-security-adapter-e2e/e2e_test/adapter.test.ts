@@ -27,8 +27,8 @@ import {
   microsoftSecurityCleanupChangeErrorFilter,
   microsoftSecurityCleanupValidationFilter,
   microsoftSecurityDeployChangeErrorFilter,
+  verifyInstanceValues,
 } from './helpers'
-import { verifyInstanceValues } from './verificationUtils'
 import { modificationChangesBeforeAndAfterOverrides } from './mock_elements'
 
 const log = logger(module)

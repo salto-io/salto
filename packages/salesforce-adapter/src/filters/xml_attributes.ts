@@ -48,7 +48,7 @@ const removeAttributePrefix = async (instance: InstanceElement): Promise<void> =
       type,
       strict: false,
       allowEmptyArrays: true,
-      allowExistingEmptyObjects: true,
+      allowEmptyObjects: true,
       transformFunc: async ({ value, field }) => {
         const fieldType = await field?.getType()
         return isObjectType(fieldType) ? handleAttributeValues(value, fieldType) : value

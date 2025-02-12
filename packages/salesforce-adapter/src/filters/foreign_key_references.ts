@@ -56,7 +56,7 @@ const resolveReferences = async (
       transformFunc: transformPrimitive,
       strict: false,
       allowEmptyArrays: true,
-      allowExistingEmptyObjects: true,
+      allowEmptyObjects: true,
     })) ?? instance.value
 }
 

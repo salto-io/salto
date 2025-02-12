@@ -905,108 +905,36 @@ describe('Test utils.ts', () => {
         })
       })
 
-      describe('with allowExistingEmptyObjects', () => {
-        describe('with the top-level values becoming empty', () => {
-          it('should return undefined', async () => {
-            const result = await transformValues({
-              values: {
-                key: 'value',
-              },
-              type,
-              transformFunc: ({ field, value }) => (field?.name === 'key' ? undefined : value),
-              allowExistingEmptyObjects: true,
-            })
-
-            expect(result).toBeUndefined()
-          })
-        })
-        describe('with nested empty objects', () => {
-          it('should remove empty lists and not remove empty objects', async () => {
-            const result = await transformValues({
-              values: {
-                arr: [],
-                obj: {
-                  nestedArr: [],
-                  val: 'a',
-                },
-                emptyObj: {
-                  nested: {},
-                },
-                newEmptyObj: {
-                  deletedNested: undefined,
-                },
-              },
-              type,
-              transformFunc: ({ value }) => value,
-              allowExistingEmptyObjects: true,
-            })
-
-            expect(result).toEqual({
+      describe('with allowEmptyObjects', () => {
+        it('should remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
               obj: {
+                nestedArr: [],
                 val: 'a',
               },
               emptyObj: {
                 nested: {},
               },
-            })
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+          })
+
+          expect(result).toEqual({
+            obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
           })
         })
       })
 
-      describe.each([true, false])(
-        'with allowExistingEmptyObjects=%s and allowAllEmptyObjects=true',
-        allowExistingEmptyObjects => {
-          describe('with the top-level values becoming empty', () => {
-            it('should return an empty object', async () => {
-              const result = await transformValues({
-                values: {
-                  key: 'value',
-                },
-                type,
-                transformFunc: ({ field, value }) => (field?.name === 'key' ? undefined : value),
-                allowAllEmptyObjects: true,
-              })
-
-              expect(result).toEqual({})
-            })
-          })
-          describe('with nested empty objects', () => {
-            it('Should not remove any empty objects, regardless of allowExistingEmptyObjects', async () => {
-              const result = await transformValues({
-                values: {
-                  arr: [],
-                  obj: {
-                    nestedArr: [],
-                    val: 'a',
-                  },
-                  emptyObj: {
-                    nested: {},
-                  },
-                  newEmptyObj: {
-                    deletedNested: undefined,
-                  },
-                },
-                type,
-                transformFunc: ({ value }) => value,
-                allowExistingEmptyObjects,
-                allowAllEmptyObjects: true,
-              })
-
-              expect(result).toEqual({
-                obj: {
-                  val: 'a',
-                },
-                emptyObj: {
-                  nested: {},
-                },
-                newEmptyObj: {},
-              })
-            })
-          })
-        },
-      )
-
-      describe('with allowExistingEmptyObjects and allowEmptyArrays', () => {
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
         it('should not remove empty lists and not remove empty objects', async () => {
           const result = await transformValues({
             values: {
@@ -1021,7 +949,7 @@ describe('Test utils.ts', () => {
             },
             type,
             transformFunc: ({ value }) => value,
-            allowExistingEmptyObjects: true,
+            allowEmptyObjects: true,
             allowEmptyArrays: true,
           })
 
@@ -1593,8 +1521,8 @@ describe('Test utils.ts', () => {
         },
       })
       describe('with allowEmptyArrays', () => {
-        it('should remove empty objects and not remove empty lists', () => {
-          const result = transformValuesSync({
+        it('should remove empty objects and not remove empty lists', async () => {
+          const result = await transformValues({
             values: {
               arr: [],
               obj: {
@@ -1620,107 +1548,9 @@ describe('Test utils.ts', () => {
         })
       })
 
-      describe('with allowExistingEmptyObjects', () => {
-        describe('with the top-level values becoming empty', () => {
-          it('should return undefined', async () => {
-            const result = await transformValues({
-              values: {
-                key: 'value',
-              },
-              type,
-              transformFunc: ({ field, value }) => (field?.name === 'key' ? undefined : value),
-              allowExistingEmptyObjects: true,
-            })
-
-            expect(result).toBeUndefined()
-          })
-        })
-        describe('with nested empty objects', () => {
-          it('should not remove empty objects and remove empty list', () => {
-            const result = transformValuesSync({
-              values: {
-                arr: [],
-                obj: {
-                  nestedArr: [],
-                  val: 'a',
-                },
-                emptyObj: {
-                  nested: {},
-                },
-              },
-              type,
-              transformFunc: ({ value }) => value,
-              allowExistingEmptyObjects: true,
-            })
-
-            expect(result).toEqual({
-              obj: {
-                val: 'a',
-              },
-              emptyObj: {
-                nested: {},
-              },
-            })
-          })
-        })
-      })
-
-      describe.each([true, false])(
-        'with allowExistingEmptyObjects=%s and allowAllEmptyObjects=true',
-        allowExistingEmptyObjects => {
-          describe('with the top-level values becoming empty', () => {
-            it('should return an empty object', () => {
-              const result = transformValuesSync({
-                values: {
-                  key: 'value',
-                },
-                type,
-                transformFunc: ({ field, value }) => (field?.name === 'key' ? undefined : value),
-                allowAllEmptyObjects: true,
-              })
-
-              expect(result).toEqual({})
-            })
-          })
-          describe('with nested empty objects', () => {
-            it('Should not remove any empty objects, regardless of allowExistingEmptyObjects', () => {
-              const result = transformValuesSync({
-                values: {
-                  arr: [],
-                  obj: {
-                    nestedArr: [],
-                    val: 'a',
-                  },
-                  emptyObj: {
-                    nested: {},
-                  },
-                  newEmptyObj: {
-                    deletedNested: undefined,
-                  },
-                },
-                type,
-                transformFunc: ({ value }) => value,
-                allowExistingEmptyObjects,
-                allowAllEmptyObjects: true,
-              })
-
-              expect(result).toEqual({
-                obj: {
-                  val: 'a',
-                },
-                emptyObj: {
-                  nested: {},
-                },
-                newEmptyObj: {},
-              })
-            })
-          })
-        },
-      )
-
-      describe('with allowExistingEmptyObjects and allowEmptyArrays', () => {
-        it('should not remove empty lists and not remove empty objects', async () => {
-          const result = transformValuesSync({
+      describe('with allowEmptyObjects', () => {
+        it('should not remove empty objects and remove empty list', async () => {
+          const result = await transformValues({
             values: {
               arr: [],
               obj: {
@@ -1733,7 +1563,36 @@ describe('Test utils.ts', () => {
             },
             type,
             transformFunc: ({ value }) => value,
-            allowExistingEmptyObjects: true,
+            allowEmptyObjects: true,
+          })
+
+          expect(result).toEqual({
+            obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
+      })
+
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
+        it('should not remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
             allowEmptyArrays: true,
           })
 
@@ -2043,9 +1902,6 @@ describe('Test utils.ts', () => {
         emptyObj: {
           nested: {},
         },
-        newEmptyObj: {
-          deletedNested: undefined,
-        },
       })
       describe('with allowEmptyArrays', () => {
         it('should remove empty objects and not remove empty list', async () => {
@@ -2065,86 +1921,34 @@ describe('Test utils.ts', () => {
         })
       })
 
-      describe('with allowExistingEmptyObjects', () => {
-        describe('with the top-level values becoming empty', () => {
-          it('should return an empty object', async () => {
-            const result = await transformElement({
-              element: new InstanceElement('instance', type, { key: 'value' }),
-              transformFunc: ({ field, value }) => (field?.name === 'key' ? undefined : value),
-              allowExistingEmptyObjects: true,
-            })
-
-            // While this is a new empty object, an instance element always has a defined `values` object.
-            expect(result.value).toEqual({})
+      describe('with allowEmptyObjects', () => {
+        it('should remove empty lists and not remove empty objects', async () => {
+          const result = await transformElement({
+            element,
+            transformFunc: ({ value }) => value,
+            strict: false,
+            allowEmptyObjects: true,
           })
-        })
-        describe('with nested empty objects', () => {
-          it('should remove empty lists and not remove empty objects', async () => {
-            const result = await transformElement({
-              element,
-              transformFunc: ({ value }) => value,
-              strict: false,
-              allowExistingEmptyObjects: true,
-            })
 
-            expect(result.value).toEqual({
-              obj: {
-                val: 'a',
-              },
-              emptyObj: {
-                nested: {},
-              },
-            })
+          expect(result.value).toEqual({
+            obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
           })
         })
       })
 
-      describe.each([true, false])(
-        'with allowExistingEmptyObjects=%s and allowAllEmptyObjects=true',
-        allowExistingEmptyObjects => {
-          describe('with the top-level values becoming empty', () => {
-            it('should return an empty object', async () => {
-              const result = await transformElement({
-                element: new InstanceElement('instance', type, { key: 'value' }),
-                transformFunc: ({ field, value }) => (field?.name === 'key' ? undefined : value),
-                allowExistingEmptyObjects,
-                allowAllEmptyObjects: true,
-              })
-
-              expect(result.value).toEqual({})
-            })
-          })
-          describe('with nested empty objects', () => {
-            it('Should not remove any empty objects, regardless of allowExistingEmptyObjects', async () => {
-              const result = await transformElement({
-                element,
-                transformFunc: ({ value }) => value,
-                allowExistingEmptyObjects,
-                allowAllEmptyObjects: true,
-              })
-
-              expect(result.value).toEqual({
-                obj: {
-                  val: 'a',
-                },
-                emptyObj: {
-                  nested: {},
-                },
-                newEmptyObj: {},
-              })
-            })
-          })
-        },
-      )
-
-      describe('with allowExistingEmptyObjects and allowEmptyArrays', () => {
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
         it('should not remove empty lists and not remove empty objects', async () => {
           const result = await transformElement({
             element,
             transformFunc: ({ value }) => value,
             strict: false,
             allowEmptyArrays: true,
-            allowExistingEmptyObjects: true,
+            allowEmptyObjects: true,
           })
 
           expect(result.value).toEqual({

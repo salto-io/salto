@@ -52,7 +52,7 @@ export const removeValuesFromInstances = (
           transformFunc: removeValuesFunc,
           strict: true,
           allowEmptyArrays: true,
-          allowExistingEmptyObjects: true,
+          allowEmptyObjects: true,
           pathID: inst.elemID,
         }) || inst.value
     })

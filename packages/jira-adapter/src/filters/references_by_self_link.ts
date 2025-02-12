@@ -90,7 +90,7 @@ const filter: FilterCreator = () => ({
           transformFunc: transformSelfLinkToReference(elementsBySelfLink),
           strict: false,
           allowEmptyArrays: true,
-          allowExistingEmptyObjects: true,
+          allowEmptyObjects: true,
         }) ?? inst.value
     })
   },

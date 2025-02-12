@@ -270,7 +270,7 @@ const replaceLookupsWithRefsAndCreateRefMap = async ({
         transformFunc,
         strict: false,
         allowEmptyArrays: true,
-        allowExistingEmptyObjects: true,
+        allowEmptyObjects: true,
       })) ?? instance.value
     )
   }

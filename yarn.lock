@@ -5237,7 +5237,6 @@ __metadata:
   dependencies:
     "@salto-io/adapter-api": 0.5.1
     "@salto-io/adapter-components": 0.5.1
-    "@salto-io/adapter-utils": 0.5.1
     "@salto-io/e2e-credentials-store": 0.5.1
     "@salto-io/e2e-test-utils": 0.5.1
     "@salto-io/element-test-utils": 0.5.1

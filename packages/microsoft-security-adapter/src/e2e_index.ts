@@ -6,7 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-export { adapter } from './src/adapter_creator'
-export { OAUTH_REQUIRED_SCOPES } from './src/auth'
-export { getOAuthRequiredScopes } from './src/client/oauth'
-export * as e2eUtils from './src/e2e_index'
+export * from './constants'
+export * from './config'
+export * from './auth'
+export * from './client/connection'
+export * from './definitions/fetch'
+export { adapter as microsoftSecurityAdapter } from './adapter_creator'
+export { Options as MicrosoftSecurityAdapterOptions } from './definitions/types'

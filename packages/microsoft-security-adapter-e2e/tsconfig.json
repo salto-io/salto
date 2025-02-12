@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "declaration": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*", "src/**/*.json", "test/**/*", "test/**/*.json", "e2e_test/**/*", "index.ts"],
+  "references": [
+    { "path": "../adapter-api" },
+    { "path": "../microsoft-security-adapter" },
+    { "path": "../adapter-components" },
+    { "path": "../e2e-test-utils" },
+    { "path": "../adapter-utils" },
+    { "path": "../e2e-credentials-store" },
+    { "path": "../element-test-utils" },
+    { "path": "../logging" },
+    { "path": "../parser" },
+    { "path": "../workspace" }
+  ]
+}

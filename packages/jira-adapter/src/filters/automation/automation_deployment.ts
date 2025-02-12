@@ -479,7 +479,7 @@ const createAutomation = async (
       await updateAutomation(instance, client, cloudId)
     } catch (e) {
       log.error(`Could not update automation ${instance.elemID.getFullName()} state to 'enabled'. ${e}`)
-      throw new Error(`Failed to update automation state to 'enabled'. ${e}`)
+      throw new Error(`Automation was created, but failed to update the automation state to 'enabled'. ${e}`)
     }
   }
 }

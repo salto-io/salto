@@ -4770,7 +4770,6 @@ __metadata:
     "@salto-io/element-test-utils": 0.5.1
     "@salto-io/logging": 0.5.1
     "@salto-io/microsoft-security-adapter": 0.5.1
-    "@salto-io/parser": 0.5.1
     "@salto-io/workspace": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168

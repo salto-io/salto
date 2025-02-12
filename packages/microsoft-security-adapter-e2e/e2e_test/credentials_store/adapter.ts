@@ -37,7 +37,12 @@ const adapter: Adapter<Args, e2eUtils.Credentials> = {
       type: 'string',
       demandOption: true,
     },
+    servicesToManage: {
+      array: true,
+      default: ['Entra', 'Intune'],
+    },
   },
+
   credentials: async args => ({
     tenantId: args.tenantId,
     clientId: args.clientId,

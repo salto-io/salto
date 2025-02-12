@@ -47,6 +47,7 @@ export const getModificationDetailedChangesForCleanup = (
   return changes.flatMap(change => getDetailedChanges(change))
 }
 
+// These are expected CV errors when adding a new Application or ServicePrincipal instance
 export const microsoftSecurityDeployChangeErrorFilter = (error: ChangeError): boolean => {
   const builtInReadOnlyFieldsValidationFilter = (): boolean =>
     error.severity === 'Warning' &&

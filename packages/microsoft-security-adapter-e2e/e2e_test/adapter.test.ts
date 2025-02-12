@@ -57,7 +57,7 @@ const microsoftSecurityCleanUp = async (instances: InstanceElement[], workspace:
   )
   const detailedChangesToRemove = e2eHelpers.getDeletionDetailedChangesFromInstances(instancesToRemove)
   const detailedChangesToModify = getModificationDetailedChangesForCleanup(instancesToModify)
-  const detailedChangesToClean = [...detailedChangesToRemove, ...detailedChangesToModify]
+  const detailedChangesToClean = detailedChangesToRemove.concat(detailedChangesToModify)
   if (detailedChangesToClean.length > 0) {
     await e2eDeploy({
       workspace,

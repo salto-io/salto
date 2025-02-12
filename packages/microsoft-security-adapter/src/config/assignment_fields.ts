@@ -8,7 +8,7 @@
 
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { ADAPTER_NAME, entraConstants, intuneConstants } from '../constants'
+import { MICROSOFT_SECURITY, entraConstants, intuneConstants } from '../constants'
 
 const ASSIGNMENT_FIELD_STRATEGIES = ['omit', 'fallback'] as const
 type AssignmentFieldStrategy = (typeof ASSIGNMENT_FIELD_STRATEGIES)[number]
@@ -46,7 +46,7 @@ type EntraAssignmentFieldsConfig = Partial<
 export type AssignmentFieldsConfig = IntuneAssignmentFieldsConfig & EntraAssignmentFieldsConfig
 
 const assignmentFieldRuleWithoutFallbackType = createMatchingObjectType<AssignmentFieldRuleWithoutFallback>({
-  elemID: new ElemID(ADAPTER_NAME, 'AssignmentFieldRuleWithoutFallback'),
+  elemID: new ElemID(MICROSOFT_SECURITY, 'AssignmentFieldRuleWithoutFallback'),
   fields: {
     strategy: {
       refType: BuiltinTypes.STRING,
@@ -60,7 +60,7 @@ const assignmentFieldRuleWithoutFallbackType = createMatchingObjectType<Assignme
   },
 })
 const assignmentFieldRuleWithFallbackType = createMatchingObjectType<AssignmentFieldRuleWithFallback>({
-  elemID: new ElemID(ADAPTER_NAME, 'AssignmentFieldRuleWithFallback'),
+  elemID: new ElemID(MICROSOFT_SECURITY, 'AssignmentFieldRuleWithFallback'),
   fields: {
     strategy: {
       refType: BuiltinTypes.STRING,
@@ -76,7 +76,7 @@ const assignmentFieldRuleWithFallbackType = createMatchingObjectType<AssignmentF
 })
 
 const intuneAssignmentsFieldNamesConfigType = createMatchingObjectType<IntuneAssignmentsFieldNamesConfig>({
-  elemID: new ElemID(ADAPTER_NAME, 'IntuneAssignmentsFieldNamesConfig'),
+  elemID: new ElemID(MICROSOFT_SECURITY, 'IntuneAssignmentsFieldNamesConfig'),
   fields: {
     [intuneConstants.ASSIGNMENTS_FIELD_NAME]: {
       refType: assignmentFieldRuleWithoutFallbackType,
@@ -85,7 +85,7 @@ const intuneAssignmentsFieldNamesConfigType = createMatchingObjectType<IntuneAss
 })
 const conditionalAccessPolicyAssignmentFieldNamesConfigType =
   createMatchingObjectType<ConditionalAccessPolicyAssignmentFieldNamesConfig>({
-    elemID: new ElemID(ADAPTER_NAME, 'ConditionalAccessPolicyAssignmentFieldNamesConfig'),
+    elemID: new ElemID(MICROSOFT_SECURITY, 'ConditionalAccessPolicyAssignmentFieldNamesConfig'),
     fields: Object.fromEntries(
       entraConstants.CONDITIONAL_ACCESS_POLICY_ASSIGNMENT_FIELDS.map(field => [
         field,
@@ -97,7 +97,7 @@ const conditionalAccessPolicyAssignmentFieldNamesConfigType =
   })
 
 export const assignmentFieldsConfigType = createMatchingObjectType<AssignmentFieldsConfig>({
-  elemID: new ElemID(ADAPTER_NAME, 'assignmentFieldsConfig'),
+  elemID: new ElemID(MICROSOFT_SECURITY, 'assignmentFieldsConfig'),
   fields: {
     [entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME]: {
       refType: conditionalAccessPolicyAssignmentFieldNamesConfigType,

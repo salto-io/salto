@@ -10,7 +10,7 @@ import _ from 'lodash'
 import { ElemID, FixElementsFunc, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { DEFAULT_CONFIG, UserConfig } from '../../src/config'
-import { ADAPTER_NAME, entraConstants, intuneConstants } from '../../src/constants'
+import { MICROSOFT_SECURITY, entraConstants, intuneConstants } from '../../src/constants'
 import { assignmentFieldsHandler } from '../../src/fix_elements/assignment_fields_handler'
 
 describe('replaceGroupsDomainHandler', () => {
@@ -24,7 +24,7 @@ describe('replaceGroupsDomainHandler', () => {
 
   describe('Intune types', () => {
     const intuneApplicationType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, intuneConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME),
+      elemID: new ElemID(MICROSOFT_SECURITY, intuneConstants.TOP_LEVEL_TYPES.APPLICATION_TYPE_NAME),
     })
     const intuneApplicationInstance = new InstanceElement('testIntuneApplication', intuneApplicationType, {
       displayName: 'testIntuneApplication',
@@ -86,7 +86,7 @@ describe('replaceGroupsDomainHandler', () => {
 
   describe('Entra conditional access policy', () => {
     const entraConditionalAccessPolicyType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME),
+      elemID: new ElemID(MICROSOFT_SECURITY, entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME),
     })
     const entraConditionalAccessPolicy = new InstanceElement(
       'testEntraConditionalAccessPolicy',

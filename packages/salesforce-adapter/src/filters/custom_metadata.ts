@@ -27,7 +27,7 @@ import {
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import {
-  buildElementsSourceForFetch,
+  // buildElementsSourceForFetch,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType,
   isInstanceOfType,
@@ -206,7 +206,7 @@ const formatRecordValuesForService = async (instance: InstanceElement): Promise<
 const getInstanceWithCorrectType = async (
   instance: InstanceElement,
   customMetadataRecordTypes: ObjectType[],
-): Promise<(InstanceElement | ObjectType)[] | undefined> => {
+): Promise<InstanceElement | undefined> => {
   const correctType = await getCustomMetadataType(instance, customMetadataRecordTypes)
   if (_.isUndefined(correctType)) {
     log.warn(
@@ -222,7 +222,7 @@ const getInstanceWithCorrectType = async (
     log.warn('CustomMetadata instance %s is missing the fullName field, skipping.', instance.elemID.getFullName())
     return undefined
   }
-  return [createInstanceElement(formattedValues, correctType), correctType]
+  return createInstanceElement(formattedValues, correctType)
 }
 
 const CUSTOM_METADATA_TYPE = new ObjectType({
@@ -246,26 +246,34 @@ const toDeployableChange = async (
     : toChange({ after: deployableAfter })
 }
 
-const filterCreator: FilterCreator = ({ config }) => {
+const filterCreator: FilterCreator = () => {
   let originalChangesByApiName: Record<string, Change>
   return {
     name: 'customMetadataRecordsFilter',
     onFetch: async elements => {
-      const elementsSource = buildElementsSourceForFetch(elements, config)
-      const customMetadataRecordTypes = await awu(await elementsSource.getAll())
+      // const elementsSource = buildElementsSourceForFetch(elements, config)
+      const customMetadataRecordTypes = await awu(elements)
         .filter(isObjectType)
         .filter(isCustomMetadataRecordType)
+        .map(a => a.clone())
         .toArray()
       const oldInstances = await awu(elements)
         .filter(isInstanceElement)
         .filter(isInstanceOfType(CUSTOM_METADATA))
         .toArray()
+      // const tempaBay = oldInstances
+      //   .map(e => e.refType.type)
+      //   .filter(isDefined)
+      //   .filter(a => !elements.includes(a))
       const newInstances = await awu(oldInstances)
         .map(instance => getInstanceWithCorrectType(instance, customMetadataRecordTypes))
         .filter(isDefined)
-        .flat()
         .toArray()
-      _.pullAll(elements, oldInstances)
+      _.pullAll(elements, [...oldInstances])
+      // const tempa = newInstances
+      //   .map(e => e.refType.type)
+      //   .filter(isDefined)
+      //   .filter(a => !elements.includes(a))
       elements.push(...newInstances)
     },
 

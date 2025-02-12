@@ -582,7 +582,9 @@ const updateInconsistentTypes = (validAccountElements: Element[]): void =>
 
     if (elementsWithInconsistentTypes.length > 0) {
       // eslint-disable-next-line no-console
-      console.log(`found ${elementsWithInconsistentTypes.length} inconsistent types`)
+      console.log(
+        `found ${elementsWithInconsistentTypes.length} inconsistent types\n${elementsWithInconsistentTypes.map(e => e.elemID.getFullName()).join('\n')}`,
+      )
       log.warn(
         'found inconsistent types in the following %d types (%d elements), the types will be resolved from the element source. %s',
         _.uniq(elementsWithInconsistentTypes.map(e => e.refType.elemID.getFullName())).length,

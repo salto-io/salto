@@ -144,7 +144,7 @@ export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = voi
                   // eslint-disable-next-line no-console
                   console.log(
                     filter.name,
-                    `has ${c} inconsistent types\n${tc.map(e => e.elemID.getFullName()).join('\n')}\n`,
+                    `has ${c} inconsistent types\n${tc.map(e => `${e.elemID.getFullName()}->${Object.keys(e).join(' _ ')}`).join('\n')}\n`,
                   )
                 }
                 return res

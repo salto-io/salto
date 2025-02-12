@@ -13,9 +13,9 @@ import { isObjectDef, isCustomField } from '../element_utils'
 import { FilterCreator } from '../filter'
 import { ZUORA_BILLING, OBJECTS_PATH } from '../constants'
 
-export const annotationsFileName = (objectName: string): string => `${pathNaclCase(objectName)}Annotations`
-export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
-export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
+const annotationsFileName = (objectName: string): string => `${pathNaclCase(objectName)}Annotations`
+const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
+const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
 
 const { removeAsync } = promises.array
 const getObjectDirectoryPath = (obj: ObjectType): string[] => [

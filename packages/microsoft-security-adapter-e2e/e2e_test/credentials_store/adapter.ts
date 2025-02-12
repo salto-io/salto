@@ -16,6 +16,7 @@ type Args = {
   clientId: string
   clientSecret: string
   refreshToken: string
+  servicesToManage: string[]
 }
 
 const adapter: Adapter<Args, e2eUtils.Credentials> = {
@@ -42,7 +43,6 @@ const adapter: Adapter<Args, e2eUtils.Credentials> = {
       default: ['Entra', 'Intune'],
     },
   },
-
   credentials: async args => ({
     tenantId: args.tenantId,
     clientId: args.clientId,

@@ -13,11 +13,7 @@ import { Credentials } from '../auth'
 
 const log = logger(module)
 
-export const validateCredentials = async ({
-  connection,
-}: {
-  connection: clientUtils.APIConnection
-}): Promise<AccountInfo> => {
+const validateCredentials = async ({ connection }: { connection: clientUtils.APIConnection }): Promise<AccountInfo> => {
   try {
     const response = await connection.get('/me')
     const accountId = _.get(response.data, 'app.id_code')

@@ -7,7 +7,7 @@
  */
 
 import _ from 'lodash'
-import { v4 as uuidv4 } from 'uuid'
+import { v4 as uuid } from 'uuid'
 import { FieldDefinition, InstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { e2eUtils } from '@salto-io/adapter-components'
 import { e2eUtils as microsoftSecurityE2EUtils } from '@salto-io/microsoft-security-adapter'
@@ -26,7 +26,7 @@ const fetchDefinitions = createFetchDefinitions({
   Intune: true,
 })
 
-const testSuffix = uuidv4().slice(0, 8)
+const testSuffix = uuid().slice(0, 8)
 
 const createName = (type: string, maxChars?: number): string =>
   `${UNIQUE_NAME}${type.slice(0, maxChars ? maxChars - (UNIQUE_NAME.length + testSuffix.length + 1) : undefined)}_${testSuffix}`

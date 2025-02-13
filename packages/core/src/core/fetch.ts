@@ -51,7 +51,6 @@ import {
   Values,
   isRemovalChange,
   Adapter,
-  Change,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults,
@@ -84,11 +83,10 @@ import {
   isElementIdMatchSelectors,
   updateElementsWithAlternativeAccount,
   Workspace,
-  flags,
 } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
-import { getPlan } from './plan'
+import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
 import { IDFilter } from './plan/plan'
 import { getAdaptersCreatorConfigs } from './adapters'
@@ -101,7 +99,6 @@ const { mapValuesAsync } = promises.object
 const { withLimitedConcurrency } = promises.array
 const { mergeElements } = merger
 const { isTypeOfOrUndefined } = types
-const { getSaltoFlagBool, WORKSPACE_FLAGS } = flags
 const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
@@ -453,7 +450,7 @@ export type FetchChangesResult = {
   unmergedElements: Element[]
   mergeErrors: MergeErrorWithElements[]
   updatedConfig: Record<string, InstanceElement[]>
-  configChanges: Change[]
+  configChanges?: Plan
   accountNameToConfigMessage?: Record<string, string>
   partiallyFetchedAccounts: Set<string>
 }
@@ -1008,28 +1005,12 @@ const createFetchChanges = async ({
 
   const configs = await awu(configsMerge.merged.values()).toArray()
   const updatedConfigNames = new Set(configs.map(c => c.elemID.getFullName()))
-  if (getSaltoFlagBool(WORKSPACE_FLAGS.replaceGetPlanWithCalculateDiff)) {
-    log.trace('Using calculateDiff instead of getPlan to compute config changes')
-  }
-  const configChanges = getSaltoFlagBool(WORKSPACE_FLAGS.replaceGetPlanWithCalculateDiff)
-    ? await awu(
-        await calculateDiff({
-          before: elementSource.createInMemoryElementSource(
-            currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
-          ),
-          after: elementSource.createInMemoryElementSource(configs),
-        }),
-      ).toArray()
-    : Array.from(
-        (
-          await getPlan({
-            before: elementSource.createInMemoryElementSource(
-              currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
-            ),
-            after: elementSource.createInMemoryElementSource(configs),
-          })
-        ).itemsByEvalOrder(),
-      ).flatMap(item => Array.from(item.changes()))
+  const configChanges = await getPlan({
+    before: elementSource.createInMemoryElementSource(
+      currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
+    ),
+    after: elementSource.createInMemoryElementSource(configs),
+  })
 
   const accountNameToConfig = _.keyBy(updatedConfigs, config => config.config[0].elemID.adapter)
   const accountNameToConfigMessage = _.mapValues(accountNameToConfig, config => config.message)
@@ -1109,7 +1090,6 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
     elements: [],
     mergeErrors: [],
     unmergedElements: [],
-    configChanges: [],
     updatedConfig: {},
     errors: [
       {

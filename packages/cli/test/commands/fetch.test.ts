@@ -282,11 +282,11 @@ describe('fetch command', () => {
         let newConfig: InstanceElement
 
         beforeEach(async () => {
-          const { configChanges, updatedConfig } = mocks.configChanges()
+          const { plan, updatedConfig } = mocks.configChangePlan()
           newConfig = updatedConfig
           const mockFetchWithChanges = jest.fn().mockResolvedValue({
             changes: [],
-            configChanges,
+            configChanges: plan,
             updatedConfig: { [newConfig.elemID.adapter]: [newConfig] },
             mergeErrors: [],
             success: true,
@@ -658,7 +658,6 @@ describe('fetch command', () => {
               },
             },
           ],
-          configChanges: [],
           updatedConfig: {},
           success: true,
           partiallyFetchedAccounts: new Set(['salesforce']),

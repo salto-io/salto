@@ -84,7 +84,6 @@ describe('apply-patch command', () => {
         mergeErrors: [],
         fetchErrors: [],
         success: true,
-        configChanges: [],
         updatedConfig: {},
         partiallyFetchedAccounts: new Set(['salesforce']),
       })
@@ -148,7 +147,6 @@ describe('apply-patch command', () => {
         mergeErrors: [],
         fetchErrors: [],
         success: true,
-        configChanges: [],
         updatedConfig: {},
         partiallyFetchedAccounts: new Set(['salesforce']),
       })
@@ -227,7 +225,6 @@ describe('apply-patch command', () => {
         mergeErrors: [],
         fetchErrors: [],
         success: true,
-        configChanges: [],
         updatedConfig: {},
         partiallyFetchedAccounts: new Set(['salesforce']),
       })
@@ -282,7 +279,6 @@ describe('apply-patch command', () => {
         mergeErrors: [],
         fetchErrors: [],
         success: true,
-        configChanges: [],
         updatedConfig: {},
         partiallyFetchedAccounts: new Set(['salesforce']),
       })
@@ -324,7 +320,6 @@ describe('apply-patch command', () => {
         ],
         fetchErrors: [],
         success: true,
-        configChanges: [],
         updatedConfig: {},
         partiallyFetchedAccounts: new Set(['salesforce']),
       })

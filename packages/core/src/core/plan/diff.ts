@@ -263,13 +263,14 @@ const getFilteredElements = async (
 export const calculateDiff = async ({
   before,
   after,
-  topLevelFilters = [],
+  topLevelFilters,
   compareOptions,
 }: {
   before: ReadOnlyElementsSource
   after: ReadOnlyElementsSource
-  topLevelFilters?: IDFilter[]
+  topLevelFilters: IDFilter[]
   compareOptions?: CompareOptions
+  removeRedundantChanges?: boolean
 }): Promise<AsyncIterable<Change>> => {
   const splitFieldChanges = (change: Change): Change[] => {
     const changes: Change[] = [change]

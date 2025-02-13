@@ -80,7 +80,7 @@ const addFormulaDependenciesFunc = (
 const filter: FilterCreator = ({ config }) => ({
   name: 'addFormulaDependenciesToMetadataInstances',
   onFetch: ensureSafeFilterFetch({
-    warningMessage: 'Error while parsing formulas',
+    warningMessage: 'Error while parsing formulas for metadata instances',
     config,
     fetchFilterFunc: async fetchedElements => {
       const allElements = await buildElementsSourceForFetch(fetchedElements, config).getAll()

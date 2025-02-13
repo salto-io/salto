@@ -39,7 +39,7 @@ import {
   applyFunctionToChangeData,
 } from '@salto-io/adapter-utils'
 import { Options } from '../../definitions/types'
-import { ADAPTER_NAME } from '../../constants'
+import { MICROSOFT_SECURITY } from '../../constants'
 import { customConvertError } from '../../error_utils'
 import { changeResolver } from '../../definitions/references'
 
@@ -213,7 +213,7 @@ const deployArrayField = async <Options extends definitionsUtils.APIDefinitionsO
   )
 
   const fieldObjectType = new ObjectType({
-    elemID: new ElemID(ADAPTER_NAME, arrayFieldDefinition.fieldTypeName),
+    elemID: new ElemID(MICROSOFT_SECURITY, arrayFieldDefinition.fieldTypeName),
   })
 
   const createChangeCommonParams = {

@@ -12,7 +12,6 @@
     { "path": "../zendesk-adapter" },
     { "path": "../adapter-components" },
     { "path": "../e2e-test-utils" },
-    { "path": "../adapter-utils" },
     { "path": "../e2e-credentials-store" },
     { "path": "../element-test-utils" },
     { "path": "../logging" },

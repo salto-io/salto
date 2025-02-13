@@ -8,16 +8,18 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  displayName: 'microsoft-security-adapter',
+  displayName: 'microsoft-security-adapter-e2e',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: undefined,
+  testEnvironment: process.env.RUN_E2E_TESTS
+    ? '@salto-io/microsoft-security-adapter-e2e/dist/e2e_test/jest_environment'
+    : undefined,
   coverageThreshold: {
     global: {
-      statements: 97.14,
-      branches: 88.06,
-      functions: 91.64,
-      lines: 97.03,
+      branches: 100,
+      functions: 100,
+      lines: 100,
+      statements: 100,
     },
   },
   setupFilesAfterEnv: ['@salto-io/element-test-utils/all'],

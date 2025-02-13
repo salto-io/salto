@@ -8,7 +8,7 @@
 
 import { ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { ADAPTER_NAME } from '../../../../../src/constants'
+import { MICROSOFT_SECURITY } from '../../../../../src/constants'
 import { contextMock, objectTypeMock } from '../../../../mocks'
 import { GROUP_LIFE_CYCLE_POLICY_FIELD_NAME } from '../../../../../src/constants/entra'
 import {
@@ -18,7 +18,7 @@ import {
 
 const { makeArray } = collections.array
 
-const lifeCycleReference = new ReferenceExpression(new ElemID(ADAPTER_NAME, 'obj', 'instance', 'test'), {
+const lifeCycleReference = new ReferenceExpression(new ElemID(MICROSOFT_SECURITY, 'obj', 'instance', 'test'), {
   value: { id: 'testLifeCyclePolicyId' },
 })
 const instanceWithLifecyclePolicyRef = new InstanceElement('instance', objectTypeMock, {

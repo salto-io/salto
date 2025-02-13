@@ -8,7 +8,7 @@
 
 import { StaticFile } from '@salto-io/adapter-api'
 import { fileNameFromUniqueName } from '@salto-io/adapter-utils'
-import { ADAPTER_NAME } from '../../../../constants'
+import { MICROSOFT_SECURITY } from '../../../../constants'
 
 const toSafeFileName = (fileName: string): string => {
   const fileNameParts = fileName.split('.')
@@ -40,7 +40,7 @@ export const createStaticFileFromBase64Blob = ({
   const safeFileName = toSafeFileName(fileName)
 
   return new StaticFile({
-    filepath: `${ADAPTER_NAME}/${typeName}/${subDirectory}/${formattedParentDir}/${safeFileName}`,
+    filepath: `${MICROSOFT_SECURITY}/${typeName}/${subDirectory}/${formattedParentDir}/${safeFileName}`,
     content: Buffer.from(content, 'base64'),
     encoding: 'base64',
   })

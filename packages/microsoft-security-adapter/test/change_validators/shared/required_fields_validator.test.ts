@@ -7,7 +7,7 @@
  */
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { ADAPTER_NAME, entraConstants, ODATA_TYPE_FIELD_NACL_CASE } from '../../../src/constants'
+import { MICROSOFT_SECURITY, entraConstants, ODATA_TYPE_FIELD_NACL_CASE } from '../../../src/constants'
 import { requiredFieldsValidator } from '../../../src/change_validators/shared/required_fields_validator'
 
 describe(`${requiredFieldsValidator.name}`, () => {
@@ -16,7 +16,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
     changeType => {
       it('should return change error for missing required odata type field on %s', async () => {
         const authenticationMethodConfigurationType = new ObjectType({
-          elemID: new ElemID(ADAPTER_NAME, entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME),
+          elemID: new ElemID(MICROSOFT_SECURITY, entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME),
         })
         const authenticationMethodConfiguration = new InstanceElement(
           'testAuthenticationMethodConfiguration',
@@ -40,7 +40,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
 
       it('should not return change error for instance with all required fields on %s', async () => {
         const authenticationMethodConfigurationType = new ObjectType({
-          elemID: new ElemID(ADAPTER_NAME, entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME),
+          elemID: new ElemID(MICROSOFT_SECURITY, entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME),
         })
         const authenticationMethodConfiguration = new InstanceElement(
           'testAuthenticationMethodConfiguration',
@@ -68,7 +68,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
       const INSTANCE_NAME = 'testConditionalAccessPolicyNamedLocation'
       const conditionalAccessPolicyNamedLocationType = new ObjectType({
         elemID: new ElemID(
-          ADAPTER_NAME,
+          MICROSOFT_SECURITY,
           entraConstants.TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
         ),
       })
@@ -256,7 +256,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
 
   describe(entraConstants.TOP_LEVEL_TYPES.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, () => {
     const authenticationStrengthPolicyType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME),
+      elemID: new ElemID(MICROSOFT_SECURITY, entraConstants.TOP_LEVEL_TYPES.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME),
     })
 
     it('should return change error when allowedCombinations field is missing on addition', async () => {
@@ -319,7 +319,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
 
   describe(entraConstants.TOP_LEVEL_TYPES.DIRECTORY_ROLE_TYPE_NAME, () => {
     const directoryRoleType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.DIRECTORY_ROLE_TYPE_NAME),
+      elemID: new ElemID(MICROSOFT_SECURITY, entraConstants.TOP_LEVEL_TYPES.DIRECTORY_ROLE_TYPE_NAME),
     })
 
     it('should return change error when roleTemplateId field is missing on addition', async () => {
@@ -370,7 +370,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
 
   describe(entraConstants.TOP_LEVEL_TYPES.ROLE_DEFINITION_TYPE_NAME, () => {
     const roleDefinitionType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, entraConstants.TOP_LEVEL_TYPES.ROLE_DEFINITION_TYPE_NAME),
+      elemID: new ElemID(MICROSOFT_SECURITY, entraConstants.TOP_LEVEL_TYPES.ROLE_DEFINITION_TYPE_NAME),
     })
 
     it('should return change error when displayName, rolePermissions, isBuiltIn fields are missing on addition', async () => {

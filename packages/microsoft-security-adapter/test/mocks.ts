@@ -19,10 +19,10 @@ import {
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ADAPTER_NAME } from '../src/constants'
+import { MICROSOFT_SECURITY } from '../src/constants'
 
 export const objectTypeMock = new ObjectType({
-  elemID: new ElemID(ADAPTER_NAME, 'testType'),
+  elemID: new ElemID(MICROSOFT_SECURITY, 'testType'),
 })
 
 const instanceElementMock = new InstanceElement('testInstance', objectTypeMock, {

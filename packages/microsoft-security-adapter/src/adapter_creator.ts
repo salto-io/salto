@@ -8,7 +8,7 @@
 import { createAdapter, credentials as credentialsUtils, filters } from '@salto-io/adapter-components'
 import createChangeValidator from './change_validator'
 import { createConnection } from './client/connection'
-import { ADAPTER_NAME } from './constants'
+import { MICROSOFT_SECURITY } from './constants'
 import { createClientDefinitions, createDeployDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { Options } from './definitions/types'
@@ -27,7 +27,7 @@ import { additionalDeployConfigFieldsType, DEFAULT_CONFIG, UserConfig } from './
 const { defaultCredentialsFromConfig } = credentialsUtils
 
 export const adapter = createAdapter<Credentials, Options, UserConfig>({
-  adapterName: ADAPTER_NAME,
+  adapterName: MICROSOFT_SECURITY,
   authenticationMethods: {
     basic: {
       credentialsType,

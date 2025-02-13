@@ -114,6 +114,15 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
       return { success: true }
     }
 
+    const dependsOnDef = def.context?.dependsOn
+    if (
+      dependsOnDef !== undefined &&
+      Object.values(dependsOnDef).some(({ parentTypeName }) => _.isEmpty(contextResources[parentTypeName]))
+    ) {
+      log.debug('[%s] Skipping fetching %s due to missing context resources', adapterName, typeName)
+      return { success: true }
+    }
+
     const contextPossibleArgs = await calculateContextArgs({
       contextDef: def.context,
       initialRequestContext,

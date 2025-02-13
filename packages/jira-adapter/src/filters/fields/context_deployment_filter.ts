@@ -85,6 +85,7 @@ const removeOptionsOfFailedContexts = ({
   })
 
   const optionErrors = optionsOfFailedContext
+    // had to filter by isInstanceChange again because TS doesn't understand the partition well
     .filter(isInstanceChange)
     .map(getChangeData)
     .map(optionInstance => {

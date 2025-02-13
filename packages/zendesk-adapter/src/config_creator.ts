@@ -13,6 +13,7 @@ import {
   createRestriction,
   ElemID,
   InstanceElement,
+  ObjectType,
 } from '@salto-io/adapter-api'
 import {
   createDefaultInstanceFromType,
@@ -36,24 +37,25 @@ type ConfigOptionsType = {
   guideOptions?: string
 }
 
-export const optionsType = createMatchingObjectType<ConfigOptionsType>({
-  elemID: optionsElemId,
-  fields: {
-    enableGuide: { refType: BuiltinTypes.BOOLEAN },
-    enableGuideThemes: { refType: BuiltinTypes.BOOLEAN },
-    guideOptions: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          values: GUIDE_OPTIONS,
-          enforce_value: true,
-        }),
-        [CORE_ANNOTATIONS.DESCRIPTION]:
-          'Manage [Guide](https://help.salto.io/en/articles/6948736-salto-for-zendesk-guide) or [Guide Themes](https://help.salto.io/en/articles/9031533-fetching-zendesk-guide-themes) with Salto',
+export const optionsType = (): ObjectType =>
+  createMatchingObjectType<ConfigOptionsType>({
+    elemID: optionsElemId,
+    fields: {
+      enableGuide: { refType: BuiltinTypes.BOOLEAN },
+      enableGuideThemes: { refType: BuiltinTypes.BOOLEAN },
+      guideOptions: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: GUIDE_OPTIONS,
+            enforce_value: true,
+          }),
+          [CORE_ANNOTATIONS.DESCRIPTION]:
+            'Manage [Guide](https://help.salto.io/en/articles/6948736-salto-for-zendesk-guide) or [Guide Themes](https://help.salto.io/en/articles/9031533-fetching-zendesk-guide-themes) with Salto',
+        },
       },
     },
-  },
-})
+  })
 
 export const DEFAULT_GUIDE_THEME_CONFIG: { themes: Themes } = {
   themes: {

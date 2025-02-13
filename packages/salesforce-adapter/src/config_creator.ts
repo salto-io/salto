@@ -14,6 +14,7 @@ import {
   ElemID,
   InstanceElement,
   ListType,
+  ObjectType,
 } from '@salto-io/adapter-api'
 import {
   createDefaultInstanceFromType,
@@ -202,38 +203,39 @@ export type SalesforceConfigOptionsType = {
   managePermissionSets?: boolean
 }
 
-export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>({
-  elemID: optionsElemId,
-  fields: {
-    cpq: { refType: BuiltinTypes.BOOLEAN },
-    managedPackages: {
-      refType: new ListType(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          values: MANAGED_PACKAGES,
-          enforce_value: true,
-        }),
-        [CORE_ANNOTATIONS.DESCRIPTION]:
-          'Names of managed packages to fetch into the environment [Learn more](https://help.salto.io/en/articles/9164974-extending-your-salesforce-configuration-with-managed-packages)',
+export const optionsType = (): ObjectType =>
+  createMatchingObjectType<SalesforceConfigOptionsType>({
+    elemID: optionsElemId,
+    fields: {
+      cpq: { refType: BuiltinTypes.BOOLEAN },
+      managedPackages: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: MANAGED_PACKAGES,
+            enforce_value: true,
+          }),
+          [CORE_ANNOTATIONS.DESCRIPTION]:
+            'Names of managed packages to fetch into the environment [Learn more](https://help.salto.io/en/articles/9164974-extending-your-salesforce-configuration-with-managed-packages)',
+        },
+      },
+      manageProfiles: {
+        refType: BuiltinTypes.BOOLEAN,
+        annotations: {
+          [CORE_ANNOTATIONS.DEFAULT]: false,
+          [CORE_ANNOTATIONS.DESCRIPTION]: 'Manage Profiles in the environment',
+        },
+      },
+      managePermissionSets: {
+        refType: BuiltinTypes.BOOLEAN,
+        annotations: {
+          [CORE_ANNOTATIONS.DEFAULT]: false,
+          [CORE_ANNOTATIONS.DESCRIPTION]:
+            'Manage PermissionSets, PermissionSetGroups and MutingPermissionSets in the environment',
+        },
       },
     },
-    manageProfiles: {
-      refType: BuiltinTypes.BOOLEAN,
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: false,
-        [CORE_ANNOTATIONS.DESCRIPTION]: 'Manage Profiles in the environment',
-      },
-    },
-    managePermissionSets: {
-      refType: BuiltinTypes.BOOLEAN,
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: false,
-        [CORE_ANNOTATIONS.DESCRIPTION]:
-          'Manage PermissionSets, PermissionSetGroups and MutingPermissionSets in the environment',
-      },
-    },
-  },
-})
+  })
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   let config = (await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)).clone()

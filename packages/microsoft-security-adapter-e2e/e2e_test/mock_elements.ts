@@ -114,6 +114,16 @@ export const mockDefaultValues: Record<string, Values> = {
     managedGroupTypes: 'Selected',
     alternateNotificationEmails: 'salto@e2eAdapter.onmicrosoft.com',
   },
+  [entraTopLevelTypes.ROLE_DEFINITION_TYPE_NAME]: {
+    isBuiltIn: false,
+    isEnabled: true,
+    templateId: '7780f1bb-6ca0-4bbc-9409-266983a87da4',
+    rolePermissions: [
+      {
+        allowedResourceActions: ['microsoft.directory/users/identities/read'],
+      },
+    ],
+  },
   [entraTopLevelTypes.SERVICE_PRINCIPAL_TYPE_NAME]: {
     accountEnabled: true,
     appRoleAssignmentRequired: true,
@@ -158,21 +168,5 @@ export const modificationChangesBeforeAndAfterOverrides: Record<string, { before
   [entraConstants.CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_TYPE_NAME]: {
     after: { isActive: true },
     before: { isActive: false },
-  },
-  [entraTopLevelTypes.ROLE_DEFINITION_TYPE_NAME]: {
-    before: {
-      rolePermissions: [
-        {
-          allowedResourceActions: ['microsoft.directory/users/identities/read'],
-        },
-      ],
-    },
-    after: {
-      rolePermissions: [
-        {
-          allowedResourceActions: ['microsoft.directory/deviceTemplates/owners/read'],
-        },
-      ],
-    },
   },
 }

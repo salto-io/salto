@@ -93,7 +93,11 @@ export const verifyInstanceValues = ({
 }): void => {
   expect(fetchedInstance).toBeDefinedWithElemID(originalInstance.elemID)
   const deployedInstance = fetchedInstance as InstanceElement
-  const fieldsToOmit = helpers.getHiddenFieldsToOmit({ fetchDefinitions, typeName: deployedInstance.elemID.typeName })
+  const fieldsToOmit = helpers.getHiddenFieldsToOmit({
+    fetchDefinitions,
+    typeName: deployedInstance.elemID.typeName,
+    fieldNamesToIgnore: [],
+  })
   const originalValue = _.omit(originalInstance?.value, fieldsToOmit)
   deployedInstance.value = _.omit(deployedInstance.value, fieldsToOmit)
   expect(originalValue).toHaveEqualValues(deployedInstance)

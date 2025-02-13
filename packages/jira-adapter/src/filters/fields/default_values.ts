@@ -70,11 +70,12 @@ export const updateDefaultValueIds = ({
 
   relevantContexts.forEach(contextInstance => {
     applyOnDefaultValues(contextInstance.value.defaultValue, (value, valuePath) => {
+      const defaultValueField = _.get(contextInstance, valuePath)
       if (
         isResolvedReferenceExpression(_.get(value, valuePath)) &&
-        optionsIdByFullName[_.get(value, valuePath).elemID.getFullName()] !== undefined
+        optionsIdByFullName[defaultValueField.elemID.getFullName()] !== undefined
       ) {
-        _.get(value, valuePath).value.value.id = optionsIdByFullName[_.get(value, valuePath).elemID.getFullName()]
+        defaultValueField.value.value.id = optionsIdByFullName[defaultValueField.elemID.getFullName()]
       }
     })
   })

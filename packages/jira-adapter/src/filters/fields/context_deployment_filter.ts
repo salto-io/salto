@@ -61,7 +61,10 @@ const removeOptionsOfFailedContexts = ({
   updatedLeftoverChanges: Change[]
 } => {
   const contextAppliedChangesFullName = new Set(
-    deployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),
+    deployResult.appliedChanges
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+      .map(instance => instance.elemID.getFullName()),
   )
   const failureContextsNames = new Set(
     relevantChanges
@@ -72,32 +75,29 @@ const removeOptionsOfFailedContexts = ({
       .filter(contextName => !contextAppliedChangesFullName.has(contextName)),
   )
 
-  const optionsOfDeletedContextByFullName = _.keyBy(
-    leftoverChanges
-      .filter(isInstanceChange)
-      .map(getChangeData)
-      .filter(
-        instance =>
-          instance.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME &&
-          failureContextsNames.has(getContextParent(instance).elemID.getFullName()),
-      ),
-    instance => instance.elemID.getFullName(),
-  )
-
-  const optionErrors = Object.values(optionsOfDeletedContextByFullName).map(optionInstance => {
-    const contextParent = getContextParent(optionInstance)
-    const message = `Element was not deployed, as it depends on ${contextParent.elemID.getFullName()} which failed to deploy`
-    return {
-      elemID: optionInstance.elemID,
-      severity: 'Error' as SeverityLevel,
-      message,
-      detailedMessage: message,
-    }
+  const [optionsOfFailedContext, updatedLeftoverChanges] = _.partition(leftoverChanges, change => {
+    const instance = getChangeData(change)
+    return (
+      isInstanceElement(instance) &&
+      instance.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME &&
+      failureContextsNames.has(getContextParent(instance).elemID.getFullName())
+    )
   })
 
-  const updatedLeftoverChanges = leftoverChanges.filter(
-    change => optionsOfDeletedContextByFullName[getChangeData(change).elemID.getFullName()] === undefined,
-  )
+  const optionErrors = optionsOfFailedContext
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .map(optionInstance => {
+      const contextParent = getContextParent(optionInstance)
+      const message = `Element was not deployed, as it depends on ${contextParent.elemID.getFullName()} which failed to deploy`
+      return {
+        elemID: optionInstance.elemID,
+        severity: 'Error' as SeverityLevel,
+        message,
+        detailedMessage: message,
+      }
+    })
+
   return {
     updatedDeployResult: {
       ...deployResult,

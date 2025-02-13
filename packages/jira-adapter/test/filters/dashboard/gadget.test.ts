@@ -85,7 +85,12 @@ describe('gadgetFilter', () => {
       },
     )
     adapterContext = {
-      dashboardPropertiesPromise: [{ instance, promisePropertyValues: { key1: 'value1', key2: 'value2' } }],
+      dashboardPropertiesPromise: [
+        {
+          instance,
+          promisePropertyValues: { key1: 'value1', key2: 'value2', key3: [{ id: 1, field: 'cf[1]', value: null }] },
+        },
+      ],
     }
     filter = gadgetFilter(
       getFilterParams({
@@ -287,13 +292,22 @@ describe('gadgetFilter', () => {
     })
   })
   describe('onFetch', () => {
-    it('should add dashboard properties to the instance', async () => {
-      await filter.onFetch?.(elements)
-      expect(instance.value.properties).toEqual({
-        key1: 'value1',
-        key2: 'value2',
+    describe('properties', () => {
+      beforeEach(async () => {
+        await filter.onFetch?.(elements)
+      })
+      it('should add dashboard properties to the instance', () => {
+        expect(instance.value.properties).toMatchObject({
+          key1: 'value1',
+          key2: 'value2',
+          key3: expect.anything(),
+        })
+      })
+      it('should omit null values from properties', () => {
+        expect(instance.value.properties).toHaveProperty('key3', [{ id: 1, field: 'cf[1]' }])
       })
     })
+
     it('should add deployment annotations to properties field', async () => {
       elements = [dashboardGadgetType]
       await filter.onFetch?.(elements)

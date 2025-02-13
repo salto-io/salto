@@ -33,13 +33,61 @@ import { getLookUpName } from '../../reference_mapping'
 import { addAnnotationRecursively, setFieldDeploymentAnnotations } from '../../utils'
 import { JiraConfig } from '../../config/config'
 
+const OPTION_ID = 'optionId'
+const CASCADING_OPTION_ID = 'cascadingOptionId'
+const OPTION_IDS = 'optionIds'
+
+export const getAllDefaultValuePaths = (defaultValue: Value): string[][] => {
+  const paths = [[OPTION_ID], [CASCADING_OPTION_ID]]
+  if (Array.isArray(defaultValue[OPTION_IDS])) {
+    paths.push(..._.range(0, defaultValue[OPTION_IDS].length).map(index => [OPTION_IDS, `${index}`]))
+  }
+  return paths
+}
+
+const applyOnDefaultValues = (defaultValue: Value, applyFunc: (value: Value, valuePath: string[]) => void): void => {
+  const valuePaths = getAllDefaultValuePaths(defaultValue)
+  valuePaths.forEach(pathArray => {
+    applyFunc(defaultValue, pathArray)
+  })
+}
+
+// called only for splitted options
+export const updateDefaultValueIds = ({
+  contextInstances,
+  addedOptionInstances,
+}: {
+  contextInstances: InstanceElement[]
+  addedOptionInstances: InstanceElement[]
+}): void => {
+  const relevantContexts = contextInstances.filter(contextInstance => contextInstance.value.defaultValue !== undefined)
+  if (relevantContexts.length === 0) {
+    return
+  }
+  const optionsIdByFullName: Record<string, string> = Object.fromEntries(
+    addedOptionInstances.map(option => [option.elemID.getFullName(), option.value.id]),
+  )
+
+  relevantContexts.forEach(contextInstance => {
+    applyOnDefaultValues(contextInstance.value.defaultValue, (value, valuePath) => {
+      const defaultValueField = _.get(value, valuePath)
+      if (
+        isResolvedReferenceExpression(defaultValueField) &&
+        optionsIdByFullName[defaultValueField.elemID.getFullName()] !== undefined
+      ) {
+        defaultValueField.value.value.id = optionsIdByFullName[defaultValueField.elemID.getFullName()]
+      }
+    })
+  })
+}
+
 const resolveDefaultOption = (
   contextChange: Change<InstanceElement>,
   config: JiraConfig,
 ): Promise<Change<InstanceElement>> =>
   applyFunctionToChangeData<Change<InstanceElement>>(contextChange, instance => {
     const clonedInstance = instance.clone()
-    ;['optionId', 'cascadingOptionId']
+    ;[OPTION_ID, CASCADING_OPTION_ID]
       .filter(fieldName => isResolvedReferenceExpression(clonedInstance.value.defaultValue?.[fieldName]))
       .forEach(fieldName => {
         // We resolve this values like this and not with resolveChangeElement

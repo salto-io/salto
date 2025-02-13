@@ -14,15 +14,11 @@ import _ from 'lodash'
 import { JiraConfig } from '../../config/config'
 import { JIRA } from '../../constants'
 import { FilterCreator } from '../../filter'
-import { FIELD_TYPE_NAME } from './constants'
+import { CUSTOM_FIELDS_SUFFIX, FIELD_TYPE_NAME } from './constants'
 
 const log = logger(module)
 
 const { generateInstanceNameFromConfig } = elementUtils
-
-// Added to avoid conflicts with names
-// of custom fields and system fields
-export const CUSTOM_FIELDS_SUFFIX = 'c'
 
 const getFieldType = (instance: InstanceElement): string | undefined =>
   instance.value.schema?.custom?.split(':').slice(-1)[0] ?? instance.value.schema?.type

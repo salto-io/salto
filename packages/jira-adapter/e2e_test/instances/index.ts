@@ -16,10 +16,15 @@ import {
 } from '@salto-io/adapter-api'
 import { inspectValue, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
 import { JIRA, WEBHOOK_TYPE, STATUS_TYPE_NAME } from '../../src/constants'
 import { createReference, findType } from '../utils'
-import { createContextValues, createFieldValues, createOptionsAndOrders } from './field'
+import {
+  createCascadeContextAndRelatedInstances,
+  createCascadeFieldValues,
+  createMultiSelectContextAndRelatedInstances,
+  createMultiSelectFieldValues,
+  createProjectScopeContextValues,
+} from './field'
 import { createFieldConfigurationSchemeValues } from './fieldConfigurationScheme'
 import { createIssueTypeScreenSchemeValues } from './issueTypeScreenScheme'
 import { createScreenValues } from './screen'
@@ -27,6 +32,7 @@ import { createWebhookValues } from './webhook'
 import { createStatusValues } from './status'
 import { createInstances as createDataCenterInstances, modifyDataCenterInstances } from './datacenter'
 import { createInstances as createCloudInstances, modifyCloudInstances } from './cloud'
+import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/constants'
 
 const log = logger(module)
 
@@ -34,25 +40,40 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
   const uuid = uuidv4()
 
-  const field = new InstanceElement(
+  const cascadeField = new InstanceElement(
     `${randomString}__cascadingselect__${CUSTOM_FIELDS_SUFFIX}`,
     findType('Field', fetchedElements),
-    createFieldValues(randomString),
+    createCascadeFieldValues(randomString),
   )
 
-  const fieldContextName = naclCase(`${randomString}__cascadingselect__${CUSTOM_FIELDS_SUFFIX}_${randomString}`)
-  const fieldContext = new InstanceElement(
-    fieldContextName,
+  const projectScopedFieldContext = new InstanceElement(
+    naclCase(`${randomString}__cascadingselect__${CUSTOM_FIELDS_SUFFIX}_${randomString}project`),
     findType('CustomFieldContext', fetchedElements),
-    createContextValues(randomString, fetchedElements),
+    createProjectScopeContextValues(`${randomString}project`, fetchedElements),
     undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] },
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(cascadeField.elemID, cascadeField)] },
   )
 
-  const { contextOptions, contextOrders } = createOptionsAndOrders({
-    optionsType: findType('CustomFieldContextOption', fetchedElements),
-    orderType: findType('FieldContextOptionsOrder', fetchedElements),
-    contextInstance: fieldContext,
+  const { contextInstance, contextOptions, contextOrders } = createCascadeContextAndRelatedInstances({
+    allElements: fetchedElements,
+    fieldInstance: cascadeField,
+    randomString,
+  })
+
+  const multiSelectField = new InstanceElement(
+    `${randomString}__multiselect__${CUSTOM_FIELDS_SUFFIX}`,
+    findType('Field', fetchedElements),
+    createMultiSelectFieldValues(randomString),
+  )
+
+  const {
+    contextInstance: multiSelectFieldContext,
+    contextOptions: multiSelectContextOptions,
+    contextOrders: multiSelectContextOrders,
+  } = createMultiSelectContextAndRelatedInstances({
+    allElements: fetchedElements,
+    fieldInstance: multiSelectField,
+    randomString,
   })
 
   const screen = new InstanceElement(
@@ -116,9 +137,13 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     ...(isDataCenter
       ? createDataCenterInstances(randomString, fetchedElements)
       : createCloudInstances(randomString, uuid, fetchedElements)),
-    [field],
-    [fieldContext, ...contextOptions],
+    [cascadeField],
+    [contextInstance, ...contextOptions],
+    [projectScopedFieldContext],
     contextOrders,
+    [multiSelectField],
+    [multiSelectFieldContext, ...multiSelectContextOptions],
+    multiSelectContextOrders,
     [screen],
     [screenScheme],
     [issueTypeScreenScheme],

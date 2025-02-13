@@ -63,6 +63,7 @@ import {
   ASSIGN_TO_REFERENCE,
   LIVE_CHAT_BUTTON,
   APPROVAL_PROCESS_METADATA_TYPE,
+  VALIDATION_RULES_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -883,6 +884,16 @@ export const mockTypes = {
   [APPROVAL_PROCESS_METADATA_TYPE]: createMetadataObjectType({
     annotations: {
       metadataType: APPROVAL_PROCESS_METADATA_TYPE,
+    },
+  }),
+  [VALIDATION_RULES_METADATA_TYPE]: createMetadataObjectType({
+    annotations: {
+      metadataType: VALIDATION_RULES_METADATA_TYPE,
+    },
+    fields: {
+      errorConditionFormula: {
+        refType: BuiltinTypes.STRING,
+      },
     },
   }),
 }

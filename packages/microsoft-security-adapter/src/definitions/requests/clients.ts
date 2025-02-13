@@ -41,7 +41,10 @@ export const createClientDefinitions = (
               polling: {
                 interval: 6000,
                 retries: 3,
-                checkStatus: response => response.status === 200,
+                checkStatus: response =>
+                  response.status === 200 ||
+                  (response.status === 400 &&
+                    _.get(response, 'data.error.message')?.includes('is already present in the policy')),
                 retryOnStatus: [404],
               },
             },

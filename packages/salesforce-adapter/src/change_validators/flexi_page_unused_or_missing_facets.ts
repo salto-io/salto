@@ -44,14 +44,14 @@ const getFacetDefinitionsAndReferences = (
   element: InstanceElement,
 ): { facetDefinitions: Record<string, ElemID>; facetReferences: Map<string, ElemID[]> } => {
   const facetDefinitions: Record<string, ElemID> = {}
-  const facetReferences = new DefaultMap<string, ElemID[]>(() => [])
+  const potentialFacetReferences = new DefaultMap<string, ElemID[]>(() => [])
   const findDefinitionsAndReferences: TransformFuncSync = ({ value, path, field }) => {
     if (field === undefined || path === undefined) return value
     if (field.name === FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS && isFlexiPageRegion(value)) {
       facetDefinitions[value.name] = path
     }
-    if (path.name === COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE && isFacetReference(value)) {
-      facetReferences.get(value).push(path)
+    if (path.name === COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE) {
+      potentialFacetReferences.get(value).push(path)
     }
     return value
   }
@@ -61,6 +61,9 @@ const getFacetDefinitionsAndReferences = (
     type: element.getTypeSync(),
     transformFunc: findDefinitionsAndReferences,
   })
+  const facetReferences = new Map(
+    [...potentialFacetReferences.entries()].filter(([key]) => isFacetReference(key) || key in facetDefinitions),
+  )
   return { facetDefinitions, facetReferences }
 }
 

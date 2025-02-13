@@ -101,11 +101,24 @@ describe('changeValidator', () => {
               [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
             {
-              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'NameWithoutFacetPrefix' },
+              ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
                 { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet1' },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-Facet2',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
+            },
+            {
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                // Avoid false positives for values without the 'Facet-' prefix that are genuinely not facets
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'NotAFacet' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet1' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'NameWithoutFacetPrefix',
               [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
           ],
@@ -159,7 +172,7 @@ describe('changeValidator', () => {
         {
           severity: 'Warning',
           message: 'Reference to missing Facet',
-          detailedMessage: `The Facet "${'Facet-MissingFacet'}" does not exist.`,
+          detailedMessage: 'The Facet "Facet-MissingFacet" does not exist.',
           elemID: flexiPageInstance.elemID.createNestedID(
             FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS,
             '1',
@@ -187,6 +200,14 @@ describe('changeValidator', () => {
               [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-UnusedFacet',
               [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
+            {
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'NotAFacet' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'UnusedFacetWithoutPrefix',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
+            },
           ],
         },
         flexiPage,
@@ -200,8 +221,14 @@ describe('changeValidator', () => {
         {
           severity: 'Warning',
           message: 'Unused Facet',
-          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
+          detailedMessage: `The Facet "Facet-UnusedFacet" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
           elemID: flexiPageInstance.elemID.createNestedID(FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS, '0'),
+        },
+        {
+          severity: 'Warning',
+          message: 'Unused Facet',
+          detailedMessage: `The Facet "UnusedFacetWithoutPrefix" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
+          elemID: flexiPageInstance.elemID.createNestedID(FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS, '1'),
         },
       ])
     })
@@ -237,13 +264,13 @@ describe('changeValidator', () => {
         {
           severity: 'Warning',
           message: 'Unused Facet',
-          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
+          detailedMessage: `The Facet "Facet-UnusedFacet" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
           elemID: flexiPageInstance.elemID.createNestedID(FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS, '0'),
         },
         {
           severity: 'Warning',
           message: 'Reference to missing Facet',
-          detailedMessage: `The Facet "${'Facet-MissingFacet'}" does not exist.`,
+          detailedMessage: 'The Facet "Facet-MissingFacet" does not exist.',
           elemID: flexiPageInstance.elemID.createNestedID(
             FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS,
             '0',

@@ -45,6 +45,9 @@ const main = async (): Promise<CliExitCode> => {
   log.debug('OS properties - platform: %s, release: %s, arch %s', os.platform(), os.release(), os.arch())
   log.debug('Installation ID: %s', config.installationID)
   log.info('running "%s"', cmdStr)
+  if (nodeExecLoc === saltoExecLoc) {
+    stdout.write('Warning: Salto might not work properly when executed from the same directory as the workspace.')
+  }
   try {
     const ret = await cli({
       input: { args, telemetry, config: config.command },

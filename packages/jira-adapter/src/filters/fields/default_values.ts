@@ -33,11 +33,20 @@ import { getLookUpName } from '../../reference_mapping'
 import { addAnnotationRecursively, setFieldDeploymentAnnotations } from '../../utils'
 import { JiraConfig } from '../../config/config'
 
-const ApplyOnDefaultValues = (defaultValue: Value, applyFunc: (value: Value, path: string[]) => void): void => {
-  const valueLocations = [['optionId'], ['cascadingOptionId']]
-  if (Array.isArray(defaultValue.optionIds)) {
-    valueLocations.push(..._.range(0, defaultValue.optionIds.length).map(index => ['optionIds', `${index}`]))
+const OPTION_ID = 'optionId'
+const CASCADING_OPTION_ID = 'cascadingOptionId'
+const OPTION_IDS = 'optionIds'
+
+export const getAllDefaultValuePaths = (defaultValue: Value): string[][] => {
+  const paths = [[OPTION_ID], [CASCADING_OPTION_ID]]
+  if (Array.isArray(defaultValue[OPTION_IDS])) {
+    paths.push(..._.range(0, defaultValue[OPTION_IDS].length).map(index => [OPTION_IDS, `${index}`]))
   }
+  return paths
+}
+
+const applyOnDefaultValues = (defaultValue: Value, applyFunc: (value: Value, valuePath: string[]) => void): void => {
+  const valueLocations = getAllDefaultValuePaths(defaultValue)
   valueLocations.forEach(pathArray => {
     applyFunc(defaultValue, pathArray)
   })
@@ -55,17 +64,17 @@ export const updateDefaultValueIds = ({
   if (relevantContexts.length === 0) {
     return
   }
-  const optionsIdByElemId: Record<string, string> = Object.fromEntries(
+  const optionsIdByFullName: Record<string, string> = Object.fromEntries(
     addedOptionInstances.map(option => [option.elemID.getFullName(), option.value.id]),
   )
 
   relevantContexts.forEach(contextInstance => {
-    ApplyOnDefaultValues(contextInstance.value.defaultValue, (value, path) => {
+    applyOnDefaultValues(contextInstance.value.defaultValue, (value, valuePath) => {
       if (
-        isResolvedReferenceExpression(_.get(value, path)) &&
-        optionsIdByElemId[_.get(value, path).elemID.getFullName()] !== undefined
+        isResolvedReferenceExpression(_.get(value, valuePath)) &&
+        optionsIdByFullName[_.get(value, valuePath).elemID.getFullName()] !== undefined
       ) {
-        _.get(value, path).value.value.id = optionsIdByElemId[_.get(value, path).elemID.getFullName()]
+        _.get(value, valuePath).value.value.id = optionsIdByFullName[_.get(value, valuePath).elemID.getFullName()]
       }
     })
   })
@@ -77,7 +86,7 @@ const resolveDefaultOption = (
 ): Promise<Change<InstanceElement>> =>
   applyFunctionToChangeData<Change<InstanceElement>>(contextChange, instance => {
     const clonedInstance = instance.clone()
-    ;['optionId', 'cascadingOptionId']
+    ;[OPTION_ID, CASCADING_OPTION_ID]
       .filter(fieldName => isResolvedReferenceExpression(clonedInstance.value.defaultValue?.[fieldName]))
       .forEach(fieldName => {
         // We resolve this values like this and not with resolveChangeElement

@@ -40,6 +40,7 @@ import {
   buildStaticFilesCache,
   buildStaticFilesSource,
   MissingStaticFile,
+  PlaceholderStaticFile,
 } from '../../../src/workspace/static_files'
 import { ChangeSet, naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { ReferenceIndexEntry } from '../../../src/workspace/reference_indexes'
@@ -217,40 +218,200 @@ describe('multi env source', () => {
   describe('getStaticFile', () => {
     const filePath = 'static1.nacl'
     const staticFile = new StaticFile({ filepath: filePath, content: Buffer.from('I am a little static file') })
-    const setUp = async (sourceName: string, defaultFilePath?: string): Promise<NaclFilesSource> => {
+
+    let result: StaticFile | undefined
+
+    const setUp = async ({
+      sourceName,
+      isEmptySource,
+      withFile,
+    }: {
+      sourceName: string
+      isEmptySource?: boolean
+      withFile?: boolean
+    }): Promise<NaclFilesSource> => {
       const staticFilesCache = buildStaticFilesCache('test', inMemRemoteMapCreator(), true)
-      const otherStaticFiles = defaultFilePath ? { [defaultFilePath]: Buffer.from('I am a little static file') } : {}
+      const otherStaticFiles: Record<string, Buffer> = withFile
+        ? { [filePath]: Buffer.from('I am a little static file') }
+        : {}
       const mockStaticFileDirStore = mockDirStore<Buffer>(undefined, undefined, otherStaticFiles)
-      const mockNaclFileDirStore = defaultFilePath
+      const mockNaclFileDirStore = !isEmptySource
         ? mockDirStore<string>()
         : mockDirStore<string>(undefined, undefined, {})
       const staticFileSource = buildStaticFilesSource(mockStaticFileDirStore, staticFilesCache)
       return naclFilesSource(sourceName, mockNaclFileDirStore, staticFileSource, inMemRemoteMapCreator(), false)
     }
-    it('should return the correct static file', async () => {
-      const commonStaticFileSource = await setUp(commonPrefix)
-      const envStaticFileSource = await setUp(activePrefix, filePath)
-      const realSources = {
-        [commonPrefix]: commonStaticFileSource,
-        [activePrefix]: envStaticFileSource,
-      }
-      const src = multiEnvSource(realSources, commonPrefix, inMemRemoteMapCreator(), false)
-      await src.load({})
-      expect(
-        await src.getStaticFile({
+
+    describe('when common source is empty', () => {
+      beforeEach(async () => {
+        const commonStaticFileSource = await setUp({ sourceName: commonPrefix, isEmptySource: true })
+        const envStaticFileSource = await setUp({ sourceName: activePrefix, withFile: true })
+        const realSources = {
+          [commonPrefix]: commonStaticFileSource,
+          [activePrefix]: envStaticFileSource,
+        }
+        const src = multiEnvSource(realSources, commonPrefix, inMemRemoteMapCreator(), false)
+        await src.load({})
+        result = await src.getStaticFile({
           filePath: staticFile.filepath,
           encoding: staticFile.encoding,
           env: activePrefix,
           hash: staticFile.hash,
           isTemplate: staticFile.isTemplate,
-        }),
-      ).toEqual(
-        new AbsoluteStaticFile({
-          absoluteFilePath: filePath,
-          filepath: filePath,
-          content: Buffer.from('I am a little static file'),
-        }),
-      )
+        })
+      })
+
+      it('should return static file with content', async () => {
+        expect(result).toEqual(
+          new AbsoluteStaticFile({
+            absoluteFilePath: filePath,
+            filepath: filePath,
+            content: Buffer.from('I am a little static file'),
+          }),
+        )
+      })
+    })
+
+    describe('when env source is empty', () => {
+      beforeEach(async () => {
+        const commonStaticFileSource = await setUp({ sourceName: commonPrefix, withFile: true })
+        const envStaticFileSource = await setUp({ sourceName: activePrefix, isEmptySource: true })
+        const realSources = {
+          [commonPrefix]: commonStaticFileSource,
+          [activePrefix]: envStaticFileSource,
+        }
+        const src = multiEnvSource(realSources, commonPrefix, inMemRemoteMapCreator(), false)
+        await src.load({})
+        result = await src.getStaticFile({
+          filePath: staticFile.filepath,
+          encoding: staticFile.encoding,
+          env: activePrefix,
+          hash: staticFile.hash,
+          isTemplate: staticFile.isTemplate,
+        })
+      })
+
+      it('should return static file with content', async () => {
+        expect(result).toEqual(
+          new AbsoluteStaticFile({
+            absoluteFilePath: filePath,
+            filepath: filePath,
+            content: Buffer.from('I am a little static file'),
+          }),
+        )
+      })
+    })
+
+    describe('when the file is in env source', () => {
+      beforeEach(async () => {
+        const commonStaticFileSource = await setUp({ sourceName: commonPrefix })
+        const envStaticFileSource = await setUp({ sourceName: activePrefix, withFile: true })
+        const realSources = {
+          [commonPrefix]: commonStaticFileSource,
+          [activePrefix]: envStaticFileSource,
+        }
+        const src = multiEnvSource(realSources, commonPrefix, inMemRemoteMapCreator(), false)
+        await src.load({})
+        result = await src.getStaticFile({
+          filePath: staticFile.filepath,
+          encoding: staticFile.encoding,
+          env: activePrefix,
+          hash: staticFile.hash,
+          isTemplate: staticFile.isTemplate,
+        })
+      })
+
+      it('should return static file with content', async () => {
+        expect(result).toEqual(
+          new AbsoluteStaticFile({
+            absoluteFilePath: filePath,
+            filepath: filePath,
+            content: Buffer.from('I am a little static file'),
+          }),
+        )
+      })
+    })
+
+    describe('when the file is in common source', () => {
+      beforeEach(async () => {
+        const commonStaticFileSource = await setUp({ sourceName: commonPrefix, withFile: true })
+        const envStaticFileSource = await setUp({ sourceName: activePrefix })
+        const realSources = {
+          [commonPrefix]: commonStaticFileSource,
+          [activePrefix]: envStaticFileSource,
+        }
+        const src = multiEnvSource(realSources, commonPrefix, inMemRemoteMapCreator(), false)
+        await src.load({})
+        result = await src.getStaticFile({
+          filePath: staticFile.filepath,
+          encoding: staticFile.encoding,
+          env: activePrefix,
+          hash: staticFile.hash,
+          isTemplate: staticFile.isTemplate,
+        })
+      })
+
+      it('should return static file with content', async () => {
+        expect(result).toEqual(
+          new AbsoluteStaticFile({
+            absoluteFilePath: filePath,
+            filepath: filePath,
+            content: Buffer.from('I am a little static file'),
+          }),
+        )
+      })
+    })
+
+    describe('when the file is missing and hash is in the params', () => {
+      beforeEach(async () => {
+        const commonStaticFileSource = await setUp({ sourceName: commonPrefix })
+        const envStaticFileSource = await setUp({ sourceName: activePrefix })
+        const realSources = {
+          [commonPrefix]: commonStaticFileSource,
+          [activePrefix]: envStaticFileSource,
+        }
+        const src = multiEnvSource(realSources, commonPrefix, inMemRemoteMapCreator(), false)
+        await src.load({})
+        result = await src.getStaticFile({
+          filePath: staticFile.filepath,
+          encoding: staticFile.encoding,
+          env: activePrefix,
+          hash: staticFile.hash,
+          isTemplate: staticFile.isTemplate,
+        })
+      })
+
+      it('should return placeholder static file', async () => {
+        expect(result).toEqual(
+          new PlaceholderStaticFile({
+            filepath: filePath,
+            hash: staticFile.hash,
+          }),
+        )
+      })
+    })
+
+    describe('when the file is missing and hash is not in the params', () => {
+      beforeEach(async () => {
+        const commonStaticFileSource = await setUp({ sourceName: commonPrefix })
+        const envStaticFileSource = await setUp({ sourceName: activePrefix })
+        const realSources = {
+          [commonPrefix]: commonStaticFileSource,
+          [activePrefix]: envStaticFileSource,
+        }
+        const src = multiEnvSource(realSources, commonPrefix, inMemRemoteMapCreator(), false)
+        await src.load({})
+        result = await src.getStaticFile({
+          filePath: staticFile.filepath,
+          encoding: staticFile.encoding,
+          env: activePrefix,
+          isTemplate: staticFile.isTemplate,
+        })
+      })
+
+      it('should return missing static file', async () => {
+        expect(result).toEqual(new MissingStaticFile(filePath))
+      })
     })
   })
 

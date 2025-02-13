@@ -279,7 +279,7 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
   },
 }
 
-export type ReferenceContextStrategyName =
+type ReferenceContextStrategyName =
   | 'neighborField'
   | 'allowlistedNeighborField'
   | 'allowlistedNeighborSubject'
@@ -294,7 +294,7 @@ export type ReferenceContextStrategyName =
   | 'neighborSubjectReferenceTicketField'
   | 'neighborSubjectReferenceUserAndOrgField'
   | 'neighborParentType'
-export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
+const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
   // We use allow lists because there are types we don't support (such as organization or requester)
   // and they'll end up being false positives

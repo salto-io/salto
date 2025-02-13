@@ -69,7 +69,7 @@ const USER_SEGMENT_ID_FIELD = 'user_segment_id'
 const ATTACHMENTS_IDS_REGEX = new RegExp(`(?<url>/${ARTICLE_ATTACHMENTS_FIELD}/)(?<id>\\d+)`, 'g')
 const RATE_LIMIT_FOR_UNASSOCIATED_ATTACHMENT = 50
 
-export type TranslationType = {
+type TranslationType = {
   title: string
   body?: string
   locale: { locale: string }

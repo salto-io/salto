@@ -61,7 +61,7 @@ const addObjectTypes = (elements: Element[]): void => {
         annotations: fullDeploymentAnnotation,
       },
     },
-    path: [JIRA, componentElements.SUBTYPES_PATH, componentElements.TYPES_PATH, MAIL_LIST_TYPE_NAME],
+    path: [JIRA, componentElements.TYPES_PATH, componentElements.SUBTYPES_PATH, MAIL_LIST_TYPE_NAME],
   })
 
   const linkDirectionType = new ObjectType({

@@ -25,6 +25,7 @@ import {
   AUTOMATION_COMPONENT_VALUE_TYPE,
   JIRA,
   DELETE_LINK_TYPES,
+  AUTOMATION_QUERY,
 } from '../../constants'
 
 export const createAutomationTypes = (): {
@@ -144,6 +145,7 @@ export const createAutomationTypes = (): {
       direction: { refType: BuiltinTypes.STRING },
       name: { refType: BuiltinTypes.STRING },
     },
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, DELETE_LINK_TYPES],
   })
 
   const templateFormsConfigType = new ObjectType({
@@ -152,6 +154,16 @@ export const createAutomationTypes = (): {
       projectId: { refType: BuiltinTypes.NUMBER },
       templateFormIds: { refType: new ListType(BuiltinTypes.NUMBER) },
     },
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'TemplateFormsConfig'],
+  })
+
+  const queryType = new ObjectType({
+    elemID: new ElemID(JIRA, AUTOMATION_QUERY),
+    fields: {
+      type: { refType: BuiltinTypes.STRING },
+      value: { refType: BuiltinTypes.UNKNOWN }, // string or reference
+    },
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_QUERY],
   })
 
   const componentValueType = new ObjectType({
@@ -190,9 +202,11 @@ export const createAutomationTypes = (): {
       cmdbField: { refType: BuiltinTypes.UNKNOWN }, // string or reference
       customFieldId: { refType: BuiltinTypes.UNKNOWN }, // string or reference
       fieldId: { refType: BuiltinTypes.UNKNOWN }, // string or reference
+      query: { refType: queryType },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_VALUE_TYPE],
   })
+  componentValueType.fields.customSmartValue = new Field(componentValueType, 'customSmartValue', componentValueType)
 
   const componentType = new ObjectType({
     elemID: new ElemID(JIRA, AUTOMATION_COMPONENT_TYPE),
@@ -206,9 +220,7 @@ export const createAutomationTypes = (): {
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_TYPE],
   })
-
   componentType.fields.children = new Field(componentType, 'children', new ListType(componentType))
-
   componentType.fields.conditions = new Field(componentType, 'conditions', new ListType(componentType))
 
   const tagType = new ObjectType({
@@ -270,6 +282,7 @@ export const createAutomationTypes = (): {
       subtaskType,
       compareFieldValueType,
       deleteLinkTypes,
+      queryType,
     ],
   }
 }

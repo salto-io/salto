@@ -12,6 +12,7 @@ import { Change, ChangeDataType } from './change'
 import { DependencyChanger } from './dependency_changer'
 import { SaltoElementError, SaltoError } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
+import { Values } from './values'
 
 export type PartialFetchData = {
   isPartial: true
@@ -201,7 +202,7 @@ export type AccountInfo = {
 }
 
 export type ConfigCreator = {
-  optionsType: ObjectType
+  optionsType: (optionsContext?: Values) => ObjectType
   getConfig: (options?: InstanceElement) => Promise<InstanceElement>
 }
 

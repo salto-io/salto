@@ -12,7 +12,6 @@ import { Change, ChangeDataType } from './change'
 import { DependencyChanger } from './dependency_changer'
 import { SaltoElementError, SaltoError } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
-import { Values } from './values'
 
 export type PartialFetchData = {
   isPartial: true
@@ -202,7 +201,7 @@ export type AccountInfo = {
 }
 
 export type ConfigCreator = {
-  optionsType: (optionsContext?: Values) => ObjectType
+  optionsType: (jiraOptionsContext?: InstanceElement) => ObjectType
   getConfig: (options?: InstanceElement) => Promise<InstanceElement>
 }
 

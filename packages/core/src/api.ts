@@ -34,7 +34,6 @@ import {
   ReferenceMapping,
   SaltoError,
   TopLevelElement,
-  Values,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -668,8 +667,11 @@ export const rename = async (
   return renameElementChanges
 }
 
-export const getAdapterConfigOptionsType = (adapterName: string, optionsContext?: Values): ObjectType | undefined =>
-  adapterCreators[adapterName]?.configCreator?.optionsType(optionsContext)
+export const getAdapterConfigOptionsType = (
+  adapterName: string,
+  adapterCreators: Record<string, Adapter>,
+  optionsContext?: InstanceElement,
+): ObjectType | undefined => adapterCreators[adapterName]?.configCreator?.optionsType(optionsContext)
 
 /**
  * @deprecated

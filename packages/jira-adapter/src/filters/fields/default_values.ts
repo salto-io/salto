@@ -46,8 +46,8 @@ export const getAllDefaultValuePaths = (defaultValue: Value): string[][] => {
 }
 
 const applyOnDefaultValues = (defaultValue: Value, applyFunc: (value: Value, valuePath: string[]) => void): void => {
-  const valueLocations = getAllDefaultValuePaths(defaultValue)
-  valueLocations.forEach(pathArray => {
+  const valuePaths = getAllDefaultValuePaths(defaultValue)
+  valuePaths.forEach(pathArray => {
     applyFunc(defaultValue, pathArray)
   })
 }
@@ -70,9 +70,9 @@ export const updateDefaultValueIds = ({
 
   relevantContexts.forEach(contextInstance => {
     applyOnDefaultValues(contextInstance.value.defaultValue, (value, valuePath) => {
-      const defaultValueField = _.get(contextInstance, valuePath)
+      const defaultValueField = _.get(value, valuePath)
       if (
-        isResolvedReferenceExpression(_.get(value, valuePath)) &&
+        isResolvedReferenceExpression(defaultValueField) &&
         optionsIdByFullName[defaultValueField.elemID.getFullName()] !== undefined
       ) {
         defaultValueField.value.value.id = optionsIdByFullName[defaultValueField.elemID.getFullName()]

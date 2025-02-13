@@ -17,18 +17,16 @@ import {
   isInstanceChange,
   isInstanceElement,
   isModificationChange,
-  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from './constants'
 import { setContextOptionsSplitted } from './context_options_splitted'
 import { getContextAndFieldIds } from '../../common/fields'
 import { getAllDefaultValuePaths, updateDefaultValueIds } from './default_values'
-import { AddOrModifyInstanceChange } from '../../common/general'
 
 const log = logger(module)
 
@@ -37,34 +35,36 @@ const preventDefaultValuesDeployment = (
   contextId: string,
   errors: SaltoElementError[],
 ): void => {
-  const getContextChange = (searchChanges: Change[], id: string): AddOrModifyInstanceChange | undefined =>
+  const getContextInstance = (searchChanges: Change[], id: string): InstanceElement | undefined =>
     searchChanges
       .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-      .find((change: Change<InstanceElement>) => getChangeData(change).value.id === id)
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+      .filter(instance => instance.value.defaultValue !== undefined)
+      .find(instance => instance.value.id === id)
 
-  const findOptionWithoutId = (contextChange: Change<InstanceElement>): ReferenceExpression | undefined => {
-    const defaultValues = getChangeData(contextChange).value.defaultValue
+  const findOptionWithoutId = (contextInstance: InstanceElement): ReferenceExpression | undefined => {
+    const defaultValues = contextInstance.value.defaultValue
     return getAllDefaultValuePaths(defaultValues)
       .map(path => _.get(defaultValues, path))
-      .filter(isReferenceExpression)
+      .filter(isResolvedReferenceExpression)
       .find(
         value => value.value.id == null, // undefined or null
       )
   }
 
-  const contextChange = getContextChange(leftoverChanges, contextId)
-  if (contextChange === undefined) return
-  const optionReferenceWithoutId = findOptionWithoutId(contextChange)
+  const contextInstance = getContextInstance(leftoverChanges, contextId)
+  if (contextInstance === undefined) return
+  const optionReferenceWithoutId = findOptionWithoutId(contextInstance)
   if (optionReferenceWithoutId !== undefined) {
     errors.push({
       message: 'Could not deploy default value',
       detailedMessage: `The context field will be deployed without the default value, as the default value depends on a field context option ${optionReferenceWithoutId.elemID.getFullName()} that could not be deployed.`,
       severity: 'Error',
-      elemID: getChangeData(contextChange).elemID,
+      elemID: contextInstance.elemID,
     })
-    _.remove(leftoverChanges, change => getChangeData(change).elemID.isEqual(getChangeData(contextChange).elemID))
+    _.remove(leftoverChanges, change => getChangeData(change).elemID.isEqual(contextInstance.elemID))
   }
 }
 

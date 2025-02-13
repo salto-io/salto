@@ -1021,24 +1021,30 @@ describe('Serialization Strategies', () => {
     })
     it('should create reference to the CustomField and deserialize it to the original value', async () => {
       await filter.onFetch([flexiPageInstance, flexiPage, targetType])
-      const componentInstanceCreatedReference = flexiPageInstance.value.flexiPageRegions[0][
-        FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES
-      ][0][COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][
-        UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE
-      ] as ReferenceExpression
-      const itemComponentInstanceCreatedReference = flexiPageInstance.value.flexiPageRegions[0][
-        FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES
-      ][0][ITEM_INSTANCE_FIELD_NAMES.COMPONENT][COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][
-        UI_FORMULA_RULE_FIELD_NAMES.CRITERIA
-      ][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE] as ReferenceExpression
+      const expectedReference = 'salesforce.TestType__c.field.TestCustomField__c'
+      const getFullName = (val: string | ReferenceExpression): string => {
+        expect(val).toBeInstanceOf(ReferenceExpression)
+        return (val as ReferenceExpression).elemID.getFullName()
+      }
+      const componentInstanceCreatedReference =
+        flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES][0][
+          COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE
+        ][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE]
+      const itemComponentInstanceCreatedReference =
+        flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES][0][
+          ITEM_INSTANCE_FIELD_NAMES.COMPONENT
+        ][COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][
+          UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE
+        ]
       const fieldInstanceCreatedReference = flexiPageInstance.value.flexiPageRegions[0][
         FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES
       ][1][ITEM_INSTANCE_FIELD_NAMES.FIELD][FIELD_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][
         UI_FORMULA_RULE_FIELD_NAMES.CRITERIA
       ][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE] as ReferenceExpression
-      expect(componentInstanceCreatedReference).toBeInstanceOf(ReferenceExpression)
-      expect(itemComponentInstanceCreatedReference).toBeInstanceOf(ReferenceExpression)
-      expect(fieldInstanceCreatedReference).toBeInstanceOf(ReferenceExpression)
+
+      expect(getFullName(componentInstanceCreatedReference)).toEqual(expectedReference)
+      expect(getFullName(itemComponentInstanceCreatedReference)).toEqual(expectedReference)
+      expect(getFullName(fieldInstanceCreatedReference)).toEqual(expectedReference)
       // Make sure serialization works on the created reference
       expect(
         await ReferenceSerializationStrategyLookup.flexiPageleftValueField.serialize({

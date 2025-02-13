@@ -260,6 +260,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'projectIds', parentTypes: ['CustomFieldContext'] },
     serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_TYPE },
   },
   {

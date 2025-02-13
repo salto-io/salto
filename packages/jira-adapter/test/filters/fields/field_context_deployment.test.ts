@@ -313,5 +313,122 @@ describe('fieldContextDeployment', () => {
         leftoverChanges.find(change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME),
       ).toBeDefined()
     })
+
+    describe('with failed addition context deployment', () => {
+      let optionInstance2: InstanceElement
+      let unrelatedOptionInstance: InstanceElement
+      let cascadeInstance2: InstanceElement
+      let unrelatedCascadeInstance: InstanceElement
+      let unrelatedContextInstance: InstanceElement
+
+      const optionErrorMessage = (context: InstanceElement): string =>
+        `Element was not deployed, as it depends on ${context.elemID.getFullName()} which failed to deploy`
+
+      beforeEach(() => {
+        unrelatedContextInstance = new InstanceElement('unrelatedContext', contextType, {})
+        optionInstance2 = new InstanceElement('option2', optionType, {}, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, _.cloneDeep(contextInstance)),
+        })
+        cascadeInstance2 = new InstanceElement('cascade2', optionType, {}, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(optionInstance2.elemID, _.cloneDeep(optionInstance2)),
+        })
+        unrelatedOptionInstance = new InstanceElement('unrelatedOption', optionType, {}, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+            unrelatedContextInstance.elemID,
+            _.cloneDeep(unrelatedContextInstance),
+          ),
+        })
+        unrelatedCascadeInstance = new InstanceElement('unrelatedCascade', optionType, {}, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+            unrelatedOptionInstance.elemID,
+            _.cloneDeep(unrelatedOptionInstance),
+          ),
+        })
+        changes = [
+          toChange({ after: contextInstance }),
+          toChange({ after: optionInstance }),
+          toChange({ after: cascadeInstance }),
+          toChange({ after: optionInstance2 }),
+          toChange({ after: cascadeInstance2 }),
+          toChange({ after: unrelatedContextInstance }),
+          toChange({ after: unrelatedOptionInstance }),
+          toChange({ after: unrelatedCascadeInstance }),
+        ]
+
+        deployContextChangeMock.mockImplementationOnce(() => {
+          throw new Error('failed to deploy context')
+        })
+      })
+      it('should mark options of failed context as failed', async () => {
+        const { deployResult } = await filter.deploy(changes)
+        expect(deployResult.errors).toHaveLength(5)
+        expect(deployResult.errors[0]).toEqual({
+          elemID: contextInstance.elemID,
+          severity: 'Error',
+          message: 'Error: failed to deploy context',
+          detailedMessage: 'Error: failed to deploy context',
+        })
+        expect(deployResult.errors[1]).toEqual({
+          elemID: optionInstance.elemID,
+          severity: 'Error',
+          message: optionErrorMessage(contextInstance),
+          detailedMessage: optionErrorMessage(contextInstance),
+        })
+        expect(deployResult.errors[2]).toEqual({
+          elemID: cascadeInstance.elemID,
+          severity: 'Error',
+          message: optionErrorMessage(contextInstance),
+          detailedMessage: optionErrorMessage(contextInstance),
+        })
+        expect(deployResult.errors[3]).toEqual({
+          elemID: optionInstance2.elemID,
+          severity: 'Error',
+          message: optionErrorMessage(contextInstance),
+          detailedMessage: optionErrorMessage(contextInstance),
+        })
+        expect(deployResult.errors[4]).toEqual({
+          elemID: cascadeInstance2.elemID,
+          severity: 'Error',
+          message: optionErrorMessage(contextInstance),
+          detailedMessage: optionErrorMessage(contextInstance),
+        })
+      })
+
+      it('should remove the options from the leftover changes', async () => {
+        const relatedOptionNames = [
+          optionInstance.elemID.getFullName(),
+          cascadeInstance.elemID.getFullName(),
+          optionInstance2.elemID.getFullName(),
+          cascadeInstance2.elemID.getFullName(),
+        ]
+
+        const { leftoverChanges } = await filter.deploy(changes)
+        expect(leftoverChanges).toHaveLength(3)
+        const leftoverChangesNames = leftoverChanges.map(change => getChangeData(change).elemID.getFullName())
+        expect(relatedOptionNames.every(optionName => !leftoverChangesNames.includes(optionName))).toBeTruthy()
+      })
+
+      it('should not mark options of unrelated context as failed', async () => {
+        const { leftoverChanges } = await filter.deploy(changes)
+        expect(leftoverChanges).toHaveLength(3)
+        expect(leftoverChanges.map(change => getChangeData(change).elemID.getFullName())).toEqual([
+          unrelatedOptionInstance.elemID.getFullName(),
+          unrelatedCascadeInstance.elemID.getFullName(),
+          unrelatedContextInstance.elemID.getFullName(),
+        ])
+      })
+      it('should not mark options as failed if the context change is not addition', async () => {
+        changes[0] = toChange({ before: contextInstance, after: contextInstance })
+        const { deployResult, leftoverChanges } = await filter.deploy(changes)
+        expect(deployResult.errors).toHaveLength(1)
+        expect(deployResult.errors[0]).toEqual({
+          elemID: contextInstance.elemID,
+          severity: 'Error',
+          message: 'Error: failed to deploy context',
+          detailedMessage: 'Error: failed to deploy context',
+        })
+        expect(leftoverChanges).toHaveLength(7)
+      })
+    })
   })
 })

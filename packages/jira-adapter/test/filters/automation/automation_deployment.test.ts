@@ -286,6 +286,7 @@ describe('automationDeploymentFilter', () => {
         },
       )
     })
+
     it('should create automation with unsorted many projects', async () => {
       connection.post.mockImplementation(async url =>
         createPostMockResponse([
@@ -317,6 +318,7 @@ describe('automationDeploymentFilter', () => {
       expect(instance.value.id).toBe(3)
       expect(instance.value.created).toBe(1)
     })
+
     describe('retries', () => {
       beforeEach(() => {
         const { client: cli, paginator, connection: conn } = mockClient(false)
@@ -518,6 +520,20 @@ describe('automationDeploymentFilter', () => {
       )
 
       expect(connection.put).not.toHaveBeenCalled()
+    })
+
+    it('should throw with the right explanation whan fail to update automation state', async () => {
+      connection.put.mockImplementation(async url => {
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/3') {
+          throw new Error('update automation state failed')
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+
+      const { deployResult } = await filter.deploy([toChange({ after: instance })])
+
+      expect(deployResult.errors).toHaveLength(1)
+      expect(deployResult.errors[0].message).toContain('update automation state failed')
     })
 
     it('should deploy automation of all projects', async () => {

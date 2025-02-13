@@ -533,6 +533,55 @@ describe('handleHiddenChanges', () => {
     })
   })
 
+  describe('when a list field has an inner field with hidden value annotation', () => {
+    it('should not remove hidden values', async () => {
+      const fieldType = new ObjectType({
+        elemID: new ElemID('test', 'fieldType'),
+        fields: {
+          innerField: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+        },
+      })
+      const objectType = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          field: {
+            refType: new ListType(fieldType),
+          },
+        },
+      })
+      const instance = new InstanceElement('instance', objectType, {
+        field: [{ innerField: 'hidden' }],
+      })
+      const changes = [
+        toDetailedChangeFromBaseChange(toChange({ after: fieldType })),
+        toDetailedChangeFromBaseChange(toChange({ after: objectType })),
+        toDetailedChangeFromBaseChange(toChange({ after: instance })),
+      ]
+      const { visible, hidden } = await handleHiddenChanges(
+        changes,
+        mockState([fieldType, objectType, instance]),
+        createInMemoryElementSource([]),
+      )
+      expect(visible).toHaveLength(3)
+      expect(visible).toContainEqual(
+        expect.objectContaining({
+          id: instance.elemID,
+          // contains `field` but not `innerField`
+          data: expect.objectContaining({
+            after: expect.objectContaining({
+              value: { field: [{ innerField: 'hidden' }] },
+            }),
+          }),
+          action: 'add',
+        }),
+      )
+      expect(hidden).toHaveLength(0)
+    })
+  })
+
   describe('hidden_string in instance annotations', () => {
     let instance: InstanceElement
     let instanceType: ObjectType

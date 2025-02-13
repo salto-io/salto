@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _ from 'lodash'
+import _, { some } from 'lodash'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
@@ -54,6 +54,7 @@ import {
   toChange,
   isAdditionChange,
   isFieldChange,
+  isIndexPathPart,
 } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
@@ -188,10 +189,25 @@ export const mergeWithHidden = async (
   return mergeElements(awu(hiddenStateElements).concat(workspaceElementsWithHiddenParts))
 }
 
+// Check if the given path is nested in a list
+const isPathInList = (path: ElemID | undefined): boolean => some(path?.getFullNameParts(), isIndexPathPart)
+
 const removeHiddenValue =
   (): TransformFunc =>
-  ({ value, field }) =>
-    isHiddenValue(field) ? undefined : value
+  ({ value, field, path }) => {
+    if (!isHiddenValue(field)) {
+      return value
+    }
+    if (isPathInList(path)) {
+      log.warn(
+        'Cannot remove hidden value of %s when nested in a list (full path: %s)',
+        field?.elemID.getFullName(),
+        path?.getFullName(),
+      )
+      return value
+    }
+    return undefined
+  }
 
 export const removeHiddenFromElement = <T extends Element>(
   element: T,

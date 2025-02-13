@@ -14,7 +14,7 @@ import { createEmptyType } from './utils'
 describe('config creator', () => {
   let options: InstanceElement
   beforeEach(async () => {
-    options = new InstanceElement('instance', optionsType, {
+    options = new InstanceElement('instance', optionsType(), {
       enableScriptRunnerAddon: true,
       enableJSM: true,
     })

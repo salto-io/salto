@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _ from 'lodash'
+import _, { some } from 'lodash'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
@@ -54,6 +54,7 @@ import {
   toChange,
   isAdditionChange,
   isFieldChange,
+  isIndexPathPart,
 } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
@@ -139,7 +140,7 @@ export const getElementHiddenParts = async <T extends Element>(
       path !== undefined && (isAncestorOfHiddenPath(path) || isNestedHiddenPath(path)) ? value : undefined,
     strict: true,
     allowEmptyArrays: true,
-    allowEmptyObjects: true,
+    allowAllEmptyObjects: true,
     elementsSource,
   })
   // remove all annotation types from the hidden element so they don't cause merge conflicts
@@ -188,10 +189,25 @@ export const mergeWithHidden = async (
   return mergeElements(awu(hiddenStateElements).concat(workspaceElementsWithHiddenParts))
 }
 
+// Check if the given path is nested in a list
+const isPathInList = (path: ElemID | undefined): boolean => some(path?.getFullNameParts(), isIndexPathPart)
+
 const removeHiddenValue =
   (): TransformFunc =>
-  ({ value, field }) =>
-    isHiddenValue(field) ? undefined : value
+  ({ value, field, path }) => {
+    if (!isHiddenValue(field)) {
+      return value
+    }
+    if (isPathInList(path)) {
+      log.warn(
+        'Cannot remove hidden value of %s when nested in a list (full path: %s)',
+        field?.elemID.getFullName(),
+        path?.getFullName(),
+      )
+      return value
+    }
+    return undefined
+  }
 
 export const removeHiddenFromElement = <T extends Element>(
   element: T,
@@ -203,7 +219,7 @@ export const removeHiddenFromElement = <T extends Element>(
     strict: false,
     elementsSource,
     allowEmptyArrays: true,
-    allowEmptyObjects: true,
+    allowAllEmptyObjects: true,
   })
 
 const removeHiddenFromValues = (
@@ -220,7 +236,7 @@ const removeHiddenFromValues = (
     elementsSource,
     strict: false,
     allowEmptyArrays: true,
-    allowEmptyObjects: true,
+    allowAllEmptyObjects: true,
   })
 
 const isAttributeChangeToHidden = (change: DetailedChange, hiddenValue: boolean): boolean =>
@@ -576,7 +592,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
       elementsSource: state,
       runOnFields: true,
       allowEmptyArrays: true,
-      allowEmptyObjects: true,
+      allowAllEmptyObjects: true,
     })
 
     return clonedVisibleElement

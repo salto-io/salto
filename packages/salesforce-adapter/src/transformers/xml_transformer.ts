@@ -551,7 +551,7 @@ const cloneValuesWithAttributePrefixes = async (instance: InstanceElement): Prom
     pathID: instance.elemID,
     strict: false,
     allowEmptyArrays: true,
-    allowEmptyObjects: true,
+    allowExistingEmptyObjects: true,
   })
 
   const addAttributePrefixFunc: MapKeyFunc = ({ key, pathID }) => {

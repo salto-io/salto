@@ -460,4 +460,43 @@ describe('flowReferencedElements change validator', () => {
       ])
     })
   })
+  describe('when references point to non-flow elements', () => {
+    beforeEach(() => {
+      flowInstance = createInstanceElement(
+        {
+          fullName: 'TestFlow',
+          exitRules: [
+            {
+              conditions: [
+                {
+                  [LEFT_VALUE_REFERENCE]: '$Record.CustomName__c',
+                  rightValue: { [ELEMENT_REFERENCE]: '$User.StartDay' },
+                },
+              ],
+            },
+          ],
+          actionCalls: [
+            {
+              name: 'ActionCall1',
+              inputParameters: [{ name: 'Param1', value: { [ELEMENT_REFERENCE]: '$System.OriginDateTime' } }],
+              connector: { [TARGET_REFERENCE]: 'ActionCall2' },
+            },
+            {
+              name: 'ActionCall2',
+              inputParameters: [{ name: 'Param2', value: { [ELEMENT_REFERENCE]: '$Organization.City' } }],
+            },
+          ],
+          start: {
+            connector: { [TARGET_REFERENCE]: 'ActionCall1' },
+          },
+        },
+        flow,
+      )
+      flowChange = toChange({ after: flowInstance })
+    })
+    it('should not return errors', async () => {
+      const errors = await flowReferencedElements([flowChange])
+      expect(errors).toBeEmpty()
+    })
+  })
 })

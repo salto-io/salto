@@ -47,6 +47,7 @@ const removeOptionsWithDeletedContext = (
   return { leftoverChanges, optionsWithDeletedContext }
 }
 
+// this function find the failure contexts addition and remove the options that depend on them
 const removeOptionsOfFailedContexts = ({
   deployResult,
   leftoverChanges,
@@ -59,7 +60,6 @@ const removeOptionsOfFailedContexts = ({
   updatedDeployResult: DeployResult
   updatedLeftoverChanges: Change[]
 } => {
-  // this function find the failure contexts addition and remove the options that depend on them
   const contextAppliedChangesFullName = new Set(
     deployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),
   )
@@ -72,7 +72,7 @@ const removeOptionsOfFailedContexts = ({
       .filter(contextName => !contextAppliedChangesFullName.has(contextName)),
   )
 
-  const relevantOptionInstancesByFullName = _.keyBy(
+  const optionsOfDeletedContextByFullName = _.keyBy(
     leftoverChanges
       .filter(isInstanceChange)
       .map(getChangeData)
@@ -84,7 +84,7 @@ const removeOptionsOfFailedContexts = ({
     instance => instance.elemID.getFullName(),
   )
 
-  const errors = Object.values(relevantOptionInstancesByFullName).map(optionInstance => {
+  const optionErrors = Object.values(optionsOfDeletedContextByFullName).map(optionInstance => {
     const contextParent = getContextParent(optionInstance)
     const message = `Element was not deployed, as it depends on ${contextParent.elemID.getFullName()} which failed to deploy`
     return {
@@ -95,15 +95,15 @@ const removeOptionsOfFailedContexts = ({
     }
   })
 
-  const updateLeftoverChanges = leftoverChanges.filter(
-    change => relevantOptionInstancesByFullName[getChangeData(change).elemID.getFullName()] === undefined,
+  const updatedLeftoverChanges = leftoverChanges.filter(
+    change => optionsOfDeletedContextByFullName[getChangeData(change).elemID.getFullName()] === undefined,
   )
   return {
     updatedDeployResult: {
       ...deployResult,
-      errors: deployResult.errors.concat(errors),
+      errors: deployResult.errors.concat(optionErrors),
     },
-    updatedLeftoverChanges: updateLeftoverChanges,
+    updatedLeftoverChanges,
   }
 }
 

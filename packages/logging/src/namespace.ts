@@ -11,7 +11,7 @@ import { safe as safeColors } from './colors'
 import quickHash, { MIN_HASH, MAX_HASH } from './quickhash'
 
 // Partial of ES6 Module
-export type LoggingModule = {
+type LoggingModule = {
   id: string | number // number when using webpack: https://webpack.js.org/api/module-variables/
 }
 
@@ -49,7 +49,7 @@ const fromFilename = (filename: string): Namespace =>
     .replace(/\.[^.]+$/, '') // remove extension
     .replace(/\/{2}/g, '/') // normalize double slashes to single
 
-export type NamespaceNormalizer = (namespace: NamespaceOrModule, namespaceFragments?: NamespaceFragment[]) => Namespace
+type NamespaceNormalizer = (namespace: NamespaceOrModule, namespaceFragments?: NamespaceFragment[]) => Namespace
 
 export const namespaceNormalizer =
   (lastLibraryFilename: string): NamespaceNormalizer =>

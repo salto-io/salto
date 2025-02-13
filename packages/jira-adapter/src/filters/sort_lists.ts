@@ -62,6 +62,7 @@ const TYPES_AND_VALUES_TO_SORT: Record<string, Record<string, Record<string, str
     [AUTOMATION_TYPE]: {
       tags: ['tagType', 'tagValue'],
       projects: ['projectId.elemID.name', 'projectTypeKey'],
+      collaborators: [],
     },
   },
   [FIELD_CONFIGURATION_SCHEME_TYPE]: {

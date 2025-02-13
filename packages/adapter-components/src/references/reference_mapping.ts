@@ -19,14 +19,12 @@ import { types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { createMissingInstance } from './missing_references'
 
-export type ApiNameFunc = (elem: Element) => string
 export type LookupFunc = (val: Value, context?: string) => string
 export type CreateMissingRefFunc = (params: {
   value: string
   adapter: string
   typeName?: string
 }) => Element | undefined
-export type CheckMissingRefFunc = (element: Element) => boolean
 
 export type GetReferenceIdFunc = (topLevelId: ElemID) => ElemID
 
@@ -101,7 +99,7 @@ export type MissingReferenceStrategy = {
 
 export type MissingReferenceStrategyName = 'typeAndValue'
 
-export const missingReferenceStrategyLookup: Record<MissingReferenceStrategyName, MissingReferenceStrategy> = {
+const missingReferenceStrategyLookup: Record<MissingReferenceStrategyName, MissingReferenceStrategy> = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
       if (!_.isString(typeName) || !value) {

@@ -28,7 +28,7 @@ type StatusError = {
   ]
 }
 
-export type GetSuccess = {
+type GetSuccess = {
   readResponse: {
     record: {
       content?: string
@@ -37,7 +37,7 @@ export type GetSuccess = {
   }
 }
 
-export type GetError = {
+type GetError = {
   readResponse: {
     status: StatusError
   }
@@ -48,7 +48,7 @@ export type GetResult = GetSuccess | GetError
 export const isGetSuccess = (result: GetResult): result is GetSuccess =>
   result.readResponse.status.attributes.isSuccess === 'true'
 
-export type WriteResponseSuccess = {
+type WriteResponseSuccess = {
   status: StatusSuccess
   baseRef: {
     attributes: {
@@ -79,14 +79,14 @@ export type SoapDeployResult =
       errorMessage: string
     }
 
-export type DeployListSuccess = {
+type DeployListSuccess = {
   writeResponseList: {
     writeResponse: WriteResponse[]
     status: StatusSuccess
   }
 }
 
-export type DeployListError = {
+type DeployListError = {
   writeResponseList: {
     status: StatusError
   }

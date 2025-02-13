@@ -51,7 +51,7 @@ export const getChildAndParentTypeNames = (config: ZendeskApiConfig): ChildParen
     .concat(ADDITIONAL_CHILD_PARENT_RELATIONSHIPS)
 }
 
-export const getIdsFromReferenceExpressions = (values: unknown): ElemID[] =>
+const getIdsFromReferenceExpressions = (values: unknown): ElemID[] =>
   makeArray(values)
     .filter(isReferenceExpression)
     .map(ref => ref.elemID)

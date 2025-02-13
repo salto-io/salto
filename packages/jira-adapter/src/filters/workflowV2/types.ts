@@ -71,18 +71,13 @@ export type PayloadWorkflowStatus = WorkflowStatus & {
   statusReference: string
 }
 
-export type WorkflowStatusAndPort = {
-  statusReference: string | ReferenceExpression
-  port?: number
-}
-
-export type WorkflowTransitionLinks = {
+type WorkflowTransitionLinks = {
   fromPort?: number
   fromStatusReference?: string | ReferenceExpression
   toPort?: number
 }
 
-export type WorkflowV2TransitionRuleParameters = {
+type WorkflowV2TransitionRuleParameters = {
   appKey?: string
   key?: string
 } & Record<string, unknown>

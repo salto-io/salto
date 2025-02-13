@@ -98,7 +98,7 @@ const getProfileMappingRefByName: referenceUtils.ContextValueMapperFunc = val =>
 const getUserSchemaPropertyOverrideType: referenceUtils.ContextValueMapperFunc = val =>
   val === 'APP' ? APPLICATION_TYPE_NAME : undefined
 
-export type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName' | 'userSchemaPropertyAppOverride'
+type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName' | 'userSchemaPropertyAppOverride'
 
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   profileMappingType: referenceUtils.neighborContextGetter({

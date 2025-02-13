@@ -29,6 +29,9 @@ import {
   getSalesforceClient,
 } from './helpers/salesforce'
 import * as callbacks from '../src/callbacks'
+// Importing getCredentialsFromUser since this file is the only place it's used but it's only referenced by name for spying
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { getCredentialsFromUser as _getCredentialsFromUser } from '../src/callbacks'
 import {
   runInit,
   runSetEnv,

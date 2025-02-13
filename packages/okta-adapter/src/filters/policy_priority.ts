@@ -99,7 +99,7 @@ const POLICY_NAME_TO_PRIORITY_NAME: Record<PolicyTypeWithPriority, string> = {
 export const POLICY_PRIORITY_TYPE_NAMES = Object.values(POLICY_NAME_TO_PRIORITY_NAME)
 export const POLICY_RULE_PRIORITY_TYPE_NAMES = Object.values(POLICY_NAME_TO_RULE_PRIORITY_NAME)
 
-export const createPriorityType = (typeName: string, defaultFieldName: string): ObjectType =>
+const createPriorityType = (typeName: string, defaultFieldName: string): ObjectType =>
   new ObjectType({
     elemID: new ElemID(OKTA, typeName),
     fields: {

@@ -38,13 +38,13 @@ const { createPaginator } = clientUtils
 const { getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
-export const DEFAULT_FILTERS = [
+const DEFAULT_FILTERS = [
   // fieldReferencesFilter should run after all elements were created
   fieldReferencesFilter,
   ...Object.values(commonFilters),
 ]
 
-export interface SAPAdapterParams {
+interface SAPAdapterParams {
   filterCreators?: FilterCreator[]
   client: SAPClient
   config: SAPConfig

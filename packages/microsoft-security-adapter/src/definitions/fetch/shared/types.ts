@@ -11,10 +11,8 @@ import { Options } from '../../types'
 
 export type FetchApiDefinition = definitions.fetch.InstanceFetchApiDefinitions<Options>
 export type FetchCustomizations = Record<string, FetchApiDefinition>
-export type ElementFetchDefinition = definitions.fetch.ElementFetchDefinition<Options>
 export type ElementFieldCustomization = definitions.fetch.ElementFieldCustomization
 export type FieldIDPart = definitions.fetch.FieldIDPart
-export type AdjustFunction = definitions.AdjustFunction
 export type AdjustFunctionSingle = definitions.AdjustFunctionSingle
 export type AdjustFunctionMergeAndTransform = definitions.AdjustFunctionSingle<{
   fragments: definitions.GeneratedItem[]

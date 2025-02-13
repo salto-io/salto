@@ -56,6 +56,8 @@ const BRACKETS = [
 const REFERENCE_MARKER_REGEX = /\$\{({{.+?}})\}/
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
 const DYNAMIC_CONTENT_REGEX_WITH_BRACKETS = /({{dc\.[\w-]+}})/g
+// The non capturing group inside the group is needed because of the way regex.split consumes the matched groups
+const HELP_CENTER_URL = /("\/?hc\/[^"\s]+?(?:["\s]|$))/g
 const TICKET_FIELD_SPLIT = '(?:(ticket.ticket_field|ticket.ticket_field_option_title)_([\\d]+))'
 const KEY_SPLIT = '(?:([^ ]+\\.custom_fields)\\.)'
 const TITLE_SPLIT = '(?:([^ ]+)\\.(title))'
@@ -68,7 +70,7 @@ export const TICKET_USER_FIELD = 'ticket.requester.custom_fields'
 const ID = 'id'
 const KEY = 'key'
 
-export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
+const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
   [TICKET_TICKET_FIELD_OPTION_TITLE]: TICKET_FIELD_TYPE_NAME,
   [TICKET_ORGANIZATION_FIELD]: ORG_FIELD_TYPE_NAME,
@@ -317,7 +319,7 @@ const formulaToTemplate = ({
 
   const potentialRegexes = [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX_WITH_BRACKETS]
   if (extractReferencesFromFreeText) {
-    potentialRegexes.push(...ELEMENTS_REGEXES.map(s => s.urlRegex))
+    potentialRegexes.push(HELP_CENTER_URL)
   }
 
   // The second part is a split that separates the now-marked ids, so they could be replaced
@@ -334,14 +336,22 @@ const formulaToTemplate = ({
     }
     if (extractReferencesFromFreeText) {
       // Check if the expression is a link to a zendesk page without a subdomain
-      // href="/hc/en-us/../articles/123123
-      const isZendeskLink = new RegExp(`"/?hc/\\S*${_.escapeRegExp(expression)}`).test(formula)
-      if (isZendeskLink) {
-        return transformReferenceUrls({
-          urlPart: expression,
-          instancesById,
-          enableMissingReferences,
-        })
+      // href="/hc/en-us/sections/5678/articles/123123"
+
+      // There are multiple regexes that can reach this part, only one section is relevant here
+      const isHelpCenterUrlMatch = expression.match(HELP_CENTER_URL)
+      if (isHelpCenterUrlMatch !== null) {
+        const transformedUrl = extractTemplate(
+          expression,
+          ELEMENTS_REGEXES.map(s => s.urlRegex),
+          urlPart =>
+            transformReferenceUrls({
+              urlPart,
+              instancesById,
+              enableMissingReferences,
+            }),
+        )
+        return isTemplateExpression(transformedUrl) ? transformedUrl.parts : expression
       }
     }
     return expression

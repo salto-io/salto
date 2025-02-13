@@ -9,7 +9,7 @@ import wu from 'wu'
 import { EOL } from 'os'
 import { FetchChange, StepEmitter } from '@salto-io/core'
 import { Tags } from '@salto-io/local-workspace'
-import { SaltoError, DetailedChange } from '@salto-io/adapter-api'
+import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Workspace, nacl, validator as wsValidator } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -30,27 +30,12 @@ const { isUnresolvedRefError } = wsValidator
 const log = logger(module)
 
 export const MAX_DETAIL_CHANGES_TO_LOG = 100
-export const MAX_WORKSPACE_ERRORS_TO_LOG = 30
+const MAX_WORKSPACE_ERRORS_TO_LOG = 30
 
-export type LoadWorkspaceResult = {
-  workspace: Workspace
-  errored: boolean
-}
 type WorkspaceStatus = 'Error' | 'Warning' | 'Valid'
 type WorkspaceStatusErrors = {
   status: WorkspaceStatus
   errors: ReadonlyArray<SaltoError>
-}
-
-export type LoadWorkspaceOptions = {
-  force: boolean
-  printStateRecency: boolean
-  recommendStateStatus: boolean
-  spinnerCreator: SpinnerCreator
-  sessionEnv?: string
-  accounts?: string[]
-  ignoreUnresolvedRefs?: boolean
-  configOverrides?: DetailedChange[]
 }
 
 type ApplyProgressEvents = {

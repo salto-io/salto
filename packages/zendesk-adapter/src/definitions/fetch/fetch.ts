@@ -2130,6 +2130,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       fieldCustomizations: {
         id: { hide: true },
         brandId: { fieldType: 'string' },
+        previewFlowId: { omit: true },
         subflows: {
           sort: {
             properties: [{ path: 'name' }],
@@ -2141,6 +2142,50 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             nestPathUnderParent: true,
           },
         },
+      },
+    },
+  },
+  [`${CONVERSATION_BOT}__greeting`]: {
+    element: {
+      fieldCustomizations: {
+        id: { fieldType: 'string', hide: true },
+      },
+    },
+  },
+  [`${CONVERSATION_BOT}__greeting__suggestedAnswers`]: {
+    element: {
+      fieldCustomizations: {
+        // This is omitted instead of hidden because it is in a nested array, and is currently not supported
+        id: { omit: true },
+      },
+    },
+  },
+  [`${CONVERSATION_BOT}__fallback`]: {
+    element: {
+      fieldCustomizations: {
+        id: { fieldType: 'string', hide: true },
+      },
+    },
+  },
+  [`${CONVERSATION_BOT}__fallback__suggestedAnswers`]: {
+    element: {
+      fieldCustomizations: {
+        // This is omitted instead of hidden because it is in a nested array, and is currently not supported
+        id: { omit: true },
+      },
+    },
+  },
+  [`${CONVERSATION_BOT}__helpCenterAutoReplyFeedback`]: {
+    element: {
+      fieldCustomizations: {
+        id: { fieldType: 'string', hide: true },
+      },
+    },
+  },
+  [`${CONVERSATION_BOT}__freeTextQuery`]: {
+    element: {
+      fieldCustomizations: {
+        id: { fieldType: 'string', hide: true },
       },
     },
   },
@@ -2176,6 +2221,14 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
+  [`${BOT_BUILDER_ANSWER}__trainingPhrases`]: {
+    element: {
+      fieldCustomizations: {
+        // This is omitted instead of hidden because it is in a nested array, and is currently not supported
+        id: { omit: true },
+      },
+    },
+  },
   [BOT_BUILDER_NODE]: {
     element: {
       topLevel: {
@@ -2195,7 +2248,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
       fieldCustomizations: {
         id: { fieldType: 'string', hide: true },
-        externalId: { fieldType: 'string', hide: true },
+        externalId: { fieldType: 'string' },
       },
     },
   },

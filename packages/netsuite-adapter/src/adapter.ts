@@ -34,7 +34,7 @@ import { filter, logDuration } from '@salto-io/adapter-utils'
 import { combineElementFixers } from '@salto-io/adapter-components'
 import { createElements } from './transformer'
 import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
-import { BUNDLE, CUSTOM_RECORD_TYPE, IS_LOCKED, SCRIPT_ID } from './constants'
+import { BUNDLE, CUSTOM_RECORD_TYPE, IS_LOCKED, PLUGIN_IMPLEMENTATION, SCRIPT_ID } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -568,7 +568,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const deprecatedSkipList = buildNetsuiteQuery(
       convertToQueryParams({
-        types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, [ALL_TYPES_REGEX]])),
+        types: Object.fromEntries(
+          this.typesToSkip
+            .concat(!this.config.fetch.fetchPluginImplementations ? PLUGIN_IMPLEMENTATION : [])
+            .map(typeName => [typeName, [ALL_TYPES_REGEX]]),
+        ),
         filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
       }),
     )

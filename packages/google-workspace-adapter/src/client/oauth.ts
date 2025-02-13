@@ -60,7 +60,7 @@ export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestPara
   }
 }
 
-export type OauthRequestParameters = {
+type OauthRequestParameters = {
   clientId: string
   clientSecret: string
   port: number

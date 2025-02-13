@@ -48,7 +48,7 @@ const AUTHENTICATORS_SCHEMA = Joi.array()
   )
   .required()
 
-export const areAuthenticators = createSchemeGuard<Authenticator[]>(
+const areAuthenticators = createSchemeGuard<Authenticator[]>(
   AUTHENTICATORS_SCHEMA,
   'Received an invalid value for authenticators',
 )

@@ -145,34 +145,35 @@ export const buildStaticFilesSource = (
   }
 
   const staticFilesSource: Required<StaticFilesSource> = {
-    load: async () => {
-      const existingFiles = new Set(await staticFilesDirStore.list())
-      const cachedFileNames = new Set(await staticFilesCache.list())
-      const newFiles = wu(existingFiles.keys())
-        .filter(name => !cachedFileNames.has(name))
-        .toArray()
-      const deletedFiles = wu(cachedFileNames.keys())
-        .filter(name => !existingFiles.has(name))
-        .toArray()
+    load: () =>
+      log.timeDebug(async () => {
+        const existingFiles = new Set(await staticFilesDirStore.list())
+        const cachedFileNames = new Set(await staticFilesCache.list())
+        const newFiles = wu(existingFiles.keys())
+          .filter(name => !cachedFileNames.has(name))
+          .toArray()
+        const deletedFiles = wu(cachedFileNames.keys())
+          .filter(name => !existingFiles.has(name))
+          .toArray()
 
-      if (deletedFiles.length > 0) {
-        log.debug('deleting %d files from static files cache', deletedFiles.length)
-        await staticFilesCache.deleteMany(deletedFiles)
-      }
+        if (deletedFiles.length > 0) {
+          log.debug('deleting %d files from static files cache', deletedFiles.length)
+          await staticFilesCache.deleteMany(deletedFiles)
+        }
 
-      const modifiedFilesSet = new Set(
-        (
-          await withLimitedConcurrency(
-            wu(existingFiles.keys())
-              .filter(name => cachedFileNames.has(name))
-              .map(name => async () => ((await getStaticFileData(name)).hasChanged ? name : undefined)),
-            CACHE_READ_CONCURRENCY,
-          )
-        ).filter(values.isDefined),
-      )
+        const modifiedFilesSet = new Set(
+          (
+            await withLimitedConcurrency(
+              wu(existingFiles.keys())
+                .filter(name => cachedFileNames.has(name))
+                .map(name => async () => ((await getStaticFileData(name)).hasChanged ? name : undefined)),
+              CACHE_READ_CONCURRENCY,
+            )
+          ).filter(values.isDefined),
+        )
 
-      return [...newFiles, ...deletedFiles, ...modifiedFilesSet.keys()]
-    },
+        return [...newFiles, ...deletedFiles, ...modifiedFilesSet.keys()]
+      }, 'StaticFilesSource.load'),
     getStaticFile: async (args: {
       filepath: string
       encoding: BufferEncoding

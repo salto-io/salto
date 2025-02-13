@@ -10,7 +10,7 @@ import moment from 'moment'
 import os from 'os'
 import _ from 'lodash'
 
-export const deployOrValidate = ({
+const deployOrValidate = ({
   checkOnly,
   capitalize,
   noun,

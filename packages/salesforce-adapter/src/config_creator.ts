@@ -28,7 +28,7 @@ import { CPQ_NAMESPACE, CUSTOM_OBJECT_ID_FIELD } from './constants'
 
 const log = logger(module)
 
-export const CONFIG_WITH_CPQ = new InstanceElement(ElemID.CONFIG_NAME, configType, {
+const CONFIG_WITH_CPQ = new InstanceElement(ElemID.CONFIG_NAME, configType, {
   fetch: {
     metadata: {
       include: [

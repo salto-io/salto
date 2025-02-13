@@ -45,7 +45,7 @@ import { changeResolver } from '../../definitions/references'
 
 const log = logger(module)
 
-export type ArrayElementChangeData = {
+type ArrayElementChangeData = {
   id: string
   name: string
   [key: string]: unknown

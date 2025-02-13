@@ -74,7 +74,7 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 type LookupFunc = (val: Value, context?: string) => string
 
-export type ReferenceSerializationStrategy = {
+type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
   lookup: LookupFunc
 }

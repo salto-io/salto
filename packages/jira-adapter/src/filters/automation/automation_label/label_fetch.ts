@@ -17,9 +17,9 @@ import { LABELS_POST_RESPONSE_SCHEME, LabelsResponse } from './label_deployment'
 
 const log = logger(module)
 
-export const LABELS_GET_RESPONSE_SCHEME = Joi.array().items(LABELS_POST_RESPONSE_SCHEME)
+const LABELS_GET_RESPONSE_SCHEME = Joi.array().items(LABELS_POST_RESPONSE_SCHEME)
 
-export const isLabelsGetResponse = createSchemeGuard<LabelsResponse[]>(
+const isLabelsGetResponse = createSchemeGuard<LabelsResponse[]>(
   LABELS_GET_RESPONSE_SCHEME,
   'Failed to get automation labels, received invalid response',
 )

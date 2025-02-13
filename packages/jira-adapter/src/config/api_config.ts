@@ -21,7 +21,7 @@ import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 const DEFAULT_MAX_RESULTS = '1000'
 
-export type JspUrls = {
+type JspUrls = {
   add: string
   modify?: string
   remove?: string
@@ -2512,7 +2512,7 @@ export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
   ObjectTypeIcon: ['ObjectTypeIcon'],
 }
 
-export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {
+const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {
   ScriptRunnerListener: ['ScriptRunnerListener'],
   ScriptFragment: ['ScriptFragment'],
   ScheduledJob: ['ScheduledJob'],

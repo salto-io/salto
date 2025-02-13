@@ -53,7 +53,7 @@ const printRestorePlan = async (changes: LocalChange[], detailed: boolean, outpu
   outputLine(EOL, output)
 }
 
-export const shouldExecuteRestore = async (force: boolean): Promise<boolean> => {
+const shouldExecuteRestore = async (force: boolean): Promise<boolean> => {
   if (force) {
     return true
   }

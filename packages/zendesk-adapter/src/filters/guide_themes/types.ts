@@ -59,7 +59,7 @@ export type PendingJob<JobData> = {
   data: JobData
 }
 
-export type CompletedJob<JobData> = {
+type CompletedJob<JobData> = {
   id: string
   status: 'completed'
   data: JobData

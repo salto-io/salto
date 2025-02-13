@@ -14,4 +14,3 @@ export {
   transformRequest as transformNodeRequest,
   transformResponse as transformNodeResponse,
 } from './bot_builder_node_adjuster'
-export { transformResponse as transformBotResponse } from './bot_adjuster'

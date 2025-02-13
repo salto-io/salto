@@ -38,7 +38,7 @@ const replacePath = async (profile: InstanceElement, profileInternalIdToName: Ma
   }
 }
 
-export const WARNING_MESSAGE =
+const WARNING_MESSAGE =
   'Failed to update the NaCl file names for some of your salesforce profiles. Therefore, profiles NaCl file names might differ from their display names in some cases.'
 
 /**

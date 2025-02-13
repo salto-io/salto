@@ -22,7 +22,7 @@ export type Reals = {
   adapter: OktaAdapter
 }
 
-export type Opts = {
+type Opts = {
   adapterParams?: Partial<OktaAdapterParams>
   credentials: Credentials
   elementsSource: ReadOnlyElementsSource

@@ -39,14 +39,35 @@ describe('graphql_adjuster', () => {
   })
 
   describe('transformResponse', () => {
-    it('should extract the data from the graphql response', async () => {
-      const value = { data: { test: [{ a: 1 }] } }
+    it('should extract the id from the graphql response', async () => {
+      const value = { data: { test: [{ id: 1 }] } }
       const finalValue = await transformResponse('test')({
         value,
         typeName: 'test',
-        context: {} as definitions.deploy.ChangeAndExtendedContext,
+        context: { change: { action: 'add' } } as definitions.deploy.ChangeAndExtendedContext,
       })
-      expect(finalValue).toEqual({ value: { a: 1 } })
+      expect(finalValue).toEqual({ value: { id: 1 } })
+    })
+
+    it('should throw an error if the graphql response is missing an id and not removal change', async () => {
+      const value = { data: { test: [{ notId: 1 }] } }
+      await expect(
+        transformResponse('test')({
+          value,
+          typeName: 'test',
+          context: { change: { action: 'add' } } as definitions.deploy.ChangeAndExtendedContext,
+        }),
+      ).rejects.toThrow('unexpected value without id for graphql item, not transforming')
+    })
+
+    it('should return the value if the graphql response is missing an id and is a removal change', async () => {
+      const value = { data: { test: [{ notId: 1 }] } }
+      const finalValue = await transformResponse('test')({
+        value,
+        typeName: 'test',
+        context: { change: { action: 'remove' } } as definitions.deploy.ChangeAndExtendedContext,
+      })
+      expect(finalValue).toEqual({ value: [{ value: { notId: 1 } }] })
     })
 
     it('should throw an error if the value is not an object', async () => {

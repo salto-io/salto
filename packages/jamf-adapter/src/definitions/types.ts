@@ -13,7 +13,7 @@ type PaginationOptions = 'increasePageUntilEmpty'
 
 export type ReferenceContextStrategies = never
 export type CustomReferenceSerializationStrategyName = 'idAndNameObject'
-export type CustomIndexField = CustomReferenceSerializationStrategyName
+type CustomIndexField = CustomReferenceSerializationStrategyName
 
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions

@@ -15,11 +15,9 @@ import {
   InstanceElement,
   isPrimitiveType,
   PrimitiveTypes,
-  Change,
 } from '@salto-io/adapter-api'
-import { FetchChange } from '@salto-io/core'
+import { FetchChange, PlanItem } from '@salto-io/core'
 import { collections } from '@salto-io/lowerdash'
-import { toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import {
   formatFetchChangeForApproval,
   formatShouldContinueWithWarning,
@@ -68,14 +66,9 @@ export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: num
 export const shouldUpdateConfig = async (
   { stdout }: CliOutput,
   introMessage: string,
-  change: Change,
+  change: PlanItem,
 ): Promise<boolean> => {
-  stdout.write(
-    formatConfigChangeNeeded(
-      introMessage,
-      await formatDetailedChanges([[toDetailedChangeFromBaseChange(change)]], true),
-    ),
-  )
+  stdout.write(formatConfigChangeNeeded(introMessage, await formatDetailedChanges([change.detailedChanges()], true)))
   return getUserBooleanInput(Prompts.SHOULD_UPDATE_CONFIG)
 }
 

@@ -15,6 +15,7 @@ import {
   SaltoError,
 } from '@salto-io/adapter-api'
 import { MergeErrorWithElements } from './core/fetch'
+import { Plan } from './core/plan'
 
 export type FetchChangeMetadata = AuthorInformation
 export type FetchChange = {
@@ -33,7 +34,7 @@ export type FetchResult = {
   mergeErrors: MergeErrorWithElements[]
   fetchErrors: SaltoError[]
   success: boolean
-  configChanges: Change[]
+  configChanges?: Plan
   updatedConfig: Record<string, InstanceElement[]>
   accountNameToConfigMessage?: Record<string, string>
   partiallyFetchedAccounts: Set<string>

@@ -95,17 +95,18 @@ export const getAllInstancesToDeploy = async ({
       ...createGroupMailProperties('mailNicknameA'),
     },
   })
-  const groupWithLifeCyclePolicy = createInstanceElement({
-    typeName: entraTopLevelTypes.GROUP_TYPE_NAME,
-    valuesOverride: {
-      displayName: createName(`${entraTopLevelTypes.GROUP_TYPE_NAME}B`),
-      ...createGroupMailProperties('mailNicknameB'),
-      [entraConstants.GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]: new ReferenceExpression(
-        lifeCyclePolicy.elemID,
-        lifeCyclePolicy,
-      ),
-    },
-  })
+  // TODO SALTO-7443: Uncomment this when we fix the flakiness in assigning a group to a life cycle policy
+  // const groupWithLifeCyclePolicy = createInstanceElement({
+  //   typeName: entraTopLevelTypes.GROUP_TYPE_NAME,
+  //   valuesOverride: {
+  //     displayName: createName(`${entraTopLevelTypes.GROUP_TYPE_NAME}B`),
+  //     ...createGroupMailProperties('mailNicknameB'),
+  //     [entraConstants.GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]: new ReferenceExpression(
+  //       lifeCyclePolicy.elemID,
+  //       lifeCyclePolicy,
+  //     ),
+  //   },
+  // })
   const administrativeUnit = createInstanceElement({
     typeName: entraTopLevelTypes.ADMINISTRATIVE_UNIT_TYPE_NAME,
     valuesOverride: {
@@ -188,7 +189,8 @@ export const getAllInstancesToDeploy = async ({
 
   const instancesToAdd = [
     group,
-    groupWithLifeCyclePolicy,
+    // TODO SALTO-7443: Uncomment this when we fix the flakiness in assigning a group to a life cycle policy
+    // groupWithLifeCyclePolicy,
     administrativeUnit,
     entraApplication,
     entraServicePrincipal,

@@ -25,6 +25,8 @@ import { getContextParentAsync } from '../../common/fields'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
+// the optionId is the option of the parent option for cascading options. Cascade options can have the same value.
+// The value will be undefined for non-cascade options
 const uniqueOptionIdentifier = (option: Value): string => `${naclCase(option.value)}-${option.optionId}`
 
 const processContextOptionsPrivateApiResponse = (allUpdatedOptions: Option[], addedOptions: Value[]): void => {

@@ -563,6 +563,13 @@ describe('salesforce client', () => {
         ),
         expectedMapper: DEPLOY_ERROR_MESSAGE_MAPPER[SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION],
       },
+      [SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE]: {
+        saltoDeployError: createSaltoDeployError(
+          SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE,
+          SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE,
+        ),
+        expectedMapper: DEPLOY_ERROR_MESSAGE_MAPPER[SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE],
+      },
     }
 
     describe.each(Object.keys(DEPLOY_ERROR_MESSAGE_MAPPER))('%p', mappableDeployErrorMessage => {

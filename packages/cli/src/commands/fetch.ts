@@ -7,8 +7,7 @@
  */
 import { EOL } from 'os'
 import _ from 'lodash'
-import wu from 'wu'
-import { getChangeData, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
+import { getChangeData, isInstanceElement, AdapterOperationName, Progress, Change } from '@salto-io/adapter-api'
 import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   fetch as apiFetch,
@@ -16,14 +15,13 @@ import {
   FetchChange,
   FetchProgressEvents,
   StepEmitter,
-  PlanItem,
   FetchFromWorkspaceFunc,
   fetchFromWorkspace,
   FetchFuncParams,
 } from '@salto-io/core'
 import { loadLocalWorkspace } from '@salto-io/local-workspace'
 import { Workspace, nacl, createElementSelectors, ElementSelector } from '@salto-io/workspace'
-import { promises, values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
@@ -48,11 +46,11 @@ import { ACCOUNTS_OPTION, AccountsArg, getAndValidateActiveAccounts, getTagsForA
 import { UpdateModeArg, UPDATE_MODE_OPTION } from './common/update_mode'
 
 const log = logger(module)
-const { series } = promises.array
+const { awu } = collections.asynciterable
 
 type ApproveChangesFunc = (changes: ReadonlyArray<FetchChange>) => Promise<ReadonlyArray<FetchChange>>
 
-type ShouldUpdateConfigFunc = ({ stdout }: CliOutput, introMessage: string, change: PlanItem) => Promise<boolean>
+type ShouldUpdateConfigFunc = ({ stdout }: CliOutput, introMessage: string, change: Change) => Promise<boolean>
 
 export type FetchCommandArgs = {
   workspace: Workspace
@@ -200,9 +198,8 @@ export const fetchCommand = async ({
   }
 
   if (!_.isUndefined(fetchResult.configChanges)) {
-    const abortRequests = await series(
-      wu(fetchResult.configChanges.itemsByEvalOrder()).map(planItem => async () => {
-        const [change] = planItem.changes()
+    const abortRequests = await awu(fetchResult.configChanges)
+      .map(async change => {
         const newConfig = getChangeData(change)
         const accountName = newConfig.elemID.adapter
         if (!isInstanceElement(newConfig)) {
@@ -211,7 +208,7 @@ export const fetchCommand = async ({
         }
         const shouldWriteToConfig =
           force ||
-          (await shouldUpdateConfig(output, fetchResult.accountNameToConfigMessage?.[accountName] || '', planItem))
+          (await shouldUpdateConfig(output, fetchResult.accountNameToConfigMessage?.[accountName] || '', change))
         if (shouldWriteToConfig) {
           await workspace.updateAccountConfig(
             workspace.getServiceFromAccountName(accountName),
@@ -220,8 +217,8 @@ export const fetchCommand = async ({
           )
         }
         return !shouldWriteToConfig
-      }),
-    )
+      })
+      .toArray()
 
     if (_.some(abortRequests)) {
       return CliExitCode.UserInputError

@@ -48,8 +48,29 @@ import {
   CPQ_DISCOUNT_SCHEDULE,
   CPQ_CONSTRAINT_FIELD,
   ASSIGN_TO_REFERENCE,
+  UI_FORMULA_CRITERION,
+  UI_FORMULA_CRITERION_FIELD_NAMES,
+  COMPONENT_INSTANCE,
+  COMPONENT_INSTANCE_FIELD_NAMES,
+  ITEM_INSTANCE,
+  FLEXI_PAGE_REGION,
+  FLEXI_PAGE_REGION_FIELD_NAMES,
+  FLEXI_PAGE_TYPE,
+  FLEXI_PAGE_FIELD_NAMES,
+  FIELD_INSTANCE,
+  UI_FORMULA_RULE,
+  UI_FORMULA_RULE_FIELD_NAMES,
+  FIELD_INSTANCE_FIELD_NAMES,
+  ITEM_INSTANCE_FIELD_NAMES,
 } from '../../src/constants'
-import { metadataType, apiName, createInstanceElement } from '../../src/transformers/transformer'
+import {
+  metadataType,
+  apiName,
+  createInstanceElement,
+  MetadataInstanceElement,
+  MetadataObjectType,
+  createMetadataObjectType,
+} from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_object_type'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
@@ -855,6 +876,180 @@ describe('Serialization Strategies', () => {
         await ReferenceSerializationStrategyLookup.recordFieldDollarPrefix.serialize({
           ref: createdReference,
           element: flowInstance,
+        }),
+      ).toEqual(RESOLVED_VALUE)
+    })
+  })
+  describe('leftValueField', () => {
+    const RESOLVED_VALUE = '{!Record.TestCustomField__c}'
+    let filter: FilterWith<'onFetch'>
+    let targetType: ObjectType
+    let uiFormulaCriterion: MetadataObjectType
+    let uiFormulaRule: MetadataObjectType
+    let componentInstance: MetadataObjectType
+    let fieldInstance: MetadataObjectType
+    let itemInstance: MetadataObjectType
+    let flexiPageRegion: MetadataObjectType
+    let flexiPage: MetadataObjectType
+    let flexiPageInstance: MetadataInstanceElement
+    beforeEach(() => {
+      targetType = createCustomObjectType('TestType__c', {
+        fields: {
+          TestCustomField__c: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [API_NAME]: 'TestType__c.TestCustomField__c' },
+          },
+        },
+      })
+      uiFormulaCriterion = createMetadataObjectType({
+        annotations: {
+          metadataType: UI_FORMULA_CRITERION,
+        },
+        fields: {
+          [UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE]: { refType: BuiltinTypes.STRING },
+        },
+      })
+      uiFormulaRule = createMetadataObjectType({
+        annotations: {
+          metadataType: UI_FORMULA_RULE,
+        },
+        fields: {
+          [UI_FORMULA_RULE_FIELD_NAMES.CRITERIA]: { refType: new ListType(uiFormulaCriterion) },
+        },
+      })
+      fieldInstance = createMetadataObjectType({
+        annotations: {
+          metadataType: FIELD_INSTANCE,
+        },
+        fields: {
+          [FIELD_INSTANCE_FIELD_NAMES.VISIBILITY_RULE]: {
+            refType: uiFormulaRule,
+          },
+        },
+      })
+      componentInstance = createMetadataObjectType({
+        annotations: {
+          metadataType: COMPONENT_INSTANCE,
+        },
+        fields: {
+          [COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE]: {
+            refType: uiFormulaRule,
+          },
+        },
+      })
+      itemInstance = createMetadataObjectType({
+        annotations: {
+          metadataType: ITEM_INSTANCE,
+        },
+        fields: {
+          [ITEM_INSTANCE_FIELD_NAMES.COMPONENT]: {
+            refType: componentInstance,
+          },
+          [ITEM_INSTANCE_FIELD_NAMES.FIELD]: {
+            refType: fieldInstance,
+          },
+        },
+      })
+      flexiPageRegion = createMetadataObjectType({
+        annotations: {
+          metadataType: FLEXI_PAGE_REGION,
+        },
+        fields: {
+          [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: { refType: new ListType(componentInstance) },
+          [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: { refType: new ListType(itemInstance) },
+        },
+      })
+      flexiPage = createMetadataObjectType({
+        annotations: {
+          metadataType: FLEXI_PAGE_TYPE,
+        },
+        fields: {
+          [FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS]: { refType: new ListType(flexiPageRegion) },
+        },
+      })
+      flexiPageInstance = createInstanceElement(
+        {
+          fullName: 'TestFlexiPage',
+          flexiPageRegions: [
+            {
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                {
+                  [COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE]: {
+                    [UI_FORMULA_RULE_FIELD_NAMES.CRITERIA]: [
+                      { [UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE]: RESOLVED_VALUE },
+                    ],
+                  },
+                },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
+                {
+                  [ITEM_INSTANCE_FIELD_NAMES.COMPONENT]: {
+                    [COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE]: {
+                      [UI_FORMULA_RULE_FIELD_NAMES.CRITERIA]: [
+                        { [UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE]: RESOLVED_VALUE },
+                      ],
+                    },
+                  },
+                },
+                {
+                  [ITEM_INSTANCE_FIELD_NAMES.FIELD]: {
+                    [FIELD_INSTANCE_FIELD_NAMES.VISIBILITY_RULE]: {
+                      [UI_FORMULA_RULE_FIELD_NAMES.CRITERIA]: [
+                        { [UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE]: RESOLVED_VALUE },
+                      ],
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        flexiPage,
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(targetType.elemID, targetType),
+        },
+      )
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: { target: [] },
+          }),
+        },
+      }) as FilterWith<'onFetch'>
+    })
+    it('should create reference to the CustomField and deserialize it to the original value', async () => {
+      await filter.onFetch([flexiPageInstance, flexiPage, targetType])
+      const expectedReference = 'salesforce.TestType__c.field.TestCustomField__c'
+      const getFullName = (val: string | ReferenceExpression): string => {
+        expect(val).toBeInstanceOf(ReferenceExpression)
+        return (val as ReferenceExpression).elemID.getFullName()
+      }
+      const componentInstanceCreatedReference =
+        flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES][0][
+          COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE
+        ][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE]
+      const itemComponentInstanceCreatedReference =
+        flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES][0][
+          ITEM_INSTANCE_FIELD_NAMES.COMPONENT
+        ][COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][
+          UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE
+        ]
+      const fieldInstanceCreatedReference = flexiPageInstance.value.flexiPageRegions[0][
+        FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES
+      ][1][ITEM_INSTANCE_FIELD_NAMES.FIELD][FIELD_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][
+        UI_FORMULA_RULE_FIELD_NAMES.CRITERIA
+      ][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE] as ReferenceExpression
+
+      expect(getFullName(componentInstanceCreatedReference)).toEqual(expectedReference)
+      expect(getFullName(itemComponentInstanceCreatedReference)).toEqual(expectedReference)
+      expect(getFullName(fieldInstanceCreatedReference)).toEqual(expectedReference)
+      // Make sure serialization works on the created reference
+      expect(
+        await ReferenceSerializationStrategyLookup.flexiPageleftValueField.serialize({
+          ref: componentInstanceCreatedReference,
+          element: flexiPageInstance,
         }),
       ).toEqual(RESOLVED_VALUE)
     })

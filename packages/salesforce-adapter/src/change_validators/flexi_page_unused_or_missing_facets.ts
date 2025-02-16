@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import {
-  COMPONENT_INSTANCE_PROPERTY_FILED_NAMES,
+  COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES,
   FLEXI_PAGE_FIELD_NAMES,
   FLEXI_PAGE_REGION_FIELD_NAMES,
   FLEXI_PAGE_TYPE,
@@ -50,7 +50,7 @@ const getFacetDefinitionsAndReferences = (
     if (field.name === FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS && isFlexiPageRegion(value)) {
       facetDefinitions[value.name] = path
     }
-    if (path.name === COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE) {
+    if (path.name === COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE) {
       potentialFacetReferences.get(value).push(path)
     }
     return value

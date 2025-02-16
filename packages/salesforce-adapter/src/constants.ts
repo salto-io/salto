@@ -78,15 +78,32 @@ export enum FIELD_TYPE_NAMES {
 }
 
 // FlexiPage constants
+export const UI_FORMULA_CRITERION = 'UiFormulaCriterion'
+export const UI_FORMULA_RULE = 'UiFormulaRule'
 export const COMPONENT_INSTANCE_PROPERTY = 'ComponentInstanceProperty'
 export const COMPONENT_INSTANCE = 'ComponentInstance'
+export const FIELD_INSTANCE = 'FieldInstance'
 export const ITEM_INSTANCE = 'ItemInstance'
 export const FLEXI_PAGE_REGION = 'flexiPageRegion'
-export enum COMPONENT_INSTANCE_PROPERTY_FILED_NAMES {
+export enum UI_FORMULA_CRITERION_FIELD_NAMES {
+  LEFT_VALUE = 'leftValue',
+}
+export enum UI_FORMULA_RULE_FIELD_NAMES {
+  CRITERIA = 'criteria',
+}
+export enum COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES {
   VALUE = 'value',
 }
-export enum COMPONENT_INSTANCE_FILED_NAMES {
+export enum FIELD_INSTANCE_FIELD_NAMES {
+  VISIBILITY_RULE = 'visibilityRule',
+}
+export enum COMPONENT_INSTANCE_FIELD_NAMES {
   COMPONENT_INSTANCE_PROPERTIES = 'componentInstanceProperties',
+  VISIBILITY_RULE = 'visibilityRule',
+}
+export enum ITEM_INSTANCE_FIELD_NAMES {
+  COMPONENT = 'componentInstance',
+  FIELD = 'fieldInstance',
 }
 export enum FLEXI_PAGE_REGION_FIELD_NAMES {
   COMPONENT_INSTANCES = 'componentInstances',

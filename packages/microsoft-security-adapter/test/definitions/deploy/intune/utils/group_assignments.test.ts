@@ -67,97 +67,95 @@ describe('Intune assignments deploy utils', () => {
 
   describe(`${assignments.createBasicDeployDefinitionForTypeWithAssignments.name} function`, () => {
     it('should return a correct deploy definition', () => {
-      const definition = assignments.createBasicDeployDefinitionForTypeWithAssignments({
+      const requestsByAction = assignments.createBasicDeployDefinitionForTypeWithAssignments({
         resourcePath: '/test',
         assignmentRootField: 'testField',
       })
-      expect(definition).toEqual({
-        requestsByAction: {
-          customizations: {
-            add: [
-              {
-                request: {
-                  endpoint: {
-                    path: '/test',
-                    method: 'post',
-                  },
-                  transformation: {
-                    omit: ['assignments'],
-                  },
+      expect(requestsByAction).toEqual({
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/test',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['assignments'],
                 },
               },
-              {
-                request: {
-                  endpoint: {
-                    path: '/test/{id}/assign',
-                    method: 'post',
-                  },
-                  transformation: {
-                    rename: [
-                      {
-                        from: 'assignments',
-                        to: 'testField',
-                        onConflict: 'skip',
-                      },
-                    ],
-                    pick: ['testField'],
-                  },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/test/{id}/assign',
+                  method: 'post',
                 },
-                condition: {
-                  custom: expect.any(Function),
+                transformation: {
+                  rename: [
+                    {
+                      from: 'assignments',
+                      to: 'testField',
+                      onConflict: 'skip',
+                    },
+                  ],
+                  pick: ['testField'],
                 },
               },
-            ],
-            modify: [
-              {
-                request: {
-                  endpoint: {
-                    path: '/test/{id}',
-                    method: 'patch',
-                  },
-                  transformation: {
-                    omit: ['assignments'],
-                  },
+              condition: {
+                custom: expect.any(Function),
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/test/{id}',
+                  method: 'patch',
                 },
-                condition: {
-                  transformForCheck: {
-                    omit: ['assignments'],
-                  },
+                transformation: {
+                  omit: ['assignments'],
                 },
               },
-              {
-                request: {
-                  endpoint: {
-                    path: '/test/{id}/assign',
-                    method: 'post',
-                  },
-                  transformation: {
-                    rename: [
-                      {
-                        from: 'assignments',
-                        to: 'testField',
-                        onConflict: 'skip',
-                      },
-                    ],
-                    pick: ['testField'],
-                  },
-                },
-                condition: {
-                  custom: expect.any(Function),
+              condition: {
+                transformForCheck: {
+                  omit: ['assignments'],
                 },
               },
-            ],
-            remove: [
-              {
-                request: {
-                  endpoint: {
-                    path: '/test/{id}',
-                    method: 'delete',
-                  },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/test/{id}/assign',
+                  method: 'post',
+                },
+                transformation: {
+                  rename: [
+                    {
+                      from: 'assignments',
+                      to: 'testField',
+                      onConflict: 'skip',
+                    },
+                  ],
+                  pick: ['testField'],
                 },
               },
-            ],
-          },
+              condition: {
+                custom: expect.any(Function),
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/test/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
         },
       })
     })

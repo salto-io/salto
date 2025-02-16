@@ -594,7 +594,7 @@ const updateInconsistentTypes = (validAccountElements: Element[]): void =>
       elementsWithInconsistentTypes.forEach(e => {
         e.refType = new TypeReference(e.refType.elemID)
         // eslint-disable-next-line no-console
-        console.log(`was ${e.elemID.getFullName()} fixed? ${isInconsistentType(e)}`)
+        console.log(`was ${e.elemID.getFullName()} fixed? ${!isInconsistentType(e)}`)
       })
     }
   }, 'looking for inconsistent types (SALTO-5878)')

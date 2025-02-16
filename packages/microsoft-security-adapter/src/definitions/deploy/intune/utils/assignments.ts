@@ -50,52 +50,50 @@ export const createBasicDeployDefinitionForTypeWithAssignments = ({
 }: {
   resourcePath: EndpointPath
   assignmentRootField?: string
-}): InstanceDeployApiDefinitions => ({
-  requestsByAction: {
-    customizations: {
-      add: [
-        {
-          request: {
-            endpoint: {
-              path: resourcePath,
-              method: 'post',
-            },
-            transformation: {
-              omit: [ASSIGNMENTS_FIELD_NAME],
-            },
+}): InstanceDeployApiDefinitions['requestsByAction'] => ({
+  customizations: {
+    add: [
+      {
+        request: {
+          endpoint: {
+            path: resourcePath,
+            method: 'post',
+          },
+          transformation: {
+            omit: [ASSIGNMENTS_FIELD_NAME],
           },
         },
-        createAssignmentsRequest({ resourcePath, rootField: assignmentRootField }),
-      ],
-      modify: [
-        {
-          request: {
-            endpoint: {
-              path: `${resourcePath}/{id}`,
-              method: 'patch',
-            },
-            transformation: {
-              omit: [ASSIGNMENTS_FIELD_NAME],
-            },
+      },
+      createAssignmentsRequest({ resourcePath, rootField: assignmentRootField }),
+    ],
+    modify: [
+      {
+        request: {
+          endpoint: {
+            path: `${resourcePath}/{id}`,
+            method: 'patch',
           },
-          condition: {
-            transformForCheck: {
-              omit: [ASSIGNMENTS_FIELD_NAME],
-            },
+          transformation: {
+            omit: [ASSIGNMENTS_FIELD_NAME],
           },
         },
-        createAssignmentsRequest({ resourcePath, rootField: assignmentRootField }),
-      ],
-      remove: [
-        {
-          request: {
-            endpoint: {
-              path: `${resourcePath}/{id}`,
-              method: 'delete',
-            },
+        condition: {
+          transformForCheck: {
+            omit: [ASSIGNMENTS_FIELD_NAME],
           },
         },
-      ],
-    },
+      },
+      createAssignmentsRequest({ resourcePath, rootField: assignmentRootField }),
+    ],
+    remove: [
+      {
+        request: {
+          endpoint: {
+            path: `${resourcePath}/{id}`,
+            method: 'delete',
+          },
+        },
+      },
+    ],
   },
 })

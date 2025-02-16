@@ -219,13 +219,16 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
       },
     },
   },
-  [APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME]:
-    assignments.createBasicDeployDefinitionForTypeWithAssignments({
+  [APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME]: {
+    requestsByAction: assignments.createBasicDeployDefinitionForTypeWithAssignments({
       resourcePath: '/deviceAppManagement/mdmWindowsInformationProtectionPolicies',
     }),
-  [DEVICE_CONFIGURATION_TYPE_NAME]: assignments.createBasicDeployDefinitionForTypeWithAssignments({
-    resourcePath: '/deviceManagement/deviceConfigurations',
-  }),
+  },
+  [DEVICE_CONFIGURATION_TYPE_NAME]: {
+    requestsByAction: assignments.createBasicDeployDefinitionForTypeWithAssignments({
+      resourcePath: '/deviceManagement/deviceConfigurations',
+    }),
+  },
   [DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME]:
     deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_DEPLOY_DEFINITION,
   [DEVICE_COMPLIANCE_TYPE_NAME]: {
@@ -305,17 +308,25 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
     },
   },
   [PLATFORM_SCRIPT_LINUX_TYPE_NAME]: deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_DEPLOY_DEFINITION,
-  [PLATFORM_SCRIPT_WINDOWS_TYPE_NAME]: assignments.createBasicDeployDefinitionForTypeWithAssignments({
-    resourcePath: '/deviceManagement/deviceManagementScripts',
-    assignmentRootField: 'deviceManagementScriptAssignments',
-  }),
-  [PLATFORM_SCRIPT_MAC_OS_TYPE_NAME]: assignments.createBasicDeployDefinitionForTypeWithAssignments({
-    resourcePath: '/deviceManagement/deviceShellScripts',
-    assignmentRootField: 'deviceManagementScriptAssignments',
-  }),
-  [SCOPE_TAG_TYPE_NAME]: assignments.createBasicDeployDefinitionForTypeWithAssignments({
-    resourcePath: '/deviceManagement/roleScopeTags',
-  }),
+  [PLATFORM_SCRIPT_WINDOWS_TYPE_NAME]: {
+    requestsByAction: assignments.createBasicDeployDefinitionForTypeWithAssignments({
+      resourcePath: '/deviceManagement/deviceManagementScripts',
+      assignmentRootField: 'deviceManagementScriptAssignments',
+    }),
+  },
+  [PLATFORM_SCRIPT_MAC_OS_TYPE_NAME]: {
+    requestsByAction: assignments.createBasicDeployDefinitionForTypeWithAssignments({
+      resourcePath: '/deviceManagement/deviceShellScripts',
+      assignmentRootField: 'deviceManagementScriptAssignments',
+    }),
+  },
+  [SCOPE_TAG_TYPE_NAME]: {
+    requestsByAction: assignments.createBasicDeployDefinitionForTypeWithAssignments({
+      resourcePath: '/deviceManagement/roleScopeTags',
+    }),
+    changeGroupId: deployment.grouping.groupByType,
+    concurrency: 1,
+  },
   ..._.mapValues(
     TYPES_WITH_TARGET_APPS_PATH_MAP,
     ({ resourcePath, targetTypeFieldName }): InstanceDeployApiDefinitions => ({

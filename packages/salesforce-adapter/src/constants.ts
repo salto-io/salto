@@ -128,6 +128,7 @@ export const FLOW_ELEMENTS_WITH_UNIQUE_NAMES = [
   'FlowTextTemplate',
   'FlowVariable',
   'FlowWaitEvent',
+  'FlowScreenAction',
 ]
 
 export const FLOW_FIELD_TYPE_NAMES = {

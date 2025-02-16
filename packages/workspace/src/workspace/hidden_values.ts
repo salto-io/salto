@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _, { some } from 'lodash'
+import _ from 'lodash'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
@@ -190,24 +190,22 @@ export const mergeWithHidden = async (
 }
 
 // Check if the given path is nested in a list
-const isPathInList = (path: ElemID | undefined): boolean => some(path?.getFullNameParts(), isIndexPathPart)
+const isPathInList = (path: ElemID | undefined): boolean => path?.getFullNameParts().some(isIndexPathPart) ?? false
 
-const removeHiddenValue =
-  (): TransformFunc =>
-  ({ value, field, path }) => {
-    if (!isHiddenValue(field)) {
-      return value
-    }
-    if (isPathInList(path)) {
-      log.warn(
-        'Cannot remove hidden value of %s when nested in a list (full path: %s)',
-        field?.elemID.getFullName(),
-        path?.getFullName(),
-      )
-      return value
-    }
-    return undefined
+const removeHiddenValue: TransformFunc = ({ value, field, path }) => {
+  if (!isHiddenValue(field)) {
+    return value
   }
+  if (isPathInList(path)) {
+    log.warn(
+      'Cannot remove hidden value of %s when nested in a list (full path: %s)',
+      field?.elemID.getFullName(),
+      path?.getFullName(),
+    )
+    return value
+  }
+  return undefined
+}
 
 export const removeHiddenFromElement = <T extends Element>(
   element: T,
@@ -215,7 +213,7 @@ export const removeHiddenFromElement = <T extends Element>(
 ): Promise<T> =>
   transformElement({
     element,
-    transformFunc: removeHiddenValue(),
+    transformFunc: removeHiddenValue,
     strict: false,
     elementsSource,
     allowEmptyArrays: true,
@@ -231,7 +229,7 @@ const removeHiddenFromValues = (
   transformValues({
     values: value,
     type,
-    transformFunc: removeHiddenValue(),
+    transformFunc: removeHiddenValue,
     pathID,
     elementsSource,
     strict: false,

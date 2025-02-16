@@ -325,7 +325,7 @@ describe('ContextOptionsDeployment', () => {
     expect(result.deployResult.errors).toHaveLength(0)
     expect(result.deployResult.appliedChanges).toHaveLength(2)
   })
-  describe('add cascading options', () => {
+  describe('cascading options', () => {
     let contextInstance2: InstanceElement
     beforeEach(() => {
       const optionType = createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME)
@@ -349,18 +349,22 @@ describe('ContextOptionsDeployment', () => {
         data: {
           options: [
             {
+              optionId: '4',
               id: '10',
               value: 'p1cas10',
             },
             {
+              optionId: '5',
               id: '20',
               value: 'p2cas20',
             },
             {
+              optionId: '4',
               id: '11',
               value: 'p1cas11',
             },
             {
+              optionId: '5',
               id: '22',
               value: 'p2cas21',
             },
@@ -590,6 +594,72 @@ describe('ContextOptionsDeployment', () => {
       expect(contextInstance2.value.defaultValue.cascadingOptionId.value.value.id).toEqual('20')
     })
   })
+  it('should add cascading options ids when there are duplicate values', async () => {
+    connection.post.mockResolvedValueOnce({
+      status: 200,
+      data: {
+        options: [
+          {
+            id: '4',
+            value: 'p1',
+          },
+          {
+            id: '5',
+            value: 'p2',
+          },
+        ],
+      },
+    })
+    connection.post.mockResolvedValueOnce({
+      status: 200,
+      data: {
+        options: [
+          {
+            id: '14',
+            value: 'dup',
+            optionId: '4',
+          },
+          {
+            id: '15',
+            value: 'dup',
+            optionId: '5',
+          },
+        ],
+      },
+    })
+    const cascadeInstance20 = new InstanceElement(
+      'p2cas20',
+      createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
+      {
+        value: 'dup',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(addOption1.elemID, addOption1),
+      },
+    )
+    const cascadeInstance21 = new InstanceElement(
+      'p2cas21',
+      createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
+      {
+        value: 'dup',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(addOption2.elemID, addOption2),
+      },
+    )
+    changes = [
+      toChange({ after: cascadeInstance20 }),
+      toChange({ after: cascadeInstance21 }),
+      toChange({ after: addOption1 }),
+      toChange({ after: addOption2 }),
+    ]
+    await filter.deploy(changes)
+    expect(cascadeInstance20.value.id).toEqual('14')
+    expect(cascadeInstance21.value.id).toEqual('15')
+  })
+
   it('should call post with 1000 or less batches', async () => {
     const largeOptionsList = generateOptions(1001, contextInstance)
     connection.post.mockImplementation(async (_no, data) => {

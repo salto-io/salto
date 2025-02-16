@@ -103,7 +103,7 @@ describe('changeValidator', () => {
             },
             {
               [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'NameWithoutFacetPrefix' },
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'NameWithoutFacetPrefix' },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
                 {
@@ -118,10 +118,10 @@ describe('changeValidator', () => {
             {
               [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
                 // Avoid false positives for values without the 'Facet-' prefix that are genuinely not facets
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'NotAFacet' },
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'NotAFacet' },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet1' },
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'Facet-Facet1' },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'NameWithoutFacetPrefix',
               [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
@@ -211,7 +211,7 @@ describe('changeValidator', () => {
             },
             {
               [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'NotAFacet' },
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'NotAFacet' },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [],
               [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'UnusedFacetWithoutPrefix',

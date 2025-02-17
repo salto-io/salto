@@ -1036,8 +1036,9 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
-    src: { field: 'controllingFieldValue', parentTypes: ['valueSettings'] },
-    target: { type: 'customValue' },
+    src: { field: 'valueName', parentTypes: ['valueSettings', 'fieldDependency'] },
+    serializationStrategy: 'relativeApiName',
+    target: { type: 'GlobalValueSet', parentContext: 'instanceParent' },
   },
 ]
 

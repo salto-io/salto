@@ -146,6 +146,9 @@ async function createDiffChangesWithCalculateDiff({
   return resultType === 'changes'
     ? awu(changes)
         .map(change => {
+          if (elementSelectors.length === 0) {
+            return { ...change, detailedChanges: () => getDetailedChangesFromChange(change, compareOptions) }
+          }
           const filteredDetailedChanges = getDetailedChangesFromChange(change, compareOptions).filter(
             matchers.isChangeMatchSelectors,
           )

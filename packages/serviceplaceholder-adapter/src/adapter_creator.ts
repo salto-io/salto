@@ -12,7 +12,7 @@ import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
 import { ADAPTER_NAME } from './constants'
 import { createClientDefinitions, createDeployDefinitions, createFetchDefinitions } from './definitions'
-import { PAGINATION } from './definitions/requests/pagination'
+import { pagination } from './definitions/requests'
 import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references'
 
@@ -28,7 +28,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   defaultConfig: DEFAULT_CONFIG,
   definitionsCreator: ({ clients, userConfig }) => ({
     clients: createClientDefinitions(clients),
-    pagination: PAGINATION,
+    pagination,
     fetch: createFetchDefinitions(userConfig.fetch),
     deploy: createDeployDefinitions(),
     references: REFERENCES,

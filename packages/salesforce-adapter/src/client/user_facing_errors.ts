@@ -160,6 +160,7 @@ export type DeployErrorMessageMappers = {
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT]: DeployErrorMessageMapper
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME]: DeployErrorMessageMapper
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION]: DeployErrorMessageMapper
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE]: DeployErrorMessageMapper
 }
 
 const SCHEDULABLE_CLASS_MESSAGE =
@@ -178,6 +179,9 @@ const INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE =
 
 const FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE =
   'The element does not meet the validation rules. Try deactivating the validation rules if possible.'
+
+const CANNOT_INSERT_UPDATE_MESSAGE =
+  'The data deployment encountered an error while inserting or updating one or more records.\nFor more information you may refer to: https://www.salto.io/blog-posts/salesforce-cannot-insert-update-activate-entity'
 
 export const DEPLOY_ERROR_MESSAGE_MAPPER: DeployErrorMessageMappers = {
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS]: {
@@ -199,6 +203,10 @@ export const DEPLOY_ERROR_MESSAGE_MAPPER: DeployErrorMessageMappers = {
       errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION),
     map: (saltoDeployError: SaltoError) =>
       `${FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE}\n${saltoDeployError.detailedMessage}`,
+  },
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE]: {
+    test: (errorMessage: string) => errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE),
+    map: (saltoDeployError: SaltoError) => `${CANNOT_INSERT_UPDATE_MESSAGE}\n${saltoDeployError.message}`,
   },
 }
 

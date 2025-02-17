@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/dag",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "license": "SEE LICENSE IN LICENSE",
   "description": "directed acyclic graph implementation including - dag diff and node grouping",
   "repository": {
@@ -29,8 +29,8 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/logging": "0.5.0",
-    "@salto-io/lowerdash": "0.5.0",
+    "@salto-io/logging": "0.5.1",
+    "@salto-io/lowerdash": "0.5.1",
     "lodash": "^4.17.21",
     "wu": "^2.1.0"
   },

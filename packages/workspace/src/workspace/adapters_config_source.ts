@@ -71,16 +71,10 @@ const updateValidationErrorsCache = async (
   elementsSource: ReadOnlyElementsSource,
   naclSource: NaclFilesSource,
 ): Promise<void> => {
-  const validationErrors = await validateElements(await awu(await naclSource.getAll()).toArray(), elementsSource)
-
+  const elementsToValidate = await awu(await naclSource.getAll()).toArray()
   await validationErrorsMap.clear()
-  await validationErrorsMap.setAll(
-    _(validationErrors)
-      .groupBy(err => err.elemID.createTopLevelParentID().parent.getFullName())
-      .entries()
-      .map(([key, value]) => ({ key, value }))
-      .value(),
-  )
+  const errors = await validateElements(elementsToValidate, elementsSource)
+  await validationErrorsMap.setAll(errors)
 }
 
 export type AdaptersConfigSourceArgs = {
@@ -160,7 +154,7 @@ export const buildAdaptersConfigSource = async ({
         element: instance,
         strict: false,
         allowEmptyArrays: true,
-        allowEmptyObjects: true,
+        allowExistingEmptyObjects: true,
         transformFunc: ({ value }) => value,
         elementsSource: naclSource,
       })

@@ -35,7 +35,6 @@ export const PROJECT_TYPE = 'Project'
 export const PROJECT_TYPE_TYPE_NAME = 'ProjectType'
 export const PROJECTS_FIELD = 'projects'
 export const PROJECT_COMPONENT_TYPE = 'ProjectComponent'
-export const JIRA_SERVICE_DESK_FIELD = 'Jira Service Desk'
 export const PROJECT_ROLE_TYPE = 'ProjectRole'
 export const AUTOMATION_TYPE = 'Automation'
 export const BOARD_TYPE_NAME = 'Board'
@@ -139,8 +138,6 @@ export const DELETE_LINK_TYPES = 'DeleteLinkTypes'
 export const APPLICATION_PROPERTY_TYPE = 'ApplicationProperty'
 export const FIELD_TYPE = 'Field'
 export const FIELD_CONFIGURATION_SCHEME_TYPE = 'FieldConfigurationScheme'
-export const COMPONENTS = 'components'
-export const SCHEMA_VERSION = 'schemaVersion'
 export const ASSIGNEE_TYPE_FIELD = 'assigneeType'
 export const FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH = 255
 export const FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH = 1000
@@ -155,6 +152,7 @@ export const SHARE_PERMISSION_FIELDS = ['sharePermissions', 'editPermissions']
 export const CONTENT_TYPE_HEADER = 'Content-Type'
 export const JSON_CONTENT_TYPE = 'application/json'
 export const KANBAN_TYPE = 'kanban'
+export const AUTOMATION_QUERY = 'AutomationQuery'
 // almost constant functions
 export const fetchFailedWarnings = (name: string): string =>
   `Salto could not access the ${name} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`

@@ -25,7 +25,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, Workspace, ElementSelector, expressions, elementSource, hiddenValues } from '@salto-io/workspace'
 import { FetchResult } from '../types'
-import { MergeErrorWithElements, getFetchAdapterAndServicesSetup, calcFetchChanges } from './fetch'
+import { MergeErrorWithElements, getFetchAdapterAndServicesSetup, calcFetchChanges, unmergeElements } from './fetch'
 import { getPlan } from './plan'
 
 const log = logger(module)
@@ -109,7 +109,7 @@ type IsInitializedFolderArgs = {
   adapterCreators: Record<string, Adapter>
 }
 
-export type IsInitializedFolderResult = {
+type IsInitializedFolderResult = {
   result: boolean
   errors: ReadonlyArray<SaltoError>
 }
@@ -142,7 +142,7 @@ type InitFolderArgs = {
   adapterCreators: Record<string, Adapter>
 }
 
-export type InitFolderResult = {
+type InitFolderResult = {
   errors: ReadonlyArray<SaltoError>
 }
 
@@ -335,6 +335,37 @@ export const calculatePatch = async ({
   }
 }
 
+const fixAdditionPaths = async (workspace: Workspace, changes: ReadonlyArray<Change>): Promise<Change<Element>[]> => {
+  const additionElements = changes.filter(isAdditionChange).map(getChangeData)
+  const unmergedAdditionElements = await unmergeElements(workspace, workspace.currentEnv(), additionElements)
+  const unmergedElementsById = _.groupBy(unmergedAdditionElements, elem => elem.elemID.getFullName())
+
+  const fixAddition = (change: Change): Change<Element>[] =>
+    unmergedElementsById[getChangeData(change).elemID.getFullName()].map(elem => toChange({ after: elem }))
+
+  return changes.flatMap(change => (isAdditionChange(change) ? fixAddition(change) : [change]))
+}
+
+const updateToWorkspace = async ({
+  workspace,
+  toWorkspace,
+  changes,
+}: {
+  workspace: Workspace
+  toWorkspace: Workspace | undefined
+  changes: ReadonlyArray<Change>
+}): Promise<ReadonlyArray<Change>> => {
+  if (!toWorkspace) {
+    return changes
+  }
+
+  const fixedUnappliedChanges = await fixAdditionPaths(workspace, changes)
+  log.debug('Updating nacl files with the %d unapplied changes', fixedUnappliedChanges.length)
+  await toWorkspace.updateNaclFiles(fixedUnappliedChanges.flatMap(change => getDetailedChanges(change)))
+  await toWorkspace.flush()
+  return []
+}
+
 type SyncWorkspaceToFolderArgs = {
   baseDir: string
   toWorkspace?: Workspace
@@ -431,12 +462,7 @@ export const syncWorkspaceToFolder = ({
         elementsSource: adapterContext.elementsSource,
       })
 
-      if (toWorkspace) {
-        log.debug('Updating nacl files with the %d unapplied changes', unappliedChanges.length)
-        await toWorkspace.updateNaclFiles(unappliedChanges.map(change => getDetailedChanges(change)).flat())
-        await toWorkspace.flush()
-      }
-
+      await updateToWorkspace({ workspace, toWorkspace, changes: unappliedChanges })
       return { errors }
     },
     'syncWorkspaceToFolder %s',
@@ -494,13 +520,9 @@ export const updateElementFolder = ({
         elementsSource: adapterContext.elementsSource,
       })
 
-      if (toWorkspace) {
-        log.debug('Updating nacl files with the %d unapplied changes', unappliedChanges.length)
-        await toWorkspace.updateNaclFiles(unappliedChanges.map(change => getDetailedChanges(change)).flat())
-        await toWorkspace.flush()
-      }
+      const finalUnappliedChanges = await updateToWorkspace({ workspace, toWorkspace, changes: unappliedChanges })
 
-      return { errors, unappliedChanges: toWorkspace ? [] : unappliedChanges }
+      return { errors, unappliedChanges: finalUnappliedChanges }
     },
     'updateElementFolder %s',
     baseDir,

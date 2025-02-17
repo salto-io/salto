@@ -74,7 +74,7 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 type LookupFunc = (val: Value, context?: string) => string
 
-export type ReferenceSerializationStrategy = {
+type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
   lookup: LookupFunc
 }
@@ -106,7 +106,8 @@ type ReferenceSerializationStrategyName =
   | 'customLabel'
   | 'fromDataInstance'
   | 'recordField'
-  | 'assignToReferenceField'
+  | 'recordFieldDollarPrefix'
+  | 'flexiPageleftValueField'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategy
@@ -169,12 +170,22 @@ export const ReferenceSerializationStrategyLookup: Record<
       return val
     },
   },
-  assignToReferenceField: {
+  recordFieldDollarPrefix: {
     serialize: async ({ ref, path }) =>
       `$Record${API_NAME_SEPARATOR}${await safeApiName({ ref, path, relative: true })}`,
     lookup: (val, context) => {
       if (context !== undefined && _.isString(val) && val.startsWith('$Record.')) {
         return [context, val.split(API_NAME_SEPARATOR)[1]].join(API_NAME_SEPARATOR)
+      }
+      return val
+    },
+  },
+  flexiPageleftValueField: {
+    serialize: async ({ ref, path }) =>
+      `{!Record${API_NAME_SEPARATOR}${await safeApiName({ ref, path, relative: true })}}`,
+    lookup: (val, context) => {
+      if (context !== undefined && _.isString(val) && val.startsWith('{!Record.')) {
+        return [context, val.split(API_NAME_SEPARATOR)[1].replace(/}$/, '')].join(API_NAME_SEPARATOR)
       }
       return val
     },
@@ -996,12 +1007,33 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
       field: ASSIGN_TO_REFERENCE,
       parentTypes: Object.values(FLOW_FIELD_TYPE_NAMES),
     },
-    serializationStrategy: 'assignToReferenceField',
+    serializationStrategy: 'recordFieldDollarPrefix',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: {
+      field: 'leftValueReference',
+      parentTypes: ['FlowCondition'],
+    },
+    serializationStrategy: 'recordFieldDollarPrefix',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: {
+      field: 'elementReference',
+      parentTypes: ['FlowElementReferenceOrValue'],
+    },
+    serializationStrategy: 'recordFieldDollarPrefix',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
     src: { field: 'logo', parentTypes: ['CustomApplication'] },
     target: { type: 'Document' },
+  },
+  {
+    src: { field: 'leftValue', parentTypes: ['UiFormulaCriterion'] },
+    serializationStrategy: 'flexiPageleftValueField',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
 ]
 

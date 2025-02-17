@@ -743,6 +743,7 @@ const deployCleanup = async (adapterAttr: Reals, elements: InstanceElement[]): P
   log.debug('Environment cleanup successful')
 }
 
+// TODO: use the shared function from e2e-test-utils after migrating to the new e2e infra
 const getHiddenFieldsToOmit = (
   fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaOptions>,
   typeName: string,

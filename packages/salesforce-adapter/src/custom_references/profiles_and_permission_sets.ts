@@ -210,7 +210,7 @@ const sectionsReferenceParams: Record<ProfileSection, ReferenceFromSectionParams
   },
 }
 
-export const mapInstanceSections = <T>({
+const mapInstanceSections = <T>({
   instance,
   func,
   applyFilter,

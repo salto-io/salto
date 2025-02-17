@@ -47,7 +47,7 @@ const log = logger(module)
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
 
-export type Location = parser.SourceRange & { indexInParent?: number }
+type Location = parser.SourceRange & { indexInParent?: number }
 
 export type DetailedChangeWithSource = DetailedChange & {
   location: Location

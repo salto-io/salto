@@ -80,7 +80,7 @@ export type ErrorMappers = {
   [SALESFORCE_ERRORS.INSUFFICIENT_ACCESS]: ErrorMapper<Error>
 }
 
-export const withSalesforceError = (salesforceError: string, saltoErrorMessage: string): string =>
+const withSalesforceError = (salesforceError: string, saltoErrorMessage: string): string =>
   `${saltoErrorMessage}\n\nUnderlying Error: ${salesforceError}`
 
 export const ERROR_MAPPERS: ErrorMappers = {
@@ -160,24 +160,28 @@ export type DeployErrorMessageMappers = {
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.MAX_METADATA_DEPLOY_LIMIT]: DeployErrorMessageMapper
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.INVALID_DASHBOARD_UNIQUE_NAME]: DeployErrorMessageMapper
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION]: DeployErrorMessageMapper
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE]: DeployErrorMessageMapper
 }
 
-export const SCHEDULABLE_CLASS_MESSAGE =
+const SCHEDULABLE_CLASS_MESSAGE =
   'This deployment contains a scheduled Apex class (or a class related to one).' +
   ' By default, Salesforce does not allow changes to scheduled apex.' +
   ' Please follow the instructions here: https://help.salesforce.com/s/articleView?id=000384960&type=1'
 
-export const MAX_METADATA_DEPLOY_LIMIT_MESSAGE =
+const MAX_METADATA_DEPLOY_LIMIT_MESSAGE =
   'The metadata deployment exceeded the maximum allowed size of 50MB.' +
   ' To avoid this issue, please split your deployment to smaller chunks.' +
   ' For more info you may refer to: https://help.salto.io/en/articles/8263355-the-metadata-deployment-exceeded-the-maximum-allowed-size-of-50mb'
 
-export const INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE =
+const INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE =
   "Please make sure you're managing Dashboards in your Salto environment and that your deployment contains the referenced Dashboard instance.\n" +
   'For more information, please refer to: https://help.salto.io/en/articles/7439350-supported-salesforce-types'
 
-export const FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE =
+const FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE =
   'The element does not meet the validation rules. Try deactivating the validation rules if possible.'
+
+const CANNOT_INSERT_UPDATE_MESSAGE =
+  'The data deployment encountered an error while inserting or updating one or more records.\nFor more information you may refer to: https://www.salto.io/blog-posts/salesforce-cannot-insert-update-activate-entity'
 
 export const DEPLOY_ERROR_MESSAGE_MAPPER: DeployErrorMessageMappers = {
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.SCHEDULABLE_CLASS]: {
@@ -199,6 +203,10 @@ export const DEPLOY_ERROR_MESSAGE_MAPPER: DeployErrorMessageMappers = {
       errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.FIELD_CUSTOM_VALIDATION_EXCEPTION),
     map: (saltoDeployError: SaltoError) =>
       `${FIELD_CUSTOM_VALIDATION_EXCEPTION_MESSAGE}\n${saltoDeployError.detailedMessage}`,
+  },
+  [SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE]: {
+    test: (errorMessage: string) => errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE),
+    map: (saltoDeployError: SaltoError) => `${CANNOT_INSERT_UPDATE_MESSAGE}\n${saltoDeployError.message}`,
   },
 }
 

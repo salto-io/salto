@@ -238,11 +238,6 @@ export const defaultDependencyChangers = [
   addInstanceToFieldsDependency,
 ]
 
-export type AdditionalResolveContext = {
-  before: ReadonlyArray<Element>
-  after: ReadonlyArray<Element>
-}
-
 type GetPlanParameters = {
   before: ReadOnlyElementsSource
   after: ReadOnlyElementsSource

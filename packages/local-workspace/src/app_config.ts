@@ -78,7 +78,7 @@ export type AppConfig = {
 const saltoConfigElemID = new ElemID('salto')
 const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
 
-export const saltoAppConfigType = new ObjectType({
+const saltoAppConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {
     installationID: {

@@ -7,14 +7,14 @@
  */
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { ADAPTER_NAME, entraConstants } from '../../../src/constants'
+import { MICROSOFT_SECURITY, entraConstants } from '../../../src/constants'
 import { applicationSetupValidator } from '../../../src/change_validators/entra/application_setup_validator'
 
 const { APPLICATION_TYPE_NAME, SERVICE_PRINCIPAL_TYPE_NAME } = entraConstants.TOP_LEVEL_TYPES
 
 describe(applicationSetupValidator.name, () => {
   describe('when the changes include an application instance', () => {
-    const applicationType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, APPLICATION_TYPE_NAME) })
+    const applicationType = new ObjectType({ elemID: new ElemID(MICROSOFT_SECURITY, APPLICATION_TYPE_NAME) })
     const applicationInstance = new InstanceElement('testApplication', applicationType, {
       displayName: 'testApplication',
     })
@@ -75,7 +75,7 @@ describe(applicationSetupValidator.name, () => {
 
   describe('when the changes include a service principal instance', () => {
     const servicePrincipalType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, SERVICE_PRINCIPAL_TYPE_NAME),
+      elemID: new ElemID(MICROSOFT_SECURITY, SERVICE_PRINCIPAL_TYPE_NAME),
     })
     const servicePrincipalInstance = new InstanceElement('testServicePrincipal', servicePrincipalType, {
       displayName: 'testServicePrincipal',
@@ -136,7 +136,7 @@ describe(applicationSetupValidator.name, () => {
   })
 
   describe('when the changes do not include an application or service principal instance', () => {
-    const randomType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'randomType') })
+    const randomType = new ObjectType({ elemID: new ElemID(MICROSOFT_SECURITY, 'randomType') })
     const randomInstance = new InstanceElement('randomInstance', randomType, {
       displayName: 'randomInstance',
     })

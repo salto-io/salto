@@ -264,7 +264,7 @@ export const createElements = async (
   ]
 }
 
-export const restoreAttributes = async (values: Values, type: ObjectType, instancePath: ElemID): Promise<Values> => {
+const restoreAttributes = async (values: Values, type: ObjectType, instancePath: ElemID): Promise<Values> => {
   const allAttributesPaths = new Set<string>()
   const createPathSetCallback: TransformFunc = ({ value, field, path }) => {
     if (path && field && field.annotations[IS_ATTRIBUTE]) {

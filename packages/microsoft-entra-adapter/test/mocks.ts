@@ -25,11 +25,11 @@ export const objectTypeMock = new ObjectType({
   elemID: new ElemID(ADAPTER_NAME, 'testType'),
 })
 
-export const instanceElementMock = new InstanceElement('testInstance', objectTypeMock, {
+const instanceElementMock = new InstanceElement('testInstance', objectTypeMock, {
   testField: 'testValue',
 })
 
-export const instanceElementWithParentMock = new InstanceElement(
+const instanceElementWithParentMock = new InstanceElement(
   'testInstanceChild',
   objectTypeMock,
   {
@@ -63,12 +63,12 @@ export const removalChangeMock: RemovalChange<InstanceElement> = {
   },
 }
 
-export const changeGroupMock: ChangeGroup = {
+const changeGroupMock: ChangeGroup = {
   groupID: 'testGroup',
   changes: [additionChangeMock],
 }
 
-export const mockElementSource = buildElementsSourceFromElements([objectTypeMock, instanceElementMock])
+const mockElementSource = buildElementsSourceFromElements([objectTypeMock, instanceElementMock])
 
 export const contextMock: definitions.deploy.ChangeAndExtendedContext & definitions.ContextParams = {
   additionalContext: { parent_id: 'parent_id' },

@@ -9,3 +9,4 @@
 export { adapter } from './src/adapter_creator'
 export { OAUTH_REQUIRED_SCOPES } from './src/auth'
 export { getOAuthRequiredScopes } from './src/client/oauth'
+export * as e2eUtils from './src/e2e_index'

@@ -129,7 +129,7 @@ const readIteratorPage = (iterator: rocksdb.Iterator): Promise<remoteMap.RemoteM
     iterator.nextPage(callback)
   })
 
-export async function* aggregatedIterable(iterators: ReadIterator[]): AsyncIterable<remoteMap.RemoteMapEntry<string>> {
+async function* aggregatedIterable(iterators: ReadIterator[]): AsyncIterable<remoteMap.RemoteMapEntry<string>> {
   const latestEntries: (remoteMap.RemoteMapEntry<string> | undefined)[] = Array.from({ length: iterators.length })
   await Promise.all(
     iterators.map(async (iter, i) => {
@@ -166,7 +166,7 @@ export async function* aggregatedIterable(iterators: ReadIterator[]): AsyncItera
   }
 }
 
-export async function* aggregatedIterablesWithPages(
+async function* aggregatedIterablesWithPages(
   iterators: ReadIterator[],
   pageSize = 1000,
 ): AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
@@ -261,10 +261,7 @@ const closeTmpConnection = async (
   log.debug('closed temporary connection to %s', tmpLocation)
 }
 
-/**
- * @deprecated use `workspace.close()` / `remoteMapCreator.close()` instead.
- */
-export const closeRemoteMapsOfLocation = async (location: string): Promise<boolean> =>
+const closeRemoteMapsOfLocation = async (location: string): Promise<boolean> =>
   log.timeDebug(
     async () => {
       let didClose = false

@@ -6,17 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { InstanceElement } from '@salto-io/adapter-api'
-
 export type EnvConfig = {
   name: string
   services?: string[]
   accountToServiceName?: Record<string, string>
-}
-
-// The adapters config is dynamic, for this reason it returns an InstanceElement.
-export type AdaptersConfig = {
-  adapters: Record<string, InstanceElement>
 }
 
 export type ProviderOptionsS3 = {
@@ -29,12 +22,12 @@ export type ProviderOptionsFile = {
   localStorageDir: string
 }
 
-export type ProviderOptions = {
+type ProviderOptions = {
   s3?: ProviderOptionsS3
   file?: ProviderOptionsFile
 }
 
-export type StateProviders = 'file' | 's3'
+type StateProviders = 'file' | 's3'
 
 export type StateConfig = {
   provider: StateProviders

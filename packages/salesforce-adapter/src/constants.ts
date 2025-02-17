@@ -78,18 +78,32 @@ export enum FIELD_TYPE_NAMES {
 }
 
 // FlexiPage constants
+export const UI_FORMULA_CRITERION = 'UiFormulaCriterion'
+export const UI_FORMULA_RULE = 'UiFormulaRule'
 export const COMPONENT_INSTANCE_PROPERTY = 'ComponentInstanceProperty'
 export const COMPONENT_INSTANCE = 'ComponentInstance'
+export const FIELD_INSTANCE = 'FieldInstance'
 export const ITEM_INSTANCE = 'ItemInstance'
 export const FLEXI_PAGE_REGION = 'flexiPageRegion'
-export enum COMPONENT_INSTANCE_PROPERTY_FILED_NAMES {
+export enum UI_FORMULA_CRITERION_FIELD_NAMES {
+  LEFT_VALUE = 'leftValue',
+}
+export enum UI_FORMULA_RULE_FIELD_NAMES {
+  CRITERIA = 'criteria',
+}
+export enum COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES {
   VALUE = 'value',
 }
-export enum COMPONENT_INSTANCE_FILED_NAMES {
-  COMPONENT_INSTANCE_PROPERTIES = 'componentInstanceProperties',
+export enum FIELD_INSTANCE_FIELD_NAMES {
+  VISIBILITY_RULE = 'visibilityRule',
 }
-export enum ITEM_INSTANCE_FILED_NAMES {
+export enum COMPONENT_INSTANCE_FIELD_NAMES {
   COMPONENT_INSTANCE_PROPERTIES = 'componentInstanceProperties',
+  VISIBILITY_RULE = 'visibilityRule',
+}
+export enum ITEM_INSTANCE_FIELD_NAMES {
+  COMPONENT = 'componentInstance',
+  FIELD = 'fieldInstance',
 }
 export enum FLEXI_PAGE_REGION_FIELD_NAMES {
   COMPONENT_INSTANCES = 'componentInstances',
@@ -105,7 +119,7 @@ export enum FLEXI_PAGE_FIELD_NAMES {
 }
 
 // Flow constants
-export const FLOW_NODE = 'FlowNode'
+export const START_ELEMENT_REFERENCE = 'startElementReference'
 export const TARGET_REFERENCE = 'targetReference'
 export const ELEMENT_REFERENCE = 'elementReference'
 export const LEFT_VALUE_REFERENCE = 'leftValueReference'
@@ -132,6 +146,8 @@ export const FLOW_ELEMENTS_WITH_UNIQUE_NAMES = [
   'FlowTextTemplate',
   'FlowVariable',
   'FlowWaitEvent',
+  'FlowScreenAction',
+  'FlowStageStep',
 ]
 
 export const FLOW_FIELD_TYPE_NAMES = {
@@ -496,13 +512,12 @@ export const APEX_TRIGGER_METADATA_TYPE = 'ApexTrigger'
 export const APEX_COMPONENT_METADATA_TYPE = 'ApexComponent'
 export const GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE = 'GlobalValueSetTranslation'
 export const ASSIGNMENT_RULE_METADATA_TYPE = 'AssignmentRule'
-export const AUTO_RESPONSE_RULES_METADATA_TYPE = 'AutoResponseRules'
+const AUTO_RESPONSE_RULES_METADATA_TYPE = 'AutoResponseRules'
 export const AUTO_RESPONSE_RULE_METADATA_TYPE = 'AutoResponseRule'
-export const SHARING_RULE_METADATA_TYPE = 'SharingRuleMetadataType'
-export const ESCALATION_RULES_TYPE = 'EscalationRules'
+const ESCALATION_RULES_TYPE = 'EscalationRules'
 export const ESCALATION_RULE_TYPE = 'EscalationRule'
-export const CUSTOM_PERMISSION_METADATA_TYPE = 'CustomPermission'
-export const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
+const CUSTOM_PERMISSION_METADATA_TYPE = 'CustomPermission'
+const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
 export const OPPORTUNITY_METADATA_TYPE = 'Opportunity'
 export const ANIMATION_RULE_METADATA_TYPE = 'AnimationRule'
 export const CANVAS_METADATA_TYPE = 'CanvasMetadata'
@@ -535,7 +550,6 @@ export const CHANGED_AT_SINGLETON = 'ChangedAtSingleton'
 export const PROFILE_AND_PERMISSION_SETS_BROKEN_PATHS = 'ProfilesAndPermissionSetsBrokenPaths'
 export const PATHS_FIELD = 'paths'
 export const FETCH_TARGETS = 'FetchTargets'
-export const TARGETS_FIELD = 'targets'
 export const CUSTOM_OBJECTS_FIELD = 'customObjects'
 export const CUSTOM_OBJECTS_LOOKUPS_FIELD = 'customObjectsLookups'
 export const METADATA_TYPES_FIELD = 'metadataTypes'
@@ -615,9 +629,9 @@ export const CPQ_FIELD_METADATA = 'SBQQ__FieldMetadata__c'
 export const CPQ_CUSTOM_SCRIPT = 'SBQQ__CustomScript__c'
 export const CPQ_CONFIGURATION_ATTRIBUTE = 'SBQQ__ConfigurationAttribute__c'
 export const CPQ_QUOTE = 'SBQQ__Quote__c'
-export const CPQ_QUOTE_LINE_GROUP = 'SBQQ__QuoteLineGroup__c'
-export const CPQ_QUOTE_LINE = 'SBQQ__QuoteLine__c'
-export const CPQ_PRODUCT_OPTION = 'SBQQ__ProductOption__c'
+const CPQ_QUOTE_LINE_GROUP = 'SBQQ__QuoteLineGroup__c'
+const CPQ_QUOTE_LINE = 'SBQQ__QuoteLine__c'
+const CPQ_PRODUCT_OPTION = 'SBQQ__ProductOption__c'
 export const CPQ_PRICE_SCHEDULE = 'SBQQ__PriceSchedule__c'
 export const CPQ_DISCOUNT_SCHEDULE = 'SBQQ__DiscountSchedule__c'
 export const CPQ_SUBSCRIPTION = 'SBQQ__Subscription__c'
@@ -662,16 +676,16 @@ export const SBAA_ADVANCED_CONDITION_FIELD = 'sbaa__AdvancedCondition__c'
 export const SBAA_INDEX_FIELD = 'sbaa__Index__c'
 
 export const CPQ_QUOTE_NO_PRE = 'Quote__c'
-export const CPQ_QUOTE_LINE_GROUP_NO_PRE = 'QuoteLineGroup__c'
+const CPQ_QUOTE_LINE_GROUP_NO_PRE = 'QuoteLineGroup__c'
 export const CPQ_ACCOUNT_NO_PRE = 'Account__c'
 export const DEFAULT_OBJECT_TO_API_MAPPING = {
   [CPQ_QUOTE_NO_PRE]: CPQ_QUOTE,
   [CPQ_QUOTE_LINE_GROUP_NO_PRE]: CPQ_QUOTE_LINE_GROUP,
 } as Record<string, string>
 
-export const CPQ_QUOTE_NAME = 'Quote'
-export const CPQ_QUOTE_LINE_NAME = 'Quote Line'
-export const CPQ_PRODUCT_OPTION_NAME = 'Product Option'
+const CPQ_QUOTE_NAME = 'Quote'
+const CPQ_QUOTE_LINE_NAME = 'Quote Line'
+const CPQ_PRODUCT_OPTION_NAME = 'Product Option'
 export const TEST_OBJECT_TO_API_MAPPING = {
   [CPQ_QUOTE_NAME]: CPQ_QUOTE,
   [CPQ_QUOTE_LINE_NAME]: CPQ_QUOTE_LINE,
@@ -681,9 +695,6 @@ export const TEST_OBJECT_TO_API_MAPPING = {
 export const SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING = {
   [CPQ_ACCOUNT_NO_PRE]: CPQ_ACCOUNT,
 } as Record<string, string>
-
-// sbaa
-export const SBAA_NAMESPACE = 'sbaa'
 
 // sbaa Objects
 export const SBAA_APPROVAL_CONDITION = 'sbaa__ApprovalCondition__c'
@@ -802,7 +813,7 @@ export const ERROR_PROPERTIES = {
 export type ErrorProperty = types.ValueOf<typeof ERROR_PROPERTIES>
 
 // Salesforce Errors
-export const SALESFORCE_ERROR_PREFIX = 'sf:'
+const SALESFORCE_ERROR_PREFIX = 'sf:'
 
 export const SALESFORCE_ERRORS = {
   INVALID_CROSS_REFERENCE_KEY: `${SALESFORCE_ERROR_PREFIX}INVALID_CROSS_REFERENCE_KEY`,
@@ -834,6 +845,7 @@ export const SALESFORCE_DEPLOY_ERROR_MESSAGES = {
   MAX_METADATA_DEPLOY_LIMIT: 'Maximum size of request reached. Maximum size of request is 52428800 bytes.',
   INVALID_DASHBOARD_UNIQUE_NAME: 'Invalid dashboard Unique Name',
   FIELD_CUSTOM_VALIDATION_EXCEPTION: 'FIELD_CUSTOM_VALIDATION_EXCEPTION',
+  CANNOT_INSERT_UPDATE: 'CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY',
 } as const
 
 // Artifacts

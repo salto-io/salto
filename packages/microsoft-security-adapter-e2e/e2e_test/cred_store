@@ -1,0 +1,10 @@
+#!/usr/bin/env ts-node
+
+const { cli } = require('@salto-io/e2e-credentials-store')
+const adapter = require('./credentials_store/adapter').default
+
+cli.main({
+  adapters: {
+    microsoft_security: adapter,
+  },
+})

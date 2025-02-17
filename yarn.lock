@@ -3987,15 +3987,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/adapter-api@0.5.0, @salto-io/adapter-api@workspace:packages/adapter-api":
+"@salto-io/adapter-api@0.5.1, @salto-io/adapter-api@workspace:packages/adapter-api":
   version: 0.0.0-use.local
   resolution: "@salto-io/adapter-api@workspace:packages/adapter-api"
   dependencies:
     "@jest/expect-utils": ^29.7.0
     "@jest/globals": ^29.7.0
-    "@salto-io/dag": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/dag": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/node": ^18.9.0
@@ -4010,19 +4010,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/adapter-components@0.5.0, @salto-io/adapter-components@workspace:packages/adapter-components":
+"@salto-io/adapter-components@0.5.1, @salto-io/adapter-components@workspace:packages/adapter-components":
   version: 0.0.0-use.local
   resolution: "@salto-io/adapter-components@workspace:packages/adapter-components"
   dependencies:
     "@apidevtools/swagger-parser": ^10.0.3
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/dag": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/parser": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/dag": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/parser": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/node": ^18.9.0
@@ -4054,30 +4054,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/adapter-creators@0.5.0, @salto-io/adapter-creators@workspace:packages/adapter-creators":
+"@salto-io/adapter-creators@0.5.1, @salto-io/adapter-creators@workspace:packages/adapter-creators":
   version: 0.0.0-use.local
   resolution: "@salto-io/adapter-creators@workspace:packages/adapter-creators"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/confluence-adapter": 0.5.0
-    "@salto-io/dummy-adapter": 0.5.0
-    "@salto-io/google-workspace-adapter": 0.5.0
-    "@salto-io/intercom-adapter": 0.5.0
-    "@salto-io/jamf-adapter": 0.5.0
-    "@salto-io/jira-adapter": 0.5.0
-    "@salto-io/microsoft-entra-adapter": 0.5.0
-    "@salto-io/microsoft-security-adapter": 0.5.0
-    "@salto-io/netsuite-adapter": 0.5.0
-    "@salto-io/okta-adapter": 0.5.0
-    "@salto-io/pagerduty-adapter": 0.5.0
-    "@salto-io/salesforce-adapter": 0.5.0
-    "@salto-io/sap-adapter": 0.5.0
-    "@salto-io/serviceplaceholder-adapter": 0.5.0
-    "@salto-io/stripe-adapter": 0.5.0
-    "@salto-io/test-utils": 0.5.0
-    "@salto-io/workato-adapter": 0.5.0
-    "@salto-io/zendesk-adapter": 0.5.0
-    "@salto-io/zuora-billing-adapter": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/confluence-adapter": 0.5.1
+    "@salto-io/dummy-adapter": 0.5.1
+    "@salto-io/google-workspace-adapter": 0.5.1
+    "@salto-io/intercom-adapter": 0.5.1
+    "@salto-io/jamf-adapter": 0.5.1
+    "@salto-io/jira-adapter": 0.5.1
+    "@salto-io/microsoft-entra-adapter": 0.5.1
+    "@salto-io/microsoft-security-adapter": 0.5.1
+    "@salto-io/netsuite-adapter": 0.5.1
+    "@salto-io/okta-adapter": 0.5.1
+    "@salto-io/pagerduty-adapter": 0.5.1
+    "@salto-io/salesforce-adapter": 0.5.1
+    "@salto-io/sap-adapter": 0.5.1
+    "@salto-io/serviceplaceholder-adapter": 0.5.1
+    "@salto-io/stripe-adapter": 0.5.1
+    "@salto-io/test-utils": 0.5.1
+    "@salto-io/workato-adapter": 0.5.1
+    "@salto-io/zendesk-adapter": 0.5.1
+    "@salto-io/zuora-billing-adapter": 0.5.1
     "@types/jest": ^29.5.12
     eslint: ^9.16.0
     jest: ^29.7.0
@@ -4090,15 +4090,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/adapter-utils@0.5.0, @salto-io/adapter-utils@workspace:packages/adapter-utils":
+"@salto-io/adapter-utils@0.5.1, @salto-io/adapter-utils@workspace:packages/adapter-utils":
   version: 0.0.0-use.local
   resolution: "@salto-io/adapter-utils@workspace:packages/adapter-utils"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/object-hash": ^3.0.0
@@ -4123,14 +4123,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/aws-utils@0.5.0, @salto-io/aws-utils@workspace:packages/aws-utils":
+"@salto-io/aws-utils@0.5.1, @salto-io/aws-utils@workspace:packages/aws-utils":
   version: 0.0.0-use.local
   resolution: "@salto-io/aws-utils@workspace:packages/aws-utils"
   dependencies:
     "@aws-sdk/client-s3": 3.198.0
     "@aws-sdk/middleware-retry": 3.198.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/logging": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/node": ^18.9.0
     eslint: ^9.16.0
@@ -4147,21 +4147,21 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@salto-io/cli@workspace:packages/cli"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-creators": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/core": 0.5.0
-    "@salto-io/dag": 0.5.0
-    "@salto-io/e2e-credentials-store": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/file": 0.5.0
-    "@salto-io/local-workspace": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/parser": 0.5.0
-    "@salto-io/salesforce-adapter": 0.5.0
-    "@salto-io/test-utils": 0.5.0
-    "@salto-io/workspace": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-creators": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/core": 0.5.1
+    "@salto-io/dag": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/file": 0.5.1
+    "@salto-io/local-workspace": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/parser": 0.5.1
+    "@salto-io/salesforce-adapter": 0.5.1
+    "@salto-io/test-utils": 0.5.1
+    "@salto-io/workspace": 0.5.1
     "@types/express": ^4.17.7
     "@types/inquirer": 7.3.1
     "@types/jest": ^29.5.12
@@ -4201,17 +4201,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/confluence-adapter@0.5.0, @salto-io/confluence-adapter@workspace:packages/confluence-adapter":
+"@salto-io/confluence-adapter@0.5.1, @salto-io/confluence-adapter@workspace:packages/confluence-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/confluence-adapter@workspace:packages/confluence-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/e2e-credentials-store": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     axios: ^1.7.2
@@ -4228,22 +4228,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/core@0.5.0, @salto-io/core@workspace:packages/core":
+"@salto-io/core@0.5.1, @salto-io/core@workspace:packages/core":
   version: 0.0.0-use.local
   resolution: "@salto-io/core@workspace:packages/core"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/dag": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/dag": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
     "@salto-io/jest-extended": ^4.0.3
-    "@salto-io/local-workspace": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/local-workspace": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@salto-io/node-diff3": 3.1.2-salto.1
-    "@salto-io/test-utils": 0.5.0
-    "@salto-io/workspace": 0.5.0
+    "@salto-io/test-utils": 0.5.1
+    "@salto-io/workspace": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     eslint: ^9.16.0
@@ -4260,12 +4260,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/dag@0.5.0, @salto-io/dag@workspace:packages/dag":
+"@salto-io/dag@0.5.1, @salto-io/dag@workspace:packages/dag":
   version: 0.0.0-use.local
   resolution: "@salto-io/dag@workspace:packages/dag"
   dependencies:
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@types/jest": ^29.5.12
     eslint: ^9.16.0
     jest: ^29.7.0
@@ -4279,19 +4279,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/dummy-adapter@0.5.0, @salto-io/dummy-adapter@workspace:packages/dummy-adapter":
+"@salto-io/dummy-adapter@0.5.1, @salto-io/dummy-adapter@workspace:packages/dummy-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/dummy-adapter@workspace:packages/dummy-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/local-workspace": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/parser": 0.5.0
-    "@salto-io/workspace": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/local-workspace": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/parser": 0.5.1
+    "@salto-io/workspace": 0.5.1
     "@types/jest": ^29.5.12
     "@types/seedrandom": ^2.4.28
     eslint: ^9.16.0
@@ -4308,13 +4308,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/e2e-credentials-store@0.5.0, @salto-io/e2e-credentials-store@workspace:packages/e2e-credentials-store":
+"@salto-io/e2e-credentials-store@0.5.1, @salto-io/e2e-credentials-store@workspace:packages/e2e-credentials-store":
   version: 0.0.0-use.local
   resolution: "@salto-io/e2e-credentials-store@workspace:packages/e2e-credentials-store"
   dependencies:
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/persistent-pool": 0.5.0
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/persistent-pool": 0.5.1
     "@types/easy-table": ^0.0.32
     "@types/humanize-duration": ^3.18.0
     "@types/jest": ^29.5.12
@@ -4336,18 +4336,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/e2e-test-utils@0.5.0, @salto-io/e2e-test-utils@workspace:packages/e2e-test-utils":
+"@salto-io/e2e-test-utils@0.5.1, @salto-io/e2e-test-utils@workspace:packages/e2e-test-utils":
   version: 0.0.0-use.local
   resolution: "@salto-io/e2e-test-utils@workspace:packages/e2e-test-utils"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/core": 0.5.0
-    "@salto-io/e2e-credentials-store": 0.5.0
-    "@salto-io/file": 0.5.0
-    "@salto-io/local-workspace": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/workspace": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/core": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/file": 0.5.1
+    "@salto-io/local-workspace": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/workspace": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     eslint: ^9.16.0
@@ -4361,13 +4362,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/element-test-utils@0.5.0, @salto-io/element-test-utils@workspace:packages/element-test-utils":
+"@salto-io/element-test-utils@0.5.1, @salto-io/element-test-utils@workspace:packages/element-test-utils":
   version: 0.0.0-use.local
   resolution: "@salto-io/element-test-utils@workspace:packages/element-test-utils"
   dependencies:
     "@jest/expect-utils": ^29.7.0
     "@jest/globals": ^29.7.0
-    "@salto-io/adapter-api": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
     "@types/jest": ^29.5.12
     "@types/node": ^18.9.0
     eslint: ^9.16.0
@@ -4380,11 +4381,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/file@0.5.0, @salto-io/file@workspace:packages/file":
+"@salto-io/file@0.5.1, @salto-io/file@workspace:packages/file":
   version: 0.0.0-use.local
   resolution: "@salto-io/file@workspace:packages/file"
   dependencies:
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/lowerdash": 0.5.1
     "@types/jest": ^29.5.12
     "@types/mkdirp": ^0.5.2
     "@types/rimraf": ^2.0.5
@@ -4404,18 +4405,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/google-workspace-adapter@0.5.0, @salto-io/google-workspace-adapter@workspace:packages/google-workspace-adapter":
+"@salto-io/google-workspace-adapter@0.5.1, @salto-io/google-workspace-adapter@workspace:packages/google-workspace-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/google-workspace-adapter@workspace:packages/google-workspace-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/e2e-credentials-store": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/workspace": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/workspace": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/uuid": ^10.0.0
@@ -4434,16 +4435,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/intercom-adapter@0.5.0, @salto-io/intercom-adapter@workspace:packages/intercom-adapter":
+"@salto-io/intercom-adapter@0.5.1, @salto-io/intercom-adapter@workspace:packages/intercom-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/intercom-adapter@workspace:packages/intercom-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     axios: ^1.7.2
@@ -4459,16 +4460,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/jamf-adapter@0.5.0, @salto-io/jamf-adapter@workspace:packages/jamf-adapter":
+"@salto-io/jamf-adapter@0.5.1, @salto-io/jamf-adapter@workspace:packages/jamf-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/jamf-adapter@workspace:packages/jamf-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/xml-js": ^1.0.0
@@ -4501,21 +4502,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/jira-adapter@0.5.0, @salto-io/jira-adapter@workspace:packages/jira-adapter":
+"@salto-io/jira-adapter@0.5.1, @salto-io/jira-adapter@workspace:packages/jira-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/jira-adapter@workspace:packages/jira-adapter"
   dependencies:
     "@atlassianlabs/jql-ast": ^1.0.0
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/dag": 0.5.0
-    "@salto-io/e2e-credentials-store": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/dag": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
     "@salto-io/jest-extended": ^4.0.3
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/pako": ^1.0.1
@@ -4572,17 +4573,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/lang-server@0.5.0, @salto-io/lang-server@workspace:packages/lang-server":
+"@salto-io/lang-server@0.5.1, @salto-io/lang-server@workspace:packages/lang-server":
   version: 0.0.0-use.local
   resolution: "@salto-io/lang-server@workspace:packages/lang-server"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/parser": 0.5.0
-    "@salto-io/test-utils": 0.5.0
-    "@salto-io/workspace": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/parser": 0.5.1
+    "@salto-io/test-utils": 0.5.1
+    "@salto-io/workspace": 0.5.1
     "@types/jest": ^29.5.12
     "@types/node": ^18.9.0
     eslint: ^9.16.0
@@ -4599,24 +4600,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/local-workspace@0.5.0, @salto-io/local-workspace@workspace:packages/local-workspace":
+"@salto-io/local-workspace@0.5.1, @salto-io/local-workspace@workspace:packages/local-workspace":
   version: 0.0.0-use.local
   resolution: "@salto-io/local-workspace@workspace:packages/local-workspace"
   dependencies:
     "@aws-sdk/client-s3": 3.198.0
     "@aws-sdk/util-stream-node": 3.198.0
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/aws-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/file": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/aws-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/file": 0.5.1
     "@salto-io/jest-extended": ^4.0.3
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/parser": 0.5.0
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/parser": 0.5.1
     "@salto-io/rocksdb": 5.1.1-salto-18
-    "@salto-io/test-utils": 0.5.0
-    "@salto-io/workspace": 0.5.0
+    "@salto-io/test-utils": 0.5.1
+    "@salto-io/workspace": 0.5.1
     "@types/async-lock": ^1.1.2
     "@types/fs-extra": ^9.0.8
     "@types/jest": ^29.5.12
@@ -4653,11 +4654,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/logging@0.5.0, @salto-io/logging@workspace:packages/logging":
+"@salto-io/logging@0.5.1, @salto-io/logging@workspace:packages/logging":
   version: 0.0.0-use.local
   resolution: "@salto-io/logging@workspace:packages/logging"
   dependencies:
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/lowerdash": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/minimatch": ^3.0.3
@@ -4698,11 +4699,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/lowerdash@0.5.0, @salto-io/lowerdash@workspace:packages/lowerdash":
+"@salto-io/lowerdash@0.5.1, @salto-io/lowerdash@workspace:packages/lowerdash":
   version: 0.0.0-use.local
   resolution: "@salto-io/lowerdash@workspace:packages/lowerdash"
   dependencies:
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/node": ^18.9.0
@@ -4730,17 +4731,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/microsoft-entra-adapter@0.5.0, @salto-io/microsoft-entra-adapter@workspace:packages/microsoft-entra-adapter":
+"@salto-io/microsoft-entra-adapter@0.5.1, @salto-io/microsoft-entra-adapter@workspace:packages/microsoft-entra-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/microsoft-entra-adapter@workspace:packages/microsoft-entra-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     axios: ^1.7.2
@@ -4757,17 +4758,45 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/microsoft-security-adapter@0.5.0, @salto-io/microsoft-security-adapter@workspace:packages/microsoft-security-adapter":
+"@salto-io/microsoft-security-adapter-e2e@workspace:packages/microsoft-security-adapter-e2e":
+  version: 0.0.0-use.local
+  resolution: "@salto-io/microsoft-security-adapter-e2e@workspace:packages/microsoft-security-adapter-e2e"
+  dependencies:
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/e2e-test-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/microsoft-security-adapter": 0.5.1
+    "@salto-io/workspace": 0.5.1
+    "@types/jest": ^29.5.12
+    "@types/lodash": ^4.14.168
+    "@types/uuid": ^10.0.0
+    eslint: ^9.16.0
+    jest: ^29.7.0
+    lodash: ^4.17.21
+    prettier: 3.2.5
+    ts-jest: ^29.2.0
+    tsc-watch: ^2.2.1
+    turbo: ^2.0.6
+    typescript: 4.8.4
+    uuid: ^10.0.0
+  languageName: unknown
+  linkType: soft
+
+"@salto-io/microsoft-security-adapter@0.5.1, @salto-io/microsoft-security-adapter@workspace:packages/microsoft-security-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/microsoft-security-adapter@workspace:packages/microsoft-security-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     axios: ^1.7.2
@@ -4785,21 +4814,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/netsuite-adapter@0.5.0, @salto-io/netsuite-adapter@workspace:packages/netsuite-adapter":
+"@salto-io/netsuite-adapter@0.5.1, @salto-io/netsuite-adapter@workspace:packages/netsuite-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/netsuite-adapter@workspace:packages/netsuite-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/e2e-credentials-store": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/file": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/file": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@salto-io/suitecloud-cli-legacy": "npm:@salto-io/suitecloud-cli@1.9.0-salto-4"
     "@salto-io/suitecloud-cli-new": "npm:@salto-io/suitecloud-cli@2.0.0-salto-1"
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/test-utils": 0.5.1
     "@types/async-lock": ^1.1.2
     "@types/he": ^1.1.1
     "@types/jest": ^29.5.12
@@ -4844,20 +4873,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/okta-adapter@0.5.0, @salto-io/okta-adapter@workspace:packages/okta-adapter":
+"@salto-io/okta-adapter@0.5.1, @salto-io/okta-adapter@workspace:packages/okta-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/okta-adapter@workspace:packages/okta-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/e2e-credentials-store": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
     "@salto-io/jest-extended": ^4.0.3
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/parser": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/parser": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/parse-link-header": ^2.0.0
@@ -4880,16 +4909,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/pagerduty-adapter@0.5.0, @salto-io/pagerduty-adapter@workspace:packages/pagerduty-adapter":
+"@salto-io/pagerduty-adapter@0.5.1, @salto-io/pagerduty-adapter@workspace:packages/pagerduty-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/pagerduty-adapter@workspace:packages/pagerduty-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     axios: ^1.7.2
@@ -4905,15 +4934,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/parser@0.5.0, @salto-io/parser@workspace:packages/parser":
+"@salto-io/parser@0.5.1, @salto-io/parser@workspace:packages/parser":
   version: 0.0.0-use.local
   resolution: "@salto-io/parser@workspace:packages/parser"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/moo": ^0.5.0
@@ -4931,16 +4960,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/persistent-pool@0.5.0, @salto-io/persistent-pool@workspace:packages/persistent-pool":
+"@salto-io/persistent-pool@0.5.1, @salto-io/persistent-pool@workspace:packages/persistent-pool":
   version: 0.0.0-use.local
   resolution: "@salto-io/persistent-pool@workspace:packages/persistent-pool"
   dependencies:
     "@aws-sdk/client-dynamodb": 3.198.0
     "@aws-sdk/lib-dynamodb": 3.198.0
     "@aws-sdk/types": 3.198.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/node": ^18.9.0
     "@types/uuid": ^10.0.0
@@ -4967,26 +4996,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/salesforce-adapter@0.5.0, @salto-io/salesforce-adapter@workspace:packages/salesforce-adapter":
+"@salto-io/salesforce-adapter@0.5.1, @salto-io/salesforce-adapter@workspace:packages/salesforce-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/salesforce-adapter@workspace:packages/salesforce-adapter"
   dependencies:
     "@salesforce/core": ^8.1.1
     "@salesforce/source-deploy-retrieve": ^12.1.4
     "@salesforce/templates": ^61.4.11
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/e2e-credentials-store": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/file": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/file": 0.5.1
     "@salto-io/jest-extended": ^4.0.3
     "@salto-io/jsforce": ^1.9.4
     "@salto-io/jsforce-types": ^0.1.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@salto-io/salesforce-formula-parser": 0.1.5
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/jszip": ^3.4.0
     "@types/lodash": ^4.14.168
@@ -5023,15 +5052,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/sap-adapter@0.5.0, @salto-io/sap-adapter@workspace:packages/sap-adapter":
+"@salto-io/sap-adapter@0.5.1, @salto-io/sap-adapter@workspace:packages/sap-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/sap-adapter@workspace:packages/sap-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     axios: ^1.7.2
@@ -5047,16 +5076,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/serviceplaceholder-adapter@0.5.0, @salto-io/serviceplaceholder-adapter@workspace:packages/serviceplaceholder-adapter":
+"@salto-io/serviceplaceholder-adapter@0.5.1, @salto-io/serviceplaceholder-adapter@workspace:packages/serviceplaceholder-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/serviceplaceholder-adapter@workspace:packages/serviceplaceholder-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     axios: ^1.7.2
@@ -5072,16 +5101,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/stripe-adapter@0.5.0, @salto-io/stripe-adapter@workspace:packages/stripe-adapter":
+"@salto-io/stripe-adapter@0.5.1, @salto-io/stripe-adapter@workspace:packages/stripe-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/stripe-adapter@workspace:packages/stripe-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
     "@salto-io/jest-extended": ^4.0.3
-    "@salto-io/logging": 0.5.0
+    "@salto-io/logging": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     axios: ^1.7.2
@@ -5129,7 +5158,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/test-utils@0.5.0, @salto-io/test-utils@workspace:packages/test-utils":
+"@salto-io/test-utils@0.5.1, @salto-io/test-utils@workspace:packages/test-utils":
   version: 0.0.0-use.local
   resolution: "@salto-io/test-utils@workspace:packages/test-utils"
   dependencies:
@@ -5145,17 +5174,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/workato-adapter@0.5.0, @salto-io/workato-adapter@workspace:packages/workato-adapter":
+"@salto-io/workato-adapter@0.5.1, @salto-io/workato-adapter@workspace:packages/workato-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/workato-adapter@workspace:packages/workato-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     axios: ^1.7.2
@@ -5173,19 +5202,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/workspace@0.5.0, @salto-io/workspace@workspace:packages/workspace":
+"@salto-io/workspace@0.5.1, @salto-io/workspace@workspace:packages/workspace":
   version: 0.0.0-use.local
   resolution: "@salto-io/workspace@workspace:packages/workspace"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/dag": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/dag": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
     "@salto-io/jest-extended": ^4.0.3
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/parser": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/parser": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/wu": ^2.1.40
@@ -5206,16 +5235,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@salto-io/zendesk-adapter-e2e@workspace:packages/zendesk-adapter-e2e"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/e2e-credentials-store": 0.5.0
-    "@salto-io/e2e-test-utils": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/parser": 0.5.0
-    "@salto-io/workspace": 0.5.0
-    "@salto-io/zendesk-adapter": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/e2e-test-utils": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/parser": 0.5.1
+    "@salto-io/workspace": 0.5.1
+    "@salto-io/zendesk-adapter": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/uuid": ^10.0.0
@@ -5231,21 +5259,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/zendesk-adapter@0.5.0, @salto-io/zendesk-adapter@workspace:packages/zendesk-adapter":
+"@salto-io/zendesk-adapter@0.5.1, @salto-io/zendesk-adapter@workspace:packages/zendesk-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/zendesk-adapter@workspace:packages/zendesk-adapter"
   dependencies:
     "@handlebars/parser": ^2.1.0
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/dag": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/parser": 0.5.0
-    "@salto-io/test-utils": 0.5.0
-    "@salto-io/workspace": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/dag": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/parser": 0.5.1
+    "@salto-io/test-utils": 0.5.1
+    "@salto-io/workspace": 0.5.1
     "@types/jest": ^29.5.12
     "@types/jszip": ^3.4.0
     "@types/lodash": ^4.14.168
@@ -5271,18 +5299,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/zuora-billing-adapter@0.5.0, @salto-io/zuora-billing-adapter@workspace:packages/zuora-billing-adapter":
+"@salto-io/zuora-billing-adapter@0.5.1, @salto-io/zuora-billing-adapter@workspace:packages/zuora-billing-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/zuora-billing-adapter@workspace:packages/zuora-billing-adapter"
   dependencies:
-    "@salto-io/adapter-api": 0.5.0
-    "@salto-io/adapter-components": 0.5.0
-    "@salto-io/adapter-utils": 0.5.0
-    "@salto-io/e2e-credentials-store": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/logging": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/test-utils": 0.5.0
+    "@salto-io/adapter-api": 0.5.1
+    "@salto-io/adapter-components": 0.5.1
+    "@salto-io/adapter-utils": 0.5.1
+    "@salto-io/e2e-credentials-store": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/logging": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/test-utils": 0.5.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     axios: ^1.7.2
@@ -18071,14 +18099,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "salto-vscode@workspace:packages/vscode"
   dependencies:
-    "@salto-io/adapter-creators": 0.5.0
-    "@salto-io/element-test-utils": 0.5.0
-    "@salto-io/file": 0.5.0
-    "@salto-io/lang-server": 0.5.0
-    "@salto-io/local-workspace": 0.5.0
-    "@salto-io/lowerdash": 0.5.0
-    "@salto-io/parser": 0.5.0
-    "@salto-io/workspace": 0.5.0
+    "@salto-io/adapter-creators": 0.5.1
+    "@salto-io/element-test-utils": 0.5.1
+    "@salto-io/file": 0.5.1
+    "@salto-io/lang-server": 0.5.1
+    "@salto-io/local-workspace": 0.5.1
+    "@salto-io/lowerdash": 0.5.1
+    "@salto-io/parser": 0.5.1
+    "@salto-io/workspace": 0.5.1
     "@types/jest": ^29.5.12
     "@types/vscode": ^1.36
     clipboardy: ^2.3.0

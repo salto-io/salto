@@ -1431,11 +1431,9 @@ export const toDeployableInstance = async (element: InstanceElement): Promise<In
     transformFunc: removeNonDeployableValues,
     strict: false,
     allowEmptyArrays: true,
-    allowEmptyObjects: true,
+    allowExistingEmptyObjects: true,
   })
 }
-
-export const fromMetadataInfo = (info: MetadataInfo): Values => info
 
 export const toMetadataInfo = async (instance: InstanceElement): Promise<MetadataInfo> => ({
   fullName: await apiName(instance),

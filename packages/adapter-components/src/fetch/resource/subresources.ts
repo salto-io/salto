@@ -51,9 +51,8 @@ type RecurseIntoConditionByContext = RecurseIntoConditionBase & {
 }
 export type RecurseIntoCondition = RecurseIntoConditionByField | RecurseIntoConditionByContext
 
-export const isRecurseIntoConditionByField = (
-  condition: RecurseIntoCondition,
-): condition is RecurseIntoConditionByField => 'fromField' in condition
+const isRecurseIntoConditionByField = (condition: RecurseIntoCondition): condition is RecurseIntoConditionByField =>
+  'fromField' in condition
 
 export const shouldRecurseIntoEntry = (
   entry: Values,

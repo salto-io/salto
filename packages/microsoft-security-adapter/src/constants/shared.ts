@@ -8,7 +8,7 @@
 
 import { naclCase } from '@salto-io/adapter-utils'
 
-export const ADAPTER_NAME = 'microsoft_security'
+export const MICROSOFT_SECURITY = 'microsoft_security'
 
 /* Fields */
 // Used for service id purpose, when the id of the child is not globally unique

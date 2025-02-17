@@ -58,6 +58,9 @@ const {
   VIEW_TYPE_NAME,
   ZENDESK,
   createFetchDefinitions,
+  CONVERSATION_BOT,
+  BOT_BUILDER_ANSWER,
+  BOT_BUILDER_NODE,
 } = zendeskE2eUtils
 
 export const TYPES_NOT_TO_REMOVE = new Set<string>([
@@ -441,6 +444,26 @@ export const getAllInstancesToDeploy = async ({
       raw_title: triggerName,
       category_id: new ReferenceExpression(triggerCategoryInstance.elemID),
     },
+  })
+
+  const conversationBotInstance = createInstanceElement({
+    type: CONVERSATION_BOT,
+    valuesOverride: {
+      name: createName('conversation_bot'),
+      brandId: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+    },
+  })
+  const conversationBotAnswerInstance = createInstanceElement({
+    type: BOT_BUILDER_ANSWER,
+    valuesOverride: {
+      flowId: new ReferenceExpression(conversationBotInstance.elemID, conversationBotInstance),
+    },
+    parent: conversationBotInstance,
+  })
+  const conversationBotNodeInstance = createInstanceElement({
+    type: BOT_BUILDER_NODE,
+    valuesOverride: {},
+    parent: conversationBotAnswerInstance,
   })
 
   // ***************** guide instances ******************* //
@@ -937,6 +960,9 @@ export const getAllInstancesToDeploy = async ({
     userSegmentInstance,
     layoutInstance,
     workspaceInstance,
+    conversationBotInstance,
+    conversationBotAnswerInstance,
+    conversationBotNodeInstance,
     ...customObjectInstances,
     // guide elements
     ...guideInstances,

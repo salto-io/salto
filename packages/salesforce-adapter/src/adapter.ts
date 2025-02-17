@@ -124,7 +124,8 @@ import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_objec
 import installedPackageGeneratedDependencies from './filters/installed_package_generated_dependencies'
 import createMissingInstalledPackagesInstancesFilter from './filters/create_missing_installed_packages_instances'
 import metadataInstancesAliasesFilter from './filters/metadata_instances_aliases'
-import formulaDepsFilter from './filters/formula_deps'
+import customObjectFormulaDependenciesFilter from './filters/custom_object_formula_dependencies'
+import metadataInstancesFormulaDependenciesFilter from './filters/metadata_instances_formula_dependencies'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_settings'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
@@ -254,7 +255,8 @@ export const allFilters: Array<FilterCreator> = [
   splitCustomLabels,
   xmlAttributesFilter,
   minifyDeployFilter,
-  formulaDepsFilter,
+  metadataInstancesFormulaDependenciesFilter,
+  customObjectFormulaDependenciesFilter,
   // centralizeTrackingInfoFilter depends on customObjectsToObjectTypeFilter and must run before customTypeSplit
   centralizeTrackingInfoFilter,
   // The following filters should remain last in order to make sure they fix all elements
@@ -428,7 +430,7 @@ export const NESTED_METADATA_TYPES = {
 }
 
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
-export const SYSTEM_FIELDS = [
+const SYSTEM_FIELDS = [
   'ConnectionReceivedId',
   'ConnectionSentId',
   'CreatedById',
@@ -447,7 +449,7 @@ export const SYSTEM_FIELDS = [
   'SetupOwnerId',
 ]
 
-export const UNSUPPORTED_SYSTEM_FIELDS = ['LastReferencedDate', 'LastViewedDate']
+const UNSUPPORTED_SYSTEM_FIELDS = ['LastReferencedDate', 'LastViewedDate']
 
 const getIncludedTypesFromElementsSource = async (
   elementsSource: ReadOnlyElementsSource,

@@ -63,9 +63,6 @@ export const isSuiteAppUpdateRecordsGroupId = (groupId: string): boolean =>
 export const isSuiteAppDeleteRecordsGroupId = (groupId: string): boolean =>
   groupId.startsWith(SUITEAPP_DELETING_RECORDS_GROUP_ID)
 
-export const isSuiteAppUpdateConfigGroupId = (groupId: string): boolean =>
-  groupId.startsWith(SUITEAPP_UPDATING_CONFIG_GROUP_ID)
-
 const SUITEAPP_FILE_CABINET_GROUPS = [
   SUITEAPP_CREATING_FILES_GROUP_ID,
   SUITEAPP_UPDATING_FILES_GROUP_ID,

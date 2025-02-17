@@ -9,7 +9,6 @@ export {
   createRemoteMapCreator,
   createReadOnlyRemoteMap,
   closeAllRemoteMaps,
-  closeRemoteMapsOfLocation,
   cleanDatabases,
   replicateDB,
 } from './remote_map'

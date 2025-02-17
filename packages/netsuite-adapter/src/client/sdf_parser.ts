@@ -33,17 +33,17 @@ const { makeArray } = collections.array
 export const SRC_DIR = 'src'
 export const FILE_CABINET_DIR = 'FileCabinet'
 export const OBJECTS_DIR = 'Objects'
-export const ACCOUNT_CONFIGURATION_DIR = 'AccountConfiguration'
+const ACCOUNT_CONFIGURATION_DIR = 'AccountConfiguration'
 
-export const MANIFEST_XML = 'manifest.xml'
-export const DEPLOY_XML = 'deploy.xml'
+const MANIFEST_XML = 'manifest.xml'
+const DEPLOY_XML = 'deploy.xml'
 export const FEATURES_XML = 'features.xml'
-export const FEATURES_TAG = 'features'
+const FEATURES_TAG = 'features'
 export const FEATURES_LIST_TAG = 'feature'
 
 export const READ_CONCURRENCY = 100
 export const ADDITIONAL_FILE_PATTERN = '.template.'
-export const XML_FILE_SUFFIX = '.xml'
+const XML_FILE_SUFFIX = '.xml'
 export const ATTRIBUTES_FOLDER_NAME = '.attributes'
 export const FOLDER_ATTRIBUTES_FILE_SUFFIX = `.folder.attr${XML_FILE_SUFFIX}`
 export const ATTRIBUTES_FILE_SUFFIX = `.attr${XML_FILE_SUFFIX}`
@@ -78,7 +78,7 @@ const xmlParser = new XMLParser({
 
 export const getSrcDirPath = (projectPath: string): string => osPath.resolve(projectPath, SRC_DIR)
 
-export const getObjectsDirPath = (projectPath: string): string => osPath.resolve(projectPath, SRC_DIR, OBJECTS_DIR)
+const getObjectsDirPath = (projectPath: string): string => osPath.resolve(projectPath, SRC_DIR, OBJECTS_DIR)
 
 export const getFileCabinetDirPath = (projectPath: string): string =>
   osPath.resolve(projectPath, SRC_DIR, FILE_CABINET_DIR)

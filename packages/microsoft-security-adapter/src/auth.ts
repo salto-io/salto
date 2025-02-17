@@ -7,13 +7,13 @@
  */
 import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { ADAPTER_NAME } from './constants'
+import { MICROSOFT_SECURITY } from './constants'
 
 export const AVAILABLE_MICROSOFT_SECURITY_SERVICES = ['Entra', 'Intune'] as const
 export type AvailableMicrosoftSecurityServices = (typeof AVAILABLE_MICROSOFT_SECURITY_SERVICES)[number]
 export type MicrosoftServicesToManage = Partial<Record<AvailableMicrosoftSecurityServices, boolean>>
 
-export type OauthRequestParameters = {
+type OauthRequestParameters = {
   tenantId: string
   clientId: string
   clientSecret: string
@@ -54,7 +54,7 @@ export const SCOPE_MAPPING: Record<AvailableMicrosoftSecurityServices, string[]>
 export const OAUTH_REQUIRED_SCOPES = [...BASIC_OAUTH_REQUIRED_SCOPES, ...Object.values(SCOPE_MAPPING).flat()]
 
 export const oauthRequestParameters = createMatchingObjectType<OauthRequestParameters>({
-  elemID: new ElemID(ADAPTER_NAME),
+  elemID: new ElemID(MICROSOFT_SECURITY),
   fields: {
     tenantId: {
       refType: BuiltinTypes.STRING,
@@ -102,7 +102,7 @@ export const oauthRequestParameters = createMatchingObjectType<OauthRequestParam
 })
 
 export const credentialsType = createMatchingObjectType<Credentials>({
-  elemID: new ElemID(ADAPTER_NAME),
+  elemID: new ElemID(MICROSOFT_SECURITY),
   fields: {
     tenantId: {
       refType: BuiltinTypes.STRING,
@@ -122,7 +122,7 @@ export const credentialsType = createMatchingObjectType<Credentials>({
     },
     servicesToManage: {
       refType: new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, 'servicesToManage'),
+        elemID: new ElemID(MICROSOFT_SECURITY, 'servicesToManage'),
         fields: Object.fromEntries(
           AVAILABLE_MICROSOFT_SECURITY_SERVICES.map(service => [
             service,

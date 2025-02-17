@@ -33,6 +33,7 @@ describe('smart_value_reference_filter', () => {
   let automationInstance: InstanceElement
   let emptyAutomationInstance: InstanceElement
   let complexAutomationInstance: InstanceElement
+  let smartQueryAutomation: InstanceElement
   let config: JiraConfig
 
   beforeEach(() => {
@@ -96,6 +97,40 @@ describe('smart_value_reference_filter', () => {
     })
 
     emptyAutomationInstance = new InstanceElement('emptyAutom', automationType)
+    smartQueryAutomation = new InstanceElement('smartQueryAutom', automationType, {
+      trigger: {},
+      components: [
+        {
+          value: {
+            type: 'SMART',
+            query: {
+              type: 'SMART',
+              value: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+            },
+          },
+        },
+        {
+          value: {
+            type: 'IQL',
+            query: {
+              type: 'SMART',
+              value: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+            },
+          },
+        },
+        {
+          value: {
+            customSmartValue: {
+              type: 'SMART',
+              query: {
+                type: 'SMART',
+                value: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+              },
+            },
+          },
+        },
+      ],
+    })
   })
 
   const generateElements = (): (InstanceElement | ObjectType)[] =>
@@ -277,44 +312,9 @@ describe('smart_value_reference_filter', () => {
     })
 
     describe('smart query', () => {
-      let smartQueryAutomation: InstanceElement
       let automationResult: InstanceElement | undefined
       beforeEach(async () => {
         jest.clearAllMocks()
-        smartQueryAutomation = new InstanceElement('smartQueryAutom', automationType, {
-          trigger: {},
-          components: [
-            {
-              value: {
-                type: 'SMART',
-                query: {
-                  type: 'SMART',
-                  value: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
-                },
-              },
-            },
-            {
-              value: {
-                type: 'IQL',
-                query: {
-                  type: 'SMART',
-                  value: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
-                },
-              },
-            },
-            {
-              value: {
-                customSmartValue: {
-                  type: 'SMART',
-                  query: {
-                    type: 'SMART',
-                    value: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
-                  },
-                },
-              },
-            },
-          ],
-        })
         elements.push(smartQueryAutomation)
       })
       describe('when parseAdditionalAutomationExpressions is true', () => {
@@ -451,6 +451,37 @@ describe('smart_value_reference_filter', () => {
 
     it('Returns elements to origin after predeploy', () => {
       expect(elementsAfterPreDeploy).toEqual(elementsBeforeFetch)
+    })
+  })
+
+  describe('preDeploy with smart query', () => {
+    beforeEach(async () => {
+      const templateExpression = {
+        parts: [
+          'Field is: {{issue.',
+          new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
+          '}} {{issue.',
+          new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+          '}} ending',
+        ],
+      }
+      smartQueryAutomation.value.components[0].value.query.value = new TemplateExpression(templateExpression)
+      smartQueryAutomation.value.components[1].value.query.value = new TemplateExpression(templateExpression)
+      smartQueryAutomation.value.components[2].value.customSmartValue.query.value = new TemplateExpression(
+        templateExpression,
+      )
+      await additionalAutomationExpressionsFilter.preDeploy([toChange({ after: smartQueryAutomation })])
+    })
+    it('change the smart query to string', () => {
+      expect(smartQueryAutomation.value.components[0].value.query.value).toEqual(
+        'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+      )
+      expect(smartQueryAutomation.value.components[1].value.query.value).toEqual(
+        'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+      )
+      expect(smartQueryAutomation.value.components[2].value.customSmartValue.query.value).toEqual(
+        'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+      )
     })
   })
 

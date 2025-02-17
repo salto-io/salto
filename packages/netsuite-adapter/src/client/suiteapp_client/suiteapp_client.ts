@@ -78,7 +78,7 @@ const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
 
 export const PAGE_SIZE = 1000
-export const LAST_PAGE_OFFSET = 99000
+const LAST_PAGE_OFFSET = 99000
 
 const log = logger(module)
 
@@ -126,7 +126,7 @@ const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => 
   return detailedMessages.length > 0 ? detailedMessages.join(os.EOL) : undefined
 }
 
-export const retryable = decorators.wrapMethodWith(
+const retryable = decorators.wrapMethodWith(
   async (call: decorators.OriginalCall): Promise<unknown> => retryOnRetryableError(async () => call.call()),
 )
 

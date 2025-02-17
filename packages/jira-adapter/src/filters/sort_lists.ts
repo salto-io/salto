@@ -62,6 +62,7 @@ const TYPES_AND_VALUES_TO_SORT: Record<string, Record<string, Record<string, str
     [AUTOMATION_TYPE]: {
       tags: ['tagType', 'tagValue'],
       projects: ['projectId.elemID.name', 'projectTypeKey'],
+      collaborators: [],
     },
   },
   [FIELD_CONFIGURATION_SCHEME_TYPE]: {
@@ -150,7 +151,7 @@ const sortLists = (instance: InstanceElement): void => {
       type: instance.getTypeSync(),
       strict: false,
       allowEmptyArrays: true,
-      allowEmptyObjects: true,
+      allowExistingEmptyObjects: true,
       transformFunc: ({ value, field }) => {
         if (field === undefined || !Array.isArray(value)) {
           return value

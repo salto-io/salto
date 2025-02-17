@@ -208,7 +208,7 @@ type LocateWorkspaceRootArgs = {
   lookupDir: string
   allowWorkspaceRootLookup?: boolean
 }
-export const locateWorkspaceRootImpl = async ({
+const locateWorkspaceRootImpl = async ({
   lookupDir,
   allowWorkspaceRootLookup = true,
 }: LocateWorkspaceRootArgs): Promise<string | undefined> => {

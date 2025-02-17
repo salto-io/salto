@@ -108,19 +108,25 @@ describe('adapters config', () => {
       configTypes: [configType],
       configOverrides,
     })
+
+    jest.spyOn(validator, 'validateElements').mockResolvedValue([
+      {
+        key: 'someID',
+        value: [
+          new validator.InvalidValueValidationError({
+            elemID: new ElemID('someID'),
+            value: 'val',
+            fieldName: 'field',
+            expectedValue: 'expVal',
+          }),
+        ],
+      },
+    ])
   })
 
   describe('initialization', () => {
     it('when cache is invalid should recalculate errors', async () => {
       mockNaclFilesSource.load.mockResolvedValue({ changes: [], cacheValid: false })
-      jest.spyOn(validator, 'validateElements').mockResolvedValue([
-        new validator.InvalidValueValidationError({
-          elemID: new ElemID('someID'),
-          value: 'val',
-          fieldName: 'field',
-          expectedValue: 'expVal',
-        }),
-      ])
 
       configSource = await buildAdaptersConfigSource({
         naclSource: mockNaclFilesSource,
@@ -134,15 +140,6 @@ describe('adapters config', () => {
     })
 
     it('when cache is valid should not recalculate errors', async () => {
-      jest.spyOn(validator, 'validateElements').mockResolvedValue([
-        new validator.InvalidValueValidationError({
-          elemID: new ElemID('someID'),
-          value: 'val',
-          fieldName: 'field',
-          expectedValue: 'expVal',
-        }),
-      ])
-
       configSource = await buildAdaptersConfigSource({
         naclSource: mockNaclFilesSource,
         ignoreFileChanges: true,
@@ -304,15 +301,6 @@ describe('adapters config', () => {
     })
 
     it('setNaclFile should recalculate errors', async () => {
-      jest.spyOn(validator, 'validateElements').mockResolvedValue([
-        new validator.InvalidValueValidationError({
-          elemID: new ElemID('someID'),
-          value: 'val',
-          fieldName: 'field',
-          expectedValue: 'expVal',
-        }),
-      ])
-
       await configSource.setNaclFiles([])
       expect(validationErrorsMap.setAll).toHaveBeenCalled()
     })

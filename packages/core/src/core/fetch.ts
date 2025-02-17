@@ -119,7 +119,7 @@ const NO_CONFLICT_CORE_ANNOTATIONS = [
 const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChangeMetadata =>
   getAuthorInformation(changedElement)
 
-export const toAddFetchChange = (elem: Element): FetchChange => {
+const toAddFetchChange = (elem: Element): FetchChange => {
   const change = toDetailedChangeFromBaseChange(toChange({ after: elem }))
   return { change, serviceChanges: [change], metadata: getFetchChangeMetadata(elem) }
 }
@@ -1198,6 +1198,42 @@ const fixStaticFilesForFromStateChanges = async (
   }
 }
 
+export const unmergeElements = async (workspace: Workspace, env: string, elements: Element[]): Promise<Element[]> => {
+  const otherPathIndex = await log.timeDebug(
+    async () => workspace.state(env).getPathIndex(),
+    'Getting workspace pathIndex',
+  )
+  const inMemoryOtherPathIndex = await log.timeDebug(
+    async () => new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(await awu(otherPathIndex.entries()).toArray()),
+    'Saving pathIndex to memory',
+  )
+  const splitByPathIndex = await log.timeDebug(
+    async () =>
+      (
+        await withLimitedConcurrency(
+          wu(elements).map(elem => () => pathIndex.splitElementByPath(elem, inMemoryOtherPathIndex)),
+          MAX_SPLIT_CONCURRENCY,
+        )
+      ).flat(),
+    'Splitting elements by PathIndex',
+  )
+  const [unmergedWithPath, unmergedWithoutPath] = _.partition(splitByPathIndex, elem => values.isDefined(elem.path))
+  const splitByFile = await log.timeDebug(
+    async () =>
+      (
+        await withLimitedConcurrency(
+          wu(unmergedWithoutPath).map(
+            elem => async () =>
+              pathIndex.splitElementByPath(elem, await createPathIndexForElement(workspace, elem.elemID)),
+          ),
+          MAX_SPLIT_CONCURRENCY,
+        )
+      ).flat(),
+    'Splitting elements by files',
+  )
+  return [...unmergedWithPath, ...splitByFile]
+}
+
 export const fetchChangesFromWorkspace = async (
   otherWorkspace: Workspace,
   fetchAccounts: string[],
@@ -1256,39 +1292,7 @@ export const fetchChangesFromWorkspace = async (
         .toArray(),
     'Getting other workspace elements',
   )
-  const otherPathIndex = await log.timeDebug(
-    async () => otherWorkspace.state(env).getPathIndex(),
-    'Getting other workspace pathIndex',
-  )
-  const inMemoryOtherPathIndex = await log.timeDebug(
-    async () => new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(await awu(otherPathIndex.entries()).toArray()),
-    'Saving pathIndex to memory',
-  )
-  const splitByPathIndex = await log.timeDebug(
-    async () =>
-      (
-        await withLimitedConcurrency(
-          wu(fullElements).map(elem => () => pathIndex.splitElementByPath(elem, inMemoryOtherPathIndex)),
-          MAX_SPLIT_CONCURRENCY,
-        )
-      ).flat(),
-    'Splitting elements by PathIndex',
-  )
-  const [unmergedWithPath, unmergedWithoutPath] = _.partition(splitByPathIndex, elem => values.isDefined(elem.path))
-  const splitByFile = await log.timeDebug(
-    async () =>
-      (
-        await withLimitedConcurrency(
-          wu(unmergedWithoutPath).map(
-            elem => async () =>
-              pathIndex.splitElementByPath(elem, await createPathIndexForElement(otherWorkspace, elem.elemID)),
-          ),
-          MAX_SPLIT_CONCURRENCY,
-        )
-      ).flat(),
-    'Splitting elements by files',
-  )
-  const unmergedElements = [...unmergedWithPath, ...splitByFile]
+  const unmergedElements = await unmergeElements(otherWorkspace, env, fullElements)
   const fetchChangesResult = await log.timeDebug(
     async () =>
       createFetchChanges({

@@ -9,7 +9,7 @@ import _ from 'lodash'
 import { ObjectType, ElemID, Field } from '@salto-io/adapter-api'
 import { MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError } from './common'
 
-export abstract class FieldDefinitionMergeError extends MergeError {
+abstract class FieldDefinitionMergeError extends MergeError {
   readonly cause: string
 
   constructor({ elemID, cause }: { elemID: ElemID; cause: string }) {

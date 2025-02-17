@@ -28,10 +28,7 @@ import {
   formatConfigFieldInput,
   formatShouldAbortWithValidationError,
   formatConfigChangeNeeded,
-  formatShouldChangeFetchModeToAlign,
   formatDetailedChanges,
-  formatChangingFetchMode,
-  formatNotChangingFetchMode,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput } from './types'
@@ -49,44 +46,12 @@ export const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   return answers.userInput.toLowerCase() === 'y'
 }
 
-type YesNoCancelAnswer = 'yes' | 'no' | 'cancel operation'
-
-export const getUserYesNoCancelInput = async (prompt: string): Promise<YesNoCancelAnswer> => {
-  const question: inquirer.ExpandQuestion = {
-    type: 'expand',
-    choices: [
-      { key: 'y', value: 'yes' },
-      { key: 'n', value: 'no' },
-      { key: 'c', value: 'cancel operation' },
-    ],
-    default: 0,
-    name: 'userInput',
-    message: prompt,
-  }
-
-  const answers = await inquirer.prompt(question)
-  return answers.userInput
-}
-
 export const shouldCancelCommand = async (prompt: string, { stdout }: CliOutput): Promise<boolean> => {
   const shouldCancel = await getUserBooleanInput(prompt)
   if (shouldCancel) {
     stdout.write(formatCancelCommand)
   }
   return shouldCancel
-}
-
-export const getChangeToAlignAction = async (fetchMode: string, { stdout }: CliOutput): Promise<YesNoCancelAnswer> => {
-  const prompt = formatShouldChangeFetchModeToAlign(fetchMode)
-  const answer = await getUserYesNoCancelInput(prompt)
-  stdout.write(
-    {
-      yes: formatChangingFetchMode,
-      no: formatNotChangingFetchMode,
-      'cancel operation': formatCancelCommand,
-    }[answer],
-  )
-  return answer
 }
 
 export const shouldContinueInCaseOfWarnings = async (numWarnings: number, { stdout }: CliOutput): Promise<boolean> => {

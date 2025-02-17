@@ -21,8 +21,8 @@ import { FilterCreator } from '../filter'
 const { RECORDS_PATH } = elementsUtils
 const log = logger(module)
 
-export const UNSORTED = 'unsorted'
-export const BOT_BUILDER_PATH = [ZENDESK, RECORDS_PATH, CONVERSATION_BOT]
+const UNSORTED = 'unsorted'
+const BOT_BUILDER_PATH = [ZENDESK, RECORDS_PATH, CONVERSATION_BOT]
 
 const BOT_BUILDER_ELEMENT_DIRECTORY: Record<string, string> = {
   [CONVERSATION_BOT]: 'bots',
@@ -97,7 +97,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(inst => inst.elemID.typeName === CONVERSATION_BOT)
 
     botBuilderFlowInstances.forEach(flowInstance => {
-      const brandName = flowInstance.value.brandId?.value.value?.name
+      const brandName = flowInstance.value.brandId?.value?.value?.name
       const flowPath = pathForFlowElements(flowInstance, brandName)
       flowInstance.path = flowPath
       flowInstance.value.subflows?.filter(isReferenceExpression).forEach((botBuilderAnswerRef: ReferenceExpression) => {

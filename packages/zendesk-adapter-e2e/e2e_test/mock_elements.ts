@@ -331,4 +331,24 @@ export const mockDefaultValues: Record<string, Values> = {
       },
     ],
   },
+  conversation_bot: {
+    name: 'Test bot',
+    botAvatarUrl: 'https://static.zdassets.com/web_widget/latest/default_avatar.png',
+    sourceLanguage: 'English',
+    brandId: 1,
+    botType: 'ADVANCED',
+    status: 'unpublished',
+    enabledLanguages: ['English'],
+  },
+  conversation_bot__answer: {
+    name: 'Test answer',
+    flowId: 1,
+  },
+  conversation_bot__answer__node: {
+    externalId: '01JHDF1AEZ72S2C7NXHM8XBCDE',
+    targetType: 'message',
+    data: {
+      text: 'go go go',
+    },
+  },
 }

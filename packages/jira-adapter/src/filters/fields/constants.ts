@@ -17,3 +17,6 @@ export const FIELD_CONTEXT_OPTIONS_ORDER_FILE_NAME = 'Order'
 export const ORDER_INSTANCE_SUFFIX = 'order_child'
 export const PARENT_NAME_FIELD = 'parentName'
 export const OPTIONS_ORDER_TYPE_NAME = 'FieldContextOptionsOrder'
+// Added to avoid conflicts with names
+// of custom fields and system fields
+export const CUSTOM_FIELDS_SUFFIX = 'c'

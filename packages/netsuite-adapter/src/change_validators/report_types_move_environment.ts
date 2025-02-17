@@ -28,7 +28,7 @@ import { NetsuiteChangeValidator } from './types'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-export type ReportTypes = ParsedSavedSearchType | ParsedReportDefinition | ParsedFinancialLayout
+type ReportTypes = ParsedSavedSearchType | ParsedReportDefinition | ParsedFinancialLayout
 
 export const mapTypeToLayoutOrDefinition: Record<string, string> = {
   [FINANCIAL_LAYOUT]: 'layout',

@@ -40,9 +40,9 @@ import {
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { emptyQueryParams, fullFetchConfig, fullQueryParams } from '../src/config/config_creator'
+import { emptyQueryParams, fullQueryParams } from '../src/config/config_creator'
 import NetsuiteAdapter from '../src/adapter'
-import { configType } from '../src/config/types'
+import { configType, FetchParams } from '../src/config/types'
 import { credsLease, realAdapter } from './adapter'
 import {
   getElementValueOrAnnotations,
@@ -69,6 +69,8 @@ import {
   NETSUITE,
   APPLICATION_ID,
   BUNDLE,
+  PLUGIN_IMPLEMENTATION,
+  PLUGIN_TYPE,
 } from '../src/constants'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
 import { mockDefaultValues } from './mock_elements'
@@ -166,9 +168,8 @@ describe('Netsuite adapter E2E with real account', () => {
   jest.setTimeout(1000000)
 
   describe.each([
-    ['without SuiteApp', { withSuiteApp: false, withOAuth: false }],
-    ['with SuiteApp', { withSuiteApp: true, withOAuth: false }],
-    ['with OAuth', { withSuiteApp: true, withOAuth: true }],
+    ['without SuiteApp', { withSuiteApp: false, withOAuth: true }],
+    ['with SuiteApp', { withSuiteApp: true, withOAuth: true }],
   ])('%s', (_text, { withSuiteApp, withOAuth }) => {
     let fetchResult: FetchResult
     let fetchedElements: Element[]
@@ -259,6 +260,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
     const fileToCreate = createInstanceElement(FILE, {
       description: randomString,
+      content: `console.log("${randomString}")`,
       ...(withSuiteApp ? { [PATH]: '/Images/e2eTest.js' } : {}),
     })
 
@@ -270,6 +272,33 @@ describe('Netsuite adapter E2E with real account', () => {
     fileToCreate.annotate({
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(folderToModify.elemID, undefined, folderToModify)],
     })
+
+    const scriptFileToCreate = createInstanceElement(FILE, {
+      [PATH]: '/SuiteScripts/e2e_plugin.js',
+      description: randomString,
+      // force to deploy with SDF
+      generateurltimestamp: true,
+      content: `console.log("${randomString}") // for plugin`,
+    })
+
+    const pluginTypeToCreate = createInstanceElement(PLUGIN_TYPE, { name: randomString })
+    pluginTypeToCreate.value.scriptfile = new ReferenceExpression(
+      scriptFileToCreate.elemID.createNestedID(PATH),
+      scriptFileToCreate.value[PATH],
+      scriptFileToCreate,
+    )
+
+    const pluginImplToCreate = createInstanceElement(PLUGIN_IMPLEMENTATION, { name: randomString })
+    pluginImplToCreate.value.customplugintype = new ReferenceExpression(
+      pluginTypeToCreate.elemID.createNestedID(SCRIPT_ID),
+      pluginTypeToCreate.value[SCRIPT_ID],
+      pluginTypeToCreate,
+    )
+    pluginImplToCreate.value.scriptfile = new ReferenceExpression(
+      scriptFileToCreate.elemID.createNestedID(PATH),
+      scriptFileToCreate.value[PATH],
+      scriptFileToCreate,
+    )
 
     const roleToCreateThatDependsOnCustomRecord = createInstanceElement(ROLE, {
       name: randomString,
@@ -381,9 +410,60 @@ describe('Netsuite adapter E2E with real account', () => {
       workflowToCreate,
       emailTemplateToCreate,
       fileToCreate,
+      scriptFileToCreate,
+      pluginTypeToCreate,
+      pluginImplToCreate,
       invalidWorkflowInstance,
       ...(withSuiteApp ? [subsidiaryInstance, accountInstance, parentCustomRecordInstance, customRecordInstance] : []),
     ]
+
+    const fetchConfig: FetchParams = {
+      include: {
+        types: [
+          {
+            name: ENTITY_CUSTOM_FIELD,
+          },
+          {
+            name: CUSTOM_RECORD_TYPE,
+          },
+          {
+            name: WORKFLOW,
+          },
+          {
+            name: ROLE,
+          },
+          {
+            name: TRANSACTION_COLUMN_CUSTOM_FIELD,
+          },
+          {
+            name: EMAIL_TEMPLATE,
+          },
+          {
+            name: PLUGIN_TYPE,
+          },
+          {
+            name: PLUGIN_IMPLEMENTATION,
+          },
+          {
+            name: CONFIG_FEATURES,
+          },
+          {
+            name: 'subsidiary',
+          },
+          {
+            name: 'account',
+          },
+        ],
+        fileCabinet: ['^/SuiteScripts.*', '^/Images.*'],
+        customRecords: [
+          {
+            name: customRecordTypeToCreate.annotations[SCRIPT_ID],
+          },
+        ],
+      },
+      exclude: emptyQueryParams(),
+      fetchPluginImplementations: true,
+    }
 
     const elementsMap = _.keyBy(elementsToCreate, instance => instance.elemID.getFullName())
     const updateInternalIds = (changes: ReadonlyArray<Change>): void => {
@@ -537,7 +617,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp, withOAuth },
               {
-                fetch: fullFetchConfig(),
+                fetch: fetchConfig,
                 deploy: { warnOnStaleWorkspaceData: true },
               },
             )
@@ -565,7 +645,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp, withOAuth },
               {
-                fetch: fullFetchConfig(),
+                fetch: fetchConfig,
                 deploy: { warnOnStaleWorkspaceData: false },
               },
             )
@@ -598,7 +678,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp, withOAuth },
               {
-                fetch: fullFetchConfig(),
+                fetch: fetchConfig,
                 deploy: { warnOnStaleWorkspaceData: true },
               },
             )
@@ -626,7 +706,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp, withOAuth },
               {
-                fetch: fullFetchConfig(),
+                fetch: fetchConfig,
                 deploy: { warnOnStaleWorkspaceData: false },
               },
             )
@@ -650,10 +730,7 @@ describe('Netsuite adapter E2E with real account', () => {
         const adapterAttr = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp, withOAuth },
           {
-            fetch: {
-              include: fullQueryParams(),
-              exclude: emptyQueryParams(),
-            },
+            fetch: fetchConfig,
           },
         )
         adapter = adapterAttr.adapter
@@ -757,6 +834,34 @@ describe('Netsuite adapter E2E with real account', () => {
         )
       })
 
+      it('should fetch the created plugin type', async () => {
+        const fetchedPluginType = findElement(fetchedElements, pluginTypeToCreate.elemID) as InstanceElement
+        expect(fetchedPluginType.value.name).toEqual(randomString)
+        expect(fetchedPluginType.value.scriptfile).toBeInstanceOf(ReferenceExpression)
+        expect(fetchedPluginType.value.scriptfile.elemID).toEqual(scriptFileToCreate.elemID.createNestedID(PATH))
+      })
+
+      it('should fetch the created plugin implementation', async () => {
+        const fetchedPluginImpl = findElement(fetchedElements, pluginImplToCreate.elemID) as InstanceElement
+        expect(fetchedPluginImpl.value.name).toEqual(randomString)
+        expect(fetchedPluginImpl.value.customplugintype).toBeInstanceOf(ReferenceExpression)
+        expect(fetchedPluginImpl.value.customplugintype.elemID).toEqual(
+          pluginTypeToCreate.elemID.createNestedID(SCRIPT_ID),
+        )
+        expect(fetchedPluginImpl.value.scriptfile).toBeInstanceOf(ReferenceExpression)
+        expect(fetchedPluginImpl.value.scriptfile.elemID).toEqual(scriptFileToCreate.elemID.createNestedID(PATH))
+      })
+
+      it('should fetch the created script file', async () => {
+        const fetchedFile = findElement(fetchedElements, scriptFileToCreate.elemID) as InstanceElement
+        expect(fetchedFile.value.description).toEqual(randomString)
+        const { content } = fetchedFile.value
+        expect(isStaticFile(content)).toBeTruthy()
+        const contentStaticFile = content as StaticFile
+        expect(await contentStaticFile.getContent()).toBeDefined()
+        expect(((await contentStaticFile.getContent()) as Buffer).toString()).toEqual(scriptFileToCreate.value.content)
+      })
+
       it('should fetch the created file', async () => {
         const fetchedFile = findElement(fetchedElements, fileToCreate.elemID) as InstanceElement
         expect(fetchedFile.value.description).toEqual(randomString)
@@ -858,6 +963,16 @@ describe('Netsuite adapter E2E with real account', () => {
           elemID: emailTemplateToCreate.elemID,
         },
         {
+          type: PLUGIN_TYPE,
+          scriptid: pluginTypeToCreate.value[SCRIPT_ID],
+          elemID: pluginTypeToCreate.elemID,
+        },
+        {
+          type: 'plugintypeimpl',
+          scriptid: pluginImplToCreate.value[SCRIPT_ID],
+          elemID: pluginImplToCreate.elemID,
+        },
+        {
           type: ROLE,
           scriptid: roleToCreateThatDependsOnCustomRecord.value[SCRIPT_ID],
           elemID: roleToCreateThatDependsOnCustomRecord.elemID,
@@ -877,6 +992,10 @@ describe('Netsuite adapter E2E with real account', () => {
         {
           path: fileToCreate.value[PATH],
           elemID: fileToCreate.elemID,
+        },
+        {
+          path: scriptFileToCreate.value[PATH],
+          elemID: scriptFileToCreate.elemID,
         },
       ]
 
@@ -1017,6 +1136,27 @@ describe('Netsuite adapter E2E with real account', () => {
         const loadedEmailTemplate = findElement(loadedElements, emailTemplateToCreate.elemID)
         expect(loadedEmailTemplate).toBeDefined()
         expect(loadedEmailTemplate).toEqual(fetchedEmailTemplate)
+      })
+
+      it('should load the created plugin type correctly', async () => {
+        const fetchedPluginType = findElement(fetchedElements, pluginTypeToCreate.elemID)
+        const loadedPluginType = findElement(loadedElements, pluginTypeToCreate.elemID)
+        expect(loadedPluginType).toBeDefined()
+        expect(loadedPluginType).toEqual(fetchedPluginType)
+      })
+
+      it('should load the created plugin implementation correctly', async () => {
+        const fetchedPluginImpl = findElement(fetchedElements, pluginImplToCreate.elemID)
+        const loadedPluginImpl = findElement(loadedElements, pluginImplToCreate.elemID)
+        expect(loadedPluginImpl).toBeDefined()
+        expect(loadedPluginImpl).toEqual(fetchedPluginImpl)
+      })
+
+      it('should load the created script file correctly', async () => {
+        const fetchedFile = findElement(fetchedElements, scriptFileToCreate.elemID)
+        const loadedFile = findElement(loadedElements, scriptFileToCreate.elemID)
+        expect(loadedFile).toBeDefined()
+        expect(loadedFile).toEqual(fetchedFile)
       })
 
       it('should load the created file correctly', async () => {

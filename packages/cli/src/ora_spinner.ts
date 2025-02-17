@@ -8,7 +8,7 @@
 import ora from 'ora'
 import { Spinner, SpinnerCreator, SpinnerOptions } from './types'
 
-export type Dependencies = {
+type Dependencies = {
   outputStream: NodeJS.WritableStream
 }
 

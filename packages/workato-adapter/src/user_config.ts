@@ -11,14 +11,14 @@ import { WORKATO } from './constants'
 
 export const ENABLE_DEPLOY_SUPPORT_FLAG = 'enableDeploySupport'
 
-export type WorkatoFetchConfig = definitions.UserFetchConfig<{
+type WorkatoFetchConfig = definitions.UserFetchConfig<{
   customNameMappingOptions: never
   fetchCriteria: definitions.DefaultFetchCriteria
 }> & {
   serviceConnectionNames?: Record<string, string[]>
 }
 
-export type WorkatoClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
+type WorkatoClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
 
 export type WorkatoUserConfig = definitions.UserConfig<
   never,
@@ -29,7 +29,7 @@ export type WorkatoUserConfig = definitions.UserConfig<
   [ENABLE_DEPLOY_SUPPORT_FLAG]?: boolean
 }
 
-export const changeValidatorNames = [
+const changeValidatorNames = [
   'deployTypesNotSupported',
   'notSupportedTypes',
   'notSupportedRemoval',

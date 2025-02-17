@@ -139,5 +139,3 @@ export type ModificationInformation = {
   lastModifiedBy: string
   lastModifiedAt: string
 }
-
-export type DateKeys = 'YYYY' | 'M' | 'D'

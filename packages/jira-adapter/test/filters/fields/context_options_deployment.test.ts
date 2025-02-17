@@ -60,15 +60,7 @@ describe('ContextOptionsDeployment', () => {
   let elementsSource: ReadOnlyElementsSource
   // Done here as it is needed got the 10K options, and we want to create them once
   const fieldInstance = new InstanceElement('field', createEmptyType(FIELD_TYPE_NAME), { id: '1field' })
-  const contextInstance = new InstanceElement(
-    'context',
-    createEmptyType(FIELD_CONTEXT_TYPE_NAME),
-    { id: '1context' },
-    undefined,
-    {
-      [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-    },
-  )
+  let contextInstance: InstanceElement
   let changes: Change<InstanceElement>[]
   let addOption1: InstanceElement
   let addOption2: InstanceElement
@@ -78,6 +70,15 @@ describe('ContextOptionsDeployment', () => {
     config.fetch.splitFieldContextOptions = true
     ;({ connection, client, paginator } = mockClient())
     const optionType = createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME)
+    contextInstance = new InstanceElement(
+      'context',
+      createEmptyType(FIELD_CONTEXT_TYPE_NAME),
+      { id: '1context' },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+      },
+    )
     addOption1 = new InstanceElement('option0', optionType, { value: 'p1' }, undefined, {
       [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, contextInstance),
     })
@@ -324,7 +325,8 @@ describe('ContextOptionsDeployment', () => {
     expect(result.deployResult.errors).toHaveLength(0)
     expect(result.deployResult.appliedChanges).toHaveLength(2)
   })
-  describe('add cascading options', () => {
+  describe('cascading options', () => {
+    let contextInstance2: InstanceElement
     beforeEach(() => {
       const optionType = createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME)
       connection.post.mockResolvedValueOnce({
@@ -347,18 +349,22 @@ describe('ContextOptionsDeployment', () => {
         data: {
           options: [
             {
+              optionId: '4',
               id: '10',
               value: 'p1cas10',
             },
             {
+              optionId: '5',
               id: '20',
               value: 'p2cas20',
             },
             {
+              optionId: '4',
               id: '11',
               value: 'p1cas11',
             },
             {
+              optionId: '5',
               id: '22',
               value: 'p2cas21',
             },
@@ -366,7 +372,7 @@ describe('ContextOptionsDeployment', () => {
         },
       })
       const orderType = createEmptyType(OPTIONS_ORDER_TYPE_NAME)
-      const contextInstance2 = new InstanceElement(
+      contextInstance2 = new InstanceElement(
         'context2',
         createEmptyType(FIELD_CONTEXT_TYPE_NAME),
         { id: '2context' },
@@ -485,6 +491,11 @@ describe('ContextOptionsDeployment', () => {
           [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(addOption2.elemID, addOption2),
         },
       )
+      contextInstance2.value.defaultValue = {
+        // done here as there are circular references
+        optionId: new ReferenceExpression(addOption1.elemID, addOption1),
+        cascadingOptionId: new ReferenceExpression(cascadeInstance20.elemID, cascadeInstance20),
+      }
       elementsSource = buildElementsSourceFromElements([
         ...elements,
         orderInstance1,
@@ -576,7 +587,79 @@ describe('ContextOptionsDeployment', () => {
         expect(change).toEqual(originalOptionChanges[i])
       })
     })
+    it('should update the context default value with option ids', async () => {
+      changes.push(toChange({ after: contextInstance2 }))
+      await filter.deploy(changes)
+      expect(contextInstance2.value.defaultValue.optionId.value.value.id).toEqual('4')
+      expect(contextInstance2.value.defaultValue.cascadingOptionId.value.value.id).toEqual('20')
+    })
   })
+  it('should add cascading options ids when there are duplicate values', async () => {
+    connection.post.mockResolvedValueOnce({
+      status: 200,
+      data: {
+        options: [
+          {
+            id: '4',
+            value: 'p1',
+          },
+          {
+            id: '5',
+            value: 'p2',
+          },
+        ],
+      },
+    })
+    connection.post.mockResolvedValueOnce({
+      status: 200,
+      data: {
+        options: [
+          {
+            id: '14',
+            value: 'dup',
+            optionId: '4',
+          },
+          {
+            id: '15',
+            value: 'dup',
+            optionId: '5',
+          },
+        ],
+      },
+    })
+    const cascadeInstance20 = new InstanceElement(
+      'p2cas20',
+      createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
+      {
+        value: 'dup',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(addOption1.elemID, addOption1),
+      },
+    )
+    const cascadeInstance21 = new InstanceElement(
+      'p2cas21',
+      createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
+      {
+        value: 'dup',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(addOption2.elemID, addOption2),
+      },
+    )
+    changes = [
+      toChange({ after: cascadeInstance20 }),
+      toChange({ after: cascadeInstance21 }),
+      toChange({ after: addOption1 }),
+      toChange({ after: addOption2 }),
+    ]
+    await filter.deploy(changes)
+    expect(cascadeInstance20.value.id).toEqual('14')
+    expect(cascadeInstance21.value.id).toEqual('15')
+  })
+
   it('should call post with 1000 or less batches', async () => {
     const largeOptionsList = generateOptions(1001, contextInstance)
     connection.post.mockImplementation(async (_no, data) => {
@@ -611,12 +694,37 @@ describe('ContextOptionsDeployment', () => {
       undefined,
     )
   })
+  it('should prevent deployment of default values if options deployment fails', async () => {
+    connection.post.mockRejectedValueOnce(new Error('error'))
+    contextInstance.value.defaultValue = {
+      optionId: new ReferenceExpression(addOption1.elemID, addOption1),
+    }
+    const result = await filter.deploy([toChange({ after: contextInstance }), toChange({ after: addOption1 })])
+    expect(result.leftoverChanges).toHaveLength(0)
+    expect(result.deployResult.errors).toHaveLength(2)
+    expect(result.deployResult.appliedChanges).toHaveLength(0)
+    expect(result.deployResult.errors[1]).toEqual({
+      elemID: contextInstance.elemID,
+      message: 'Could not deploy default value',
+      detailedMessage: `The context field will be deployed without the default value, as the default value depends on a field context option ${addOption1.elemID.getFullName()} that could not be deployed.`,
+      severity: 'Error',
+    })
+  })
   describe('more than 10K', () => {
     describe('setContextOptions', () => {
       describe('change has over 10K options', () => {
         // Set long timeout as we create instance with more than 10K options
         jest.setTimeout(1000 * 60 * 1)
-        const tenKOptions = generateOptions(10010, contextInstance, true)
+        const tenKContext = new InstanceElement(
+          'context10k',
+          createEmptyType(FIELD_CONTEXT_TYPE_NAME),
+          { id: '1context10K' },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+          },
+        )
+        const tenKOptions = generateOptions(10010, tenKContext, true)
         const order10k = new InstanceElement(
           'order10k',
           createEmptyType(OPTIONS_ORDER_TYPE_NAME),
@@ -625,12 +733,12 @@ describe('ContextOptionsDeployment', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, contextInstance),
+            [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(tenKContext.elemID, tenKContext),
           },
         )
 
         beforeEach(async () => {
-          elementsSource = buildElementsSourceFromElements([order10k, contextInstance, ...tenKOptions])
+          elementsSource = buildElementsSourceFromElements([order10k, tenKContext, ...tenKOptions])
           filter = optionsDeploymentFilter(
             getFilterParams({
               client,
@@ -700,7 +808,7 @@ describe('ContextOptionsDeployment', () => {
           expect(connection.post).toHaveBeenNthCalledWith(
             11,
             '/secure/admin/EditCustomFieldOptions!add.jspa',
-            new URLSearchParams({ addValue: 'auto10000', fieldConfigId: '1context' }),
+            new URLSearchParams({ addValue: 'auto10000', fieldConfigId: '1context10K' }),
             {
               headers: JSP_API_HEADERS,
               params: undefined,
@@ -720,7 +828,7 @@ describe('ContextOptionsDeployment', () => {
           expect(connection.post).toHaveBeenNthCalledWith(
             1,
             '/secure/admin/EditCustomFieldOptions!add.jspa',
-            new URLSearchParams({ addValue: 'auto10010', fieldConfigId: '1context' }),
+            new URLSearchParams({ addValue: 'auto10010', fieldConfigId: '1context10K' }),
             {
               headers: JSP_API_HEADERS,
               params: undefined,
@@ -749,7 +857,7 @@ describe('ContextOptionsDeployment', () => {
             '/secure/admin/EditCustomFieldOptions!add.jspa',
             new URLSearchParams({
               addValue: 'c11',
-              fieldConfigId: '1context',
+              fieldConfigId: '1context10K',
               selectedParentOptionId: '10001',
             }),
             {

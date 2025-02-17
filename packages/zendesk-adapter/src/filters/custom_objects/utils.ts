@@ -31,7 +31,7 @@ type MissingTemplateArgs = {
   missingInstanceType: string
 }
 
-export const createMissingTemplate = ({
+const createMissingTemplate = ({
   ticketField,
   customKey,
   missingInstanceName,

@@ -14,11 +14,7 @@ const log = logger(module)
 
 const BASE_URL = 'https://api.stripe.com'
 
-export const validateCredentials = async ({
-  connection,
-}: {
-  connection: clientUtils.APIConnection
-}): Promise<AccountInfo> => {
+const validateCredentials = async ({ connection }: { connection: clientUtils.APIConnection }): Promise<AccountInfo> => {
   try {
     const res = await connection.get('/v1/products')
     if (res.status !== 200) {

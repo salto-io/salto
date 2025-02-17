@@ -57,7 +57,7 @@ const log = logger(module)
 
 const { hideTypes: hideTypesFilter, ...otherCommonFilters } = commonFilters
 
-export const DEFAULT_FILTERS = [
+const DEFAULT_FILTERS = [
   // hideTypes should run before creating custom objects, so that it doesn't hide them
   hideTypesFilter,
   // objectDefsFilter should run before everything else

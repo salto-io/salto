@@ -15,7 +15,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { FlatDetailedDependency } from '@salto-io/adapter-utils'
-import formulaDepsFilter from '../../src/filters/formula_deps'
+import formulaDepsFilter from '../../src/filters/custom_object_formula_dependencies'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { createInstanceElement, formulaTypeName, Types } from '../../src/transformers/transformer'
 import { FIELD_TYPE_NAMES, FORMULA, SALESFORCE } from '../../src/constants'

@@ -74,8 +74,9 @@ export const TOP_LEVEL_TYPES = {
   SERVICE_PRINCIPAL_TYPE_NAME: 'EntraServicePrincipal',
 } as const
 
-// We only use the validateTypeNames for compilation time validation
-export const validateTypeNames: EntraTypeName[] = Object.values(TOP_LEVEL_TYPES)
+// This anonymous function is only used for compile time validation.
+// Once we upgrade to TS 4.9 or newer we can use the new `satisfies` syntax instead.
+;(<T extends Record<string, EntraTypeName>>(_value: T): void => {})(TOP_LEVEL_TYPES)
 
 // Nested types
 export const ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME = recursiveNestedTypeName(
@@ -87,7 +88,7 @@ export const AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME = recursiveNestedType
   TOP_LEVEL_TYPES.AUTHENTICATION_METHOD_POLICY_TYPE_NAME,
   AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME,
 )
-export const CONDITIONAL_ACCESS_POLICY_CONDITIONS_TYPE_NAME = recursiveNestedTypeName(
+const CONDITIONAL_ACCESS_POLICY_CONDITIONS_TYPE_NAME = recursiveNestedTypeName(
   TOP_LEVEL_TYPES.CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
   CONDITIONS_FIELD_NAME,
 )

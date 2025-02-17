@@ -10,7 +10,6 @@ import { entraConstants, ODATA_ID_FIELD } from '../../../constants'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../../requests/clients'
 import { DeployCustomDefinitions, DeployRequestDefinition, DeployableRequestDefinition } from '../shared/types'
 import {
-  adjustRoleDefinitionForDeployment,
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
   getGroupLifecyclePolicyGroupModificationRequest,
@@ -637,11 +636,11 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
           {
             request: {
               endpoint: {
-                path: '/deviceManagement/roleDefinitions',
+                path: '/roleManagement/directory/roleDefinitions',
                 method: 'post',
               },
               transformation: {
-                adjust: adjustWrapper(adjustRoleDefinitionForDeployment),
+                omit: ['isBuiltIn'],
               },
             },
           },
@@ -650,11 +649,8 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
           {
             request: {
               endpoint: {
-                path: '/deviceManagement/roleDefinitions/{id}',
+                path: '/roleManagement/directory/roleDefinitions/{id}',
                 method: 'patch',
-              },
-              transformation: {
-                adjust: adjustWrapper(adjustRoleDefinitionForDeployment),
               },
             },
           },
@@ -663,7 +659,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
           {
             request: {
               endpoint: {
-                path: '/deviceManagement/roleDefinitions/{id}',
+                path: '/roleManagement/directory/roleDefinitions/{id}',
                 method: 'delete',
               },
             },

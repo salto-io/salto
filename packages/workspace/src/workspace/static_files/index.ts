@@ -6,7 +6,13 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 export { StaticFilesCache, StaticFilesData } from './cache'
-export { buildStaticFilesSource, buildInMemStaticFilesSource, LazyStaticFile, AbsoluteStaticFile } from './source'
+export {
+  buildStaticFilesSource,
+  buildInMemStaticFilesSource,
+  LazyStaticFile,
+  AbsoluteStaticFile,
+  PlaceholderStaticFile,
+} from './source'
 export {
   StaticFilesSource,
   MissingStaticFile,

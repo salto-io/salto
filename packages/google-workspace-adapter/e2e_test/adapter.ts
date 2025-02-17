@@ -19,7 +19,7 @@ export type Reals = {
   adapter: AdapterOperations
 }
 
-export type Opts = {
+type Opts = {
   credentials: Credentials
   elementsSource: ReadOnlyElementsSource
 }

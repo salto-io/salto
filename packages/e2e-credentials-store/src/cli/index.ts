@@ -13,14 +13,14 @@ import { Adapter } from '../types'
 import REPO_PARAMS from '../repo_params'
 import { writeLine } from './stream'
 
-export type Process = {
+type Process = {
   stdout: Writable
   stderr: Writable
   argv: string[]
   exit: (code: number) => never
 }
 
-export type Opts = {
+type Opts = {
   adapters: Record<string, Adapter>
   process?: Process
   createRepo?: (tableName: string) => Promise<Repo>

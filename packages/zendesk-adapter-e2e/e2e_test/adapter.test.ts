@@ -6,13 +6,13 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { e2eUtils, adapter } from '@salto-io/zendesk-adapter'
 import { ValidationError, Workspace } from '@salto-io/workspace'
 import {
   ChangeError,
-  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   InstanceElement,
@@ -20,12 +20,15 @@ import {
   isObjectType,
   ObjectType,
   ReferenceExpression,
-  toChange,
   Value,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { e2eDeploy, fetchWorkspace, getElementsFromWorkspace, setupWorkspace } from '@salto-io/e2e-test-utils'
-import { getDetailedChanges } from '@salto-io/adapter-utils'
+import {
+  e2eDeploy,
+  fetchWorkspace,
+  getElementsFromWorkspace,
+  setupWorkspace,
+  helpers as e2eHelpers,
+} from '@salto-io/e2e-test-utils'
 import { credsLease } from './adapter'
 import {
   getAllInstancesToDeploy,
@@ -64,22 +67,13 @@ const FETCH_CONFIG_OVERRIDE = {
       },
     },
     useGuideNewInfra: true,
+    fetchBotBuilder: true,
     exclude: [],
   },
 }
 
 const adapterCreators = {
   zendesk: adapter,
-}
-
-const getAdditionDetailedChangesFromInstances = (instances: InstanceElement[]): DetailedChangeWithBaseChange[] => {
-  const changes = instances.map(inst => toChange({ after: inst }))
-  return changes.flatMap(change => getDetailedChanges(change))
-}
-
-const getDeletionDetailedChangesFromInstances = (instances: InstanceElement[]): DetailedChangeWithBaseChange[] => {
-  const changes = instances.map(inst => toChange({ before: inst }))
-  return changes.flatMap(change => getDetailedChanges(change))
 }
 
 // we cannot remove support address as it is the default, therefore when we remove the brand the support address gets validation error
@@ -95,7 +89,7 @@ const zendeskCleanUp = async (instances: InstanceElement[], workspace: Workspace
   const instancesToClean = instances
     .filter(instance => !TYPES_NOT_TO_REMOVE.has(instance.elemID.typeName))
     .filter(instance => instance.elemID.name.includes(UNIQUE_NAME))
-  const detailedChangesToClean = getDeletionDetailedChangesFromInstances(instancesToClean)
+  const detailedChangesToClean = e2eHelpers.getDeletionDetailedChangesFromInstances(instancesToClean)
   if (detailedChangesToClean.length > 0) {
     await e2eDeploy({
       workspace,
@@ -200,7 +194,7 @@ describe('Zendesk adapter E2E', () => {
 
       // we remove hidden fields as they cannot be deployed
       const noHiddenInstancesToDeploy = filterHiddenFields(instancesToDeploy)
-      const detailedChanges = getAdditionDetailedChangesFromInstances(noHiddenInstancesToDeploy)
+      const detailedChanges = e2eHelpers.getAdditionDetailedChangesFromInstances(noHiddenInstancesToDeploy)
       await e2eDeploy({
         workspace,
         detailedChanges,

@@ -43,7 +43,7 @@ import { convertRuleScopeValueToProjects } from './automation_structure'
 
 const AUTOMATION_RETRY_CODES = [504, 502]
 
-export type AssetComponent = {
+type AssetComponent = {
   value: {
     workspaceId?: string
     schemaId: ReferenceExpression
@@ -69,7 +69,7 @@ const ASSET_COMPONENT_SCHEME = Joi.object({
     .required(),
 }).unknown(true)
 
-export const isAssetComponent = createSchemeGuard<AssetComponent>(ASSET_COMPONENT_SCHEME)
+const isAssetComponent = createSchemeGuard<AssetComponent>(ASSET_COMPONENT_SCHEME)
 const DEFAULT_PAGE_SIZE = 1000
 const { getInstanceName } = elementUtils
 const log = logger(module)

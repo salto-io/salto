@@ -11,7 +11,7 @@ import { CURSOR_BASED_PAGINATION_FIELD, PAGE_SIZE } from '../../config'
 
 const { cursorPagination } = fetchUtils.request.pagination
 
-export const pathChecker: fetchUtils.request.pagination.PathCheckerFunc = (current, next) =>
+const pathChecker: fetchUtils.request.pagination.PathCheckerFunc = (current, next) =>
   next === `${current}.json` || next === `${current}`
 
 export const PAGINATION: definitions.ApiDefinitions<Options>['pagination'] = {

@@ -50,7 +50,7 @@ const getValueSetFieldName = (typeName: string): string => {
       return 'valueSet'
   }
 }
-export type RecordTypePicklistValuesItem = {
+type RecordTypePicklistValuesItem = {
   picklist: ReferenceExpression<Field>
   values: {
     fullName: string

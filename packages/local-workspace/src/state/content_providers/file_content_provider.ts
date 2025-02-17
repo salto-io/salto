@@ -16,11 +16,10 @@ import { state } from '@salto-io/workspace'
 import { exists, rm, rename, replaceContents, createReadStream } from '@salto-io/file'
 import { StateContentProvider, getHashFromHashes } from './common'
 import { localDirectoryStore } from '../../dir_store'
+import { STATIC_RESOURCES_FOLDER } from '../../workspace'
 
 const { awu } = collections.asynciterable
 const glob = promisify(origGlob)
-
-export const STATE_STATIC_FILES_LOCAL_DIR = 'static-resources'
 
 export const createFileStateContentProvider = (localStorageDir: string): StateContentProvider => {
   const buildLocalStateFileName = (prefix: string, account: string): string => `${prefix}.${account}.jsonl.zip`
@@ -63,7 +62,7 @@ export const createFileStateContentProvider = (localStorageDir: string): StateCo
       )
     },
     staticFilesSource: state.buildOverrideStateStaticFilesSource(
-      localDirectoryStore({ baseDir: path.resolve(localStorageDir, STATE_STATIC_FILES_LOCAL_DIR) }),
+      localDirectoryStore({ baseDir: path.resolve(localStorageDir, STATIC_RESOURCES_FOLDER) }),
     ),
   }
 }

@@ -72,12 +72,14 @@ export const createInstance = <T extends APIDefinitionsOptions>({
   fetchDefinitions,
   values,
   parent,
+  singleton,
 }: {
   typeName: string
   types: ObjectType[]
   fetchDefinitions: FetchApiDefinitions<T>
   values: Values
   parent?: InstanceElement
+  singleton?: boolean
 }): InstanceElement => {
   const elemIDDef = queryWithDefault(fetchDefinitions.instances).query(typeName)?.element?.topLevel?.elemID
   if (elemIDDef === undefined) {
@@ -93,6 +95,7 @@ export const createInstance = <T extends APIDefinitionsOptions>({
   const elemIDFunc = element.createElemIDFunc({
     elemIDDef,
     typeID: type.elemID,
+    singleton,
   })
   const elemID = elemIDFunc({
     entry: values,

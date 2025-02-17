@@ -17,12 +17,16 @@ type ConfigOptionsType = {
   enableScriptRunnerAddon: boolean
   enableJSM?: boolean
 }
-
-export const optionsType = (jiraOptionsContext?: InstanceElement): ObjectType => {
+export const optionsType = (jiraOptionsContext?: boolean): ObjectType => {
   const fields: Value = {
     enableScriptRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
   }
-  if (!jiraOptionsContext?.value.isDataCenter) {
+  // if (!jiraOptionsContext?.value.isDataCenter) {
+  //   fields.enableJSM = { refType: BuiltinTypes.BOOLEAN }
+  // }
+  // eslint-disable-next-line no-console
+  if (!jiraOptionsContext) {
+    // eslint-disable-next-line no-console
     fields.enableJSM = { refType: BuiltinTypes.BOOLEAN }
   }
   return new ObjectType({

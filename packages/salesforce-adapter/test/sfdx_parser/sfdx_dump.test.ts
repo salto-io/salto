@@ -294,8 +294,8 @@ describe('dumpElementsToFolder', () => {
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>New__c</fullName>
     <type>Text</type>
-    <length>80</length>
     <required>false</required>
+    <length>80</length>
 </CustomField>
 `)
       })

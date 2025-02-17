@@ -206,7 +206,7 @@ export const DEPLOY_ERROR_MESSAGE_MAPPER: DeployErrorMessageMappers = {
   },
   [SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE]: {
     test: (errorMessage: string) => errorMessage.includes(SALESFORCE_DEPLOY_ERROR_MESSAGES.CANNOT_INSERT_UPDATE),
-    map: (saltoDeployError: SaltoError) => `${saltoDeployError.message}\n${CANNOT_INSERT_UPDATE_MESSAGE}`,
+    map: (saltoDeployError: SaltoError) => `${CANNOT_INSERT_UPDATE_MESSAGE}\n${saltoDeployError.message}`,
   },
 }
 

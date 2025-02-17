@@ -26,6 +26,7 @@ import {
   FLOW_METADATA_TYPE,
   FLOW_NODE_FIELD_NAMES,
   LEFT_VALUE_REFERENCE,
+  START_ELEMENT_REFERENCE,
   TARGET_REFERENCE,
 } from '../constants'
 
@@ -48,22 +49,36 @@ const getFlowElementsAndReferences = (
   const targetReferences = new DefaultMap<string, ElemID[]>(() => [])
   const elementReferences = new DefaultMap<string, ElemID[]>(() => [])
   const leftValueReferences = new DefaultMap<string, ElemID[]>(() => [])
+  const extractFlowElementName = (value: string): string | undefined => {
+    if (value.includes('$')) return undefined
+    return value.includes('.') ? value.split('.')[0] : value
+  }
   const findFlowElementsAndTargetReferences: TransformFuncSync = ({ value, path, field }) => {
-    if (field === undefined || path === undefined) return value
-    if (path.name === FLOW_NODE_FIELD_NAMES.NAME && _.isString(value)) {
-      if (isFlowNode(field.parent.fields)) flowNodes[value] = path
-      else if (FLOW_ELEMENTS_WITH_UNIQUE_NAMES.includes(apiNameSync(field.parent) ?? '')) flowElements[value] = path
-    }
-    if (path.name === TARGET_REFERENCE && _.isString(value)) {
-      targetReferences.get(value).push(path)
-    }
-    if (path.name === ELEMENT_REFERENCE && _.isString(value)) {
-      const elemName = value.includes('.') ? value.split('.')[0] : value
-      elementReferences.get(elemName).push(path)
-    }
-    if (path.name === LEFT_VALUE_REFERENCE && _.isString(value)) {
-      const elemName = value.includes('.') ? value.split('.')[0] : value
-      leftValueReferences.get(elemName).push(path)
+    if (!field || !path || !_.isString(value)) return value
+    switch (path.name) {
+      case FLOW_NODE_FIELD_NAMES.NAME:
+        if (isFlowNode(field.parent.fields)) {
+          flowNodes[value] = path
+        } else if (FLOW_ELEMENTS_WITH_UNIQUE_NAMES.includes(apiNameSync(field.parent) ?? '')) {
+          flowElements[value] = path
+        }
+        break
+
+      case START_ELEMENT_REFERENCE:
+      case TARGET_REFERENCE:
+        targetReferences.get(value).push(path)
+        break
+
+      case ELEMENT_REFERENCE:
+      case LEFT_VALUE_REFERENCE: {
+        const elemName = extractFlowElementName(value)
+        if (elemName === undefined) break
+        const referenceMap = path.name === ELEMENT_REFERENCE ? elementReferences : leftValueReferences
+        referenceMap.get(elemName).push(path)
+        break
+      }
+      default:
+        break
     }
     return value
   }

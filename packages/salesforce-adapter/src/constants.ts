@@ -119,6 +119,7 @@ export enum FLEXI_PAGE_FIELD_NAMES {
 }
 
 // Flow constants
+export const START_ELEMENT_REFERENCE = 'startElementReference'
 export const TARGET_REFERENCE = 'targetReference'
 export const ELEMENT_REFERENCE = 'elementReference'
 export const LEFT_VALUE_REFERENCE = 'leftValueReference'
@@ -145,6 +146,8 @@ export const FLOW_ELEMENTS_WITH_UNIQUE_NAMES = [
   'FlowTextTemplate',
   'FlowVariable',
   'FlowWaitEvent',
+  'FlowScreenAction',
+  'FlowStageStep',
 ]
 
 export const FLOW_FIELD_TYPE_NAMES = {

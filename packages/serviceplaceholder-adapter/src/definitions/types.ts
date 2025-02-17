@@ -15,7 +15,7 @@ type PaginationOptions = 'cursor'
 // TODO set these to never if not needed
 export type ReferenceContextStrategies = 'parentType'
 export type CustomReferenceSerializationStrategyName = 'otherFieldName'
-export type CustomIndexField = CustomReferenceSerializationStrategyName
+type CustomIndexField = CustomReferenceSerializationStrategyName
 
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions

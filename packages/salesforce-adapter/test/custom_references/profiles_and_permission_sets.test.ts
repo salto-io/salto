@@ -200,6 +200,55 @@ describe('Profiles And Permission Sets Custom References', () => {
       })
     })
 
+    describe('data category groups', () => {
+      const dataCategoryGroup = new InstanceElement('SomeDataCategoryGroup', mockTypes.DataCategoryGroup, {
+        [INSTANCE_FULL_NAME_FIELD]: 'SomeDataCategoryGroup',
+      })
+
+      describe('when disabled', () => {
+        beforeEach(async () => {
+          profileInstance = createTestInstance({
+            categoryGroupVisibilities: {
+              SomeDataCategoryGroup: {
+                dataCategoryGroup: 'SomeDataCategoryGroup',
+                enabled: false,
+              },
+            },
+          })
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
+        })
+
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+
+      describe('when enabled', () => {
+        beforeEach(async () => {
+          profileInstance = createTestInstance({
+            categoryGroupVisibilities: {
+              SomeDataCategoryGroup: {
+                dataCategoryGroup: 'SomeDataCategoryGroup',
+                enabled: true,
+              },
+            },
+          })
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
+        })
+
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: profileInstance.elemID.createNestedID('categoryGroupVisibilities', 'SomeDataCategoryGroup'),
+              target: dataCategoryGroup.elemID,
+              type: 'weak',
+              sourceScope: 'value',
+            },
+          ])
+        })
+      })
+    })
+
     describe('Apex classes', () => {
       const apexClass = new InstanceElement('SomeApexClass', mockTypes.ApexClass, {
         [INSTANCE_FULL_NAME_FIELD]: 'SomeApexClass',
@@ -265,6 +314,151 @@ describe('Profiles And Permission Sets Custom References', () => {
 
         it('should not create references', async () => {
           expect(refs).toBeEmpty()
+        })
+      })
+    })
+
+    describe('custom metadata', () => {
+      const customMetadataName = mockTypes.CustomMetadataRecordType.annotations[API_NAME]
+
+      describe('when disabled', () => {
+        beforeEach(async () => {
+          profileInstance = createTestInstance({
+            customMetadataTypeAccesses: {
+              [customMetadataName]: {
+                name: customMetadataName,
+                enabled: false,
+              },
+            },
+          })
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
+        })
+
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+
+      describe('when enabled', () => {
+        beforeEach(async () => {
+          profileInstance = createTestInstance({
+            customMetadataTypeAccesses: {
+              [customMetadataName]: {
+                name: customMetadataName,
+                enabled: true,
+              },
+            },
+          })
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
+        })
+
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: profileInstance.elemID.createNestedID('customMetadataTypeAccesses', customMetadataName),
+              target: mockTypes.CustomMetadataRecordType.elemID,
+              type: 'weak',
+              sourceScope: 'value',
+            },
+          ])
+        })
+      })
+    })
+
+    describe('custom permissions', () => {
+      const customPermission = new InstanceElement('SomeCustomPermission', mockTypes.CustomPermission, {
+        [INSTANCE_FULL_NAME_FIELD]: 'SomeCustomPermission',
+      })
+
+      describe('when disabled', () => {
+        beforeEach(async () => {
+          profileInstance = createTestInstance({
+            customPermissions: {
+              SomeCustomPermission: {
+                name: 'SomeCustomPermission',
+                enabled: false,
+              },
+            },
+          })
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
+        })
+
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+
+      describe('when enabled', () => {
+        beforeEach(async () => {
+          profileInstance = createTestInstance({
+            customPermissions: {
+              SomeCustomPermission: {
+                name: 'SomeCustomPermission',
+                enabled: true,
+              },
+            },
+          })
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
+        })
+
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: profileInstance.elemID.createNestedID('customPermissions', 'SomeCustomPermission'),
+              target: customPermission.elemID,
+              type: 'weak',
+              sourceScope: 'value',
+            },
+          ])
+        })
+      })
+    })
+
+    describe('external data sources', () => {
+      const externalDataSource = new InstanceElement('SomeExternalDataSource', mockTypes.ExternalDataSource, {
+        [INSTANCE_FULL_NAME_FIELD]: 'SomeExternalDataSource',
+      })
+
+      describe('when disabled', () => {
+        beforeEach(async () => {
+          profileInstance = createTestInstance({
+            externalDataSourceAccesses: {
+              SomeExternalDataSource: {
+                externalDataSource: 'SomeExternalDataSource',
+                enabled: false,
+              },
+            },
+          })
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
+        })
+
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+
+      describe('when enabled', () => {
+        beforeEach(async () => {
+          profileInstance = createTestInstance({
+            externalDataSourceAccesses: {
+              SomeExternalDataSource: {
+                externalDataSource: 'SomeExternalDataSource',
+                enabled: true,
+              },
+            },
+          })
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
+        })
+
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: profileInstance.elemID.createNestedID('externalDataSourceAccesses', 'SomeExternalDataSource'),
+              target: externalDataSource.elemID,
+              type: 'weak',
+              sourceScope: 'value',
+            },
+          ])
         })
       })
     })

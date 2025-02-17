@@ -301,6 +301,13 @@ export const mockTypes = {
       suffix: 'permissionSet',
     },
   }),
+  CustomPermission: createMetadataObjectType({
+    annotations: {
+      metadataType: 'CustomPermission',
+      dirName: 'customPermissions',
+      suffix: 'customPermission',
+    },
+  }),
   EmailFolder: createMetadataObjectType({
     annotations: {
       metadataType: 'EmailFolder',
@@ -768,6 +775,11 @@ export const mockTypes = {
   DataCategoryGroup: createMetadataObjectType({
     annotations: {
       [METADATA_TYPE]: 'DataCategoryGroup',
+    },
+  }),
+  ExternalDataSource: createMetadataObjectType({
+    annotations: {
+      [METADATA_TYPE]: 'ExternalDataSource',
     },
   }),
   SBQQ__Template__c: createCustomObjectType('SBQQ__Template__c', {}),

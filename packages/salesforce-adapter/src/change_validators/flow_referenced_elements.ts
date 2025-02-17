@@ -26,6 +26,7 @@ import {
   FLOW_METADATA_TYPE,
   FLOW_NODE_FIELD_NAMES,
   LEFT_VALUE_REFERENCE,
+  START_ELEMENT_REFERENCE,
   TARGET_REFERENCE,
 } from '../constants'
 
@@ -63,6 +64,7 @@ const getFlowElementsAndReferences = (
         }
         break
 
+      case START_ELEMENT_REFERENCE:
       case TARGET_REFERENCE:
         targetReferences.get(value).push(path)
         break
@@ -70,13 +72,13 @@ const getFlowElementsAndReferences = (
       case ELEMENT_REFERENCE:
       case LEFT_VALUE_REFERENCE: {
         const elemName = extractFlowElementName(value)
-        if (elemName === undefined) return value
+        if (elemName === undefined) break
         const referenceMap = path.name === ELEMENT_REFERENCE ? elementReferences : leftValueReferences
         referenceMap.get(elemName).push(path)
         break
       }
       default:
-        return value
+        break
     }
     return value
   }

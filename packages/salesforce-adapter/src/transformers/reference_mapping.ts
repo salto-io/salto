@@ -1035,6 +1035,10 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'flexiPageleftValueField',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
+  {
+    src: { field: 'controllingFieldValue', parentTypes: ['valueSettings'] },
+    target: { type: 'customValue' },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>

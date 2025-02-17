@@ -32,7 +32,7 @@ describe('config_creator', () => {
   let resultConfig: InstanceElement
 
   const createMockOptionsInstance = (value: Values): InstanceElement =>
-    new InstanceElement('options', optionsType, value)
+    new InstanceElement('options', optionsType(), value)
 
   beforeEach(() => {
     jest.clearAllMocks()

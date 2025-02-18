@@ -920,7 +920,45 @@ export default class SalesforceClient implements ISalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
-    return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
+    try {
+      return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
+    } catch (e) {
+      const typesWithInsufficientAccess = new Set<string>()
+      const instancesWithInsufficientAccess = new Set<string>()
+      const errorPattern = /INSUFFICIENT_ACCESS: insufficient access rights on entity: (\w+)/g
+      const matches = [...e.message.matchAll(errorPattern)]
+      if (matches.length > 0) {
+        if (retrieveRequest.unpackaged === undefined) throw e
+        await Promise.all(
+          matches.map(async match => {
+            const failedType = match[1]
+            typesWithInsufficientAccess.add(failedType)
+            log.debug(`Failed to retrieve ${failedType} due to insufficient access rights`)
+            const instancesOfFailedType =
+              retrieveRequest.unpackaged?.types.find(t => t.name === failedType)?.members ?? []
+            const { errors } = await sendChunked({
+              input: instancesOfFailedType,
+              sendChunk: chunk => this.conn.metadata.read(failedType, chunk),
+              operationInfo: `readMetadata (${failedType})`,
+              isUnhandledError: () => false,
+            })
+            errors.forEach(({ input, error }) => {
+              if (errorPattern.test(error.message)) {
+                instancesWithInsufficientAccess.add(input[0])
+              }
+            })
+          }),
+        )
+        retrieveRequest.unpackaged.types =
+          retrieveRequest.unpackaged?.types.map(type => {
+            if (typesWithInsufficientAccess.has(type.name)) {
+              type.members = type.members.filter(member => !instancesWithInsufficientAccess.has(member))
+            }
+            return type
+          }) ?? []
+      }
+      return this.retrieve(retrieveRequest)
+    }
   }
 
   private async reportDeployProgressUntilComplete(

@@ -305,20 +305,6 @@ const sendChunked = async <TIn, TOut>({
   const sendSingleChunk = async (chunkInput: TIn[]): Promise<SendChunkedResult<TIn, TOut>> => {
     try {
       log.debug('Sending chunked %s on %o', operationInfo, chunkInput)
-      const isStringArray = (value: unknown): value is string[] =>
-        Array.isArray(value) && value.every(item => typeof item === 'string')
-      if (
-        (isStringArray(chunkInput) && chunkInput.includes('SalesCloudMobile_UtilityBar')) ||
-        (_.isString(chunkInput) && chunkInput === 'SalesCloudMobile_UtilityBar')
-      ) {
-        throw new Error('INSUFFICIENT_ACCESS: insufficient access rights on entity: SalesCloudMobile_UtilityBar')
-      }
-      if (
-        (isStringArray(chunkInput) && chunkInput.includes('FlowsApp_UtilityBar')) ||
-        (_.isString(chunkInput) && chunkInput === 'FlowsApp_UtilityBar')
-      ) {
-        throw new Error('INSUFFICIENT_ACCESS: insufficient access rights on entity: FlowsApp_UtilityBar')
-      }
       const result = makeArray(await sendChunk(chunkInput)).map(flatValues)
       if (chunkSize === 1 && chunkInput.length > 0) {
         log.debug('Finished %s on %o', operationInfo, chunkInput[0])
@@ -939,20 +925,6 @@ export default class SalesforceClient implements ISalesforceClient {
     fetchProfile?: FetchProfile,
   ): Promise<RetrieveResult & { errors?: { type: string; instance: string; error: Error }[] }> {
     try {
-      if (
-        retrieveRequest.unpackaged?.types
-          .find(type => type.name === 'FlexiPage')
-          ?.members.includes('SalesCloudMobile_UtilityBar')
-      ) {
-        throw new Error('INSUFFICIENT_ACCESS: insufficient access rights on entity: FlexiPage')
-      }
-      if (
-        retrieveRequest.unpackaged?.types
-          .find(type => type.name === 'FlexiPage')
-          ?.members.includes('FlowsApp_UtilityBar')
-      ) {
-        throw new Error('INSUFFICIENT_ACCESS: insufficient access rights on entity: FlexiPage')
-      }
       return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
     } catch (e) {
       const typesWithInsufficientAccess = new Set<string>()

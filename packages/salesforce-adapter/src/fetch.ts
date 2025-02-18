@@ -467,6 +467,18 @@ export const retrieveMetadataInstances = async ({
 
     log.debug('retrieve result for types %s: %o', typesToRetrieve, _.omit(result, ['zipFile', 'fileProperties']))
 
+    if (result.errors && result.errors.length > 0) {
+      result.errors.forEach(({ type, instance, error }) => {
+        configChanges.push(
+          createSkippedListConfigChange({
+            type,
+            instance,
+            reason: error.message,
+          }),
+        )
+      })
+    }
+
     if (result.errorStatusCode === RETRIEVE_SIZE_LIMIT_ERROR) {
       if (fileProps.length <= 1) {
         if (filePropsToSendWithEveryChunk.length > 0) {

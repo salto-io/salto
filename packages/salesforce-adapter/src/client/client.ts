@@ -304,6 +304,20 @@ const sendChunked = async <TIn, TOut>({
   const sendSingleChunk = async (chunkInput: TIn[]): Promise<SendChunkedResult<TIn, TOut>> => {
     try {
       log.debug('Sending chunked %s on %o', operationInfo, chunkInput)
+      const isStringArray = (value: unknown): value is string[] =>
+        Array.isArray(value) && value.every(item => typeof item === 'string')
+      if (
+        (isStringArray(chunkInput) && chunkInput.includes('SalesCloudMobile_UtilityBar')) ||
+        (_.isString(chunkInput) && chunkInput === 'SalesCloudMobile_UtilityBar')
+      ) {
+        throw new Error('INSUFFICIENT_ACCESS: insufficient access rights on entity: SalesCloudMobile_UtilityBar')
+      }
+      if (
+        (isStringArray(chunkInput) && chunkInput.includes('FlowsApp_UtilityBar')) ||
+        (_.isString(chunkInput) && chunkInput === 'FlowsApp_UtilityBar')
+      ) {
+        throw new Error('INSUFFICIENT_ACCESS: insufficient access rights on entity: FlowsApp_UtilityBar')
+      }
       const result = makeArray(await sendChunk(chunkInput)).map(flatValues)
       if (chunkSize === 1 && chunkInput.length > 0) {
         log.debug('Finished %s on %o', operationInfo, chunkInput[0])
@@ -919,12 +933,29 @@ export default class SalesforceClient implements ISalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'retrieve' })
   @logDecorator()
   @requiresLogin()
-  public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
+  public async retrieve(
+    retrieveRequest: RetrieveRequest,
+  ): Promise<RetrieveResult & { errors?: { type: string; instance: string; error: Error }[] }> {
     try {
+      if (
+        retrieveRequest.unpackaged?.types
+          .find(type => type.name === 'FlexiPage')
+          ?.members.includes('SalesCloudMobile_UtilityBar')
+      ) {
+        throw new Error('INSUFFICIENT_ACCESS: insufficient access rights on entity: FlexiPage')
+      }
+      if (
+        retrieveRequest.unpackaged?.types
+          .find(type => type.name === 'FlexiPage')
+          ?.members.includes('FlowsApp_UtilityBar')
+      ) {
+        throw new Error('INSUFFICIENT_ACCESS: insufficient access rights on entity: FlexiPage')
+      }
       return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
     } catch (e) {
       const typesWithInsufficientAccess = new Set<string>()
       const instancesWithInsufficientAccess = new Set<string>()
+      const instancesErrors: { type: string; instance: string; error: Error }[] = []
       const errorPattern = /INSUFFICIENT_ACCESS: insufficient access rights on entity: (\w+)/g
       const matches = [...e.message.matchAll(errorPattern)]
       if (matches.length > 0) {
@@ -943,8 +974,9 @@ export default class SalesforceClient implements ISalesforceClient {
               isUnhandledError: () => false,
             })
             errors.forEach(({ input, error }) => {
-              if (errorPattern.test(error.message)) {
-                instancesWithInsufficientAccess.add(input[0])
+              if (error.message.match(errorPattern)) {
+                instancesErrors.push({ type: failedType, instance: input, error })
+                instancesWithInsufficientAccess.add(input)
               }
             })
           }),
@@ -957,7 +989,11 @@ export default class SalesforceClient implements ISalesforceClient {
             return type
           }) ?? []
       }
-      return this.retrieve(retrieveRequest)
+      const retrieveResult = await this.retrieve(retrieveRequest)
+      return {
+        ...retrieveResult,
+        errors: [...(retrieveResult.errors ?? []), ...instancesErrors],
+      }
     }
   }
 

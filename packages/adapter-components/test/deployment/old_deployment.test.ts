@@ -90,6 +90,29 @@ describe('deployChange', () => {
     )
   })
 
+  it('should invert nacl case for all values', async () => {
+    httpClient.post.mockResolvedValue({
+      status: 200,
+      data: {},
+    })
+    instance.value.custom_headers = {
+      'x_bu_code@b': 'test',
+    }
+    await deployChange({
+      change: toChange({ after: instance }),
+      client: httpClient,
+      endpointDetails: endpoint,
+    })
+    expect(httpClient.post).toHaveBeenCalledWith({
+      url: '/test/endpoint',
+      data: expect.objectContaining({
+        custom_headers: {
+          'x-bu-code': 'test',
+        },
+      }),
+    })
+  })
+
   it('should not send ignored fields', async () => {
     httpClient.post.mockResolvedValue({
       status: 200,

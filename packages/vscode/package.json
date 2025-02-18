@@ -2,7 +2,7 @@
   "name": "salto-vscode",
   "displayName": "Salto NACL Configuration Editor",
   "description": "Provides rich support for NACL Configuration files, including syntax highlighting, auto-complete, code navigation and more.",
-  "version": "0.5.1",
+  "version": "0.5.2-INCIDENT-29801.97f5a517b",
   "publishConfig": {
     "access": "public"
   },
@@ -94,20 +94,20 @@
     "package": "bash ./scripts/package.sh"
   },
   "dependencies": {
-    "@salto-io/adapter-creators": "0.5.1",
-    "@salto-io/file": "0.5.1",
-    "@salto-io/lang-server": "0.5.1",
-    "@salto-io/local-workspace": "0.5.1",
-    "@salto-io/lowerdash": "0.5.1",
-    "@salto-io/parser": "0.5.1",
-    "@salto-io/workspace": "0.5.1",
+    "@salto-io/adapter-creators": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/file": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/lang-server": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/local-workspace": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/lowerdash": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/parser": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/workspace": "0.5.2-INCIDENT-29801.97f5a517b",
     "clipboardy": "^2.3.0",
     "lodash": "^4.17.21",
     "open": "^7.2.0",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.1",
+    "@salto-io/element-test-utils": "0.5.2-INCIDENT-29801.97f5a517b",
     "@types/jest": "^29.5.12",
     "@types/vscode": "^1.36",
     "eslint": "^9.16.0",

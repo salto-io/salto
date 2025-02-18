@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/zendesk-adapter",
-  "version": "0.5.1",
+  "version": "0.5.2-INCIDENT-29801.97f5a517b",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto Zendesk adapter",
   "repository": {
@@ -30,13 +30,13 @@
   },
   "dependencies": {
     "@handlebars/parser": "^2.1.0",
-    "@salto-io/adapter-api": "0.5.1",
-    "@salto-io/adapter-components": "0.5.1",
-    "@salto-io/adapter-utils": "0.5.1",
-    "@salto-io/dag": "0.5.1",
-    "@salto-io/logging": "0.5.1",
-    "@salto-io/lowerdash": "0.5.1",
-    "@salto-io/parser": "0.5.1",
+    "@salto-io/adapter-api": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/adapter-components": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/adapter-utils": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/dag": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/logging": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/lowerdash": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/parser": "0.5.2-INCIDENT-29801.97f5a517b",
     "acorn": "^8.11.3",
     "acorn-walk": "^8.3.2",
     "form-data": "^4.0.0",
@@ -48,9 +48,9 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.1",
-    "@salto-io/test-utils": "0.5.1",
-    "@salto-io/workspace": "0.5.1",
+    "@salto-io/element-test-utils": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/test-utils": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/workspace": "0.5.2-INCIDENT-29801.97f5a517b",
     "@types/jest": "^29.5.12",
     "@types/jszip": "^3.4.0",
     "@types/lodash": "^4.14.168",

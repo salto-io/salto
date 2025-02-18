@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/google-workspace-adapter",
-  "version": "0.5.1",
+  "version": "0.5.2-INCIDENT-29801.97f5a517b",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto google-workspace adapter",
   "repository": {
@@ -30,20 +30,20 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.5.1",
-    "@salto-io/adapter-components": "0.5.1",
-    "@salto-io/adapter-utils": "0.5.1",
-    "@salto-io/logging": "0.5.1",
-    "@salto-io/lowerdash": "0.5.1",
+    "@salto-io/adapter-api": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/adapter-components": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/adapter-utils": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/logging": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/lowerdash": "0.5.2-INCIDENT-29801.97f5a517b",
     "axios": "^1.7.2",
     "google-auth-library": "^9.7.0",
     "lodash": "^4.17.21",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
-    "@salto-io/e2e-credentials-store": "0.5.1",
-    "@salto-io/element-test-utils": "0.5.1",
-    "@salto-io/workspace": "0.5.1",
+    "@salto-io/e2e-credentials-store": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/element-test-utils": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/workspace": "0.5.2-INCIDENT-29801.97f5a517b",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "@types/uuid": "^10.0.0",

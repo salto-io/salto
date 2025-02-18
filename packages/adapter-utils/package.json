@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/adapter-utils",
-  "version": "0.5.1",
+  "version": "0.5.2-INCIDENT-29801.97f5a517b",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto Adapter Utils",
   "repository": {
@@ -31,9 +31,9 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.5.1",
-    "@salto-io/logging": "0.5.1",
-    "@salto-io/lowerdash": "0.5.1",
+    "@salto-io/adapter-api": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/logging": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/lowerdash": "0.5.2-INCIDENT-29801.97f5a517b",
     "domhandler": "^4.2.2",
     "fast-safe-stringify": "^2.0.7",
     "htmlparser2": "^7.2.0",
@@ -44,8 +44,8 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.1",
-    "@salto-io/test-utils": "0.5.1",
+    "@salto-io/element-test-utils": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/test-utils": "0.5.2-INCIDENT-29801.97f5a517b",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "@types/object-hash": "^3.0.0",

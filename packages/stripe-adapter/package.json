@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/stripe-adapter",
-  "version": "0.5.1",
+  "version": "0.5.2-INCIDENT-29801.97f5a517b",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto stripe adapter",
   "repository": {
@@ -29,15 +29,15 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.5.1",
-    "@salto-io/adapter-components": "0.5.1",
-    "@salto-io/adapter-utils": "0.5.1",
-    "@salto-io/logging": "0.5.1",
+    "@salto-io/adapter-api": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/adapter-components": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/adapter-utils": "0.5.2-INCIDENT-29801.97f5a517b",
+    "@salto-io/logging": "0.5.2-INCIDENT-29801.97f5a517b",
     "axios": "^1.7.2",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.1",
+    "@salto-io/element-test-utils": "0.5.2-INCIDENT-29801.97f5a517b",
     "@salto-io/jest-extended": "^4.0.3",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",

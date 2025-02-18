@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/logging",
-  "version": "0.5.1",
+  "version": "0.5.2-INCIDENT-29801.97f5a517b",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto Logging library",
   "repository": {
@@ -29,7 +29,7 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/lowerdash": "0.5.1",
+    "@salto-io/lowerdash": "0.5.2-INCIDENT-29801.97f5a517b",
     "chalk": "^2.4.2",
     "fast-safe-stringify": "^2.0.7",
     "lodash": "^4.17.21",

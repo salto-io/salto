@@ -261,7 +261,7 @@ const CHANGE_VALIDATOR_NAMES = [
   'issueTypeDeletion',
   'lockedFields',
   'fieldContext',
-  'fieldSecondGlobalContext',
+  'fieldSecondContext',
   'systemFields',
   'workflowProperties',
   'permissionScheme',

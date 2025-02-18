@@ -2889,4 +2889,154 @@ describe('Fetch via retrieve API', () => {
       })
     })
   })
+  describe('handle INSUFFICIENT_ACCESS: insufficient access rights on entity', () => {
+    let configChanges: ConfigChangeSuggestion[]
+
+    beforeEach(async () => {
+      await setupMocks([
+        { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
+        { type: mockTypes.ApexClass, instanceName: 'ProblematicApexClass' },
+        { type: mockTypes.CustomObject, instanceName: 'Account' },
+      ])
+      connection.metadata.retrieve.mockImplementation(retrieveRequest => {
+        const hasProblematicApexClass = retrieveRequest.unpackaged?.types.some(type =>
+          type.members.includes('ProblematicApexClass'),
+        )
+        if (hasProblematicApexClass) {
+          return mockRetrieveLocator(
+            mockRetrieveResult({
+              messages: [
+                {
+                  fileName: 'unpackaged/classes/ProblematicApexClass.cls-meta.xml',
+                  problem: 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ApexClass',
+                },
+              ],
+              zipFiles: [
+                {
+                  path: 'unpackaged/classes/SomeApexClass.cls-meta.xml',
+                  content: `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>50.0</apiVersion>
+    <status>Active</status>
+  </ApexClass>
+  `,
+                },
+                {
+                  path: 'unpackaged/classes/SomeApexClass.cls',
+                  content: `
+  public class SomeApexClass {
+    public void printLog() {
+      System.debug('Instance');
+    }
+  }
+  `,
+                },
+              ],
+            }),
+          )
+        }
+        return mockRetrieveLocator(
+          mockRetrieveResult({
+            zipFiles: [
+              {
+                path: 'unpackaged/classes/SomeApexClass.cls-meta.xml',
+                content: `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>50.0</apiVersion>
+    <status>Active</status>
+  </ApexClass>
+  `,
+              },
+              {
+                path: 'unpackaged/classes/SomeApexClass.cls',
+                content: `
+  public class SomeApexClass {
+    public void printLog() {
+      System.debug('Instance');
+    }
+  }
+  `,
+              },
+            ],
+          }),
+        )
+      })
+
+      // Mock metadata.read to return the specific error only if 'ProblematicApexClass' is in the request
+      connection.metadata.read.mockImplementation(async (type, fullNames) => {
+        if (fullNames.includes('ProblematicApexClass')) {
+          throw new Error('INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass')
+        }
+        return [
+          {
+            fullName: 'SomeApexClass',
+            apiVersion: '50.0',
+            status: 'Active',
+          },
+        ]
+      })
+    })
+
+    describe('when the feature is enabled', () => {
+      beforeEach(async () => {
+        const fetchProfile = buildFetchProfile({
+          fetchParams: {
+            addNamespacePrefixToFullName: false,
+          },
+        })
+
+        configChanges = (
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.ApexClass, mockTypes.CustomObject],
+            fetchProfile,
+          })
+        ).configChanges
+      })
+
+      it('Should create a config change for exclusion', () => {
+        expect(configChanges).toEqual([
+          expect.objectContaining({
+            type: 'metadataExclude',
+            value: {
+              metadataType: 'ApexClass',
+              name: 'ProblematicApexClass',
+            },
+          }),
+        ])
+      })
+    })
+
+    describe('when the feature is disabled', () => {
+      beforeEach(async () => {
+        const fetchProfile = buildFetchProfile({
+          fetchParams: {
+            addNamespacePrefixToFullName: false,
+            metadata: {
+              exclude: [
+                {
+                  metadataType: 'ApexClass',
+                  name: 'ProblematicApexClass',
+                },
+              ],
+            },
+          },
+        })
+
+        configChanges = (
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.ApexClass, mockTypes.CustomObject],
+            fetchProfile,
+          })
+        ).configChanges
+      })
+
+      it('Should not create a config change', () => {
+        expect(configChanges).toBeEmpty()
+      })
+    })
+  })
 })

@@ -1187,6 +1187,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     missingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_ROLE_TYPE },
   },
+  {
+    src: { field: 'value', parentTypes: ['DefaultAnswer'] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_CONTEXT_OPTION_TYPE_NAME },
+  },
   // ScriptRunner
   {
     src: { field: 'projects', parentTypes: [SCRIPT_RUNNER_LISTENER_TYPE] },

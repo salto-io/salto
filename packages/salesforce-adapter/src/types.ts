@@ -109,6 +109,7 @@ const OPTIONAL_FEATURES = [
   'supportProfileTabVisibilities',
   'disablePermissionsOmissions',
   'omitStandardFieldsNonDeployableValues',
+  'handleInsufficientAccessRightsOnEntity',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',

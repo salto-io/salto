@@ -54,6 +54,7 @@ import {
   ClientRetryConfig,
   Credentials,
   CustomObjectsDeployRetryConfig,
+  FetchProfile,
   OauthAccessTokenCredentials,
   ReadMetadataChunkSizeConfig,
   SalesforceClientConfig,
@@ -934,7 +935,7 @@ export default class SalesforceClient implements ISalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async retrieve(
-    retrieveRequest: RetrieveRequest,
+    retrieveRequest: RetrieveRequest & { fetchProfile?: FetchProfile },
   ): Promise<RetrieveResult & { errors?: { type: string; instance: string; error: Error }[] }> {
     try {
       if (
@@ -965,6 +966,7 @@ export default class SalesforceClient implements ISalesforceClient {
             const failedType = match[1]
             typesWithInsufficientAccess.add(failedType)
             log.debug(`Failed to retrieve ${failedType} due to insufficient access rights`)
+            log.debug('Reading each instance separately to find the ones with insufficient access rights')
             const instancesOfFailedType =
               retrieveRequest.unpackaged?.types.find(t => t.name === failedType)?.members ?? []
             const { errors } = await sendChunked({
@@ -975,8 +977,11 @@ export default class SalesforceClient implements ISalesforceClient {
             })
             errors.forEach(({ input, error }) => {
               if (error.message.match(errorPattern)) {
-                instancesErrors.push({ type: failedType, instance: input, error })
-                instancesWithInsufficientAccess.add(input)
+                log.debug(`Failed to read ${failedType}.${input} due to: ${error.message}`)
+                if (retrieveRequest.fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
+                  instancesErrors.push({ type: failedType, instance: input, error })
+                  instancesWithInsufficientAccess.add(input)
+                }
               }
             })
           }),

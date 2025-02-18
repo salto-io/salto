@@ -66,7 +66,8 @@ const transformFormValues = (form: InstanceElement): void => {
       if (
         path !== undefined &&
         !isTransformedFormObject(value) &&
-        form.elemID.createNestedID('design', 'conditions').isParentOf(path) &&
+        (form.elemID.createNestedID('design', 'conditions').isParentOf(path) ||
+          (form.elemID.createNestedID('design', 'questions').isParentOf(path) && path.name === 'defaultAnswer')) &&
         Object.values(value).some(Array.isArray)
       ) {
         const newValue = Object.entries(value).map(([key, val]) => ({ key, value: val }))

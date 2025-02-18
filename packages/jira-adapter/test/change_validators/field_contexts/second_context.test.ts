@@ -15,7 +15,7 @@ import {
 } from '@salto-io/adapter-api'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 import { JIRA } from '../../../src/constants'
-import { fieldSecondContextValidator } from '../../../src/change_validators/field_contexts/second_global_context'
+import { fieldSecondContextValidator } from '../../../src/change_validators/field_contexts/second_context'
 import { createEmptyType, createMockElementsSource } from '../../utils'
 
 const mockLogError = jest.fn()

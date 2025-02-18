@@ -15,7 +15,7 @@ import {
 } from '@salto-io/adapter-api'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 import { JIRA } from '../../../src/constants'
-import { fieldSecondGlobalContextValidator } from '../../../src/change_validators/field_contexts/second_global_context'
+import { fieldSecondContextValidator } from '../../../src/change_validators/field_contexts/second_global_context'
 import { createEmptyType, createMockElementsSource } from '../../utils'
 
 const mockLogError = jest.fn()
@@ -84,15 +84,12 @@ describe('Field second global contexts', () => {
 
   it('should not return error when setting one global context to the field', async () => {
     expect(
-      await fieldSecondGlobalContextValidator(
-        [toChange({ after: globalContext1a })],
-        createMockElementsSource(elements),
-      ),
+      await fieldSecondContextValidator([toChange({ after: globalContext1a })], createMockElementsSource(elements)),
     ).toEqual([])
   })
   it('should not return changes when its not global context change', async () => {
     expect(
-      await fieldSecondGlobalContextValidator(
+      await fieldSecondContextValidator(
         [toChange({ after: projectScopeContext3a })],
         createMockElementsSource(elements),
       ),
@@ -100,16 +97,16 @@ describe('Field second global contexts', () => {
   })
   it('should log error if elementSource is undefined', async () => {
     const addedGlobalContext1 = toChange({ after: createGlobalContext('global4', fieldInstance) })
-    expect(await fieldSecondGlobalContextValidator([addedGlobalContext1])).toEqual([])
+    expect(await fieldSecondContextValidator([addedGlobalContext1])).toEqual([])
     expect(mockLogError).toHaveBeenCalledWith(
-      'Failed to run fieldSecondGlobalContextValidator because element source is undefined',
+      'Failed to run fieldSecondContextValidator because element source is undefined',
     )
   })
   it('should return error when setting two global contexts to a field', async () => {
     const addedGlobalInstance1 = createGlobalContext('global2b', fieldInstance2)
     elements.push(addedGlobalInstance1)
     expect(
-      await fieldSecondGlobalContextValidator(
+      await fieldSecondContextValidator(
         [toChange({ after: addedGlobalInstance1 })],
         createMockElementsSource(elements),
       ),
@@ -128,7 +125,7 @@ describe('Field second global contexts', () => {
     const addedGlobalInstance1 = createGlobalContext('global1b', fieldInstance)
     elements.push(addedGlobalInstance1)
     expect(
-      await fieldSecondGlobalContextValidator(
+      await fieldSecondContextValidator(
         [toChange({ after: addedGlobalInstance1 })],
         createMockElementsSource(elements),
       ),
@@ -146,7 +143,7 @@ describe('Field second global contexts', () => {
     const addedGlobalContext1 = createGlobalContext('global2b', fieldInstance2)
     elements.push(addedGlobalContext1)
     expect(
-      await fieldSecondGlobalContextValidator(
+      await fieldSecondContextValidator(
         [toChange({ after: addedGlobalContext1 }), toChange({ after: globalContext1a })],
         createMockElementsSource(elements),
       ),
@@ -164,7 +161,7 @@ describe('Field second global contexts', () => {
     const preModifiedGlobalContext = projectScopeContext1a.clone()
     delete projectScopeContext1a.value.projectIds
     expect(
-      await fieldSecondGlobalContextValidator(
+      await fieldSecondContextValidator(
         [toChange({ before: preModifiedGlobalContext, after: projectScopeContext1a })],
         createMockElementsSource(elements),
       ),
@@ -208,7 +205,7 @@ describe('Field second global contexts', () => {
       toChange({ before: modifiedContext3c, after: postContext3c }),
       toChange({ before: modifiedContext3d, after: postContext3d }),
     ]
-    const results = await fieldSecondGlobalContextValidator(changes, createMockElementsSource(elements))
+    const results = await fieldSecondContextValidator(changes, createMockElementsSource(elements))
     expect(results).toHaveLength(6)
     expect(results[0]).toEqual({
       elemID: addedGlobalContext1b.elemID,
@@ -258,10 +255,7 @@ describe('Field second global contexts', () => {
     addedGlobalContext.value.projectIds = []
     elements.push(addedGlobalContext)
     expect(
-      await fieldSecondGlobalContextValidator(
-        [toChange({ after: addedGlobalContext })],
-        createMockElementsSource(elements),
-      ),
+      await fieldSecondContextValidator([toChange({ after: addedGlobalContext })], createMockElementsSource(elements)),
     ).toEqual([
       {
         elemID: addedGlobalContext.elemID,
@@ -274,7 +268,7 @@ describe('Field second global contexts', () => {
   })
   it('should not return an error when there are no relevant changes', async () => {
     expect(
-      await fieldSecondGlobalContextValidator(
+      await fieldSecondContextValidator(
         [toChange({ after: new InstanceElement('not_context', createEmptyType('Other')) })],
         createMockElementsSource(elements),
       ),

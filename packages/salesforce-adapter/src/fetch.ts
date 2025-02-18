@@ -463,7 +463,7 @@ export const retrieveMetadataInstances = async ({
     const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
     log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)
-    const result = await client.retrieve(request)
+    const result = await client.retrieve(request, fetchProfile)
 
     log.debug('retrieve result for types %s: %o', typesToRetrieve, _.omit(result, ['zipFile', 'fileProperties']))
 

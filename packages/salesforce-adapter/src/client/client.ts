@@ -935,7 +935,8 @@ export default class SalesforceClient implements ISalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async retrieve(
-    retrieveRequest: RetrieveRequest & { fetchProfile?: FetchProfile },
+    retrieveRequest: RetrieveRequest,
+    fetchProfile?: FetchProfile,
   ): Promise<RetrieveResult & { errors?: { type: string; instance: string; error: Error }[] }> {
     try {
       if (
@@ -978,7 +979,7 @@ export default class SalesforceClient implements ISalesforceClient {
             errors.forEach(({ input, error }) => {
               if (error.message.match(errorPattern)) {
                 log.debug(`Failed to read ${failedType}.${input} due to: ${error.message}`)
-                if (retrieveRequest.fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
+                if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
                   instancesErrors.push({ type: failedType, instance: input, error })
                   instancesWithInsufficientAccess.add(input)
                 }

@@ -967,11 +967,14 @@ export default class SalesforceClient implements ISalesforceClient {
             return type
           }) ?? []
       }
-      const retrieveResult = await this.retrieve(retrieveRequest)
-      return {
-        ...retrieveResult,
-        errors: [...(retrieveResult.errors ?? []), ...instancesErrors],
+      if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
+        const retrieveResult = await this.retrieve(retrieveRequest)
+        return {
+          ...retrieveResult,
+          errors: [...(retrieveResult.errors ?? []), ...instancesErrors],
+        }
       }
+      throw e
     }
   }
 

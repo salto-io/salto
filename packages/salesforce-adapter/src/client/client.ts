@@ -54,6 +54,7 @@ import {
   ClientRetryConfig,
   Credentials,
   CustomObjectsDeployRetryConfig,
+  FetchProfile,
   OauthAccessTokenCredentials,
   ReadMetadataChunkSizeConfig,
   SalesforceClientConfig,
@@ -919,8 +920,62 @@ export default class SalesforceClient implements ISalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'retrieve' })
   @logDecorator()
   @requiresLogin()
-  public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
-    return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
+  public async retrieve(
+    retrieveRequest: RetrieveRequest,
+    fetchProfile?: FetchProfile,
+  ): Promise<RetrieveResult & { errors?: { type: string; instance: string; error: Error }[] }> {
+    try {
+      return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
+    } catch (e) {
+      const typesWithInsufficientAccess = new Set<string>()
+      const instancesWithInsufficientAccess = new Set<string>()
+      const instancesErrors: { type: string; instance: string; error: Error }[] = []
+      const errorPattern = /INSUFFICIENT_ACCESS: insufficient access rights on entity: (\w+)/g
+      const matches = [...e.message.matchAll(errorPattern)]
+      if (matches.length > 0) {
+        if (retrieveRequest.unpackaged === undefined) throw e
+        await Promise.all(
+          matches.map(async match => {
+            const failedType = match[1]
+            typesWithInsufficientAccess.add(failedType)
+            log.debug(`Failed to retrieve ${failedType} due to insufficient access rights`)
+            log.debug('Reading each instance separately to find the ones with insufficient access rights')
+            const instancesOfFailedType =
+              retrieveRequest.unpackaged?.types.find(t => t.name === failedType)?.members ?? []
+            const { errors } = await sendChunked({
+              input: instancesOfFailedType,
+              sendChunk: chunk => this.conn.metadata.read(failedType, chunk),
+              operationInfo: `readMetadata (${failedType})`,
+              isUnhandledError: () => false,
+            })
+            errors.forEach(({ input, error }) => {
+              if (error.message.match(errorPattern)) {
+                log.debug(`Failed to read ${failedType}.${input} due to: ${error.message}`)
+                if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
+                  instancesErrors.push({ type: failedType, instance: input, error })
+                  instancesWithInsufficientAccess.add(input)
+                }
+              }
+            })
+          }),
+        )
+        retrieveRequest.unpackaged.types =
+          retrieveRequest.unpackaged?.types.map(type => {
+            if (typesWithInsufficientAccess.has(type.name)) {
+              type.members = type.members.filter(member => !instancesWithInsufficientAccess.has(member))
+            }
+            return type
+          }) ?? []
+      }
+      if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
+        const retrieveResult = await this.retrieve(retrieveRequest)
+        return {
+          ...retrieveResult,
+          errors: [...(retrieveResult.errors ?? []), ...instancesErrors],
+        }
+      }
+      throw e
+    }
   }
 
   private async reportDeployProgressUntilComplete(

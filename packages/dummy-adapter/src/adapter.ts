@@ -63,8 +63,10 @@ export default class DummyAdapter implements AdapterOperations {
     }
   }
 
-  public deployModifiers: DeployModifiers = {
-    changeValidator: changeValidator(this.genParams),
+  public get deployModifiers(): DeployModifiers {
+    return {
+      changeValidator: changeValidator(this.genParams),
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this

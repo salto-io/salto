@@ -873,7 +873,7 @@ describe('Serialization Strategies', () => {
       expect(createdReference).toBeInstanceOf(ReferenceExpression)
       // Make sure serialization works on the created reference
       expect(
-        await ReferenceSerializationStrategyLookup.recordFieldDollarPrefix.serialize({
+        await ReferenceSerializationStrategyLookup.assignToReferenceField.serialize({
           ref: createdReference,
           element: flowInstance,
         }),

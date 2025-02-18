@@ -108,6 +108,7 @@ type ReferenceSerializationStrategyName =
   | 'recordField'
   | 'recordFieldDollarPrefix'
   | 'flexiPageleftValueField'
+  | 'listField'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategy
@@ -189,6 +190,16 @@ export const ReferenceSerializationStrategyLookup: Record<
       }
       return val
     },
+  },
+  listField: {
+    lookup: (val, context) => {
+      if (context) {
+        return val
+      }
+      return undefined
+    },
+    serialize: async ({ ref, path }) =>
+      `{!Record${API_NAME_SEPARATOR}${await safeApiName({ ref, path, relative: true })}}`,
   },
 }
 
@@ -1035,11 +1046,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'flexiPageleftValueField',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
-  {
-    src: { field: 'valueName', parentTypes: ['valueSettings', 'fieldDependency'] },
-    serializationStrategy: 'relativeApiName',
-    target: { type: 'GlobalValueSet', parentContext: 'instanceParent' },
-  },
+  // {
+  //   src: { field: 'controllingFieldValue', parentTypes: ['ValueSettings'] },
+  //   serializationStrategy: 'listField',
+  //   target: { type: 'CustomValue' },
+  // },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>

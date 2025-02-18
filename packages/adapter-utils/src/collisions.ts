@@ -11,6 +11,7 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ERROR_MESSAGES } from './errors'
 import { inspectValue } from './utils'
+import { getElementPrettyName } from './element'
 
 const log = logger(module)
 const { groupByAsync } = collections.asynciterable
@@ -66,7 +67,7 @@ const getTextWithLinkToService = ({
 const getInstancesWithLinksToService = (instances: InstanceElement[], adapterName: string): string =>
   instances.map(instance =>
     getTextWithLinkToService({
-      instanceName: instance.annotations[CORE_ANNOTATIONS.ALIAS] ?? instance.elemID.name,
+      instanceName: getElementPrettyName(instance),
       adapterName,
       url: instance.annotations[CORE_ANNOTATIONS.SERVICE_URL],
     }),

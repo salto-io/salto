@@ -1049,14 +1049,19 @@ export type WeakReferencesHandler = ComponentsWeakReferencesHandler<{
 }>
 
 export enum ProfileSection {
+  ApplicationVisibilities = 'applicationVisibilities',
+  CategoryGroupVisibilities = 'categoryGroupVisibilities',
+  ClassAccesses = 'classAccesses',
+  CustomMetadataTypeAccesses = 'customMetadataTypeAccesses',
+  CustomPermissions = 'customPermissions',
+  CustomSettingAccesses = 'customSettingAccesses',
+  ExternalDataSourceAccesses = 'externalDataSourceAccesses',
   FieldPermissions = 'fieldPermissions',
+  FlowAccesses = 'flowAccesses',
+  LayoutAssignments = 'layoutAssignments',
   ObjectPermissions = 'objectPermissions',
+  PageAccesses = 'pageAccesses',
   RecordTypeVisibilities = 'recordTypeVisibilities',
   TabVisibilities = 'tabVisibilities',
   UserPermissions = 'userPermissions',
-  ApplicationVisibilities = 'applicationVisibilities',
-  ClassAccesses = 'classAccesses',
-  PageAccesses = 'pageAccesses',
-  FlowAccesses = 'flowAccesses',
-  LayoutAssignments = 'layoutAssignments',
 }

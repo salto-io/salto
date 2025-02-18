@@ -380,17 +380,22 @@ export const retrieveMetadataInstances = async ({
 
   const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
     const uniqueFnBySection: Record<ProfileSection, (values: unknown[]) => unknown[]> = {
-      [ProfileSection.FieldPermissions]: values => _.uniqBy(values, 'field'),
-      [ProfileSection.ObjectPermissions]: values => _.uniqBy(values, 'object'),
-      [ProfileSection.RecordTypeVisibilities]: values => _.uniqBy(values, 'recordType'),
-      [ProfileSection.TabVisibilities]: values => _.uniqBy(values, 'tab'),
-      [ProfileSection.UserPermissions]: values => _.uniqBy(values, 'name'),
       [ProfileSection.ApplicationVisibilities]: values => _.uniqBy(values, 'application'),
+      [ProfileSection.CategoryGroupVisibilities]: values => _.uniqBy(values, 'dataCategoryGroup'),
       [ProfileSection.ClassAccesses]: values => _.uniqBy(values, 'apexClass'),
+      [ProfileSection.CustomMetadataTypeAccesses]: values => _.uniqBy(values, 'name'),
+      [ProfileSection.CustomPermissions]: values => _.uniqBy(values, 'name'),
+      [ProfileSection.CustomSettingAccesses]: values => _.uniqBy(values, 'name'),
+      [ProfileSection.ExternalDataSourceAccesses]: values => _.uniqBy(values, 'externalDataSource'),
+      [ProfileSection.FieldPermissions]: values => _.uniqBy(values, 'field'),
       [ProfileSection.FlowAccesses]: values => _.uniqBy(values, 'flow'),
       [ProfileSection.LayoutAssignments]: values =>
         _.uniqBy(values, value => `${_.get(value, 'layout', '')}@${_.get(value, 'recordType', '')}`),
+      [ProfileSection.ObjectPermissions]: values => _.uniqBy(values, 'object'),
       [ProfileSection.PageAccesses]: values => _.uniqBy(values, 'apexPage'),
+      [ProfileSection.RecordTypeVisibilities]: values => _.uniqBy(values, 'recordType'),
+      [ProfileSection.TabVisibilities]: values => _.uniqBy(values, 'tab'),
+      [ProfileSection.UserPermissions]: values => _.uniqBy(values, 'name'),
     }
     const mergedInstance = instances[0].clone()
     mergedInstance.value = {

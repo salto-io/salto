@@ -17,12 +17,19 @@ import {
   Value,
   Values,
   ElemID,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { collections, hash as hashUtils } from '@salto-io/lowerdash'
-import { createSchemeGuard, fileNameFromNaclCase } from '@salto-io/adapter-utils'
+import {
+  createSchemeGuard,
+  fileNameFromNaclCase,
+  isResolvedReferenceExpression,
+  walkOnValue,
+  WALK_NEXT_STEP,
+} from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { JiraConfig, JspUrls } from './config/config'
 import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN, SOFTWARE_FIELD } from './constants'
@@ -35,6 +42,7 @@ type appInfo = {
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 const MAX_RETRIES = 5
 
 export const setFieldDeploymentAnnotations = (type: ObjectType, fieldName: string): void => {
@@ -271,3 +279,45 @@ export const getHTMLStaticFileName = (path: ElemID): string | undefined => {
 }
 
 export const isHTMLResponse = createSchemeGuard<HTMLResponse>(HTML_RESPONSE_SCHEME, 'Failed to get HTML response')
+
+export const getScope = (instance: InstanceElement): ElemID[] => {
+  const elementsToScan = [instance]
+  const scope = new Set([instance.elemID])
+  const getInstanceReferences = (inst: InstanceElement): void => {
+    walkOnValue({
+      elemId: inst.elemID,
+      value: inst.value,
+      func: ({ value }) => {
+        if (isResolvedReferenceExpression(value) && !scope.has(value.elemID)) {
+          scope.add(value.elemID)
+          elementsToScan.push(value.value)
+          return WALK_NEXT_STEP.SKIP
+        }
+        return WALK_NEXT_STEP.RECURSE
+      },
+    })
+  }
+  while (elementsToScan.length > 0) {
+    const currentInstance = elementsToScan.pop()
+    if (currentInstance === undefined) {
+      break
+    }
+    getInstanceReferences(currentInstance)
+  }
+  return Array.from(scope)
+}
+
+export const getChildren = (instance: InstanceElement, elements: Element[]): ElemID[] => {
+  const instanceFullName = instance.elemID.getFullName()
+  return elements
+    .filter(isInstanceElement)
+    .filter(inst => {
+      const parents = makeArray(inst.annotations[CORE_ANNOTATIONS.PARENT])
+      if (parents.length === 0) {
+        return false
+      }
+      const parent = parents[0]
+      return isReferenceExpression(parent) && parent.elemID.getFullName() === instanceFullName
+    })
+    .map(inst => inst.elemID)
+}

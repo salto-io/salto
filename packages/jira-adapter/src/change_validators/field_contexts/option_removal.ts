@@ -15,18 +15,17 @@ import {
   InstanceElement,
   isInstanceChange,
   isInstanceElement,
-  isModificationChange,
   isRemovalChange,
+  isRemovalOrModificationChange,
   SeverityLevel,
-  Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { values } from '@salto-io/lowerdash'
 import JiraClient from '../../client/client'
-import { getContextAndFieldIds, getContextParent } from '../../common/fields'
+import { getContextAndFieldIds } from '../../common/fields'
 import { JiraConfig } from '../../config/config'
 import {
   FIELD_CONTEXT_OPTION_TYPE_NAME,
@@ -42,6 +41,7 @@ const { isDefined } = values
 // the jql length is limited, therefore we use chunks
 const OPTIONS_CHUNK_SIZE = 500
 const MAX_ITERATIONS = 100
+const MAX_OPTIONS_IN_ERROR_MESSAGE = 10
 
 type OptionInfo = {
   optionId: string
@@ -50,6 +50,8 @@ type OptionInfo = {
   contextId: string
   fieldId: string
   fieldName: string
+  parentFullName: string
+  parentOptionValue?: string
 }
 
 type CustomFieldContextOption = {
@@ -69,13 +71,18 @@ const isFieldContextOption = createSchemeGuard<CustomFieldContextOption>(
   'Received an invalid field context option',
 )
 
+type FieldIssue = {
+  id: string // optionId
+  child?: {
+    id: string // cascading optionId
+  }
+}
+
 type SearchIssues = {
   id: string // issueId
   fields: Record<
     string, // fieldId
-    {
-      id: string // optionId
-    }[]
+    FieldIssue | FieldIssue[] // multiple select list returns an array of FieldIssue
   >
 }[]
 
@@ -83,6 +90,15 @@ type SearchIssuesResponse = {
   issues: SearchIssues
   nextPageToken?: string
 }
+
+const FIELD_ISSUE_SCHEME = Joi.object({
+  id: Joi.string().required(),
+  child: Joi.object({
+    id: Joi.string().required(),
+  }).unknown(true),
+})
+  .required()
+  .unknown(true)
 
 const SEARCH_ISSUES_RESPONSE_SCHEME = Joi.object({
   issues: Joi.array()
@@ -92,13 +108,7 @@ const SEARCH_ISSUES_RESPONSE_SCHEME = Joi.object({
         fields: Joi.object()
           .pattern(
             Joi.string().required(),
-            Joi.array().items(
-              Joi.object({
-                id: Joi.string().required(),
-              })
-                .unknown(true)
-                .required(),
-            ),
+            Joi.alternatives(Joi.array().items(FIELD_ISSUE_SCHEME), FIELD_ISSUE_SCHEME).required(),
           )
           .required()
           .unknown(true),
@@ -117,53 +127,46 @@ const isSearchIssuesResponse = createSchemeGuard<SearchIssuesResponse>(
   'Received an invalid search issues response',
 )
 
-const getOptionNameToInfo = (optionInstances: InstanceElement[]): Record<string, OptionInfo> =>
-  Object.fromEntries(
-    optionInstances
-      .map(optionInstance => {
-        if (!isFieldContextOption(optionInstance.value)) {
-          return undefined
-        }
-        const { contextId, fieldId, fieldName } = getContextAndFieldIds(optionInstance)
-        return [
-          optionInstance.elemID.getFullName(),
-          {
-            optionId: optionInstance.value.id,
-            optionElemID: optionInstance.elemID,
-            optionValue: optionInstance.value.value,
-            contextId,
-            fieldId,
-            fieldName,
-          },
-        ]
-      })
-      .filter(isDefined),
-  )
+const getOptionInfos = (optionInstances: InstanceElement[]): OptionInfo[] =>
+  optionInstances
+    .filter(optionInstance => isFieldContextOption(optionInstance.value))
+    .map(optionInstance => {
+      const { contextId, fieldId, fieldName } = getContextAndFieldIds(optionInstance)
+      const optionParent = getParent(optionInstance)
+      return {
+        optionId: optionInstance.value.id,
+        optionElemID: optionInstance.elemID,
+        optionValue: optionInstance.value.value,
+        contextId,
+        fieldId,
+        fieldName,
+        parentFullName: optionParent.elemID.getFullName(),
+        parentOptionValue:
+          optionParent.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME ? optionParent.value.value : undefined,
+      }
+    })
+    .filter(isDefined)
 
 // the options are of the same field
 const getJqlForOptionsUsage = (fieldId: string, optionIds: string[]): string =>
   // cf[<fieldId>] in (<optionId1>,<optionId2>,...)
   `cf[${removeCustomFieldPrefix(fieldId)}] in (${optionIds.join(',')})`
 
-const issueSearchQueryParams = ({
-  jql,
-  fields,
-  nextPageToken,
-}: {
-  jql: string
-  fields: string
-  nextPageToken: string | undefined
-}): Values =>
-  nextPageToken !== undefined
-    ? {
-        jql,
-        fields,
-        nextPageToken,
+const getOptionIdsFromSearchIssues = (searchIssues: SearchIssues): string[] =>
+  searchIssues.flatMap(issue =>
+    Object.values(issue.fields).flatMap(options => {
+      if (Array.isArray(options)) {
+        // multiple select list
+        return options.map(option => option.id)
       }
-    : {
-        jql,
-        fields,
+      if (options.child !== undefined) {
+        // cascading select list
+        return [options.id, options.child.id]
       }
+      // single select list
+      return [options.id]
+    }),
+  )
 
 const getActiveOptionsIds = async ({
   client,
@@ -183,17 +186,18 @@ const getActiveOptionsIds = async ({
     // eslint-disable-next-line no-await-in-loop
     const response = await client.get({
       url: 'rest/api/3/search/jql',
-      queryParams: issueSearchQueryParams({
+      queryParams: {
         jql,
         fields: fieldId,
-        nextPageToken,
-      }),
+        ...(nextPageToken !== undefined ? { nextPageToken } : {}),
+      },
     })
     if (!isSearchIssuesResponse(response.data)) {
-      return undefined
+      break
     }
     if (nextPageToken !== undefined && nextPageToken === response.data.nextPageToken) {
-      throw new Error('Jira search API returned the same nextPageToken, aborting')
+      log.error('Jira search API returned the same nextPageToken, continuing with the current result')
+      break
     }
     nextPageToken = response.data.nextPageToken
     result.push(...response.data.issues)
@@ -205,65 +209,89 @@ const getActiveOptionsIds = async ({
       break
     }
   } while (nextPageToken !== undefined)
-  return result.flatMap(issue => Object.values(issue.fields).flatMap(options => options.map(option => option.id)))
+  return getOptionIdsFromSearchIssues(result)
 }
 
 const collectActiveOptionsIds = async (
   fieldIdToOptionsInfo: _.Dictionary<OptionInfo[]>,
   client: JiraClient,
-): Promise<string[]> =>
-  (
-    await Promise.all(
-      Object.entries(fieldIdToOptionsInfo).flatMap(([fieldId, optionsInfo]) =>
-        _.chunk(
-          optionsInfo.map(optionInfo => optionInfo.optionId),
-          OPTIONS_CHUNK_SIZE,
-        ).map(optionIdsChunk => getActiveOptionsIds({ client, fieldId, optionIds: optionIdsChunk })),
-      ),
+): Promise<Set<string>> => {
+  try {
+    return new Set(
+      (
+        await Promise.all(
+          _.flatMap(fieldIdToOptionsInfo, (optionsInfo, fieldId) =>
+            _.chunk(
+              optionsInfo.map(optionInfo => optionInfo.optionId),
+              OPTIONS_CHUNK_SIZE,
+            ).map(optionIdsChunk => getActiveOptionsIds({ client, fieldId, optionIds: optionIdsChunk })),
+          ),
+        )
+      )
+        .flat()
+        .filter(isDefined),
     )
-  )
-    .flat()
-    .filter(isDefined)
+  } catch (e) {
+    log.error('Failed to collect active options ids with error: %o', e)
+    return new Set()
+  }
+}
 
 const optionMigrationLink = (fieldOptionContext: OptionInfo, baseUrl: string): string =>
   `${baseUrl}/secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=${fieldOptionContext.contextId}&selectedValue=${fieldOptionContext.optionId}`
+
+const getOrderDetailedMessage = (options: OptionInfo[]): string => {
+  const optionList = options.map(optionInfo => optionInfo.optionValue).join(', ')
+  if (options.length > MAX_OPTIONS_IN_ERROR_MESSAGE) {
+    log.info(
+      'removing options from detailed message because there are over %d options. The options that removed are: %o',
+      MAX_OPTIONS_IN_ERROR_MESSAGE,
+      optionList,
+    )
+    return 'This order cannot be deployed because it depends on removing some options that are still in use by existing issues.'
+  }
+  return `This order cannot be deployed because it depends on removing the options ${optionList}, that are still in use by existing issues.`
+}
 
 const getFieldContextOrderErrors = (
   activeOptionRemovals: OptionInfo[],
   changes: readonly Change<ChangeDataType>[],
 ): ChangeError[] => {
   const relevantOrderInstances = changes
-    .filter(isModificationChange)
-    .filter(change => change.data.before.elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
+    .filter(isRemovalOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
 
-  const contextIdToOrder = _.keyBy(relevantOrderInstances, change => getContextParent(change).value.id as string)
-  const contextIdToActiveOptions = _.groupBy(activeOptionRemovals, optionInfo => optionInfo.contextId)
-  return Object.entries(contextIdToActiveOptions).map(([contextId, options]) => {
-    const orderInstance = contextIdToOrder[contextId]
+  const orderByParentFullName = _.keyBy(relevantOrderInstances, orderInstance =>
+    getParent(orderInstance).elemID.getFullName(),
+  )
+  const activeOptionsGroupedByParentFullName = _.groupBy(activeOptionRemovals, optionInfo => optionInfo.parentFullName)
+  return _.map(activeOptionsGroupedByParentFullName, (options, parentFullName) => {
+    const orderInstance = orderByParentFullName[parentFullName]
     if (orderInstance === undefined) {
-      log.warn('No order found for context %s, skipping', contextId)
+      log.warn('No order found with parent %s, skipping', parentFullName)
     }
-    const detailedMessage =
-      options.length > 10
-        ? 'This order cannot be deployed because it depends on removing some options, which cannot be removed since they are still in use by existing issues.'
-        : `This order cannot be deployed because it depends on removing the options ${options.map(optionInfo => optionInfo.optionValue).join(', ')}, which are still in use by existing issues.`
     return {
       elemID: orderInstance.elemID,
       severity: 'Error' as SeverityLevel,
       message: "This order is not referencing all it's options",
-      detailedMessage,
+      detailedMessage: getOrderDetailedMessage(options),
     }
   })
 }
+
+const getOptionFullValue = (optionInfo: OptionInfo): string =>
+  optionInfo.parentOptionValue === undefined
+    ? optionInfo.optionValue
+    : `${optionInfo.parentOptionValue}-${optionInfo.optionValue}`
 
 const getFieldContextOptionErrors = (activeOptionRemovals: OptionInfo[], baseUrl: string): ChangeError[] =>
   activeOptionRemovals.map(optionInfo => ({
     elemID: optionInfo.optionElemID,
     severity: 'Error' as SeverityLevel,
-    message: 'Cannot remove field context option as it is in use by issues',
-    detailedMessage: `The option "${optionInfo.optionValue}" in the field "${optionInfo.fieldName}" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via ${optionMigrationLink(optionInfo, baseUrl)} and then refresh your deployment.`,
+    message: 'Cannot remove field context option as it is still in use by existing issues',
+    detailedMessage: `The option "${getOptionFullValue(optionInfo)}" in the field "${optionInfo.fieldName}" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via ${optionMigrationLink(optionInfo, baseUrl)} and then refresh your deployment.`,
   }))
 
 const getOptionAndOrderChangeErrors = ({
@@ -306,29 +334,19 @@ export const fieldContextOptionRemovalValidator: (config: JiraConfig, client: Ji
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME)
 
-    const optionNameToInfo = _.pickBy(
-      getOptionNameToInfo(optionInstancesToRemove),
+    const optionInfos = getOptionInfos(optionInstancesToRemove).filter(
       optionInfo =>
         // filter out options removal when their context is removed as well
         !removalContextIds.has(optionInfo.contextId),
     )
 
-    if (_.isEmpty(optionNameToInfo)) {
-      return []
-    }
-    const fieldIdToOptionsInfo = _.groupBy(Object.values(optionNameToInfo), optionInfo => optionInfo.fieldId)
-
-    let activeOptionsIds: Set<string>
-    try {
-      activeOptionsIds = new Set(await collectActiveOptionsIds(fieldIdToOptionsInfo, client))
-    } catch (e) {
-      log.error('Failed to collect active options ids with error: %o', e)
+    if (optionInfos.length === 0) {
       return []
     }
 
-    const activeOptionsInfos = Object.values(optionNameToInfo).filter(optionInfo =>
-      activeOptionsIds.has(optionInfo.optionId),
-    )
+    const fieldIdToOptionsInfo = _.groupBy(optionInfos, optionInfo => optionInfo.fieldId)
+    const activeOptionsIds = await collectActiveOptionsIds(fieldIdToOptionsInfo, client)
+    const activeOptionsInfos = optionInfos.filter(optionInfo => activeOptionsIds.has(optionInfo.optionId))
 
     if (activeOptionsInfos.length === 0) {
       return []

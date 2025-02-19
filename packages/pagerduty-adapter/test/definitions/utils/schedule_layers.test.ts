@@ -104,6 +104,14 @@ describe('schedule layers definitions utils', () => {
         },
       })
     })
+    it('should throw an error if value is not an object', async () => {
+      item.value = 'not an object'
+      await expect(addStartToLayers(item)).rejects.toThrow('Can not adjust when the value is not an object')
+    })
+    it('should return the value an error if schedule_layers is not an array', async () => {
+      item.value = { schedule: { schedule_layers: 'not an array' } }
+      expect(await addStartToLayers(item)).toEqual({ value: item.value })
+    })
   })
 
   describe('shouldChangeLayer', () => {

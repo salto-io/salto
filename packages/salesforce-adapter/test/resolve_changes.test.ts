@@ -20,9 +20,8 @@ import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { SALESFORCE } from '../src/constants'
 import { createOrderedMapType } from '../src/filters/convert_maps'
 import { mockTypes } from './mock_elements'
-import { salesforceAdapterResolveValues } from '../src/adapter'
 
-import { getLookUpName } from '../src/transformers/reference_mapping'
+import { getLookUpName, salesforceAdapterResolveValues } from '../src/transformers/reference_mapping'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 describe('Resolve Salesforce Changes', () => {

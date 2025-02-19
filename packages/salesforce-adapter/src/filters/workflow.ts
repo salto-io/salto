@@ -20,7 +20,6 @@ import {
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { salesforceAdapterResolveValues } from '../adapter'
 import {
   INSTANCE_FULL_NAME_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
@@ -42,8 +41,14 @@ import {
   MetadataTypeAnnotations,
   toMetadataInfo,
 } from '../transformers/transformer'
-import { getLookUpName } from '../transformers/reference_mapping'
-import { fullApiName, parentApiName, getDataFromChanges, isInstanceOfTypeChange, isInstanceOfTypeSync } from './utils'
+import { getLookUpName, salesforceAdapterResolveValues } from '../transformers/reference_mapping'
+import {
+  fullApiName,
+  parentApiName,
+  getDataFromChanges,
+  isInstanceOfTypeSync,
+  isInstanceOfTypeChangeSync,
+} from './utils'
 import { WorkflowField } from '../fetch_profile/metadata_types'
 
 const { awu, groupByAsync } = collections.asynciterable
@@ -98,13 +103,12 @@ const createPartialWorkflowInstance = async (
       ..._.omit(fullInstance.value, Object.keys(WORKFLOW_FIELD_TO_TYPE)),
       ...(await mapValuesAsync(WORKFLOW_FIELD_TO_TYPE, async fieldType =>
         Promise.all(
-          getDataFromChanges(
-            dataField,
-            (await awu(changes).filter(isInstanceOfTypeChange(fieldType)).toArray()) as Change<InstanceElement>[],
-          ).map(async nestedInstance => ({
-            ...(await toMetadataInfo(nestedInstance)),
-            [INSTANCE_FULL_NAME_FIELD]: await apiName(nestedInstance, true),
-          })),
+          getDataFromChanges(dataField, changes.filter(isInstanceOfTypeChangeSync(fieldType))).map(
+            async nestedInstance => ({
+              ...(await toMetadataInfo(nestedInstance)),
+              [INSTANCE_FULL_NAME_FIELD]: await apiName(nestedInstance, true),
+            }),
+          ),
         ),
       )),
     },

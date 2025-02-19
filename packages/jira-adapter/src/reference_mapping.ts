@@ -1190,7 +1190,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: ['DefaultAnswer'] },
     serializationStrategy: 'id',
-    missingRefStrategy: 'typeAndValue',
     target: { type: FIELD_CONTEXT_OPTION_TYPE_NAME },
   },
   // ScriptRunner
@@ -1463,15 +1462,17 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
 ]
 
-/* Due to changes in the form structure during preDeploy and the resolution of references occurring during deploy,
- * the resolved reference definitions are unavailable. As a result, we need to explicitly specify the serialization strategy.
+/* Due to changes in the structure of form fields during `preDeploy`,
+ * resolved reference definitions are unavailable during reference resolution in `deploy`.
+ * Therefore, we need to explicitly define the serialization strategy to correctly resolve these references.
  */
-const getConditionsLookUpName: GetLookupNameFunc = ({ ref, path }) => {
+const getFormsLookUpName: GetLookupNameFunc = ({ ref, path }) => {
+  const fullName = path?.getFullName()
   if (
     path !== undefined &&
     path.typeName === 'Form' &&
-    (path.getFullName().includes('cIds') ||
-      (path.getFullName().includes('defaultAnswer') && path.getFullName().includes('choices')))
+    fullName !== undefined &&
+    (fullName.includes('cIds') || (fullName.includes('defaultAnswer') && fullName.includes('choices')))
   ) {
     return ref.value.value.id
   }
@@ -1480,7 +1481,7 @@ const getConditionsLookUpName: GetLookupNameFunc = ({ ref, path }) => {
 
 const lookupNameFuncs: GetLookupNameFunc[] = [
   getFieldsLookUpName,
-  getConditionsLookUpName,
+  getFormsLookUpName,
   // The second param is needed to resolve references by serializationStrategy
   referenceUtils.generateLookupFunc(referencesRules, defs => new JiraFieldReferenceResolver(defs)),
 ]

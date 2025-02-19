@@ -1467,7 +1467,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
  * the resolved reference definitions are unavailable. As a result, we need to explicitly specify the serialization strategy.
  */
 const getConditionsLookUpName: GetLookupNameFunc = ({ ref, path }) => {
-  if (path !== undefined && path.typeName === 'Form' && path.getFullName().includes('cIds')) {
+  if (
+    path !== undefined &&
+    path.typeName === 'Form' &&
+    (path.getFullName().includes('cIds') ||
+      (path.getFullName().includes('defaultAnswer') && path.getFullName().includes('choices')))
+  ) {
     return ref.value.value.id
   }
   return ref

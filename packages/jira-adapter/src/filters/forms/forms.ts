@@ -220,7 +220,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(isDefined)
 
     forms.forEach(form => {
-      if (form.value.design?.conditions && config.fetch.splitFieldContextOptions) {
+      if ((form.value.design?.conditions || form.value.design?.questions) && config.fetch.splitFieldContextOptions) {
         transformFormValues(form)
       }
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))

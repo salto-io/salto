@@ -20,6 +20,7 @@ import {
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { salesforceAdapterResolveValues } from '../adapter'
 import {
   INSTANCE_FULL_NAME_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
@@ -41,6 +42,7 @@ import {
   MetadataTypeAnnotations,
   toMetadataInfo,
 } from '../transformers/transformer'
+import { getLookUpName } from '../transformers/reference_mapping'
 import { fullApiName, parentApiName, getDataFromChanges, isInstanceOfTypeChange, isInstanceOfTypeSync } from './utils'
 import { WorkflowField } from '../fetch_profile/metadata_types'
 
@@ -248,8 +250,16 @@ const filterCreator: FilterCreator = ({ config, client }) => {
           .filter(([parent, elem]) =>
             originalWorkflowChanges[parent].every(change => !elem.elemID.isEqual(getChangeData(change).elemID)),
           )
-          .forEach(([parent, elem]) => {
-            originalWorkflowChanges[parent].push(toChange({ after: elem }))
+          .forEach(async ([parent, elem]) => {
+            originalWorkflowChanges[parent].push(
+              toChange({
+                after: await salesforceAdapterResolveValues(
+                  elem,
+                  getLookUpName(config.fetchProfile),
+                  config.elementsSource,
+                ),
+              }),
+            )
           })
       }
 

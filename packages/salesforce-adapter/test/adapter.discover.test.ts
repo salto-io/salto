@@ -47,7 +47,7 @@ import {
   mockRetrieveLocator,
   mockRetrieveResult,
 } from './connection'
-import { ConfigChangeSuggestion, FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import { ConfigChangeSuggestion, FetchElements, FetchProfile, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import * as fetchModule from '../src/fetch'
 import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
@@ -2891,6 +2891,8 @@ describe('Fetch via retrieve API', () => {
   })
   describe('handle INSUFFICIENT_ACCESS: insufficient access rights on entity', () => {
     let configChanges: ConfigChangeSuggestion[]
+    const typeError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ApexClass'
+    const instanceError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
 
     beforeEach(async () => {
       await setupMocks([
@@ -2903,79 +2905,17 @@ describe('Fetch via retrieve API', () => {
           type.members.includes('ProblematicApexClass'),
         )
         if (hasProblematicApexClass) {
-          return mockRetrieveLocator(
-            mockRetrieveResult({
-              messages: [
-                {
-                  fileName: 'unpackaged/classes/ProblematicApexClass.cls-meta.xml',
-                  problem: 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ApexClass',
-                },
-              ],
-              zipFiles: [
-                {
-                  path: 'unpackaged/classes/SomeApexClass.cls-meta.xml',
-                  content: `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>50.0</apiVersion>
-    <status>Active</status>
-  </ApexClass>
-  `,
-                },
-                {
-                  path: 'unpackaged/classes/SomeApexClass.cls',
-                  content: `
-  public class SomeApexClass {
-    public void printLog() {
-      System.debug('Instance');
-    }
-  }
-  `,
-                },
-              ],
-            }),
-          )
+          throw new Error(typeError)
         }
-        return mockRetrieveLocator(
-          mockRetrieveResult({
-            zipFiles: [
-              {
-                path: 'unpackaged/classes/SomeApexClass.cls-meta.xml',
-                content: `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>50.0</apiVersion>
-    <status>Active</status>
-  </ApexClass>
-  `,
-              },
-              {
-                path: 'unpackaged/classes/SomeApexClass.cls',
-                content: `
-  public class SomeApexClass {
-    public void printLog() {
-      System.debug('Instance');
-    }
-  }
-  `,
-              },
-            ],
-          }),
-        )
+        return mockRetrieveLocator(mockRetrieveResult({}))
       })
 
       // Mock metadata.read to return the specific error only if 'ProblematicApexClass' is in the request
-      connection.metadata.read.mockImplementation(async (type, fullNames) => {
+      connection.metadata.read.mockImplementation(async (_type, fullNames) => {
         if (fullNames.includes('ProblematicApexClass')) {
-          throw new Error('INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass')
+          throw new Error(instanceError)
         }
-        return [
-          {
-            fullName: 'SomeApexClass',
-            apiVersion: '50.0',
-            status: 'Active',
-          },
-        ]
+        return []
       })
     })
 
@@ -2983,7 +2923,13 @@ describe('Fetch via retrieve API', () => {
       beforeEach(async () => {
         const fetchProfile = buildFetchProfile({
           fetchParams: {
+            optionalFeatures: {
+              handleInsufficientAccessRightsOnEntity: true,
+            },
             addNamespacePrefixToFullName: false,
+            metadata: {
+              exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
+            },
           },
         })
 
@@ -2997,45 +2943,47 @@ describe('Fetch via retrieve API', () => {
       })
 
       it('Should create a config change for exclusion', () => {
-        expect(configChanges).toEqual([
-          expect.objectContaining({
+        expect(configChanges).toIncludeSameMembers([
+          {
             type: 'metadataExclude',
+            reason: instanceError,
             value: {
               metadataType: 'ApexClass',
               name: 'ProblematicApexClass',
             },
-          }),
+          },
         ])
       })
     })
 
     describe('when the feature is disabled', () => {
+      let metadataReadSpy: jest.SpyInstance
+      let fetchProfile: FetchProfile
       beforeEach(async () => {
-        const fetchProfile = buildFetchProfile({
+        metadataReadSpy = jest.spyOn(connection.metadata, 'read')
+        fetchProfile = buildFetchProfile({
           fetchParams: {
             addNamespacePrefixToFullName: false,
             metadata: {
-              exclude: [
-                {
-                  metadataType: 'ApexClass',
-                  name: 'ProblematicApexClass',
-                },
-              ],
+              exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
             },
           },
         })
-
-        configChanges = (
+      })
+      it('Should call metadata.read with the right arguments and throw the right error', async () => {
+        try {
           await retrieveMetadataInstances({
             client,
             types: [mockTypes.ApexClass, mockTypes.CustomObject],
             fetchProfile,
           })
-        ).configChanges
-      })
-
-      it('Should not create a config change', () => {
-        expect(configChanges).toBeEmpty()
+        } catch (error) {
+          expect(error.message).toEqual(typeError)
+          expect(metadataReadSpy).toHaveBeenCalledWith(
+            'ApexClass',
+            expect.arrayContaining(['SomeApexClass', 'ProblematicApexClass']),
+          )
+        }
       })
     })
   })

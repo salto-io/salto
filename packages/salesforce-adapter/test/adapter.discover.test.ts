@@ -2891,10 +2891,12 @@ describe('Fetch via retrieve API', () => {
   })
   describe('handle INSUFFICIENT_ACCESS: insufficient access rights on entity', () => {
     let configChanges: ConfigChangeSuggestion[]
+    let metadataRetrieveSpy: jest.SpyInstance
+    let fetchProfile: FetchProfile
     const typeError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ApexClass'
     const instanceError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
-
     beforeEach(async () => {
+      metadataRetrieveSpy = jest.spyOn(connection.metadata, 'retrieve')
       await setupMocks([
         { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
         { type: mockTypes.ApexClass, instanceName: 'ProblematicApexClass' },
@@ -2909,8 +2911,6 @@ describe('Fetch via retrieve API', () => {
         }
         return mockRetrieveLocator(mockRetrieveResult({}))
       })
-
-      // Mock metadata.read to return the specific error only if 'ProblematicApexClass' is in the request
       connection.metadata.read.mockImplementation(async (_type, fullNames) => {
         if (fullNames.includes('ProblematicApexClass')) {
           throw new Error(instanceError)
@@ -2918,10 +2918,9 @@ describe('Fetch via retrieve API', () => {
         return []
       })
     })
-
     describe('when the feature is enabled', () => {
       beforeEach(async () => {
-        const fetchProfile = buildFetchProfile({
+        fetchProfile = buildFetchProfile({
           fetchParams: {
             optionalFeatures: {
               handleInsufficientAccessRightsOnEntity: true,
@@ -2932,7 +2931,6 @@ describe('Fetch via retrieve API', () => {
             },
           },
         })
-
         configChanges = (
           await retrieveMetadataInstances({
             client,
@@ -2942,23 +2940,24 @@ describe('Fetch via retrieve API', () => {
         ).configChanges
       })
 
-      it('Should create a config change for exclusion', () => {
-        expect(configChanges).toIncludeSameMembers([
-          {
-            type: 'metadataExclude',
-            reason: instanceError,
-            value: {
-              metadataType: 'ApexClass',
-              name: 'ProblematicApexClass',
+      it('Should retry retrieve and create a config change for exclusion', () => {
+        expect(configChanges).toEqual(
+          expect.arrayContaining([
+            {
+              type: 'metadataExclude',
+              reason: instanceError,
+              value: {
+                metadataType: 'ApexClass',
+                name: 'ProblematicApexClass',
+              },
             },
-          },
-        ])
+          ]),
+        )
       })
     })
 
     describe('when the feature is disabled', () => {
       let metadataReadSpy: jest.SpyInstance
-      let fetchProfile: FetchProfile
       beforeEach(async () => {
         metadataReadSpy = jest.spyOn(connection.metadata, 'read')
         fetchProfile = buildFetchProfile({
@@ -2978,6 +2977,7 @@ describe('Fetch via retrieve API', () => {
             fetchProfile,
           })
         } catch (error) {
+          expect(metadataRetrieveSpy).toHaveBeenCalledOnce()
           expect(error.message).toEqual(typeError)
           expect(metadataReadSpy).toHaveBeenCalledWith(
             'ApexClass',

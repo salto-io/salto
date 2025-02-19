@@ -11,5 +11,5 @@ import adapterCreators from './creators'
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)
 
-export const getAdapterConfigOptionsType = (adapterName: string): ObjectType | undefined =>
-  adapterCreators[adapterName]?.configCreator?.optionsType
+export const getAdapterConfigOptionsType = (adapterName: string, optionsContext?: boolean): ObjectType | undefined =>
+  adapterCreators[adapterName]?.configCreator?.optionsType(optionsContext)

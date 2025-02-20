@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _ from 'lodash'
+import _, { concat } from 'lodash'
 import { EOL } from 'os'
 import requestretry, { RequestRetryOptions, RetryStrategies, RetryStrategy } from 'requestretry'
 import { collections, decorators, hash } from '@salto-io/lowerdash'
@@ -158,6 +158,9 @@ const errorMessagesToRetry = [
   'INVALID_LOCATOR',
   'FUNCTIONALITY_TEMPORARILY_UNAVAILABLE',
 ]
+
+type ErrorInfo = { type: string; instance: string; error: Error }
+type RetrieveResultWithErrors = RetrieveResult & { errors?: ErrorInfo[] }
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
 
@@ -923,25 +926,25 @@ export default class SalesforceClient implements ISalesforceClient {
   public async retrieve(
     retrieveRequest: RetrieveRequest,
     fetchProfile?: FetchProfile,
-  ): Promise<RetrieveResult & { errors?: { type: string; instance: string; error: Error }[] }> {
+  ): Promise<RetrieveResultWithErrors> {
     try {
       return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
     } catch (e) {
       const typesWithInsufficientAccess = new Set<string>()
       const instancesWithInsufficientAccess = new Set<string>()
-      const instancesErrors: { type: string; instance: string; error: Error }[] = []
+      const instancesErrors: ErrorInfo[] = []
       const errorPattern = /INSUFFICIENT_ACCESS: insufficient access rights on entity: (\w+)/g
       const matches = [...e.message.matchAll(errorPattern)]
+      const currentUnpackaged = retrieveRequest.unpackaged
       if (matches.length > 0) {
-        if (retrieveRequest.unpackaged === undefined) throw e
+        if (currentUnpackaged === undefined) throw e
         await Promise.all(
           matches.map(async match => {
             const failedType = match[1]
             typesWithInsufficientAccess.add(failedType)
-            log.debug(`Failed to retrieve ${failedType} due to insufficient access rights`)
+            log.debug(`Failed to retrieve due ${concat(match[0], match[1])}`)
             log.debug('Reading each instance separately to find the ones with insufficient access rights')
-            const instancesOfFailedType =
-              retrieveRequest.unpackaged?.types.find(t => t.name === failedType)?.members ?? []
+            const instancesOfFailedType = currentUnpackaged.types.find(t => t.name === failedType)?.members ?? []
             const { errors } = await sendChunked({
               input: instancesOfFailedType,
               sendChunk: chunk => this.conn.metadata.read(failedType, chunk),
@@ -959,8 +962,8 @@ export default class SalesforceClient implements ISalesforceClient {
             })
           }),
         )
-        retrieveRequest.unpackaged.types =
-          retrieveRequest.unpackaged?.types.map(type => {
+        currentUnpackaged.types =
+          currentUnpackaged.types.map(type => {
             if (typesWithInsufficientAccess.has(type.name)) {
               type.members = type.members.filter(member => !instancesWithInsufficientAccess.has(member))
             }

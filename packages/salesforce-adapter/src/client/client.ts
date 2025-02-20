@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _, { concat } from 'lodash'
+import _ from 'lodash'
 import { EOL } from 'os'
 import requestretry, { RequestRetryOptions, RetryStrategies, RetryStrategy } from 'requestretry'
 import { collections, decorators, hash } from '@salto-io/lowerdash'
@@ -937,7 +937,7 @@ export default class SalesforceClient implements ISalesforceClient {
         matches.map(async match => {
           const failedType = match[1]
           typesWithInsufficientAccess.add(failedType)
-          log.debug(`Failed to retrieve due ${concat(match[0], match[1])}`)
+          log.debug(`Failed to retrieve due ${match[0] + match[1]}`)
           log.debug('Reading each instance separately to find the ones with insufficient access rights')
           const instancesOfFailedType = unpackaged.types.find(t => t.name === failedType)?.members ?? []
           const { errors } = await sendChunked({

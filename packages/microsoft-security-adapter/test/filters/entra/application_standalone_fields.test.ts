@@ -25,7 +25,7 @@ import { filterUtils, client as clientUtils, definitions, fetch } from '@salto-i
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { PAGINATION } from '../../../src/definitions/requests/pagination'
 import { Options } from '../../../src/definitions/types'
-import { ADAPTER_NAME, entraConstants, PARENT_ID_FIELD_NAME } from '../../../src/constants'
+import { MICROSOFT_SECURITY, entraConstants, PARENT_ID_FIELD_NAME } from '../../../src/constants'
 import { UserConfig } from '../../../src/config'
 import { entraApplicationStandaloneFieldsFilter } from '../../../src/filters'
 
@@ -62,12 +62,12 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
   let mockDefinitions: definitions.ApiDefinitions<Options>
 
   const mockConfig = {} as UserConfig
-  const appRoleType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, APP_ROLE_TYPE_NAME) })
+  const appRoleType = new ObjectType({ elemID: new ElemID(MICROSOFT_SECURITY, APP_ROLE_TYPE_NAME) })
   const oauth2PermissionScopeType = new ObjectType({
-    elemID: new ElemID(ADAPTER_NAME, OAUTH2_PERMISSION_SCOPE_TYPE_NAME),
+    elemID: new ElemID(MICROSOFT_SECURITY, OAUTH2_PERMISSION_SCOPE_TYPE_NAME),
   })
-  const applicationType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, APPLICATION_TYPE_NAME) })
-  const servicePrincipalType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SERVICE_PRINCIPAL_TYPE_NAME) })
+  const applicationType = new ObjectType({ elemID: new ElemID(MICROSOFT_SECURITY, APPLICATION_TYPE_NAME) })
+  const servicePrincipalType = new ObjectType({ elemID: new ElemID(MICROSOFT_SECURITY, SERVICE_PRINCIPAL_TYPE_NAME) })
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -295,7 +295,7 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
         appRoleInstanceWithoutId = new InstanceElement('appRoleC', appRoleType, { not_id: 'appRoleC' })
         oauth2PermissionScopeInstanceA = new InstanceElement('scopeA', oauth2PermissionScopeType, { id: 'scopeA' })
         oauth2PermissionScopeInstanceB = new InstanceElement('scopeB', oauth2PermissionScopeType, { id: 'scopeB' })
-        const randomType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'randomType') })
+        const randomType = new ObjectType({ elemID: new ElemID(MICROSOFT_SECURITY, 'randomType') })
         otherInstance = new InstanceElement('irrelevant', randomType, { id: 'irrelevant' })
         otherChange = toChange({ after: otherInstance })
       })

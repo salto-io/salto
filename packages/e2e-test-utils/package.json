@@ -31,6 +31,7 @@
   "devDependencies": {
     "@salto-io/adapter-api": "0.5.1",
     "@salto-io/adapter-components": "0.5.1",
+    "@salto-io/adapter-utils": "0.5.1",
     "@salto-io/core": "0.5.1",
     "@salto-io/e2e-credentials-store": "0.5.1",
     "@salto-io/file": "0.5.1",

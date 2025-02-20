@@ -639,6 +639,9 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 path: '/roleManagement/directory/roleDefinitions',
                 method: 'post',
               },
+              transformation: {
+                omit: ['isBuiltIn'],
+              },
             },
           },
         ],

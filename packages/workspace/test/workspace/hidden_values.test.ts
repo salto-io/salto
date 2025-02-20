@@ -473,6 +473,115 @@ describe('handleHiddenChanges', () => {
     })
   })
 
+  describe('when a field has an inner field with hidden value annotation', () => {
+    it('should only hide the inner field', async () => {
+      const fieldType = new ObjectType({
+        elemID: new ElemID('test', 'fieldType'),
+        fields: {
+          innerField: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+        },
+      })
+      const objectType = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          field: {
+            refType: fieldType,
+          },
+        },
+      })
+      const instance = new InstanceElement('instance', objectType, {
+        field: { innerField: 'hidden' },
+      })
+      const changes = [
+        toDetailedChangeFromBaseChange(toChange({ after: fieldType })),
+        toDetailedChangeFromBaseChange(toChange({ after: objectType })),
+        toDetailedChangeFromBaseChange(toChange({ after: instance })),
+      ]
+      const { visible, hidden } = await handleHiddenChanges(
+        changes,
+        mockState([fieldType, objectType, instance]),
+        createInMemoryElementSource([]),
+      )
+      expect(visible).toHaveLength(3)
+      expect(visible).toContainEqual(
+        expect.objectContaining({
+          id: instance.elemID,
+          // contains `field` but not `innerField`
+          data: expect.objectContaining({
+            after: expect.objectContaining({
+              value: { field: {} },
+            }),
+          }),
+          action: 'add',
+        }),
+      )
+      expect(hidden).toHaveLength(1)
+      expect(hidden).toContainEqual(
+        expect.objectContaining({
+          id: instance.elemID,
+          data: expect.objectContaining({
+            after: expect.objectContaining({
+              value: { field: { innerField: 'hidden' } },
+            }),
+          }),
+          action: 'add',
+        }),
+      )
+    })
+  })
+
+  describe('when a list field has an inner field with hidden value annotation', () => {
+    it('should not remove hidden values', async () => {
+      const fieldType = new ObjectType({
+        elemID: new ElemID('test', 'fieldType'),
+        fields: {
+          innerField: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+        },
+      })
+      const objectType = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          field: {
+            refType: new ListType(fieldType),
+          },
+        },
+      })
+      const instance = new InstanceElement('instance', objectType, {
+        field: [{ innerField: 'hidden' }],
+      })
+      const changes = [
+        toDetailedChangeFromBaseChange(toChange({ after: fieldType })),
+        toDetailedChangeFromBaseChange(toChange({ after: objectType })),
+        toDetailedChangeFromBaseChange(toChange({ after: instance })),
+      ]
+      const { visible, hidden } = await handleHiddenChanges(
+        changes,
+        mockState([fieldType, objectType, instance]),
+        createInMemoryElementSource([]),
+      )
+      expect(visible).toHaveLength(3)
+      expect(visible).toContainEqual(
+        expect.objectContaining({
+          id: instance.elemID,
+          // contains `field` but not `innerField`
+          data: expect.objectContaining({
+            after: expect.objectContaining({
+              value: { field: [{ innerField: 'hidden' }] },
+            }),
+          }),
+          action: 'add',
+        }),
+      )
+      expect(hidden).toHaveLength(0)
+    })
+  })
+
   describe('hidden_string in instance annotations', () => {
     let instance: InstanceElement
     let instanceType: ObjectType
@@ -1016,7 +1125,7 @@ describe('handleHiddenChanges', () => {
   })
 })
 
-describe('getElemHiddenParts', () => {
+describe('getElementHiddenParts', () => {
   describe('ObjectType attribute handling', () => {
     let elementsSource: ReadOnlyElementsSource
     let testElement: ObjectType
@@ -1136,6 +1245,57 @@ describe('getElemHiddenParts', () => {
       expect(fieldWithPartiallyHiddenAnnotations.annotations).toEqual({ hiddenStringValue: 'testHidden' })
       expect(hiddenFieldWithNoHiddenAnnotations.annotations).toEqual({})
       expect(hiddenValueFieldWithNoHiddenAnnotations.annotations).toEqual({})
+    })
+  })
+  describe('Instance Handling', () => {
+    it('should hide the hidden value of a primitive field with _hidden_value', async () => {
+      const type = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          hiddenString: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+        },
+      })
+      const instance = new InstanceElement('instance', type, {
+        hiddenString: 'test',
+      })
+
+      const elementsSource = buildElementsSourceFromElements([instance, type])
+      const result = (await getElementHiddenParts(instance, elementsSource)) as InstanceElement
+      expect(result).toBeDefined()
+      expect(result.value).toEqual({ hiddenString: 'test' })
+    })
+
+    it('should hide the hidden value of a non-primitive field with _hidden_value', async () => {
+      const fieldType = new ObjectType({
+        elemID: new ElemID('test', 'fieldType'),
+        fields: {
+          hiddenString: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+        },
+      })
+      const type = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          field: {
+            refType: fieldType,
+          },
+        },
+      })
+      const instance = new InstanceElement('instance', type, {
+        field: {
+          hiddenString: 'test',
+        },
+      })
+
+      const elementsSource = buildElementsSourceFromElements([instance, type, fieldType])
+      const result = (await getElementHiddenParts(instance, elementsSource)) as InstanceElement
+      expect(result).toBeDefined()
+      expect(result.value).toEqual({ field: { hiddenString: 'test' } })
     })
   })
 })

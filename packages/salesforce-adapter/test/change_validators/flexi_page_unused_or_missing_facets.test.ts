@@ -16,14 +16,15 @@ import {
 } from '../../src/transformers/transformer'
 import {
   COMPONENT_INSTANCE,
-  COMPONENT_INSTANCE_FILED_NAMES,
+  COMPONENT_INSTANCE_FIELD_NAMES,
   COMPONENT_INSTANCE_PROPERTY,
-  COMPONENT_INSTANCE_PROPERTY_FILED_NAMES,
+  COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES,
   FLEXI_PAGE_FIELD_NAMES,
   FLEXI_PAGE_REGION,
   FLEXI_PAGE_REGION_FIELD_NAMES,
   FLEXI_PAGE_TYPE,
   ITEM_INSTANCE,
+  ITEM_INSTANCE_FIELD_NAMES,
   LIGHTNING_PAGE_TYPE,
   PAGE_REGION_TYPE_VALUES,
 } from '../../src/constants'
@@ -42,7 +43,7 @@ describe('changeValidator', () => {
         metadataType: COMPONENT_INSTANCE_PROPERTY,
       },
       fields: {
-        [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: { refType: BuiltinTypes.STRING },
+        [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: { refType: BuiltinTypes.STRING },
       },
     })
     componentInstance = createMetadataObjectType({
@@ -50,7 +51,7 @@ describe('changeValidator', () => {
         metadataType: COMPONENT_INSTANCE,
       },
       fields: {
-        [COMPONENT_INSTANCE_FILED_NAMES.COMPONENT_INSTANCE_PROPERTIES]: {
+        [COMPONENT_INSTANCE_FIELD_NAMES.COMPONENT_INSTANCE_PROPERTIES]: {
           refType: new ListType(componentInstanceProperty),
         },
       },
@@ -60,8 +61,8 @@ describe('changeValidator', () => {
         metadataType: ITEM_INSTANCE,
       },
       fields: {
-        [COMPONENT_INSTANCE_FILED_NAMES.COMPONENT_INSTANCE_PROPERTIES]: {
-          refType: new ListType(componentInstanceProperty),
+        [ITEM_INSTANCE_FIELD_NAMES.COMPONENT]: {
+          refType: componentInstance,
         },
       },
     })
@@ -94,18 +95,35 @@ describe('changeValidator', () => {
           flexiPageRegions: [
             {
               [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet2' },
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'Facet-Facet2' },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [],
               [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-Facet1',
               [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
             {
-              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'NameWithoutFacetPrefix' },
+              ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet1' },
+                {
+                  [ITEM_INSTANCE_FIELD_NAMES.COMPONENT]: {
+                    [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'Facet-Facet1',
+                  },
+                },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-Facet2',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
+            },
+            {
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                // Avoid false positives for values without the 'Facet-' prefix that are genuinely not facets
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'NotAFacet' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'Facet-Facet1' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'NameWithoutFacetPrefix',
               [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
           ],
@@ -130,7 +148,7 @@ describe('changeValidator', () => {
           flexiPageRegions: [
             {
               [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet2' },
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'Facet-Facet2' },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [],
               [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-Facet1',
@@ -138,10 +156,14 @@ describe('changeValidator', () => {
             },
             {
               [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-MissingFacet' },
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'Facet-MissingFacet' },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-Facet1' },
+                {
+                  [ITEM_INSTANCE_FIELD_NAMES.COMPONENT]: {
+                    [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'Facet-Facet1',
+                  },
+                },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-Facet2',
               [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
@@ -159,13 +181,13 @@ describe('changeValidator', () => {
         {
           severity: 'Warning',
           message: 'Reference to missing Facet',
-          detailedMessage: `The Facet "${'Facet-MissingFacet'}" does not exist.`,
+          detailedMessage: 'The Facet "Facet-MissingFacet" does not exist.',
           elemID: flexiPageInstance.elemID.createNestedID(
             FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS,
             '1',
             FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES,
             '0',
-            COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE,
+            COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE,
           ),
         },
       ])
@@ -181,10 +203,18 @@ describe('changeValidator', () => {
           flexiPageRegions: [
             {
               [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'NotAFacet' },
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'NotAFacet' },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [],
               [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-UnusedFacet',
+              [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
+            },
+            {
+              [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'NotAFacet' },
+              ],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [],
+              [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'UnusedFacetWithoutPrefix',
               [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
             },
           ],
@@ -200,8 +230,14 @@ describe('changeValidator', () => {
         {
           severity: 'Warning',
           message: 'Unused Facet',
-          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
+          detailedMessage: `The Facet "Facet-UnusedFacet" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
           elemID: flexiPageInstance.elemID.createNestedID(FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS, '0'),
+        },
+        {
+          severity: 'Warning',
+          message: 'Unused Facet',
+          detailedMessage: `The Facet "UnusedFacetWithoutPrefix" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
+          elemID: flexiPageInstance.elemID.createNestedID(FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS, '1'),
         },
       ])
     })
@@ -216,10 +252,14 @@ describe('changeValidator', () => {
           flexiPageRegions: [
             {
               [FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'NotAFacet' },
+                { [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'NotAFacet' },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES]: [
-                { [COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE]: 'Facet-MissingFacet' },
+                {
+                  [ITEM_INSTANCE_FIELD_NAMES.COMPONENT]: {
+                    [COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE]: 'Facet-MissingFacet',
+                  },
+                },
               ],
               [FLEXI_PAGE_REGION_FIELD_NAMES.NAME]: 'Facet-UnusedFacet',
               [FLEXI_PAGE_REGION_FIELD_NAMES.TYPE]: PAGE_REGION_TYPE_VALUES.FACET,
@@ -237,19 +277,20 @@ describe('changeValidator', () => {
         {
           severity: 'Warning',
           message: 'Unused Facet',
-          detailedMessage: `The Facet "${'Facet-UnusedFacet'}" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
+          detailedMessage: `The Facet "Facet-UnusedFacet" isn’t being used in the ${LIGHTNING_PAGE_TYPE}.`,
           elemID: flexiPageInstance.elemID.createNestedID(FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS, '0'),
         },
         {
           severity: 'Warning',
           message: 'Reference to missing Facet',
-          detailedMessage: `The Facet "${'Facet-MissingFacet'}" does not exist.`,
+          detailedMessage: 'The Facet "Facet-MissingFacet" does not exist.',
           elemID: flexiPageInstance.elemID.createNestedID(
             FLEXI_PAGE_FIELD_NAMES.FLEXI_PAGE_REGIONS,
             '0',
             FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES,
             '0',
-            COMPONENT_INSTANCE_PROPERTY_FILED_NAMES.VALUE,
+            ITEM_INSTANCE_FIELD_NAMES.COMPONENT,
+            COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES.VALUE,
           ),
         },
       ])

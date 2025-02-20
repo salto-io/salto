@@ -8,23 +8,65 @@
 import {
   Change,
   InstanceElement,
+  ReferenceExpression,
   SaltoElementError,
   SeverityLevel,
   getChangeData,
   isAdditionChange,
+  isAdditionOrModificationChange,
   isInstanceChange,
+  isInstanceElement,
   isModificationChange,
 } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { FIELD_CONTEXT_OPTION_TYPE_NAME } from './constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from './constants'
 import { setContextOptionsSplitted } from './context_options_splitted'
 import { getContextAndFieldIds } from '../../common/fields'
+import { getAllDefaultValuePaths, updateDefaultValueIds } from './default_values'
 
 const log = logger(module)
+
+const preventDefaultValuesDeployment = (
+  leftoverChanges: Change[],
+  contextId: string,
+  errors: SaltoElementError[],
+): void => {
+  const getContextInstance = (searchChanges: Change[], id: string): InstanceElement | undefined =>
+    searchChanges
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+      .filter(instance => instance.value.defaultValue !== undefined)
+      .find(instance => instance.value.id === id)
+
+  const findOptionWithoutId = (contextInstance: InstanceElement): ReferenceExpression | undefined => {
+    const defaultValues = contextInstance.value.defaultValue
+    return getAllDefaultValuePaths(defaultValues)
+      .map(path => _.get(defaultValues, path))
+      .filter(isResolvedReferenceExpression)
+      .find(
+        value => value.value.id == null, // undefined or null
+      )
+  }
+
+  const contextInstance = getContextInstance(leftoverChanges, contextId)
+  if (contextInstance === undefined) return
+  const optionReferenceWithoutId = findOptionWithoutId(contextInstance)
+  if (optionReferenceWithoutId !== undefined) {
+    errors.push({
+      message: 'Could not deploy default value',
+      detailedMessage: `The context field will be deployed without the default value, as the default value depends on a field context option ${optionReferenceWithoutId.elemID.getFullName()} that could not be deployed.`,
+      severity: 'Error',
+      elemID: contextInstance.elemID,
+    })
+    _.remove(leftoverChanges, change => getChangeData(change).elemID.isEqual(contextInstance.elemID))
+  }
+}
 
 const allOptionsWithSameContextAndField = (
   relevantChanges: Change<InstanceElement>[],
@@ -83,6 +125,14 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
         elementsSource,
         paginator,
       })
+      updateDefaultValueIds({
+        contextInstances: leftoverChanges
+          .filter(isAdditionOrModificationChange)
+          .map(getChangeData)
+          .filter(isInstanceElement)
+          .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME),
+        addedOptionInstances: addChanges.map(getChangeData),
+      })
     } catch (err) {
       if (
         addChanges.length === 0 &&
@@ -104,6 +154,7 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
           })),
         )
         appliedChanges = []
+        preventDefaultValuesDeployment(leftoverChanges, contextId, errors)
       }
     }
 

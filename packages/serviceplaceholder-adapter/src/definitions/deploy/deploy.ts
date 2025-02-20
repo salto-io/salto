@@ -7,7 +7,8 @@
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
-import { AdditionalAction, ClientOptions } from '../types'
+import { ClientOptions } from '..'
+import { AdditionalAction } from '../types'
 import { getBusinessHoursScheduleDefinition } from './business_hours_schedule'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>

@@ -25,6 +25,10 @@ import { getContextParentAsync } from '../../common/fields'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
+// the optionId is the option of the parent option for cascading options. Cascade options can have the same value.
+// The value will be undefined for non-cascade options
+const uniqueOptionIdentifier = (option: Value): string => `${naclCase(option.value)}-${option.optionId}`
+
 const processContextOptionsPrivateApiResponse = (allUpdatedOptions: Option[], addedOptions: Value[]): void => {
   const optionsMap = _.keyBy(allUpdatedOptions, option => option.value)
   addedOptions.forEach(option => {
@@ -120,9 +124,9 @@ const updateContextOptions = async ({
         throw new Error('Received unexpected response from Jira API')
       }
       if (Array.isArray(resp.data.options)) {
-        const optionsMap = _.keyBy(chunk, option => naclCase(option.value))
+        const optionsMap = _.keyBy(chunk, option => uniqueOptionIdentifier(option))
         resp.data.options.forEach(newOption => {
-          optionsMap[naclCase(newOption.value)].id = newOption.id
+          optionsMap[uniqueOptionIdentifier(newOption)].id = newOption.id
         })
       }
     })

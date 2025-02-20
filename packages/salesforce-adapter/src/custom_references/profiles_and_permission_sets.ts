@@ -24,6 +24,9 @@ import {
   DEFAULT_NAMESPACE,
   CUSTOM_OBJECT,
   PERMISSIONS_TYPES,
+  CUSTOM_PERMISSION_METADATA_TYPE,
+  EXTERNAL_DATA_SOURCE_METADATA_TYPE,
+  DATA_CATEGORY_GROUP_METADATA_TYPE,
 } from '../constants'
 import { Types } from '../transformers/transformer'
 import {
@@ -176,36 +179,55 @@ const sectionsReferenceParams: Record<ProfileSection, ReferenceFromSectionParams
     filter: appVisibilityEntry => appVisibilityEntry.default || appVisibilityEntry.visible,
     targetsGetter: referenceToInstance('application', CUSTOM_APPLICATION_METADATA_TYPE),
   },
+  [ProfileSection.CategoryGroupVisibilities]: {
+    filter: isEnabled,
+    targetsGetter: referenceToInstance('dataCategoryGroup', DATA_CATEGORY_GROUP_METADATA_TYPE),
+  },
   [ProfileSection.ClassAccesses]: {
     filter: isEnabled,
     targetsGetter: referenceToInstance('apexClass', APEX_CLASS_METADATA_TYPE),
   },
-  [ProfileSection.FlowAccesses]: {
+  [ProfileSection.CustomMetadataTypeAccesses]: {
     filter: isEnabled,
-    targetsGetter: referenceToInstance('flow', FLOW_METADATA_TYPE),
+    targetsGetter: referenceToType('name'),
   },
-  [ProfileSection.PageAccesses]: {
+  [ProfileSection.CustomPermissions]: {
     filter: isEnabled,
-    targetsGetter: referenceToInstance('apexPage', APEX_PAGE_METADATA_TYPE),
+    targetsGetter: referenceToInstance('name', CUSTOM_PERMISSION_METADATA_TYPE),
   },
-  [ProfileSection.ObjectPermissions]: {
-    filter: isAnyAccessEnabledForObject,
-    targetsGetter: referenceToType('object'),
+  [ProfileSection.CustomSettingAccesses]: {
+    targetsGetter: () => [],
+  },
+  [ProfileSection.ExternalDataSourceAccesses]: {
+    filter: isEnabled,
+    targetsGetter: referenceToInstance('externalDataSource', EXTERNAL_DATA_SOURCE_METADATA_TYPE),
   },
   [ProfileSection.FieldPermissions]: {
     filter: isAnyAccessEnabledForField,
     targetsGetter: referencesToFields,
   },
+  [ProfileSection.FlowAccesses]: {
+    filter: isEnabled,
+    targetsGetter: referenceToInstance('flow', FLOW_METADATA_TYPE),
+  },
   [ProfileSection.LayoutAssignments]: {
     targetsGetter: layoutReferences,
+  },
+  [ProfileSection.ObjectPermissions]: {
+    filter: isAnyAccessEnabledForObject,
+    targetsGetter: referenceToType('object'),
+  },
+  [ProfileSection.PageAccesses]: {
+    filter: isEnabled,
+    targetsGetter: referenceToInstance('apexPage', APEX_PAGE_METADATA_TYPE),
   },
   [ProfileSection.RecordTypeVisibilities]: {
     targetsGetter: recordTypeReferences,
   },
-  [ProfileSection.UserPermissions]: {
+  [ProfileSection.TabVisibilities]: {
     targetsGetter: () => [],
   },
-  [ProfileSection.TabVisibilities]: {
+  [ProfileSection.UserPermissions]: {
     targetsGetter: () => [],
   },
 }

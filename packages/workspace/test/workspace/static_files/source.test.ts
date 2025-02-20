@@ -16,6 +16,8 @@ import {
   StaticFilesCache,
   LazyStaticFile,
   buildInMemStaticFilesSource,
+  AbsoluteStaticFile,
+  PlaceholderStaticFile,
 } from '../../../src/workspace/static_files'
 
 import {
@@ -92,8 +94,8 @@ describe('Static Files', () => {
 
             expect(mockDirStore.mtimestamp).toHaveBeenCalledWith(filepathFromCache)
             expect(result).toHaveProperty('hash', hashedContent)
-            expect(result).toBeInstanceOf(StaticFile)
-            expect(await (result as StaticFile).getContent()).toBe(defaultBuffer)
+            expect(result).toBeInstanceOf(AbsoluteStaticFile)
+            expect(await (result as AbsoluteStaticFile).getContent()).toBe(defaultBuffer)
           })
         })
         describe('hashing', () => {
@@ -164,8 +166,8 @@ describe('Static Files', () => {
 
             expect(mockDirStore.mtimestamp).toHaveBeenCalledTimes(0)
             expect(result).toHaveProperty('hash', 'aaa')
-            expect(result).toBeInstanceOf(StaticFile)
-            expect(await (result as StaticFile).getContent()).toBe(defaultBuffer)
+            expect(result).toBeInstanceOf(AbsoluteStaticFile)
+            expect(await (result as AbsoluteStaticFile).getContent()).toBe(defaultBuffer)
           })
         })
         describe('hashing disregards mtimestamp', () => {
@@ -186,7 +188,7 @@ describe('Static Files', () => {
             expect(mockDirStore.mtimestamp).toHaveBeenCalledTimes(0)
             expect(result).toHaveProperty('hash', 'aaa')
             expect(mockDirStore.get).not.toHaveBeenCalled()
-            const staticFileRes = result as StaticFile
+            const staticFileRes = result as AbsoluteStaticFile
             expect(await staticFileRes.getContent()).toEqual(defaultBuffer)
             expect(mockDirStore.get).toHaveBeenCalled()
           })
@@ -222,8 +224,8 @@ describe('Static Files', () => {
           })
           it('return without content when hash requested and not matching', async () => {
             const result = await staticFilesSource.getStaticFile({ filepath: 'aa', encoding: 'binary', hash: 'hash' })
-            expect(result).toBeInstanceOf(StaticFile)
-            return expect(await (result as StaticFile).getContent()).toBeUndefined()
+            expect(result).toBeInstanceOf(PlaceholderStaticFile)
+            return expect(await (result as PlaceholderStaticFile).getContent()).toBeUndefined()
           })
 
           it('return without content when matching with wrong hash', async () => {
@@ -244,8 +246,8 @@ describe('Static Files', () => {
               hash: 'bbb',
             })
 
-            expect(result).toBeInstanceOf(StaticFile)
-            expect(await (result as StaticFile).getContent()).toBeUndefined()
+            expect(result).toBeInstanceOf(PlaceholderStaticFile)
+            expect(await (result as PlaceholderStaticFile).getContent()).toBeUndefined()
           })
         })
 
@@ -266,7 +268,7 @@ describe('Static Files', () => {
             expect(mockDirStore.get).toHaveBeenCalledTimes(0)
             expect(result).toHaveProperty('hash', 'aaa')
             expect(mockDirStore.get).not.toHaveBeenCalled()
-            const staticFileRes = result as StaticFile
+            const staticFileRes = result as LazyStaticFile
             expect(await staticFileRes.getContent()).toEqual(defaultBuffer)
             expect(mockDirStore.get).toHaveBeenCalled()
           })

@@ -7,7 +7,7 @@
  */
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { ADAPTER_NAME, entraConstants } from '../../../src/constants'
+import { MICROSOFT_SECURITY, entraConstants } from '../../../src/constants'
 import { onPremGroupAdditionValidator } from '../../../src/change_validators/entra/on_prem_group_addition_validator'
 
 const { GROUP_TYPE_NAME } = entraConstants.TOP_LEVEL_TYPES
@@ -18,7 +18,7 @@ describe(onPremGroupAdditionValidator.name, () => {
       describe('when the change is an addition change', () => {
         it('should return an error', async () => {
           const groupType = new ObjectType({
-            elemID: new ElemID(ADAPTER_NAME, GROUP_TYPE_NAME),
+            elemID: new ElemID(MICROSOFT_SECURITY, GROUP_TYPE_NAME),
           })
           const group = new InstanceElement('testGroup', groupType, { onPremisesSyncEnabled })
           const changes = [
@@ -43,7 +43,7 @@ describe(onPremGroupAdditionValidator.name, () => {
       describe.each(['modification', 'removal'])('when the change is a %s change', changeType => {
         it('should not return an error', async () => {
           const groupType = new ObjectType({
-            elemID: new ElemID(ADAPTER_NAME, GROUP_TYPE_NAME),
+            elemID: new ElemID(MICROSOFT_SECURITY, GROUP_TYPE_NAME),
           })
           const group = new InstanceElement('testGroup', groupType, { onPremisesSyncEnabled })
           const changes =
@@ -68,7 +68,7 @@ describe(onPremGroupAdditionValidator.name, () => {
     describe('when the group does not have onPremisesSyncEnabled set', () => {
       it('should not return an error', async () => {
         const groupType = new ObjectType({
-          elemID: new ElemID(ADAPTER_NAME, GROUP_TYPE_NAME),
+          elemID: new ElemID(MICROSOFT_SECURITY, GROUP_TYPE_NAME),
         })
         const group = new InstanceElement('testGroup', groupType, { someField: 'someValue' })
         const changes = [
@@ -85,7 +85,7 @@ describe(onPremGroupAdditionValidator.name, () => {
   describe('when the change is not a group change', () => {
     it('should not return an error', async () => {
       const objectType = new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, 'someType'),
+        elemID: new ElemID(MICROSOFT_SECURITY, 'someType'),
       })
       const instance = new InstanceElement('testInstance', objectType, { onPremisesSyncEnabled: true })
       const changes = [

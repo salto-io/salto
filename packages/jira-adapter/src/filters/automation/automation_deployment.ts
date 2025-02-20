@@ -475,7 +475,12 @@ const createAutomation = async (
   instance.value.created = automationResponse.created
   if (instance.value.state === 'ENABLED') {
     // Import automation ignore the state and always create the automation as disabled
-    await updateAutomation(instance, client, cloudId)
+    try {
+      await updateAutomation(instance, client, cloudId)
+    } catch (e) {
+      log.error(`Could not update automation ${instance.elemID.getFullName()} state to 'enabled'. ${e}`)
+      throw new Error(`Automation was created, but failed to update the automation state to 'enabled'. ${e}`)
+    }
   }
 }
 

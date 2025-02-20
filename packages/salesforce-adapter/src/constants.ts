@@ -78,15 +78,32 @@ export enum FIELD_TYPE_NAMES {
 }
 
 // FlexiPage constants
+export const UI_FORMULA_CRITERION = 'UiFormulaCriterion'
+export const UI_FORMULA_RULE = 'UiFormulaRule'
 export const COMPONENT_INSTANCE_PROPERTY = 'ComponentInstanceProperty'
 export const COMPONENT_INSTANCE = 'ComponentInstance'
+export const FIELD_INSTANCE = 'FieldInstance'
 export const ITEM_INSTANCE = 'ItemInstance'
 export const FLEXI_PAGE_REGION = 'flexiPageRegion'
-export enum COMPONENT_INSTANCE_PROPERTY_FILED_NAMES {
+export enum UI_FORMULA_CRITERION_FIELD_NAMES {
+  LEFT_VALUE = 'leftValue',
+}
+export enum UI_FORMULA_RULE_FIELD_NAMES {
+  CRITERIA = 'criteria',
+}
+export enum COMPONENT_INSTANCE_PROPERTY_FIELD_NAMES {
   VALUE = 'value',
 }
-export enum COMPONENT_INSTANCE_FILED_NAMES {
+export enum FIELD_INSTANCE_FIELD_NAMES {
+  VISIBILITY_RULE = 'visibilityRule',
+}
+export enum COMPONENT_INSTANCE_FIELD_NAMES {
   COMPONENT_INSTANCE_PROPERTIES = 'componentInstanceProperties',
+  VISIBILITY_RULE = 'visibilityRule',
+}
+export enum ITEM_INSTANCE_FIELD_NAMES {
+  COMPONENT = 'componentInstance',
+  FIELD = 'fieldInstance',
 }
 export enum FLEXI_PAGE_REGION_FIELD_NAMES {
   COMPONENT_INSTANCES = 'componentInstances',
@@ -102,6 +119,7 @@ export enum FLEXI_PAGE_FIELD_NAMES {
 }
 
 // Flow constants
+export const START_ELEMENT_REFERENCE = 'startElementReference'
 export const TARGET_REFERENCE = 'targetReference'
 export const ELEMENT_REFERENCE = 'elementReference'
 export const LEFT_VALUE_REFERENCE = 'leftValueReference'
@@ -128,6 +146,8 @@ export const FLOW_ELEMENTS_WITH_UNIQUE_NAMES = [
   'FlowTextTemplate',
   'FlowVariable',
   'FlowWaitEvent',
+  'FlowScreenAction',
+  'FlowStageStep',
 ]
 
 export const FLOW_FIELD_TYPE_NAMES = {
@@ -496,8 +516,8 @@ const AUTO_RESPONSE_RULES_METADATA_TYPE = 'AutoResponseRules'
 export const AUTO_RESPONSE_RULE_METADATA_TYPE = 'AutoResponseRule'
 const ESCALATION_RULES_TYPE = 'EscalationRules'
 export const ESCALATION_RULE_TYPE = 'EscalationRule'
-const CUSTOM_PERMISSION_METADATA_TYPE = 'CustomPermission'
-const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
+export const CUSTOM_PERMISSION_METADATA_TYPE = 'CustomPermission'
+export const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
 export const OPPORTUNITY_METADATA_TYPE = 'Opportunity'
 export const ANIMATION_RULE_METADATA_TYPE = 'AnimationRule'
 export const CANVAS_METADATA_TYPE = 'CanvasMetadata'
@@ -825,6 +845,7 @@ export const SALESFORCE_DEPLOY_ERROR_MESSAGES = {
   MAX_METADATA_DEPLOY_LIMIT: 'Maximum size of request reached. Maximum size of request is 52428800 bytes.',
   INVALID_DASHBOARD_UNIQUE_NAME: 'Invalid dashboard Unique Name',
   FIELD_CUSTOM_VALIDATION_EXCEPTION: 'FIELD_CUSTOM_VALIDATION_EXCEPTION',
+  CANNOT_INSERT_UPDATE: 'CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY',
 } as const
 
 // Artifacts

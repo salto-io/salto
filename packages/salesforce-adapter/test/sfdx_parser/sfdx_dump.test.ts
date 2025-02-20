@@ -105,6 +105,8 @@ describe('dumpElementsToFolder', () => {
       // The SFDX code has special treatment for types that are "non-decomposed", meaning, remain nested within their parent XML
       // this is in contrast to "decomposed" types, like, CustomField for example, where they are split into a different file
       let existingWorkflowRules: InstanceElement[]
+      let existingEmailTemplate: InstanceElement
+      let existingWorkflowAlert: InstanceElement
       beforeAll(() => {
         existingWorkflowRules = [
           createInstanceElement(
@@ -130,6 +132,25 @@ describe('dumpElementsToFolder', () => {
             { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
           ),
         ]
+        existingEmailTemplate = createInstanceElement(
+          {
+            fullName: 'Template 1',
+            content: 'email content',
+          },
+          mockTypes.EmailTemplate,
+        )
+        existingWorkflowAlert = createInstanceElement(
+          {
+            fullName: 'Test__c.Alert 1',
+            description: 'Alert 1',
+            protected: false,
+            senderType: 'currentUser',
+            template: new ReferenceExpression(existingEmailTemplate.elemID),
+          },
+          mockTypes.WorkflowAlert,
+          undefined,
+          { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
+        )
       })
       describe('when adding a new nested instance', () => {
         const project = setupTmpProject()
@@ -151,6 +172,8 @@ describe('dumpElementsToFolder', () => {
               mockTypes.WorkflowRule,
               newWorkflowRule,
               ...existingWorkflowRules,
+              existingEmailTemplate,
+              existingWorkflowAlert,
             ]),
           })
         })
@@ -160,6 +183,7 @@ describe('dumpElementsToFolder', () => {
         })
         describe('workflow xml content', () => {
           let rules: Value[]
+          let alerts: Value[]
           beforeAll(async () => {
             const parentXmlPath = path.join(
               project.name(),
@@ -169,6 +193,7 @@ describe('dumpElementsToFolder', () => {
             const xmlContent = await readTextFile(parentXmlPath)
             const values = xmlToValues(xmlContent)
             rules = collections.array.makeArray(values.values.rules)
+            alerts = collections.array.makeArray(values.values.alerts)
           })
           it('should add the instance to the parent XML', () => {
             expect(rules).toContainEqual(expect.objectContaining({ fullName: 'Rule' }))
@@ -180,6 +205,10 @@ describe('dumpElementsToFolder', () => {
                 expect.objectContaining({ fullName: 'TestRule2' }),
               ]),
             )
+            expect(alerts).toEqual(expect.arrayContaining([expect.objectContaining({ fullName: 'Alert 1' })]))
+          })
+          it('should resolve references', () => {
+            expect(alerts[0].template).toEqual(existingEmailTemplate.value.fullName)
           })
         })
       })
@@ -294,8 +323,8 @@ describe('dumpElementsToFolder', () => {
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>New__c</fullName>
     <type>Text</type>
-    <length>80</length>
     <required>false</required>
+    <length>80</length>
 </CustomField>
 `)
       })

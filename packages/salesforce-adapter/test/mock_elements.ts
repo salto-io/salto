@@ -63,6 +63,7 @@ import {
   ASSIGN_TO_REFERENCE,
   LIVE_CHAT_BUTTON,
   APPROVAL_PROCESS_METADATA_TYPE,
+  VALIDATION_RULES_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -298,6 +299,13 @@ export const mockTypes = {
       metadataType: 'PermissionSet',
       dirName: 'PermissionSets',
       suffix: 'permissionSet',
+    },
+  }),
+  CustomPermission: createMetadataObjectType({
+    annotations: {
+      metadataType: 'CustomPermission',
+      dirName: 'customPermissions',
+      suffix: 'customPermission',
     },
   }),
   EmailFolder: createMetadataObjectType({
@@ -769,6 +777,11 @@ export const mockTypes = {
       [METADATA_TYPE]: 'DataCategoryGroup',
     },
   }),
+  ExternalDataSource: createMetadataObjectType({
+    annotations: {
+      [METADATA_TYPE]: 'ExternalDataSource',
+    },
+  }),
   SBQQ__Template__c: createCustomObjectType('SBQQ__Template__c', {}),
   SBQQ__LineColumn__c: createCustomObjectType('SBQQ__LineColumn__c', {
     fields: {
@@ -883,6 +896,16 @@ export const mockTypes = {
   [APPROVAL_PROCESS_METADATA_TYPE]: createMetadataObjectType({
     annotations: {
       metadataType: APPROVAL_PROCESS_METADATA_TYPE,
+    },
+  }),
+  [VALIDATION_RULES_METADATA_TYPE]: createMetadataObjectType({
+    annotations: {
+      metadataType: VALIDATION_RULES_METADATA_TYPE,
+    },
+    fields: {
+      errorConditionFormula: {
+        refType: BuiltinTypes.STRING,
+      },
     },
   }),
 }

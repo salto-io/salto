@@ -74,7 +74,7 @@ type SmartQuery = {
   type: string
   query: {
     type: string
-    value: string
+    value: string | object
   }
 }
 
@@ -82,7 +82,7 @@ const SMART_QUERY_SCHEME = Joi.object({
   type: Joi.string().required(),
   query: Joi.object({
     type: Joi.string().required(),
-    value: Joi.string().required(),
+    value: Joi.alternatives(Joi.string(), Joi.object()).required(),
   })
     .unknown(true)
     .required(),

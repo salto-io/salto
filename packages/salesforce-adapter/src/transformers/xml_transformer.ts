@@ -15,6 +15,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
+  inspectValue,
   MapKeyFunc,
   mapKeysRecursive,
   naclCase,
@@ -551,7 +552,7 @@ const cloneValuesWithAttributePrefixes = async (instance: InstanceElement): Prom
     pathID: instance.elemID,
     strict: false,
     allowEmptyArrays: true,
-    allowEmptyObjects: true,
+    allowExistingEmptyObjects: true,
   })
 
   const addAttributePrefixFunc: MapKeyFunc = ({ key, pathID }) => {
@@ -660,9 +661,10 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       } catch (e) {
         log.error(
           'Error occurred when attempting to add the instance %s to the deploy package. Error: %o',
-          instanceName,
+          instance.elemID.getFullName(),
           e,
         )
+        log.info(inspectValue(instance))
         throw e
       }
     },

@@ -2979,10 +2979,9 @@ describe('Fetch via retrieve API', () => {
         } catch (error) {
           expect(metadataRetrieveSpy).toHaveBeenCalledOnce()
           expect(error.message).toEqual(typeError)
-          expect(metadataReadSpy).toHaveBeenCalledWith(
-            'ApexClass',
-            expect.arrayContaining(['SomeApexClass', 'ProblematicApexClass']),
-          )
+          expect(metadataReadSpy).toHaveBeenCalledTimes(2)
+          expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['SomeApexClass']))
+          expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['ProblematicApexClass']))
         }
       })
     })

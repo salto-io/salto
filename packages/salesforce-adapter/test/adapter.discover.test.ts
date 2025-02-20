@@ -47,7 +47,7 @@ import {
   mockRetrieveLocator,
   mockRetrieveResult,
 } from './connection'
-import { ConfigChangeSuggestion, FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import { ConfigChangeSuggestion, FetchElements, FetchProfile, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import * as fetchModule from '../src/fetch'
 import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
@@ -2886,6 +2886,103 @@ describe('Fetch via retrieve API', () => {
         it('Should not create config change', () => {
           expect(configChanges).toBeEmpty()
         })
+      })
+    })
+  })
+  describe('handle INSUFFICIENT_ACCESS: insufficient access rights on entity', () => {
+    let configChanges: ConfigChangeSuggestion[]
+    let metadataRetrieveSpy: jest.SpyInstance
+    let fetchProfile: FetchProfile
+    const typeError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ApexClass'
+    const instanceError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
+    beforeEach(async () => {
+      metadataRetrieveSpy = jest.spyOn(connection.metadata, 'retrieve')
+      await setupMocks([
+        { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
+        { type: mockTypes.ApexClass, instanceName: 'ProblematicApexClass' },
+        { type: mockTypes.CustomObject, instanceName: 'Account' },
+      ])
+      connection.metadata.retrieve.mockImplementation(retrieveRequest => {
+        const hasProblematicApexClass = retrieveRequest.unpackaged?.types.some(type =>
+          type.members.includes('ProblematicApexClass'),
+        )
+        if (hasProblematicApexClass) {
+          throw new Error(typeError)
+        }
+        return mockRetrieveLocator(mockRetrieveResult({}))
+      })
+      connection.metadata.read.mockImplementation(async (_type, fullNames) => {
+        if (fullNames.includes('ProblematicApexClass')) {
+          throw new Error(instanceError)
+        }
+        return []
+      })
+    })
+    describe('when the feature is enabled', () => {
+      beforeEach(async () => {
+        fetchProfile = buildFetchProfile({
+          fetchParams: {
+            optionalFeatures: {
+              handleInsufficientAccessRightsOnEntity: true,
+            },
+            addNamespacePrefixToFullName: false,
+            metadata: {
+              exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
+            },
+          },
+        })
+        configChanges = (
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.ApexClass, mockTypes.CustomObject],
+            fetchProfile,
+          })
+        ).configChanges
+      })
+
+      it('Should retry retrieve and create a config change for exclusion', () => {
+        expect(configChanges).toEqual(
+          expect.arrayContaining([
+            {
+              type: 'metadataExclude',
+              reason: instanceError,
+              value: {
+                metadataType: 'ApexClass',
+                name: 'ProblematicApexClass',
+              },
+            },
+          ]),
+        )
+      })
+    })
+
+    describe('when the feature is disabled', () => {
+      let metadataReadSpy: jest.SpyInstance
+      beforeEach(async () => {
+        metadataReadSpy = jest.spyOn(connection.metadata, 'read')
+        fetchProfile = buildFetchProfile({
+          fetchParams: {
+            addNamespacePrefixToFullName: false,
+            metadata: {
+              exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
+            },
+          },
+        })
+      })
+      it('Should call metadata.read with the right arguments and throw the right error', async () => {
+        try {
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.ApexClass, mockTypes.CustomObject],
+            fetchProfile,
+          })
+        } catch (error) {
+          expect(metadataRetrieveSpy).toHaveBeenCalledOnce()
+          expect(error.message).toEqual(typeError)
+          expect(metadataReadSpy).toHaveBeenCalledTimes(2)
+          expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['SomeApexClass']))
+          expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['ProblematicApexClass']))
+        }
       })
     })
   })

@@ -1022,22 +1022,6 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: 'leftValueReference',
-      parentTypes: ['FlowCondition'],
-    },
-    serializationStrategy: 'recordFieldDollarPrefix',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
-  },
-  {
-    src: {
-      field: 'elementReference',
-      parentTypes: ['FlowElementReferenceOrValue'],
-    },
-    serializationStrategy: 'recordFieldDollarPrefix',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
-  },
-  {
     src: { field: 'logo', parentTypes: ['CustomApplication'] },
     target: { type: 'Document' },
   },

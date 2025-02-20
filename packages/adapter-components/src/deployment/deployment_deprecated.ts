@@ -15,13 +15,14 @@ import {
   isAdditionOrModificationChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeDataSync, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { createUrl } from '../fetch/resource'
 import { HTTPError, HTTPReadClientInterface, HTTPWriteClientInterface } from '../client/http_client'
 import { DeploymentRequestsByAction } from '../config_deprecated'
 import { ResponseValue } from '../client'
 import { filterIgnoredValues, filterUndeployableValues } from './filtering'
+import { recursiveNaclCase } from '../fetch/element'
 
 const log = logger(module)
 
@@ -58,7 +59,12 @@ export const deployChange = async ({
   elementsSource?: ReadOnlyElementsSource
   allowedStatusCodesOnRemoval?: number[]
 }): Promise<ResponseResult> => {
-  const instance = getChangeData(change)
+  const instance = getChangeData(
+    applyFunctionToChangeDataSync(change, changeInstance => {
+      changeInstance.value = recursiveNaclCase(changeInstance.value, true)
+      return changeInstance
+    }),
+  )
   log.debug(`Starting deploying instance ${instance.elemID.getFullName()} with action '${change.action}'`)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {

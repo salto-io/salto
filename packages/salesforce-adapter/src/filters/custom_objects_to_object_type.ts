@@ -343,6 +343,9 @@ const transformAnnotationsNames = (fields: Values, parentName: string): Values =
         }
         annotations[k] = v
         break
+      case FIELD_ANNOTATIONS.FIELD_DEPENDENCY:
+        console.log('PAPAYA')
+        break
       default:
         annotations[k] = v
     }

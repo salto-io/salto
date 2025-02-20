@@ -7,7 +7,7 @@
  */
 import { MetadataInfo, SaveResult } from '@salto-io/jsforce'
 import _ from 'lodash'
-import { Value } from '@salto-io/adapter-api'
+import { ReferenceExpression, Value } from '@salto-io/adapter-api'
 import { FIELD_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD } from '../constants'
 
 const RELATIONSHIP_FIELD_NAMES: string[] = [
@@ -74,9 +74,9 @@ export class CustomPicklistValue implements MetadataInfo {
   }
 }
 
-interface ValueSettings {
-  controllingFieldValue: string[]
-  valueName: string
+export interface ValueSettings {
+  controllingFieldValue: (string | ReferenceExpression)[]
+  valueName: string | ReferenceExpression
 }
 
 interface PicklistValue {

@@ -14,9 +14,12 @@ import {
   ElemID,
   isInstanceElement,
   InstanceElement,
+  isField,
+  isObjectType,
+  Change,
 } from '@salto-io/adapter-api'
-import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
+import { references as referenceUtils, resolveChangeElement, resolveValues } from '@salto-io/adapter-components'
+import { GetLookupNameFunc, GetLookupNameFuncArgs, ResolveValuesFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -67,7 +70,7 @@ import {
   FLOW_FIELD_TYPE_NAMES,
   ASSIGN_TO_REFERENCE,
 } from '../constants'
-import { instanceInternalId } from '../filters/utils'
+import { instanceInternalId, isOrderedMapTypeOrRefType } from '../filters/utils'
 import { FetchProfile } from '../types'
 
 const log = logger(module)
@@ -1171,6 +1174,43 @@ export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldRefere
 /**
  * Translate a reference expression back to its original value before deploy.
  */
+const isFieldWithOrderedMapAnnotation = (field: Field): boolean =>
+  Object.values(field.getTypeSync().annotationRefTypes).some(isOrderedMapTypeOrRefType)
+
+const isElementWithOrderedMap = (element: Element): boolean => {
+  if (isField(element)) {
+    return isFieldWithOrderedMapAnnotation(element)
+  }
+  if (isInstanceElement(element)) {
+    return Object.values(element.getTypeSync().fields).some(field => isOrderedMapTypeOrRefType(field.getTypeSync()))
+  }
+  if (isObjectType(element)) {
+    return Object.values(element.fields).some(isFieldWithOrderedMapAnnotation)
+  }
+  return false
+}
+
+export const salesforceAdapterResolveValues: ResolveValuesFunc = async (
+  element,
+  getLookUpNameFunc,
+  elementsSource,
+  allowEmpty = true,
+) => {
+  const resolvedElement = await resolveValues(element, getLookUpNameFunc, elementsSource, allowEmpty)
+  // Since OrderedMaps' order values reference values that may contain references, we should resolve the Element twice
+  // in order to fully resolve it. An example use-case for this is the Field `SBQQ__ProductRule__c.SBQQ__LookupObject__c`
+  // Where the `fullName` of the Picklist values is a Reference to a Custom Object.
+  return isElementWithOrderedMap(resolvedElement)
+    ? resolveValues(resolvedElement, getLookUpNameFunc, elementsSource, allowEmpty)
+    : resolvedElement
+}
+
+export const resolveSalesforceChanges = (
+  changes: readonly Change[],
+  getLookupNameFunc: GetLookupNameFunc,
+): Promise<Change[]> =>
+  Promise.all(changes.map(change => resolveChangeElement(change, getLookupNameFunc, salesforceAdapterResolveValues)))
+
 export const getLookUpName = (fetchProfile: FetchProfile): GetLookupNameFunc =>
   getLookUpNameImpl({
     defs: getDefsFromFetchProfile(fetchProfile),

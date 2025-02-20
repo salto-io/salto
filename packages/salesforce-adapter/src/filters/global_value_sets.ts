@@ -13,6 +13,7 @@ import {
   isObjectType,
   Value,
   isReferenceExpression,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { multiIndex } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -20,13 +21,16 @@ import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS } from '../constants'
 import { apiName } from '../transformers/transformer'
 import { isInstanceOfType, buildElementsSourceForFetch, isCustomObjectSync } from './utils'
-import { ValueSettings } from '../client/types'
 
 export const GLOBAL_VALUE_SET = 'GlobalValueSet'
 export const CUSTOM_VALUE = 'customValue'
 export const MASTER_LABEL = 'master_label'
 
-const addGlobalValueSetRefToObject = (object: ObjectType, gvsToRef: multiIndex.Index<[string], Element>): void => {
+const addGlobalValueSetRefToObject = (
+  object: ObjectType,
+  gvsToRef: multiIndex.Index<[string], Element>,
+  elementsSource: ReadOnlyElementsSource,
+): void => {
   const getValueSetName = (field: Field): string | undefined => field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
 
   Object.values(object.fields).forEach(f => {
@@ -49,14 +53,16 @@ const addGlobalValueSetRefToObject = (object: ObjectType, gvsToRef: multiIndex.I
         const controllingFieldValueSetNameOrRef = controllingField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
         let controllingValueSet: Value
         if (isReferenceExpression(controllingFieldValueSetNameOrRef)) {
-          controllingValueSet = controllingFieldValueSetNameOrRef.getResolvedValue()
+          controllingValueSet = controllingFieldValueSetNameOrRef.getResolvedValue(elementsSource)
         } else if (_.isString(controllingFieldValueSetNameOrRef)) {
           controllingValueSet = gvsToRef.get(controllingFieldValueSetNameOrRef)
         }
         if (_.isArray(f.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS])) {
           f.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS].forEach(
-            (vs: ValueSettings) => {
-              vs.valueName = !_.isUndefined(valueSetInstance.value.customValue.values[vs.valueName])
+            (vs: Value) => {
+              vs[VALUE_SETTINGS_FIELDS.VALUE_NAME] = !_.isUndefined(
+                valueSetInstance.value.customValue.values[vs[VALUE_SETTINGS_FIELDS.VALUE_NAME]],
+              )
                 ? new ReferenceExpression(
                     valueSetInstance.elemID.createNestedID(
                       'customValue',
@@ -100,7 +106,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       key: async inst => [await apiName(inst)],
     })
     const customObjects = elements.filter(isObjectType).filter(isCustomObjectSync)
-    customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef))
+    customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef, referenceElements))
     console.log(customObjects)
   },
 })

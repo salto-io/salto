@@ -137,6 +137,17 @@ export const createFormType = (): {
       },
     },
   })
+  const defaultAnswerType = new ObjectType({
+    elemID: new ElemID(JIRA, 'DefaultAnswer'),
+    fields: {
+      key: {
+        refType: BuiltinTypes.STRING,
+      },
+      value: {
+        refType: new ListType(BuiltinTypes.STRING),
+      },
+    },
+  })
   const questionType = new ObjectType({
     elemID: new ElemID(JIRA, 'Question'),
     fields: {
@@ -154,6 +165,9 @@ export const createFormType = (): {
       },
       jiraField: {
         refType: BuiltinTypes.STRING,
+      },
+      defaultAnswer: {
+        refType: new ListType(defaultAnswerType),
       },
     },
   })
@@ -260,6 +274,7 @@ export const createFormType = (): {
       conditionType,
       coType,
       cIdsType,
+      defaultAnswerType,
     ],
   }
 }

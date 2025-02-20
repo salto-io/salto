@@ -38,6 +38,9 @@ describe('forms filter', () => {
     id: '123456',
     name: 'project1',
   })
+  const CustomFieldContextOptionInstance2 = new InstanceElement('choices1', CustomFieldContextOptionType, {
+    id: '123',
+  })
   let projectInstance: InstanceElement
   let elements: Element[]
   afterEach(() => {
@@ -147,6 +150,9 @@ describe('forms filter', () => {
                   },
                 ],
                 questionKey: '',
+                defaultAnswer: {
+                  choices: ['123'],
+                },
               },
             },
           },
@@ -234,6 +240,12 @@ describe('forms filter', () => {
                 },
               ],
               questionKey: '',
+              defaultAnswer: [
+                {
+                  key: 'choices',
+                  value: ['123'],
+                },
+              ],
             },
           },
         },
@@ -681,6 +693,16 @@ describe('forms filter', () => {
                   },
                 ],
                 questionKey: '',
+                defaultAnswer: [
+                  {
+                    choices: [
+                      new ReferenceExpression(
+                        CustomFieldContextOptionInstance2.elemID,
+                        CustomFieldContextOptionInstance2,
+                      ),
+                    ],
+                  },
+                ],
               },
             },
           },
@@ -731,6 +753,32 @@ describe('forms filter', () => {
                   t: 'sh',
                 },
               },
+              questions: {
+                2: {
+                  type: 'cs',
+                  label: 'What is the impact on IT resources?',
+                  description: '',
+                  validation: {
+                    rq: false,
+                  },
+                  choices: [
+                    {
+                      id: '1',
+                      label: 'No Risk – Involves a single IT resource from a workgroup',
+                    },
+                    {
+                      id: '2',
+                      label: 'Low Risk – Involves one workgroup from the same IT division',
+                    },
+                  ],
+                  questionKey: '',
+                  defaultAnswer: [
+                    {
+                      choices: ['123'],
+                    },
+                  ],
+                },
+              },
             }),
           }),
         }),
@@ -763,6 +811,32 @@ describe('forms filter', () => {
                     sIds: ['1'],
                   },
                   t: 'sh',
+                },
+              },
+              questions: {
+                2: {
+                  type: 'cs',
+                  label: 'What is the impact on IT resources?',
+                  description: '',
+                  validation: {
+                    rq: false,
+                  },
+                  choices: [
+                    {
+                      id: '1',
+                      label: 'No Risk – Involves a single IT resource from a workgroup',
+                    },
+                    {
+                      id: '2',
+                      label: 'Low Risk – Involves one workgroup from the same IT division',
+                    },
+                  ],
+                  questionKey: '',
+                  defaultAnswer: [
+                    {
+                      choices: ['123'],
+                    },
+                  ],
                 },
               },
             }),
@@ -912,6 +986,12 @@ describe('forms filter', () => {
                   },
                 ],
                 questionKey: '',
+                defaultAnswer: [
+                  {
+                    key: 'choices',
+                    value: ['123'],
+                  },
+                ],
               },
             },
           },
@@ -945,6 +1025,30 @@ describe('forms filter', () => {
           },
           o: {
             sIds: ['1'],
+          },
+        },
+      })
+      expect(formInstance.value.design.questions).toEqual({
+        2: {
+          type: 'cs',
+          label: 'What is the impact on IT resources?',
+          description: '',
+          validation: {
+            rq: false,
+          },
+          choices: [
+            {
+              id: '1',
+              label: 'No Risk – Involves a single IT resource from a workgroup',
+            },
+            {
+              id: '2',
+              label: 'Low Risk – Involves one workgroup from the same IT division',
+            },
+          ],
+          questionKey: '',
+          defaultAnswer: {
+            choices: ['123'],
           },
         },
       })

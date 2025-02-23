@@ -70,7 +70,7 @@ export abstract class ValidationError
   message = ERROR_MESSAGES.INVALID_NACL_CONTENT
 
   get detailedMessage(): string {
-    return `Error validating "${this.elemID.getFullName()}": ${this.error}`
+    return `Error validating element: ${this.error}`
   }
 
   toString(): string {

@@ -944,7 +944,7 @@ export default class SalesforceClient implements ISalesforceClient {
           typesWithInsufficientAccess.add(failedType)
           log.debug(`Failed to retrieve due ${match[0] + match[1]}`)
           log.debug('Reading each instance separately to find the ones with insufficient access rights')
-          const instancesOfFailedType = unpackaged?.types.find(t => t.name === failedType)?.members ?? []
+          const instancesOfFailedType = unpackaged.types.find(t => t.name === failedType)?.members ?? []
           const { errors } = await sendChunked({
             input: instancesOfFailedType,
             chunkSize: 1,

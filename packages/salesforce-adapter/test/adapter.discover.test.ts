@@ -693,7 +693,7 @@ describe('SalesforceAdapter fetch', () => {
             jest.resetAllMocks()
             jest.restoreAllMocks()
           })
-          it('Should return the elemID of the deleted record', () => {
+          it('should return the elemID of the deleted record', () => {
             expect(fetchResult.partialFetchData?.deletedElements).toContainEqual(
               existingInstanceThatDoesntExistInSalesforce.elemID,
             )
@@ -2784,7 +2784,7 @@ describe('Fetch via retrieve API', () => {
           })
         ).configChanges
       })
-      it('Should create a config change for exclusion', () => {
+      it('should create a config change for exclusion', () => {
         expect(configChanges).toEqual([
           expect.objectContaining({
             type: 'metadataExclude',
@@ -2820,7 +2820,7 @@ describe('Fetch via retrieve API', () => {
           })
         ).configChanges
       })
-      it('Should not create a config change', () => {
+      it('should not create a config change', () => {
         // TODO change this to expect no config changes once configChangeAlreadyExists is changed
         expect(configChanges).toEqual([
           expect.objectContaining({
@@ -2856,7 +2856,7 @@ describe('Fetch via retrieve API', () => {
             })
           ).configChanges
         })
-        it('Should create a metadataExclude config change', () => {
+        it('should create a metadataExclude config change', () => {
           expect(configChanges).toEqual([
             {
               type: 'metadataExclude',
@@ -2883,7 +2883,7 @@ describe('Fetch via retrieve API', () => {
             })
           ).configChanges
         })
-        it('Should not create config change', () => {
+        it('should not create config change', () => {
           expect(configChanges).toBeEmpty()
         })
       })
@@ -2892,11 +2892,13 @@ describe('Fetch via retrieve API', () => {
   describe('handle INSUFFICIENT_ACCESS: insufficient access rights on entity', () => {
     let configChanges: ConfigChangeSuggestion[]
     let metadataRetrieveSpy: jest.SpyInstance
+    let metadataReadSpy: jest.SpyInstance
     let fetchProfile: FetchProfile
     const typeError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ApexClass'
     const instanceError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
     beforeEach(async () => {
       metadataRetrieveSpy = jest.spyOn(connection.metadata, 'retrieve')
+      metadataReadSpy = jest.spyOn(connection.metadata, 'read')
       await setupMocks([
         { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
         { type: mockTypes.ApexClass, instanceName: 'ProblematicApexClass' },
@@ -2940,7 +2942,7 @@ describe('Fetch via retrieve API', () => {
         ).configChanges
       })
 
-      it('Should retry retrieve and create a config change for exclusion', () => {
+      it('should retry retrieve and create a config change for exclusion', () => {
         expect(configChanges).toEqual(
           expect.arrayContaining([
             {
@@ -2953,13 +2955,53 @@ describe('Fetch via retrieve API', () => {
             },
           ]),
         )
+        expect(metadataReadSpy).toHaveBeenCalledTimes(2)
+        expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['SomeApexClass']))
+        expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['ProblematicApexClass']))
+        expect(metadataRetrieveSpy).toHaveBeenCalledTimes(2)
+        expect(metadataRetrieveSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            apiVersion: expect.anything(),
+            singlePackage: expect.anything(),
+            unpackaged: expect.objectContaining({
+              types: expect.arrayContaining([
+                expect.objectContaining({
+                  name: 'ApexClass',
+                  members: expect.arrayContaining(['ProblematicApexClass', 'SomeApexClass']),
+                }),
+                expect.objectContaining({
+                  name: 'CustomObject',
+                  members: expect.arrayContaining(['Account']),
+                }),
+              ]),
+              version: expect.anything(),
+            }),
+          }),
+        )
+        expect(metadataRetrieveSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            apiVersion: expect.anything(),
+            singlePackage: expect.anything(),
+            unpackaged: expect.objectContaining({
+              types: expect.arrayContaining([
+                expect.objectContaining({
+                  name: 'ApexClass',
+                  members: expect.arrayContaining(['SomeApexClass']),
+                }),
+                expect.objectContaining({
+                  name: 'CustomObject',
+                  members: expect.arrayContaining(['Account']),
+                }),
+              ]),
+              version: expect.anything(),
+            }),
+          }),
+        )
       })
     })
 
     describe('when the feature is disabled', () => {
-      let metadataReadSpy: jest.SpyInstance
       beforeEach(async () => {
-        metadataReadSpy = jest.spyOn(connection.metadata, 'read')
         fetchProfile = buildFetchProfile({
           fetchParams: {
             addNamespacePrefixToFullName: false,
@@ -2969,7 +3011,7 @@ describe('Fetch via retrieve API', () => {
           },
         })
       })
-      it('Should call metadata.read with the right arguments and throw the right error', async () => {
+      it('should call metadata.read with the right arguments and throw the right error', async () => {
         try {
           await retrieveMetadataInstances({
             client,

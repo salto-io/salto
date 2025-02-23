@@ -674,7 +674,7 @@ export const retrieveMetadataInstances = async ({
 
   const instances = await retrieveProfilesWithContextTypes(
     profileFiles,
-    nonProfileFiles,
+    fetchProfile.isFeatureEnabled('shuffleRetrieveInstances') ? _.shuffle(nonProfileFiles) : nonProfileFiles,
     await createGetAdditionalContextFilesToRetrieveFunc(),
   )
   if (missingTypes.size > 0) {

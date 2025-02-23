@@ -135,18 +135,19 @@ async function createDiffChangesWithCalculateDiff({
   compareOptions?: CompareOptions
   resultType?: 'changes' | 'detailedChanges'
 }): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
+  const hasSelectors = elementSelectors.length > 0
   const matchers = await createMatchers(toElementsSrc, fromElementsSrc, referenceSourcesIndex, elementSelectors)
   const changes = await calculateDiff({
     before: toElementsSrc,
     after: fromElementsSrc,
     topLevelFilters:
-      elementSelectors.length > 0 ? topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors) : topLevelFilters,
+      hasSelectors ? topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors) : topLevelFilters,
     compareOptions,
   })
   return resultType === 'changes'
     ? awu(changes)
         .map(change => {
-          if (elementSelectors.length === 0) {
+          if (!hasSelectors) {
             return { ...change, detailedChanges: () => getDetailedChangesFromChange(change, compareOptions) }
           }
           const filteredDetailedChanges = getDetailedChangesFromChange(change, compareOptions).filter(

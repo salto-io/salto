@@ -23,7 +23,6 @@ import {
   ListMetadataQuery,
   MetadataInfo,
   MetadataObject,
-  Package,
   QueryResult,
   RetrieveRequest,
   RetrieveResult,
@@ -929,17 +928,23 @@ export default class SalesforceClient implements ISalesforceClient {
     fetchProfile?: FetchProfile,
   ): Promise<RetrieveResultWithErrors> {
     const errorPattern = /INSUFFICIENT_ACCESS: insufficient access rights on entity: (\w+)/g
-    const handleInsufficientAccessErrors = async (matches: string[], unpackaged: Package): Promise<ErrorInfo[]> => {
+    const handleInsufficientAccessErrors = async (
+      matches: string[],
+    ): Promise<{ instancesErrors: ErrorInfo[]; newRetrieveRequest: RetrieveRequest }> => {
+      if (retrieveRequest.unpackaged === undefined || retrieveRequest.unpackaged.types === undefined) {
+        return { instancesErrors: [], newRetrieveRequest: retrieveRequest }
+      }
       const typesWithInsufficientAccess = new Set<string>()
       const instancesWithInsufficientAccess = new Set<string>()
       const instancesErrors: ErrorInfo[] = []
+      const { unpackaged } = retrieveRequest
       await Promise.all(
         matches.map(async match => {
           const failedType = match[1]
           typesWithInsufficientAccess.add(failedType)
           log.debug(`Failed to retrieve due ${match[0] + match[1]}`)
           log.debug('Reading each instance separately to find the ones with insufficient access rights')
-          const instancesOfFailedType = unpackaged.types.find(t => t.name === failedType)?.members ?? []
+          const instancesOfFailedType = unpackaged?.types.find(t => t.name === failedType)?.members ?? []
           const { errors } = await sendChunked({
             input: instancesOfFailedType,
             chunkSize: 1,
@@ -950,35 +955,57 @@ export default class SalesforceClient implements ISalesforceClient {
           errors.forEach(({ input, error }) => {
             if (error.message.match(errorPattern)) {
               log.debug(`Failed to read ${failedType}.${input} due to: ${error.message}`)
-              if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
-                instancesErrors.push({ type: failedType, instance: input, error })
-                instancesWithInsufficientAccess.add(input)
-              }
+              instancesErrors.push({ type: failedType, instance: input, error })
+              instancesWithInsufficientAccess.add(input)
             }
           })
         }),
       )
-      unpackaged.types.forEach(type => {
-        if (typesWithInsufficientAccess.has(type.name)) {
-          type.members = type.members.filter(member => !instancesWithInsufficientAccess.has(member))
-        }
-      })
-      return instancesErrors
+      const newRetrieveRequest = {
+        ...retrieveRequest,
+        unpackaged: {
+          ...unpackaged,
+          types:
+            unpackaged.types.map(type => {
+              if (typesWithInsufficientAccess.has(type.name)) {
+                return {
+                  ...type,
+                  members: type.members.filter(member => !instancesWithInsufficientAccess.has(member)),
+                }
+              }
+              return type
+            }) ?? retrieveRequest.unpackaged.types,
+        },
+      }
+      return { instancesErrors, newRetrieveRequest }
     }
     try {
       return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
     } catch (e) {
       const matches = [...e.message.matchAll(errorPattern)]
-      const currentUnpackaged = retrieveRequest.unpackaged
-      if (matches.length > 0 && currentUnpackaged !== undefined) {
-        const instancesErrors = await handleInsufficientAccessErrors(matches, currentUnpackaged)
+      if (matches.length > 0) {
+        const { instancesErrors, newRetrieveRequest } = await handleInsufficientAccessErrors(matches)
+        log.debug('Found the following errors while trying to retrieve:')
+        instancesErrors.forEach(({ instance, error }) => {
+          log.debug(`Instance: ${instance}, Error: ${error.message}`)
+        })
         if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
-          const retrieveResult = await this.retrieve(retrieveRequest)
+          log.debug(
+            'updating original retrieve request: %s to new retrieve request: %s',
+            inspectValue(retrieveRequest.unpackaged?.types),
+            inspectValue(newRetrieveRequest.unpackaged?.types),
+          )
+          const retrieveResult = await this.retrieve(newRetrieveRequest)
           return {
             ...retrieveResult,
             errors: [...(retrieveResult.errors ?? []), ...instancesErrors],
           }
         }
+        log.debug(
+          'handleInsufficientAccessRightsOnEntity is disabled. Skipping retrieve call. original retrieve request: %s new retrieve request: %s',
+          inspectValue(retrieveRequest.unpackaged?.types),
+          inspectValue(newRetrieveRequest.unpackaged?.types),
+        )
       }
       throw e
     }

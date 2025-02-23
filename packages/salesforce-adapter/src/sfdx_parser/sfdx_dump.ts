@@ -143,7 +143,10 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     fetchParams: {},
   })
 
+  log.debug('Resolving %d changes for SFDX dump', supportedMetadataChanges.length)
   const resolvedChanges = await resolveSalesforceChanges(supportedMetadataChanges, getLookUpName(fetchProfile))
+
+  log.debug('Running pre-deploy filters on %d changes for SFDX dump', resolvedChanges.length)
   const filterRunner = filter.filtersRunner(
     {
       config: {
@@ -158,8 +161,11 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
   )
   await filterRunner.preDeploy(resolvedChanges)
 
-  const pkg = createDeployPackage()
+  log.debug('Validating %d changes for SFDX dump', resolvedChanges.length)
   const { validChanges, errors } = await validateChanges(resolvedChanges)
+
+  log.debug('Adding %d changes to SFDX dump package', validChanges.length)
+  const pkg = createDeployPackage()
   await Promise.all(
     validChanges.map(change =>
       addChangeToPackage(pkg, change, NESTED_METADATA_TYPES, {
@@ -167,7 +173,9 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
       }),
     ),
   )
+
   // Load the components we wish to merge with the current project
+  log.debug('Creating component set for SFDX dump')
   const zipTree = await ZipTreeContainer.create(await pkg.getZip())
   const tree = new SyncZipTreeContainer(zipTree, pkg.getZipContent())
   const converter = new MetadataConverter()
@@ -184,11 +192,13 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
   // normalizing the base dir to be an absolute path to work around those issues
   const absBaseDir = path.resolve(baseDir)
   // Load current SFDX project
+  log.debug('Loading current SFDX components from %s', absBaseDir)
   const currentProject = await SfProject.resolve(absBaseDir)
   const currentComponents = ComponentSet.fromSource(absBaseDir)
 
   // Calling "convert" below will remove components from the component set, but will not actually delete the files.
   // Therefore, we need to get the paths to all the files we intend to delete before calling "convert"
+  log.debug('Marking components for SFDX deletion')
   const componentsToDelete = await getComponentsToDelete(tree, pkg, currentComponents.getSourceComponents().toArray())
   const allPathsToDelete = componentsToDelete.fullDelete.flatMap(comp =>
     [comp.xml, comp.content].filter(values.isDefined),

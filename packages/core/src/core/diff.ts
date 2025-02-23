@@ -5,6 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
+import wu from 'wu'
 import { logger } from '@salto-io/logging'
 import {
   CompareOptions,
@@ -20,15 +22,17 @@ import {
   Workspace,
   remoteMap,
   ReferenceIndexEntry,
+  flags,
 } from '@salto-io/workspace'
-import wu from 'wu'
+import { getDetailedChanges as getDetailedChangesFromChange } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import _ from 'lodash'
-import { IDFilter, getPlan } from './plan/plan'
-import { ChangeWithDetails } from './plan/plan_item'
+import { getPlan, IDFilter } from './plan/plan'
+import { ChangeWithDetails } from './plan'
+import { calculateDiff } from './plan/diff'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const { getSaltoFlagBool, WORKSPACE_FLAGS } = flags
 
 const getFilteredIds = (
   selectors: ElementSelector[],
@@ -114,25 +118,56 @@ const createMatchers = async (
   }
 }
 
-export function createDiffChanges(params: {
+async function createDiffChangesWithCalculateDiff({
+  toElementsSrc,
+  fromElementsSrc,
+  referenceSourcesIndex = new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+  elementSelectors = [],
+  topLevelFilters = [],
+  compareOptions,
+  resultType = 'detailedChanges',
+}: {
   toElementsSrc: elementSource.ElementsSource
   fromElementsSrc: elementSource.ElementsSource
   referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>
   elementSelectors?: ElementSelector[]
   topLevelFilters?: IDFilter[]
   compareOptions?: CompareOptions
-  resultType: 'changes'
-}): Promise<ChangeWithDetails[]>
-export function createDiffChanges(params: {
-  toElementsSrc: elementSource.ElementsSource
-  fromElementsSrc: elementSource.ElementsSource
-  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>
-  elementSelectors?: ElementSelector[]
-  topLevelFilters?: IDFilter[]
-  compareOptions?: CompareOptions
-  resultType?: 'detailedChanges'
-}): Promise<DetailedChangeWithBaseChange[]>
-export async function createDiffChanges({
+  resultType?: 'changes' | 'detailedChanges'
+}): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
+  const hasSelectors = elementSelectors.length > 0
+  const matchers = await createMatchers(toElementsSrc, fromElementsSrc, referenceSourcesIndex, elementSelectors)
+  const changes = await calculateDiff({
+    before: toElementsSrc,
+    after: fromElementsSrc,
+    topLevelFilters: hasSelectors ? topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors) : topLevelFilters,
+    compareOptions,
+  })
+  return resultType === 'changes'
+    ? awu(changes)
+        .map(change => {
+          if (!hasSelectors) {
+            return { ...change, detailedChanges: () => getDetailedChangesFromChange(change, compareOptions) }
+          }
+          const filteredDetailedChanges = getDetailedChangesFromChange(change, compareOptions).filter(
+            matchers.isChangeMatchSelectors,
+          )
+          if (filteredDetailedChanges.length > 0) {
+            // we return the whole change even if only some of the detailed changes match the selectors.
+            return { ...change, detailedChanges: () => filteredDetailedChanges }
+          }
+          return undefined
+        })
+        .filter(values.isDefined)
+        .toArray()
+    : awu(changes)
+        .flatMap(change => getDetailedChangesFromChange(change, compareOptions))
+        .filter(matchers.isChangeMatchSelectors)
+        .toArray()
+}
+
+// TODO(SALTO-7272): Remove this function once the calculateDiff version is stable in production.
+async function createDiffChangesWithGetPlan({
   toElementsSrc,
   fromElementsSrc,
   referenceSourcesIndex = new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
@@ -187,6 +222,63 @@ export async function createDiffChanges({
     .map(item => item[resultType]())
     .flatten()
     .toArray()
+}
+
+export function createDiffChanges(params: {
+  toElementsSrc: elementSource.ElementsSource
+  fromElementsSrc: elementSource.ElementsSource
+  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>
+  elementSelectors?: ElementSelector[]
+  topLevelFilters?: IDFilter[]
+  compareOptions?: CompareOptions
+  resultType: 'changes'
+}): Promise<ChangeWithDetails[]>
+export function createDiffChanges(params: {
+  toElementsSrc: elementSource.ElementsSource
+  fromElementsSrc: elementSource.ElementsSource
+  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>
+  elementSelectors?: ElementSelector[]
+  topLevelFilters?: IDFilter[]
+  compareOptions?: CompareOptions
+  resultType?: 'detailedChanges'
+}): Promise<DetailedChangeWithBaseChange[]>
+export async function createDiffChanges({
+  toElementsSrc,
+  fromElementsSrc,
+  referenceSourcesIndex = new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+  elementSelectors = [],
+  topLevelFilters = [],
+  compareOptions,
+  resultType = 'detailedChanges',
+}: {
+  toElementsSrc: elementSource.ElementsSource
+  fromElementsSrc: elementSource.ElementsSource
+  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>
+  elementSelectors?: ElementSelector[]
+  topLevelFilters?: IDFilter[]
+  compareOptions?: CompareOptions
+  resultType?: 'changes' | 'detailedChanges'
+}): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
+  if (getSaltoFlagBool(WORKSPACE_FLAGS.replaceGetPlanWithCalculateDiff)) {
+    return createDiffChangesWithCalculateDiff({
+      toElementsSrc,
+      fromElementsSrc,
+      referenceSourcesIndex,
+      elementSelectors,
+      topLevelFilters,
+      compareOptions,
+      resultType,
+    })
+  }
+  return createDiffChangesWithGetPlan({
+    toElementsSrc,
+    fromElementsSrc,
+    referenceSourcesIndex,
+    elementSelectors,
+    topLevelFilters,
+    compareOptions,
+    resultType,
+  })
 }
 
 export const getEnvsDeletionsDiff = async (

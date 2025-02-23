@@ -140,8 +140,7 @@ async function createDiffChangesWithCalculateDiff({
   const changes = await calculateDiff({
     before: toElementsSrc,
     after: fromElementsSrc,
-    topLevelFilters:
-      hasSelectors ? topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors) : topLevelFilters,
+    topLevelFilters: hasSelectors ? topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors) : topLevelFilters,
     compareOptions,
   })
   return resultType === 'changes'

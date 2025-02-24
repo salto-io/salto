@@ -23,7 +23,7 @@ describe('service url filter', () => {
   type FilterType = FilterWith<'onFetch' | 'onDeploy'>
   let filter: FilterType
   const roleObjType = new ObjectType({ elemID: new ElemID('adapter', 'role') })
-  const roleInst = new InstanceElement('role', roleObjType, { id: 11, name: 'role' })
+  const roleInst = new InstanceElement('role', roleObjType, { id: 11, name: 'role', obj: { inner: 'bar'} })
   const testObjType = new ObjectType({ elemID: new ElemID('adapter', 'test') })
   const testInst = new InstanceElement('test', testObjType, { id: 11, name: 'test' })
   const baseUrl = 'https://www.example.com'
@@ -51,7 +51,7 @@ describe('service url filter', () => {
               },
             },
             foo: {
-              transformation: { serviceUrl: 'roles/{_parent.0.id}/foo/{id}' },
+              transformation: { serviceUrl: 'roles/{_parent.0.id}/foo/{_parent.0.obj.inner}/{id}' },
             },
           },
           typeDefaults: {
@@ -75,7 +75,7 @@ describe('service url filter', () => {
       expect(role.annotations).toEqual({
         [CORE_ANNOTATIONS.SERVICE_URL]: 'https://www.example.com/roles/11',
       })
-      expect(withParent.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual('https://www.example.com/roles/11/foo/ab')
+      expect(withParent.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual('https://www.example.com/roles/11/foo/bar/ab')
     })
     it('should not add service url annotation if it is not exist in the config', async () => {
       const elements = [testInst].map(e => e.clone())
@@ -101,7 +101,7 @@ describe('service url filter', () => {
       expect(role.annotations).toEqual({
         [CORE_ANNOTATIONS.SERVICE_URL]: 'https://www.example.com/roles/11',
       })
-      expect(withParent.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual('https://www.example.com/roles/11/foo/ab')
+      expect(withParent.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual('https://www.example.com/roles/11/foo/bar/ab')
     })
     it('should not add service url annotation if it is not exist in the config', async () => {
       const changes = [testInst].map(e => e.clone()).map(inst => toChange({ after: inst }))

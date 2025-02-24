@@ -260,19 +260,11 @@ const filterCreator: FilterCreator = ({ config }) => {
         .filter(isInstanceElement)
         .filter(isInstanceOfType(CUSTOM_METADATA))
         .toArray()
-      // const tempaBay = oldInstances
-      //   .map(e => e.refType.type)
-      //   .filter(isDefined)
-      //   .filter(a => !elements.includes(a))
       const newInstances = await awu(oldInstances)
         .map(instance => getInstanceWithCorrectType(instance, customMetadataRecordTypes))
         .filter(isDefined)
         .toArray()
-      _.pullAll(elements, [...oldInstances])
-      // const tempa = newInstances
-      //   .map(e => e.refType.type)
-      //   .filter(isDefined)
-      //   .filter(a => !elements.includes(a))
+      _.pullAll(elements, oldInstances)
       elements.push(...newInstances)
     },
 

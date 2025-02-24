@@ -521,15 +521,6 @@ const filterFoldersByFilesCount = ({
   largeFilesCountFoldersError: string[]
   largeFilesCountFolderWarnings: LargeFilesCountFolderWarning[]
 } => {
-  // TODO: remove this condition
-  if (maxFilesPerFileCabinetFolder.length === 0) {
-    return {
-      foldersResults: foldersToIncludeByPath,
-      largeFilesCountFoldersError: [],
-      largeFilesCountFolderWarnings: [],
-    }
-  }
-
   const [foldersToInclude, removedFolders] = _.partition(
     foldersToIncludeByPath,
     folder =>

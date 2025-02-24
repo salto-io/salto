@@ -76,6 +76,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   splitFieldContextOptions?: boolean
   enableRequestTypeFieldNameAlignment?: boolean
   removeFieldConfigurationDefaultValues?: boolean
+  remove10KOptionsContexts: boolean
 }
 
 export type MaskingConfig = {
@@ -185,6 +186,7 @@ const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     enableAssetsObjectFieldConfiguration: true,
     removeFieldConfigurationDefaultValues: false,
     splitFieldContextOptions: true,
+    remove10KOptionsContexts: false, // starting value, to be changed
   },
   deploy: {
     forceDelete: false,
@@ -352,6 +354,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     splitFieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
     enableRequestTypeFieldNameAlignment: { refType: BuiltinTypes.BOOLEAN },
     removeFieldConfigurationDefaultValues: { refType: BuiltinTypes.BOOLEAN },
+    remove10KOptionsContexts: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,

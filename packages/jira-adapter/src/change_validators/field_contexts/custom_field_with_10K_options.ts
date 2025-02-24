@@ -10,7 +10,6 @@ import {
   AdditionChange,
   ChangeError,
   ChangeValidator,
-  ElemID,
   InstanceElement,
   ModificationChange,
   getChangeData,
@@ -21,13 +20,18 @@ import {
   Change,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { getInstancesFromElementSource, getParentElemID, getParents } from '@salto-io/adapter-utils'
+import { getInstancesFromElementSource, getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from '../../filters/fields/constants'
+import {
+  FIELD_CONTEXT_OPTION_TYPE_NAME,
+  FIELD_CONTEXT_TYPE_NAME,
+  FIELD_TYPE_NAME,
+  OPTIONS_ORDER_TYPE_NAME,
+} from '../../filters/fields/constants'
 import { getOptionsFromContext } from '../../filters/fields/context_options'
 import { JiraConfig } from '../../config/config'
-import { getContextParent, getContextParentAsync } from '../../common/fields'
+import { getContextParent, getContextParentAsync, getContextPrettyName } from '../../common/fields'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -42,12 +46,22 @@ const hasNewOption = (change: ModificationChange<InstanceElement> | AdditionChan
   return !isEqualValues(optionsBefore, optionsAfter)
 }
 
-const getError = (elemID: ElemID, fieldName: string): ChangeError => ({
-  elemID,
+const slowDeploymentError = (context: InstanceElement): ChangeError => ({
+  elemID: context.elemID,
   severity: 'Info',
-  message: 'Slow deployment due to field with more than 10K options',
-  detailedMessage: `The deployment of custom field ${fieldName}'s options will be slower because there are more than 10K options.`,
+  message: 'Slow deployment due to field context with more than 10K options',
+  detailedMessage: `The deployment of ${getContextPrettyName(context)}'s options will be slower because there are more than 10K options.`,
 })
+
+const blockDeploymentError = (instance: InstanceElement): ChangeError => {
+  const context = instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME ? instance : getContextParent(instance)
+  return {
+    elemID: instance.elemID,
+    severity: 'Error',
+    message: 'Cannot deploy a field context with more than 10K options',
+    detailedMessage: `The deployment of ${getContextPrettyName(context)}'s options will be blocked because there are more than 10K options.`,
+  }
+}
 
 const createContextToOptionsCountRecord = async (
   elementsSource: ReadOnlyElementsSource,
@@ -66,9 +80,36 @@ const createContextToOptionsCountRecord = async (
   return contextToOptionsCount
 }
 
+const blockDeploymentsOfOrdersAndOptions = (
+  contextToOptionsCount: Record<string, number>,
+  changedOrders: InstanceElement[],
+  changes: readonly Change[],
+): ChangeError[] => {
+  const orderErrors = changedOrders
+    .filter(order => contextToOptionsCount[getContextParent(order).elemID.getFullName()] > 10000)
+    .map(blockDeploymentError)
+  const optionErrors = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME)
+    .filter(option => contextToOptionsCount[getContextParent(option).elemID.getFullName()] > 10000)
+    .map(blockDeploymentError)
+  return [...orderErrors, ...optionErrors]
+}
+
+const warnSlowDeploymentOfOrders = (
+  contextToOptionsCount: Record<string, number>,
+  changedOrders: InstanceElement[],
+): ChangeError[] =>
+  changedOrders
+    .filter(order => contextToOptionsCount[getContextParent(order).elemID.getFullName()] > 10000)
+    .map(order => slowDeploymentError(getContextParent(order)))
+
 const check10KOptionsWithSplitFlag = async (
   changes: readonly Change[],
   elementsSource: ReadOnlyElementsSource | undefined,
+  remove10KOptionsContexts: boolean,
 ): Promise<ChangeError[]> => {
   const changedOrders = changes
     .filter(isInstanceChange)
@@ -83,12 +124,15 @@ const check10KOptionsWithSplitFlag = async (
     return []
   }
   const contextToOptionsCount = await createContextToOptionsCountRecord(elementsSource)
-  return changedOrders
-    .filter(order => contextToOptionsCount[getContextParent(order).elemID.getFullName()] > 10000)
-    .map(order => getError(order.elemID, getParentElemID(getContextParent(order)).name))
+  return remove10KOptionsContexts
+    ? blockDeploymentsOfOrdersAndOptions(contextToOptionsCount, changedOrders, changes)
+    : warnSlowDeploymentOfOrders(contextToOptionsCount, changedOrders)
 }
 
-const check10KOptionsWithoutSplitFlag: ChangeValidator = async (changes: readonly Change[]): Promise<ChangeError[]> =>
+const check10KOptionsWithoutSplitFlag = async (
+  changes: readonly Change[],
+  remove10KOptionsContexts: boolean,
+): Promise<ChangeError[]> =>
   changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
@@ -97,10 +141,10 @@ const check10KOptionsWithoutSplitFlag: ChangeValidator = async (changes: readonl
     .filter(hasNewOption)
     .map(getChangeData)
     .filter(instance => getParents(instance)[0].elemID.typeName === FIELD_TYPE_NAME)
-    .map(instance => getError(instance.elemID, getParents(instance)[0].elemID.name))
+    .map(instance => (remove10KOptionsContexts ? blockDeploymentError(instance) : slowDeploymentError(instance)))
 
 export const customFieldsWith10KOptionValidator: (config: JiraConfig) => ChangeValidator =
   config => async (changes, elementsSource: ReadOnlyElementsSource | undefined) =>
     config.fetch.splitFieldContextOptions
-      ? check10KOptionsWithSplitFlag(changes, elementsSource)
-      : check10KOptionsWithoutSplitFlag(changes)
+      ? check10KOptionsWithSplitFlag(changes, elementsSource, config.fetch.remove10KOptionsContexts)
+      : check10KOptionsWithoutSplitFlag(changes, config.fetch.remove10KOptionsContexts)

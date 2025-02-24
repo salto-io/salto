@@ -200,6 +200,7 @@ import fieldContextOptionsDeploymentOrderFilter from './filters/fields/context_o
 import contextDefaultValueDeploymentFilter from './filters/fields/context_default_value_deployment_filter'
 import statusPropertiesReferencesFilter from './filters/workflowV2/status_properties_references'
 import enhancedSearchNoiseReductionFilter from './filters/script_runner/enhanced_search/enhanced_search_noise_filter'
+import remove10kOptionsContexts from './filters/fields/remove_10k_options_contexts'
 
 const { getAllElements, addRemainingTypes, restoreInstanceTypeFromDeploy } = elementUtils.ducktype
 const { findDataField } = elementUtils
@@ -234,6 +235,7 @@ const DEFAULT_FILTERS = [
   queryFilter,
   projectRoleRemoveTeamManagedDuplicatesFilter, // This should run before duplicateIdsFilter
   fieldStructureFilter, // fieldStructureFilter adds instances so it should run before duplicateIdsFilter. It also creates references so it should run before fieldReferencesFilter
+  remove10kOptionsContexts, // must run after fieldStructureFilter and before fieldContextOptionsSplitFilter
   localeFilter,
   iconUrlFilter,
   triggersFilter,

@@ -41,7 +41,14 @@ import {
   MetadataTypeAnnotations,
   toMetadataInfo,
 } from '../transformers/transformer'
-import { fullApiName, parentApiName, getDataFromChanges, isInstanceOfTypeChange, isInstanceOfTypeSync } from './utils'
+import { getLookUpName, salesforceAdapterResolveValues } from '../transformers/reference_mapping'
+import {
+  fullApiName,
+  parentApiName,
+  getDataFromChanges,
+  isInstanceOfTypeSync,
+  isInstanceOfTypeChangeSync,
+} from './utils'
 import { WorkflowField } from '../fetch_profile/metadata_types'
 
 const { awu, groupByAsync } = collections.asynciterable
@@ -96,13 +103,12 @@ const createPartialWorkflowInstance = async (
       ..._.omit(fullInstance.value, Object.keys(WORKFLOW_FIELD_TO_TYPE)),
       ...(await mapValuesAsync(WORKFLOW_FIELD_TO_TYPE, async fieldType =>
         Promise.all(
-          getDataFromChanges(
-            dataField,
-            (await awu(changes).filter(isInstanceOfTypeChange(fieldType)).toArray()) as Change<InstanceElement>[],
-          ).map(async nestedInstance => ({
-            ...(await toMetadataInfo(nestedInstance)),
-            [INSTANCE_FULL_NAME_FIELD]: await apiName(nestedInstance, true),
-          })),
+          getDataFromChanges(dataField, changes.filter(isInstanceOfTypeChangeSync(fieldType))).map(
+            async nestedInstance => ({
+              ...(await toMetadataInfo(nestedInstance)),
+              [INSTANCE_FULL_NAME_FIELD]: await apiName(nestedInstance, true),
+            }),
+          ),
         ),
       )),
     },
@@ -248,8 +254,16 @@ const filterCreator: FilterCreator = ({ config, client }) => {
           .filter(([parent, elem]) =>
             originalWorkflowChanges[parent].every(change => !elem.elemID.isEqual(getChangeData(change).elemID)),
           )
-          .forEach(([parent, elem]) => {
-            originalWorkflowChanges[parent].push(toChange({ after: elem }))
+          .forEach(async ([parent, elem]) => {
+            originalWorkflowChanges[parent].push(
+              toChange({
+                after: await salesforceAdapterResolveValues(
+                  elem,
+                  getLookUpName(config.fetchProfile),
+                  config.elementsSource,
+                ),
+              }),
+            )
           })
       }
 

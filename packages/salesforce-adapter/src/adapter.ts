@@ -14,14 +14,11 @@ import {
   ElemIdGetter,
   FetchOptions,
   FetchResult,
-  Field,
   FixElementsFunc,
   getChangeData,
   InstanceElement,
   isAdditionChange,
-  isField,
   isInstanceElement,
-  isObjectType,
   ObjectType,
   PartialFetchData,
   ReadOnlyElementsSource,
@@ -29,15 +26,8 @@ import {
   CancelServiceAsyncTaskInput,
   CancelServiceAsyncTaskResult,
 } from '@salto-io/adapter-api'
-import {
-  filter,
-  GetLookupNameFunc,
-  inspectValue,
-  logDuration,
-  ResolveValuesFunc,
-  safeJsonStringify,
-} from '@salto-io/adapter-utils'
-import { resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-components'
+import { filter, inspectValue, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
+import { restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -159,7 +149,6 @@ import {
   isInstanceOfCustomObjectSync,
   isInstanceOfTypeSync,
   isMetadataInstanceElementSync,
-  isOrderedMapTypeOrRefType,
   listMetadataObjects,
   metadataTypeSync,
   queryClient,
@@ -171,7 +160,11 @@ import {
   retrieveMetadataInstances,
 } from './fetch'
 import { deployCustomObjectInstancesGroup, isCustomObjectInstanceChanges } from './custom_object_instances_deploy'
-import { getLookUpName, getLookupNameForDataInstances } from './transformers/reference_mapping'
+import {
+  getLookUpName,
+  getLookupNameForDataInstances,
+  resolveSalesforceChanges,
+} from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
@@ -468,43 +461,6 @@ type CreateFiltersRunnerParams = {
   fetchProfile: FetchProfile
   contextOverrides?: Partial<FilterContext>
 }
-
-const isFieldWithOrderedMapAnnotation = (field: Field): boolean =>
-  Object.values(field.getTypeSync().annotationRefTypes).some(isOrderedMapTypeOrRefType)
-
-const isElementWithOrderedMap = (element: Element): boolean => {
-  if (isField(element)) {
-    return isFieldWithOrderedMapAnnotation(element)
-  }
-  if (isInstanceElement(element)) {
-    return Object.values(element.getTypeSync().fields).some(field => isOrderedMapTypeOrRefType(field.getTypeSync()))
-  }
-  if (isObjectType(element)) {
-    return Object.values(element.fields).some(isFieldWithOrderedMapAnnotation)
-  }
-  return false
-}
-
-export const salesforceAdapterResolveValues: ResolveValuesFunc = async (
-  element,
-  getLookUpNameFunc,
-  elementsSource,
-  allowEmpty = true,
-) => {
-  const resolvedElement = await resolveValues(element, getLookUpNameFunc, elementsSource, allowEmpty)
-  // Since OrderedMaps' order values reference values that may contain references, we should resolve the Element twice
-  // in order to fully resolve it. An example use-case for this is the Field `SBQQ__ProductRule__c.SBQQ__LookupObject__c`
-  // Where the `fullName` of the Picklist values is a Reference to a Custom Object.
-  return isElementWithOrderedMap(resolvedElement)
-    ? resolveValues(resolvedElement, getLookUpNameFunc, elementsSource, allowEmpty)
-    : resolvedElement
-}
-
-export const resolveSalesforceChanges = (
-  changes: readonly Change[],
-  getLookupNameFunc: GetLookupNameFunc,
-): Promise<Change[]> =>
-  Promise.all(changes.map(change => resolveChangeElement(change, getLookupNameFunc, salesforceAdapterResolveValues)))
 
 type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate'> & {
   deploy: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>

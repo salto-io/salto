@@ -5,7 +5,16 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  isMapType,
+  ListType,
+  ObjectType,
+  TypeReference,
+} from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../../src/constants'
 import fieldConfigurationFilter from '../../../src/filters/field_configuration/field_configuration'
@@ -102,12 +111,56 @@ describe('fieldConfigurationFilter', () => {
         [CORE_ANNOTATIONS.DELETABLE]: true,
       })
     })
-    it('should remove locked fields', async () => {
+    it('should transform fields to a map and remove locked fields', async () => {
       await filter.onFetch([instance, fieldInstance, lockedFieldInstance])
       expect(instance.value.fields).toEqual({
         fieldInstance: {
           isRequired: true,
         },
+      })
+    })
+    describe('fields refType', () => {
+      describe('when the refType is ListType', () => {
+        beforeEach(async () => {
+          await filter.onFetch([fieldConfigurationType])
+        })
+        it('should replace fields refType to be MapType', () => {
+          expect(isMapType(fieldConfigurationType.fields.fields.refType.type)).toBeTrue()
+          expect(
+            isMapType(fieldConfigurationType.fields.fields.refType.type) &&
+              fieldConfigurationType.fields.fields.refType.type.refInnerType.type,
+          ).toEqual(fieldConfigurationItemType)
+        })
+      })
+      describe('when the refType is ListType but type is missing', () => {
+        let fieldsRefType: TypeReference
+        beforeEach(async () => {
+          fieldsRefType = new TypeReference(fieldConfigurationType.fields.fields.refType.elemID)
+          fieldConfigurationType.fields.fields.refType = fieldsRefType
+          await filter.onFetch([fieldConfigurationType])
+        })
+        it('should replace fields refType to be MapType', () => {
+          expect(isMapType(fieldConfigurationType.fields.fields.refType.type)).toBeTrue()
+          expect(
+            isMapType(fieldConfigurationType.fields.fields.refType.type) &&
+              fieldConfigurationType.fields.fields.refType.type.refInnerType,
+          ).toEqual(fieldsRefType)
+        })
+      })
+      describe('when the refType is not a container type', () => {
+        let fieldsRefType: TypeReference
+        beforeEach(async () => {
+          fieldsRefType = new TypeReference(fieldConfigurationItemType.elemID, fieldConfigurationItemType)
+          fieldConfigurationType.fields.fields.refType = fieldsRefType
+          await filter.onFetch([fieldConfigurationType])
+        })
+        it('should replace fields refType to be MapType', () => {
+          expect(isMapType(fieldConfigurationType.fields.fields.refType.type)).toBeTrue()
+          expect(
+            isMapType(fieldConfigurationType.fields.fields.refType.type) &&
+              fieldConfigurationType.fields.fields.refType.type.refInnerType.type,
+          ).toEqual(fieldConfigurationItemType)
+        })
       })
     })
   })

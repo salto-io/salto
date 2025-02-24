@@ -66,7 +66,8 @@ const transformFormValues = (form: InstanceElement): void => {
       if (
         path !== undefined &&
         !isTransformedFormObject(value) &&
-        form.elemID.createNestedID('design', 'conditions').isParentOf(path) &&
+        (form.elemID.createNestedID('design', 'conditions').isParentOf(path) ||
+          (form.elemID.createNestedID('design', 'questions').isParentOf(path) && path.name === 'defaultAnswer')) &&
         Object.values(value).some(Array.isArray)
       ) {
         const newValue = Object.entries(value).map(([key, val]) => ({ key, value: val }))
@@ -219,7 +220,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(isDefined)
 
     forms.forEach(form => {
-      if (form.value.design?.conditions && config.fetch.splitFieldContextOptions) {
+      if ((form.value.design?.conditions || form.value.design?.questions) && config.fetch.splitFieldContextOptions) {
         transformFormValues(form)
       }
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))

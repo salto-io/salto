@@ -47,7 +47,7 @@ import {
   mockRetrieveLocator,
   mockRetrieveResult,
 } from './connection'
-import { ConfigChangeSuggestion, FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import { ConfigChangeSuggestion, FetchElements, FetchProfile, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import * as fetchModule from '../src/fetch'
 import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
@@ -693,7 +693,7 @@ describe('SalesforceAdapter fetch', () => {
             jest.resetAllMocks()
             jest.restoreAllMocks()
           })
-          it('Should return the elemID of the deleted record', () => {
+          it('should return the elemID of the deleted record', () => {
             expect(fetchResult.partialFetchData?.deletedElements).toContainEqual(
               existingInstanceThatDoesntExistInSalesforce.elemID,
             )
@@ -2784,7 +2784,7 @@ describe('Fetch via retrieve API', () => {
           })
         ).configChanges
       })
-      it('Should create a config change for exclusion', () => {
+      it('should create a config change for exclusion', () => {
         expect(configChanges).toEqual([
           expect.objectContaining({
             type: 'metadataExclude',
@@ -2820,7 +2820,7 @@ describe('Fetch via retrieve API', () => {
           })
         ).configChanges
       })
-      it('Should not create a config change', () => {
+      it('should not create a config change', () => {
         // TODO change this to expect no config changes once configChangeAlreadyExists is changed
         expect(configChanges).toEqual([
           expect.objectContaining({
@@ -2856,7 +2856,7 @@ describe('Fetch via retrieve API', () => {
             })
           ).configChanges
         })
-        it('Should create a metadataExclude config change', () => {
+        it('should create a metadataExclude config change', () => {
           expect(configChanges).toEqual([
             {
               type: 'metadataExclude',
@@ -2883,9 +2883,148 @@ describe('Fetch via retrieve API', () => {
             })
           ).configChanges
         })
-        it('Should not create config change', () => {
+        it('should not create config change', () => {
           expect(configChanges).toBeEmpty()
         })
+      })
+    })
+  })
+  describe('handle INSUFFICIENT_ACCESS: insufficient access rights on entity', () => {
+    let configChanges: ConfigChangeSuggestion[]
+    let metadataRetrieveSpy: jest.SpyInstance
+    let metadataReadSpy: jest.SpyInstance
+    let fetchProfile: FetchProfile
+    const typeError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ApexClass'
+    const instanceError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
+    beforeEach(async () => {
+      metadataRetrieveSpy = jest.spyOn(connection.metadata, 'retrieve')
+      metadataReadSpy = jest.spyOn(connection.metadata, 'read')
+      await setupMocks([
+        { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
+        { type: mockTypes.ApexClass, instanceName: 'ProblematicApexClass' },
+        { type: mockTypes.CustomObject, instanceName: 'Account' },
+      ])
+      connection.metadata.retrieve.mockImplementation(retrieveRequest => {
+        const hasProblematicApexClass = retrieveRequest.unpackaged?.types.some(type =>
+          type.members.includes('ProblematicApexClass'),
+        )
+        if (hasProblematicApexClass) {
+          throw new Error(typeError)
+        }
+        return mockRetrieveLocator(mockRetrieveResult({}))
+      })
+      connection.metadata.read.mockImplementation(async (_type, fullNames) => {
+        if (fullNames.includes('ProblematicApexClass')) {
+          throw new Error(instanceError)
+        }
+        return []
+      })
+    })
+    describe('when the feature is enabled', () => {
+      beforeEach(async () => {
+        fetchProfile = buildFetchProfile({
+          fetchParams: {
+            optionalFeatures: {
+              handleInsufficientAccessRightsOnEntity: true,
+            },
+            addNamespacePrefixToFullName: false,
+            metadata: {
+              exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
+            },
+          },
+        })
+        configChanges = (
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.ApexClass, mockTypes.CustomObject],
+            fetchProfile,
+          })
+        ).configChanges
+      })
+
+      it('should retry retrieve and create a config change for exclusion', () => {
+        expect(configChanges).toEqual(
+          expect.arrayContaining([
+            {
+              type: 'metadataExclude',
+              reason: instanceError,
+              value: {
+                metadataType: 'ApexClass',
+                name: 'ProblematicApexClass',
+              },
+            },
+          ]),
+        )
+        expect(metadataReadSpy).toHaveBeenCalledTimes(2)
+        expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['SomeApexClass']))
+        expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['ProblematicApexClass']))
+        expect(metadataRetrieveSpy).toHaveBeenCalledTimes(2)
+        expect(metadataRetrieveSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            apiVersion: expect.anything(),
+            singlePackage: expect.anything(),
+            unpackaged: expect.objectContaining({
+              types: expect.arrayContaining([
+                expect.objectContaining({
+                  name: 'ApexClass',
+                  members: expect.arrayContaining(['ProblematicApexClass', 'SomeApexClass']),
+                }),
+                expect.objectContaining({
+                  name: 'CustomObject',
+                  members: expect.arrayContaining(['Account']),
+                }),
+              ]),
+              version: expect.anything(),
+            }),
+          }),
+        )
+        expect(metadataRetrieveSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            apiVersion: expect.anything(),
+            singlePackage: expect.anything(),
+            unpackaged: expect.objectContaining({
+              types: expect.arrayContaining([
+                expect.objectContaining({
+                  name: 'ApexClass',
+                  members: expect.arrayContaining(['SomeApexClass']),
+                }),
+                expect.objectContaining({
+                  name: 'CustomObject',
+                  members: expect.arrayContaining(['Account']),
+                }),
+              ]),
+              version: expect.anything(),
+            }),
+          }),
+        )
+      })
+    })
+
+    describe('when the feature is disabled', () => {
+      beforeEach(async () => {
+        fetchProfile = buildFetchProfile({
+          fetchParams: {
+            addNamespacePrefixToFullName: false,
+            metadata: {
+              exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
+            },
+          },
+        })
+      })
+      it('should call metadata.read with the right arguments and throw the right error', async () => {
+        try {
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.ApexClass, mockTypes.CustomObject],
+            fetchProfile,
+          })
+        } catch (error) {
+          expect(metadataRetrieveSpy).toHaveBeenCalledOnce()
+          expect(error.message).toEqual(typeError)
+          expect(metadataReadSpy).toHaveBeenCalledTimes(2)
+          expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['SomeApexClass']))
+          expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['ProblematicApexClass']))
+        }
       })
     })
   })

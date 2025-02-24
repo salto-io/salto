@@ -52,3 +52,6 @@ export const getOrderNameFromOption = (option: InstanceElement): string =>
 
 export const isGlobalContext = (instance: InstanceElement): boolean =>
   instance.value.projectIds === undefined || instance.value.projectIds.length === 0
+
+export const getContextPrettyName = (context: InstanceElement): string =>
+  `context "${context.elemID.name}" for field "${getParent(context).elemID.name}"`

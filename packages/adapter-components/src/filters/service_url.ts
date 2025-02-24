@@ -66,9 +66,7 @@ export const addUrlToInstance: <Options extends FetchApiDefinitionsOptions = {}>
   )
   const parentContext = parentValues?.reduce((result: Values, parentVal: Values, idx: number) => {
     Object.entries(parentVal).forEach(([key, value]) => {
-      // Fancy one-liner for doing "result._parent[idx][key] = value" while initializing all intermediate missing objects.
-      // eslint-disable-next-line no-underscore-dangle
-      ;((result._parent ??= {})[idx] ??= {})[key] = value
+      _.set(result, `_parent.${idx}.${key}`, value)
     })
     return result
   }, {})

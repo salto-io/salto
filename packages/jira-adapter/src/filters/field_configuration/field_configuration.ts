@@ -17,6 +17,8 @@ import {
   isInstanceChange,
   isAdditionOrModificationChange,
   getChangeData,
+  TypeReference,
+  isContainerType,
 } from '@salto-io/adapter-api'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -35,6 +37,18 @@ const log = logger(module)
 const ID_PATH = ['value', 'id']
 const NAME_PATH = ['elemID', 'name']
 
+const toMapType = (refType: TypeReference): MapType => {
+  if (refType.type === undefined) {
+    log.warn('type is missing in refType %s', refType.elemID.getFullName())
+    return new MapType(refType)
+  }
+  if (!isContainerType(refType.type)) {
+    log.warn('expected %s to be a container refType', refType.elemID.getFullName())
+    return new MapType(refType)
+  }
+  return new MapType(refType.type.refInnerType)
+}
+
 const updateFieldConfigurationType = async (elements: Element[]): Promise<void> => {
   const types = elements.filter(isObjectType)
 
@@ -47,7 +61,7 @@ const updateFieldConfigurationType = async (elements: Element[]): Promise<void> 
     fieldConfigurationType.fields.fields = new Field(
       fieldConfigurationType,
       'fields',
-      new MapType(fieldConfigurationType.fields.fields.refType),
+      toMapType(fieldConfigurationType.fields.fields.refType),
       {
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,

@@ -397,7 +397,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
 
     const getHiddenLockedCustomRecordTypes = (failedTypes: FailedTypes, instancesIds: ObjectID[]): ObjectType[] => {
-      if (this.config.fetch.visibleLockedCustomRecordTypes) {
+      if (this.config.fetch.visibleLockedCustomRecordTypes !== false) {
         return []
       }
       const lockedCustomRecordTypesScriptIds = getLockedCustomRecordTypesScriptIds(failedTypes, instancesIds)
@@ -405,7 +405,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
 
     const getLockedCustomRecordTypes = (failedTypes: FailedTypes, instancesIds: ObjectID[]): CustomTypeInfo[] => {
-      if (!this.config.fetch.visibleLockedCustomRecordTypes) {
+      if (this.config.fetch.visibleLockedCustomRecordTypes === false) {
         return []
       }
       const lockedCustomRecordTypesScriptIds = getLockedCustomRecordTypesScriptIds(failedTypes, instancesIds)
@@ -570,7 +570,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       convertToQueryParams({
         types: Object.fromEntries(
           this.typesToSkip
-            .concat(!this.config.fetch.fetchPluginImplementations ? PLUGIN_IMPLEMENTATION : [])
+            .concat(this.config.fetch.fetchPluginImplementations === false ? PLUGIN_IMPLEMENTATION : [])
             .map(typeName => [typeName, [ALL_TYPES_REGEX]]),
         ),
         filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),

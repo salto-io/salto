@@ -76,6 +76,7 @@ describe('createElementsSourceIndex', () => {
       'someType-4': new ElemID(NETSUITE, 'someType', 'instance', 'name'),
       'customrecordtype-2': new ElemID(NETSUITE, 'customrecord1'),
       '-123-2': new ElemID(NETSUITE, 'customrecord1'),
+      '-125-2': new ElemID(NETSUITE, 'customrecord1'),
     })
   })
   it('should not create internal ids index for a deleted element', async () => {
@@ -108,6 +109,7 @@ describe('createElementsSourceIndex', () => {
     expect(index).toEqual({
       'customrecordtype-2': new ElemID(NETSUITE, 'customrecord1'),
       '-123-2': new ElemID(NETSUITE, 'customrecord1'),
+      '-125-2': new ElemID(NETSUITE, 'customrecord1'),
     })
   })
   it('should not create internal ids index on full fetch', async () => {

@@ -30,7 +30,6 @@ import {
 import {
   client as clientUtils,
   combineElementFixers,
-  config as configUtils,
   elements as elementUtils,
   resolveChangeElement,
   resolveValues,
@@ -65,7 +64,6 @@ import {
   CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
-  LAYOUT_TYPE_NAME,
   LOCALE_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
@@ -129,7 +127,7 @@ import guideSectionCategoryFilter from './filters/guide_section_and_category'
 import guideTranslationFilter from './filters/guide_translation'
 import guideThemeFilter from './filters/guide_theme'
 import fetchCategorySection from './filters/guide_fetch_article_section_and_category'
-import guideParentSection, { addParentFields } from './filters/guide_parent_to_section'
+import guideParentSection from './filters/guide_parent_to_section'
 import guideGuideSettings from './filters/guide_guide_settings'
 import removeBrandLogoFilter from './filters/remove_brand_logo_field'
 import categoryOrderFilter from './filters/guide_order/category_order'
@@ -168,25 +166,15 @@ import { Options } from './definitions/types'
 import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
-import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
+import { filterOutInactiveItemForType } from './inactive'
 import ZendeskGuideClient from './client/guide_client'
 import { createDeployDefinitions } from './definitions/deploy/deploy'
 
-const { makeArray } = collections.array
 const log = logger(module)
 const { createPaginator } = clientUtils
-const { findDataField } = elementUtils
-const { computeGetArgs } = fetchUtils.resource
-const {
-  getAllElements,
-  replaceInstanceTypeForDeploy,
-  restoreInstanceTypeFromDeploy,
-  getEntriesResponseValues,
-  addRemainingTypes,
-} = elementUtils.ducktype
+const { replaceInstanceTypeForDeploy, restoreInstanceTypeFromDeploy, addRemainingTypes } = elementUtils.ducktype
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
-const SECTIONS_TYPE_NAME = 'sections'
 
 const DEFAULT_FILTERS = [
   addRecurseIntoFieldFilter,
@@ -298,65 +286,6 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   ...GUIDE_ORDER_TYPES,
 ]
 
-/**
- * Fetch Guide (help_center) elements of brand.
- */
-const zendeskGuideEntriesFunc = (brandInstance: InstanceElement): elementUtils.ducktype.EntriesRequester => {
-  const getZendeskGuideEntriesResponseValues = async ({
-    paginator,
-    args,
-    typeName,
-    typesConfig,
-  }: {
-    paginator: clientUtils.Paginator
-    args: clientUtils.ClientGetWithPaginationParams
-    typeName?: string
-    typesConfig?: Record<string, configUtils.TypeDuckTypeConfig>
-  }): Promise<clientUtils.ResponseValue[]> => {
-    if (typeName === undefined || typesConfig === undefined) {
-      return []
-    }
-    log.debug(`Fetching type ${typeName} entries for brand ${brandInstance.elemID.name}`)
-    const brandPaginatorResponseValues = (
-      await getEntriesResponseValues({
-        paginator,
-        args,
-        typeName,
-        typesConfig,
-      })
-    ).flat()
-    const responseEntryName = typesConfig[typeName].transformation?.dataField
-    return brandPaginatorResponseValues.flatMap(response => {
-      if (responseEntryName === undefined) {
-        return makeArray(response)
-      }
-      const responseEntries = makeArray(
-        responseEntryName !== definitionsUtils.DATA_FIELD_ENTIRE_OBJECT ? response[responseEntryName] : response,
-      ) as clientUtils.ResponseValue[]
-      // Defining Zendesk Guide element to its corresponding brand (= subdomain)
-      responseEntries.forEach(entry => {
-        entry.brand = brandInstance.value.id
-      })
-      // need to add direct parent to a section as it is possible to have a section inside
-      // a section and therefore the elemeID will change accordingly.
-      if (responseEntryName === SECTIONS_TYPE_NAME) {
-        responseEntries.forEach(entry => {
-          addParentFields(entry)
-        })
-      }
-      if (responseEntryName === definitionsUtils.DATA_FIELD_ENTIRE_OBJECT) {
-        return responseEntries
-      }
-      return {
-        ...response,
-        [responseEntryName]: responseEntries,
-      }
-    }) as clientUtils.ResponseValue[]
-  }
-
-  return getZendeskGuideEntriesResponseValues
-}
-
 const getBrandsFromElementsSourceNoCache = async (elementsSource: ReadOnlyElementsSource): Promise<InstanceElement[]> =>
   awu(await elementsSource.list())
     .filter(id => id.typeName === BRAND_TYPE_NAME && id.idType === 'instance')
@@ -369,89 +298,14 @@ const getBrandsFromElementsSourceNoCache = async (elementsSource: ReadOnlyElemen
  * Each help_center requires a different paginator.
  */
 const getGuideElements = async ({
-  brandsList,
-  brandToPaginator,
   brandFetchDefinitions,
-  apiDefinitions,
   fetchQuery,
   getElemIdFunc,
-  useGuideNewInfra,
 }: {
-  brandsList: InstanceElement[]
-  brandToPaginator: Record<string, clientUtils.Paginator>
   brandFetchDefinitions: definitionsUtils.RequiredDefinitions<Options>
-  apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
-  useGuideNewInfra: boolean | undefined
 }): Promise<fetchUtils.FetchElements<Element[]>> => {
-  const transformationDefaultConfig = apiDefinitions.typeDefaults.transformation
-  const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
-  // Omit standaloneFields from config to avoid creating types from references
-  const typesConfigWithNoStandaloneFields = _.mapValues(apiDefinitions.types, config =>
-    _.omit(config, ['transformation.standaloneFields']),
-  )
-  if (useGuideNewInfra === false) {
-    const fetchResultWithDuplicateTypes = await Promise.all(
-      brandsList.map(async brandInstance => {
-        const brandsPaginator = brandToPaginator[brandInstance.elemID.name]
-        log.debug(`Fetching elements for brand ${brandInstance.elemID.name}`)
-        return getAllElements({
-          adapterName: ZENDESK,
-          types: typesConfigWithNoStandaloneFields,
-          shouldAddRemainingTypes: false,
-          supportedTypes: GUIDE_BRAND_SPECIFIC_TYPES,
-          fetchQuery,
-          paginator: brandsPaginator,
-          nestedFieldFinder: findDataField,
-          computeGetArgs,
-          typeDefaults: apiDefinitions.typeDefaults,
-          getElemIdFunc,
-          getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandInstance),
-        })
-      }),
-    )
-
-    const typeNameToGuideInstances = _.groupBy(
-      fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
-      instance => instance.elemID.typeName,
-    )
-
-    // Create new types based on the created instances from all brands,
-    // then create new instances with the corresponding type as refType
-    const zendeskGuideElements = Object.entries(typeNameToGuideInstances).flatMap(([typeName, instances]) => {
-      const guideElements = elementUtils.ducktype.getNewElementsFromInstances({
-        adapterName: ZENDESK,
-        typeName,
-        instances,
-        transformationConfigByType,
-        transformationDefaultConfig,
-      })
-      return _.concat(guideElements.instances as Element[], guideElements.nestedTypes, guideElements.type)
-    })
-
-    // Create instances from standalone fields that were not created in previous steps
-    await elementUtils.ducktype.extractStandaloneFields({
-      adapterName: ZENDESK,
-      elements: zendeskGuideElements,
-      transformationConfigByType,
-      transformationDefaultConfig,
-      getElemIdFunc,
-    })
-
-    const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(
-      fetchResult => fetchResult.configChanges ?? [],
-    )
-
-    const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
-    return {
-      elements: zendeskGuideElements,
-      configChanges: fetchUtils.getUniqueConfigSuggestions(allConfigChangeSuggestions),
-      errors: guideErrors,
-    }
-  }
-  // to monitor new infra usage, will be removed later
-  log.debug('using new infra for guide')
   const guideFetchResult = await fetchUtils.getElements({
     adapterName: ZENDESK,
     fetchQuery,
@@ -636,51 +490,26 @@ export default class ZendeskAdapter implements AdapterOperations {
   }
 
   @logDuration('generating instances and types from service')
-  private async getElements(): Promise<ReturnType<typeof getAllElements>> {
+  private async getElements(): Promise<ReturnType<typeof fetchUtils.getElements>> {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const supportedTypes = this.filterSupportedTypes()
 
-    // Temporarily get fetch method from the config. This is used for testing purposes
-    // and should be removed once we are confident the new infra behaves nicely - SALTO-5761
-    const { useNewInfra, useGuideNewInfra } = this.userConfig[FETCH_CONFIG]
-    let defaultSubdomainResult
-    if (useNewInfra !== true) {
-      // Zendesk Support and (if enabled) global Zendesk Guide types
-      defaultSubdomainResult = await getAllElements({
-        adapterName: ZENDESK,
-        types: this.userConfig.apiDefinitions.types,
-        shouldAddRemainingTypes: !isGuideInFetch,
-        // tags are "fetched" in a filter, layout is not supported on old infra
-        supportedTypes: _.omit(supportedTypes, 'tag', LAYOUT_TYPE_NAME),
-        fetchQuery: this.fetchQuery,
-        paginator: this.paginator,
-        nestedFieldFinder: findDataField,
-        computeGetArgs,
-        typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
-        getElemIdFunc: this.getElemIdFunc,
-        customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
-      })
-    } else {
-      defaultSubdomainResult = await fetchUtils.getElements({
-        adapterName: ZENDESK,
-        fetchQuery: this.fetchQuery,
-        getElemIdFunc: this.getElemIdFunc,
-        definitions: this.fetchSupportDefinitions,
-        customItemFilter: filterOutInactiveItemForType(this.userConfig),
-      })
-      if (!isGuideInFetch) {
-        addRemainingTypes({
-          adapterName: ZENDESK,
-          elements: defaultSubdomainResult.elements,
-          typesConfig: this.userConfig.apiDefinitions.types,
-          supportedTypes,
-          typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
-        })
-      }
-    }
-
+    const defaultSubdomainResult = await fetchUtils.getElements({
+      adapterName: ZENDESK,
+      fetchQuery: this.fetchQuery,
+      getElemIdFunc: this.getElemIdFunc,
+      definitions: this.fetchSupportDefinitions,
+      customItemFilter: filterOutInactiveItemForType(this.userConfig),
+    })
     if (!isGuideInFetch) {
+      addRemainingTypes({
+        adapterName: ZENDESK,
+        elements: defaultSubdomainResult.elements,
+        typesConfig: this.userConfig.apiDefinitions.types,
+        supportedTypes,
+        typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
+      })
       return defaultSubdomainResult
     }
 
@@ -707,15 +536,6 @@ export default class ZendeskAdapter implements AdapterOperations {
         },
       ])
     } else {
-      const brandToPaginator = Object.fromEntries(
-        brandsList.map(brandInstance => [
-          brandInstance.elemID.name,
-          createPaginator({
-            client: this.createClientBySubdomain(brandInstance.value.subdomain),
-            paginationFuncCreator: paginate,
-          }),
-        ]),
-      )
       const brandClients = Object.fromEntries(
         brandsList.map(brandInstance => [
           brandInstance.value.id,
@@ -746,13 +566,9 @@ export default class ZendeskAdapter implements AdapterOperations {
       )
 
       const zendeskGuideElements = await getGuideElements({
-        brandsList,
-        brandToPaginator,
         brandFetchDefinitions: guideDefinitions,
-        apiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchQuery: this.fetchQuery,
         getElemIdFunc: this.getElemIdFunc,
-        useGuideNewInfra,
       })
 
       combinedRes.configChanges = combinedRes.configChanges.concat(zendeskGuideElements.configChanges ?? [])

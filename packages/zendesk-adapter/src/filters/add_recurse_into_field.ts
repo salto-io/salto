@@ -7,7 +7,6 @@
  */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { FETCH_CONFIG } from '../config'
 
 type RecurseIntoFieldComponent = {
   recurseIntoFields: { fieldName: string }[]
@@ -43,13 +42,9 @@ const recurseIntoFieldMap: Record<string, RecurseIntoFieldComponent> = {
  * While this is 'correct' behavior, it diverges from the behavior of the old infra, which means it creates a diff
  * while fetching for clients.  * We would like to not have diff, so in this filter we re-add the omitted fields.
  */
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = () => ({
   name: 'addRecurseIntoField',
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (config[FETCH_CONFIG].useNewInfra !== true) {
-      return
-    }
-
     elements.filter(isInstanceElement).forEach(element => {
       const fields = recurseIntoFieldMap[element.elemID.typeName]
       if (fields === undefined) {

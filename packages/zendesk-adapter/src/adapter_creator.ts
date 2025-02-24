@@ -112,18 +112,15 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   ) as configUtils.AdapterDuckTypeApiConfig
 
   const fetch = mergeWithDefaultConfig(DEFAULT_CONFIG.fetch, config?.value.fetch) as ZendeskFetchConfig
-  const useNewInfra = configValue.fetch?.useNewInfra
-  if (useNewInfra !== false) {
-    const configForNewInfra = config?.clone()
-    const updatedElemIDs = updateElemIDDefinitions(configForNewInfra?.value?.apiDefinitions)
-    if (updatedElemIDs?.elemID !== undefined) {
-      if (fetch.elemID !== undefined) {
-        log.debug('fetch.elemId is defined and is going to be merged with data from the api_definition')
-      }
-      const mergedElemIDConfig = _.merge(_.pick(fetch, 'elemID'), updatedElemIDs)
-      fetch.elemID = mergedElemIDConfig.elemID
-      log.debug(`elemId config has changes and equal to: ${inspectValue(fetch.elemID)}`)
+  const configForNewInfra = config?.clone()
+  const updatedElemIDs = updateElemIDDefinitions(configForNewInfra?.value?.apiDefinitions)
+  if (updatedElemIDs?.elemID !== undefined) {
+    if (fetch.elemID !== undefined) {
+      log.debug('fetch.elemId is defined and is going to be merged with data from the api_definition')
     }
+    const mergedElemIDConfig = _.merge(_.pick(fetch, 'elemID'), updatedElemIDs)
+    fetch.elemID = mergedElemIDConfig.elemID
+    log.debug(`elemId config has changes and equal to: ${inspectValue(fetch.elemID)}`)
   }
 
   const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {

@@ -6,7 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Element, CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
-// import _ from 'lodash'
 import { SALESFORCE, TYPES_PATH } from '../constants'
 import { FilterCreator } from '../filter'
 import { ensureSafeFilterFetch } from './utils'

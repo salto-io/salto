@@ -6,12 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import {
-  ObjectType,
-  ElemID,
-  InstanceElement,
-  toChange,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { OKTA, APPLICATION_TYPE_NAME, APP_PROVISIONING_FIELD_NAMES } from '../../src/constants'
 import { appProvisioningAdditionValidator } from '../../src/change_validators/app_provisioning_addition'
 
@@ -36,7 +31,8 @@ describe('appProvisioningAdditionValidator', () => {
             elemID: app.elemID,
             severity: 'Error',
             message: 'Application provisioning cannot be added',
-            detailedMessage: 'To deploy this application, remove the provisioning configuration first. Then, enable provisioning within the service and perform a fetch.',
+            detailedMessage:
+              'To deploy this application, remove the provisioning configuration first. Then, enable provisioning within the service and perform a fetch.',
           },
         ])
       })
@@ -79,7 +75,8 @@ describe('appProvisioningAdditionValidator', () => {
             elemID: after.elemID,
             severity: 'Error',
             message: 'Application provisioning cannot be added',
-            detailedMessage: 'To deploy this application, remove the provisioning configuration first. Then, enable provisioning within the service and perform a fetch.',
+            detailedMessage:
+              'To deploy this application, remove the provisioning configuration first. Then, enable provisioning within the service and perform a fetch.',
           },
         ])
       })

@@ -6,10 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { ObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import adapterCreators from './creators'
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)
 
-export const getAdapterConfigOptionsType = (adapterName: string, optionsContext?: boolean): ObjectType | undefined =>
-  adapterCreators[adapterName]?.configCreator?.optionsType(optionsContext)
+export const getAdapterConfigOptionsType = (
+  adapterName: string,
+  adapterContext?: InstanceElement,
+): ObjectType | undefined => adapterCreators[adapterName]?.configCreator?.optionsType(adapterContext)

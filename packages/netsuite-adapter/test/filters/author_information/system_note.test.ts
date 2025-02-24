@@ -110,7 +110,7 @@ describe('netsuite system note author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     const recordTypeSystemNotesQuery = {
       select: 'name, recordid, recordtypeid, date',
-      from: `(SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid)`,
+      from: `(SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123, -125) GROUP BY name, recordid, recordtypeid)`,
       orderBy: 'name, recordid, recordtypeid',
     }
 
@@ -139,7 +139,7 @@ describe('netsuite system note author information', () => {
     ])
     const systemNotesQuery = {
       select: 'name, recordid, recordtypeid, date',
-      from: `(SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid)`,
+      from: `(SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123, -125) GROUP BY name, recordid, recordtypeid)`,
       orderBy: 'name, recordid, recordtypeid',
     }
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, systemNotesQuery)

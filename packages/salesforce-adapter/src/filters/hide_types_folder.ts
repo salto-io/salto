@@ -25,12 +25,8 @@ const filterCreator: FilterCreator = ({ config }) => ({
         if (isObjectType(element)) {
           const objFields = Object.values(element.fields)
           objFields.forEach(f => {
-            if (f.refType) {
-              if (f.refType.type) {
-                if (f.refType.type.annotations) {
-                  f.refType.type.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-                }
-              }
+            if (f.refType?.type?.annotations) {
+              f.refType.type.annotations[CORE_ANNOTATIONS.HIDDEN] = true
             }
           })
         }

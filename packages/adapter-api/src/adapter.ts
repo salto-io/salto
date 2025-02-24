@@ -201,7 +201,7 @@ export type AccountInfo = {
 }
 
 export type ConfigCreator = {
-  optionsType: (jiraOptionsContext?: boolean) => ObjectType
+  optionsType: (adapterContext?: InstanceElement) => ObjectType
   getConfig: (options?: InstanceElement) => Promise<InstanceElement>
 }
 

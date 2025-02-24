@@ -667,12 +667,6 @@ export const rename = async (
   return renameElementChanges
 }
 
-export const getAdapterConfigOptionsType = (
-  adapterName: string,
-  adapterCreators: Record<string, Adapter>,
-  optionsContext?: boolean,
-): ObjectType | undefined => adapterCreators[adapterName]?.configCreator?.optionsType(optionsContext)
-
 /**
  * @deprecated
  */

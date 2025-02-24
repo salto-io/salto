@@ -16,7 +16,8 @@ import {
   isAdditionOrModificationChange,
   UnresolvedReference,
   UnresolvedReferenceError,
-  SaltoErrorType, CORE_ANNOTATIONS,
+  SaltoErrorType,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   walkOnElement,

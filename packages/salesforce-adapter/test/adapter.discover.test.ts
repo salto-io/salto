@@ -28,7 +28,7 @@ import { MetadataInfo } from '@salto-io/jsforce'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { apiName, createInstanceElement, MetadataObjectType, Types } from '../src/transformers/transformer'
@@ -2894,7 +2894,16 @@ describe('Fetch via retrieve API', () => {
     let metadataRetrieveSpy: jest.SpyInstance
     let metadataReadSpy: jest.SpyInstance
     let fetchProfile: FetchProfile
-    const typeError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ApexClass'
+    const retrieveResult = {
+      done: 'true',
+      errorMessage: 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ApexClass',
+      errorStatusCode: 'UNKNOWN_EXCEPTION',
+      id: '09SVg000005gpT3MAI',
+      status: 'Failed',
+      success: 'false',
+      zipFile: { $: { 'xsi:nil': 'true' } },
+      messages: [],
+    }
     const instanceError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
     beforeEach(async () => {
       metadataRetrieveSpy = jest.spyOn(connection.metadata, 'retrieve')
@@ -2909,7 +2918,7 @@ describe('Fetch via retrieve API', () => {
           type.members.includes('ProblematicApexClass'),
         )
         if (hasProblematicApexClass) {
-          throw new Error(typeError)
+          return mockRetrieveLocator(retrieveResult)
         }
         return mockRetrieveLocator(mockRetrieveResult({}))
       })
@@ -3020,7 +3029,9 @@ describe('Fetch via retrieve API', () => {
           })
         } catch (error) {
           expect(metadataRetrieveSpy).toHaveBeenCalledOnce()
-          expect(error.message).toEqual(typeError)
+          expect(error.message).toContain(
+            `Retrieve request for ApexClass,CustomObject failed. messages: ${makeArray(safeJsonStringify(retrieveResult.messages)).concat(retrieveResult.errorMessage ?? [])}`,
+          )
           expect(metadataReadSpy).toHaveBeenCalledTimes(2)
           expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['SomeApexClass']))
           expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['ProblematicApexClass']))

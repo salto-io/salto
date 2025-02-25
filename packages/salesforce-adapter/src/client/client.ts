@@ -845,7 +845,7 @@ export default class SalesforceClient implements ISalesforceClient {
         // This seems to happen with actions that relate to sending emails - these are disabled in
         // some way on sandboxes and for some reason this causes the SF API to fail reading
         (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid') ||
-        error.name === 'sf:INSUFFICIENT_ACCESS',
+        (error.name === 'sf:INSUFFICIENT_ACCESS' && !error.message.includes('insufficient access rights on entity')),
       isUnhandledError,
     })
   }
@@ -929,7 +929,7 @@ export default class SalesforceClient implements ISalesforceClient {
   ): Promise<RetrieveResultWithErrors> {
     const errorPattern = /INSUFFICIENT_ACCESS: insufficient access rights on entity: (\w+)/g
     const handleInsufficientAccessErrors = async (
-      matches: string[],
+      matches: RegExpMatchArray[],
     ): Promise<{ instancesErrors: ErrorInfo[]; newRetrieveRequest: RetrieveRequest }> => {
       if (retrieveRequest.unpackaged === undefined || retrieveRequest.unpackaged.types === undefined) {
         return { instancesErrors: [], newRetrieveRequest: retrieveRequest }
@@ -979,36 +979,38 @@ export default class SalesforceClient implements ISalesforceClient {
       }
       return { instancesErrors, newRetrieveRequest }
     }
-    try {
-      return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
-    } catch (e) {
-      const matches = [...e.message.matchAll(errorPattern)]
-      if (matches.length > 0) {
-        const { instancesErrors, newRetrieveRequest } = await handleInsufficientAccessErrors(matches)
-        log.debug('Found the following errors while trying to retrieve:')
-        instancesErrors.forEach(({ instance, error }) => {
-          log.debug(`Instance: ${instance}, Error: ${error.message}`)
-        })
-        if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
-          log.debug(
-            'updating original retrieve request: %s to new retrieve request: %s',
-            inspectValue(retrieveRequest.unpackaged?.types),
-            inspectValue(newRetrieveRequest.unpackaged?.types),
-          )
-          const retrieveResult = await this.retrieve(newRetrieveRequest)
-          return {
-            ...retrieveResult,
-            errors: [...(retrieveResult.errors ?? []), ...instancesErrors],
-          }
-        }
+
+    const result = flatValues(
+      await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()),
+    ) as RetrieveResult
+    if (_.isString(result.zipFile)) return result
+    const errorMessage = result.errorMessage ?? ''
+    const matches = [...errorMessage.matchAll(errorPattern)]
+    if (matches.length > 0) {
+      const { instancesErrors, newRetrieveRequest } = await handleInsufficientAccessErrors(matches)
+      log.debug('Found the following errors while trying to retrieve:')
+      instancesErrors.forEach(({ instance, error }) => {
+        log.debug(`Instance: ${instance}, Error: ${error.message}`)
+      })
+      if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
         log.debug(
-          'handleInsufficientAccessRightsOnEntity is disabled. Skipping retrieve call. original retrieve request: %s new retrieve request: %s',
+          'updating original retrieve request: %s to new retrieve request: %s',
           inspectValue(retrieveRequest.unpackaged?.types),
           inspectValue(newRetrieveRequest.unpackaged?.types),
         )
+        const retrieveResult = await this.retrieve(newRetrieveRequest)
+        return {
+          ...retrieveResult,
+          errors: [...(retrieveResult.errors ?? []), ...instancesErrors],
+        }
       }
-      throw e
+      log.debug(
+        'handleInsufficientAccessRightsOnEntity is disabled. Skipping retrieve call. original retrieve request: %s new retrieve request: %s',
+        inspectValue(retrieveRequest.unpackaged?.types),
+        inspectValue(newRetrieveRequest.unpackaged?.types),
+      )
     }
+    return result
   }
 
   private async reportDeployProgressUntilComplete(

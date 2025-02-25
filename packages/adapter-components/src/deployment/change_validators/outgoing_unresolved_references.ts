@@ -18,7 +18,13 @@ import {
   UnresolvedReferenceError,
   SaltoErrorType,
 } from '@salto-io/adapter-api'
-import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP, getIndependentElemIDs } from '@salto-io/adapter-utils'
+import {
+  walkOnElement,
+  WalkOnFunc,
+  WALK_NEXT_STEP,
+  getIndependentElemIDs,
+  ERROR_MESSAGES,
+} from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
@@ -64,8 +70,8 @@ export const createOutgoingUnresolvedReferencesValidator =
         return {
           elemID: element.elemID,
           severity: 'Error' as SeverityLevel,
-          message: 'Element has unresolved references',
-          detailedMessage: `Element ${element.elemID.getFullName()} contains unresolved references: ${unresolvedReferences.map(e => e.getFullName()).join(', ')}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`,
+          message: ERROR_MESSAGES.UNRESOLVED_REFERENCE,
+          detailedMessage: `This element contains unresolved references: ${unresolvedReferences.map(e => e.getFullName()).join(', ')}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`,
           unresolvedElemIds: unresolvedReferences,
           type: 'unresolvedReferences' as SaltoErrorType,
         }

@@ -47,21 +47,6 @@ const filterCreator: FilterCreator = () => ({
       appType.fields.features.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
       appType.fields.features.annotations[CORE_ANNOTATIONS.DELETABLE] = false
     }
-    // We currently do not support Creation because it requires authentication that we do not support.
-    // In certain cases, we can able creation (when provisioning authentication has passed but was later disabled).
-    // Therefore, it may be considered in the future to change this to a CV that can be disabled for specific customers if they know what they are doing.
-    if (appType?.fields.applicationProvisioningUsers !== undefined) {
-      appType.fields.applicationProvisioningUsers.annotations[CORE_ANNOTATIONS.CREATABLE] = false
-    }
-    if (appType?.fields.applicationProvisioningGeneral !== undefined) {
-      appType.fields.applicationProvisioningGeneral.annotations[CORE_ANNOTATIONS.CREATABLE] = false
-    }
-    if (appType?.fields.applicationUserProvisioning !== undefined) {
-      appType.fields.applicationUserProvisioning.annotations[CORE_ANNOTATIONS.CREATABLE] = false
-    }
-    if (appType?.fields.applicationInboundProvisioning !== undefined) {
-      appType.fields.applicationInboundProvisioning.annotations[CORE_ANNOTATIONS.CREATABLE] = false
-    }
   },
 })
 

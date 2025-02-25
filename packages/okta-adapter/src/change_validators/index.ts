@@ -47,6 +47,7 @@ import { OktaUserConfig, ChangeValidatorName } from '../user_config'
 import { OktaOptions } from '../definitions/types'
 import { BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
 import { appGroupAssignmentProfileAttributesValidator } from './app_group_assignments_profile_attributes'
+import { appProvisioningAdditionValidator } from './app_provisioning_addition'
 
 const { createCheckDeploymentBasedOnDefinitionsValidator, getDefaultChangeValidators, createChangeValidator } =
   deployment.changeValidators
@@ -104,6 +105,7 @@ export default ({
     everyoneGroupAssignments,
     emailDomainAddition: emailDomainAdditionValidator,
     provisionedUserAdditions,
+    appProvisioningAddition: appProvisioningAdditionValidator,
   }
 
   return createChangeValidator({

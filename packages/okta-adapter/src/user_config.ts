@@ -66,6 +66,7 @@ const changeValidatorNames = [
   'everyoneGroupAssignments',
   'emailDomainAddition',
   'provisionedUserAdditions',
+  'appProvisioningAddition',
 ] as const
 
 export type ChangeValidatorName = (typeof changeValidatorNames)[number]

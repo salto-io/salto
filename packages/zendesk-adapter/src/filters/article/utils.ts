@@ -43,7 +43,7 @@ import ZendeskClient from '../../client/client'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 import { CLIENT_CONFIG } from '../../config'
-import { ZendeskApiConfig, ZendeskUserConfig } from '../../user_config'
+import { ZendeskUserConfig } from '../../user_config'
 import { DOMAIN_REGEX, ELEMENTS_REGEXES, transformReferenceUrls } from '../utils'
 import { lookupFunc } from '../field_references'
 

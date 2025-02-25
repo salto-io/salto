@@ -63,7 +63,7 @@ describe('getAdapterConfigOptionsType', () => {
     ...mockAdapter,
     configCreator: {
       getConfig: jest.fn(),
-      optionsType: mockConfigOptionsObjectType,
+      optionsType: () => mockConfigOptionsObjectType,
     },
   }
 

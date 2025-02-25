@@ -345,7 +345,7 @@ export class UnresolvedReferenceValidationError extends ValidationError {
     super({
       elemID,
       error: `Unresolved reference ${target.getFullName()}`,
-      severity: 'Warning'
+      severity: 'Warning',
     })
     this.target = target
   }

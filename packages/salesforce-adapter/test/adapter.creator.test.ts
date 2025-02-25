@@ -19,7 +19,9 @@ import {
   accessTokenCredentialsType,
   METADATA_TYPES_SKIPPED_LIST,
 } from '../src/types'
-import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import { METADATA_DEPLOY_PENDING_STATUS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import { createMockProgressReporter, MockDeployProgressReporter } from './utils'
+import createMockClient from './client'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -105,37 +107,46 @@ describe('SalesforceAdapter creator', () => {
   })
 
   describe('when creating oauth request', () => {
-    const oauthLoginInput = new InstanceElement(ElemID.CONFIG_NAME, oauthRequestParameters, {
-      consumerKey: 'testConsumerKey',
-      port: 8080,
-    })
-    it('creates oauth request with url using parameters', () => {
-      const request = (adapter.authenticationMethods.oauth as OAuthMethod).createOAuthRequest(oauthLoginInput)
-      expect(request.url.includes(oauthLoginInput.value.consumerKey)).toBeTruthy()
-      expect(request.url.includes(oauthLoginInput.value.port)).toBeTruthy()
-    })
-    it('creates the right object from the response', async () => {
-      const responseCredentials = await (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
-        {
-          sandbox: false,
-          consumerKey: oauthConfigObj.clientId,
-          consumerSecret: oauthConfigObj.clientSecret,
-        },
-        {
-          fields: {
-            refreshToken: oauthConfigObj.refreshToken,
-            accessToken: oauthConfigObj.accessToken,
-            instanceUrl: oauthConfigObj.instanceUrl,
+    describe.each([
+      [false, 'login'],
+      [true, 'test'],
+    ])('isSandbox %p', (sandbox, urlPart) => {
+      const oauthLoginInput = new InstanceElement(ElemID.CONFIG_NAME, oauthRequestParameters, {
+        consumerKey: 'testConsumerKey',
+        port: 8080,
+        sandbox,
+      })
+
+      it('creates oauth request with url using parameters', () => {
+        const request = (adapter.authenticationMethods.oauth as OAuthMethod).createOAuthRequest(oauthLoginInput)
+        expect(request.url.includes(oauthLoginInput.value.consumerKey)).toBeTruthy()
+        expect(request.url.includes(oauthLoginInput.value.port)).toBeTruthy()
+        expect(request.url.includes(urlPart)).toBeTruthy()
+      })
+
+      it('creates the right object from the response', async () => {
+        const responseCredentials = await (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
+          {
+            sandbox,
+            consumerKey: oauthConfigObj.clientId,
+            consumerSecret: oauthConfigObj.clientSecret,
           },
-        },
-      )
-      expect(responseCredentials).toEqual({
-        sandbox: false,
-        accessToken: oauthConfigObj.accessToken,
-        instanceUrl: oauthConfigObj.instanceUrl,
-        clientSecret: oauthConfigObj.clientSecret,
-        clientId: oauthConfigObj.clientId,
-        refreshToken: oauthConfigObj.refreshToken,
+          {
+            fields: {
+              refreshToken: oauthConfigObj.refreshToken,
+              accessToken: oauthConfigObj.accessToken,
+              instanceUrl: oauthConfigObj.instanceUrl,
+            },
+          },
+        )
+        expect(responseCredentials).toEqual({
+          sandbox,
+          accessToken: oauthConfigObj.accessToken,
+          instanceUrl: oauthConfigObj.instanceUrl,
+          clientSecret: oauthConfigObj.clientSecret,
+          clientId: oauthConfigObj.clientId,
+          refreshToken: oauthConfigObj.refreshToken,
+        })
       })
     })
   })
@@ -701,6 +712,86 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
       const updatedConfig = getConfigChange(undefined, undefined)
       it('return undefined', () => {
         expect(updatedConfig).toBe(undefined)
+      })
+    })
+  })
+
+  describe('deployProgressReporter', () => {
+    let mockDeployProgressReporter: MockDeployProgressReporter
+
+    beforeAll(async () => {
+      const { client } = createMockClient()
+      jest.spyOn(client, 'getUrl').mockResolvedValue(new URL('https://example.com'))
+
+      mockDeployProgressReporter = await createMockProgressReporter(client)
+    })
+
+    describe('reportMetadataProgress', () => {
+      describe('when reporting a pending deployment for the first time', () => {
+        it('should report a relevant messages', () => {
+          mockDeployProgressReporter.reportMetadataProgress({
+            result: {
+              id: 'deployment_id',
+              checkOnly: false,
+              completedDate: '',
+              createdDate: '',
+              done: false,
+              lastModifiedDate: '',
+              numberComponentErrors: 0,
+              numberComponentsDeployed: 0,
+              numberComponentsTotal: 0,
+              numberTestErrors: 0,
+              numberTestsCompleted: 0,
+              numberTestsTotal: 0,
+              startDate: '',
+              status: METADATA_DEPLOY_PENDING_STATUS,
+              success: false,
+            },
+          })
+          expect(mockDeployProgressReporter.getReportedMessages()[0]).toInclude('deployment_id')
+          expect(mockDeployProgressReporter.getReportedMessages()[1]).toInclude(
+            'Metadata: Waiting on another deploy or automated process to finish in Salesforce.',
+          )
+        })
+      })
+
+      describe('when reporting an active deployment', () => {
+        it('should report a link to the deployment', () => {
+          mockDeployProgressReporter.reportMetadataProgress({
+            result: {
+              id: 'deployment_id',
+              checkOnly: false,
+              completedDate: '',
+              createdDate: '',
+              done: false,
+              lastModifiedDate: '',
+              numberComponentErrors: 0,
+              numberComponentsDeployed: 1,
+              numberComponentsTotal: 2,
+              numberTestErrors: 0,
+              numberTestsCompleted: 3,
+              numberTestsTotal: 4,
+              startDate: '',
+              status: 'Active',
+              success: false,
+            },
+          })
+          expect(mockDeployProgressReporter.getReportedMessages()[2]).toInclude('1/2 Metadata Components, 3/4 Tests.')
+          expect(mockDeployProgressReporter.getReportedMessages()[2]).toInclude(
+            'View deployment status [in Salesforce](https://example.com',
+          )
+        })
+      })
+
+      describe('when reporting data progress', () => {
+        it('should add data progress to the message', () => {
+          mockDeployProgressReporter.reportDataProgress(10)
+          expect(mockDeployProgressReporter.getReportedMessages()[3]).toInclude('1/2 Metadata Components, 3/4 Tests.')
+          expect(mockDeployProgressReporter.getReportedMessages()[3]).toInclude(
+            'View deployment status [in Salesforce](https://example.com',
+          )
+          expect(mockDeployProgressReporter.getReportedMessages()[3]).toInclude('10 Data Instances')
+        })
       })
     })
   })

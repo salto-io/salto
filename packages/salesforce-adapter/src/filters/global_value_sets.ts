@@ -107,7 +107,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
     })
     const customObjects = elements.filter(isObjectType).filter(isCustomObjectSync)
     customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef, referenceElements))
-    // console.log(customObjects)
   },
 })
 

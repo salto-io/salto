@@ -14,7 +14,7 @@ import { ROUTING_ATTRIBUTE_VALUE_TYPE_NAME } from '../constants'
 /**
  * Deploys routing attribute value one by one as zendesk does not support parallel deploy
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, definitions }) => ({
   name: 'routingAttributeValueFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -22,7 +22,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       change => getChangeData(change).elemID.typeName === ROUTING_ATTRIBUTE_VALUE_TYPE_NAME,
     )
     const deployResult = await deployChangesSequentially(relevantChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions)
+      await deployChange({ change, client, apiDefinitions: oldApiDefinitions, definitions })
     })
     return { deployResult, leftoverChanges }
   },

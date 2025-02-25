@@ -36,7 +36,7 @@ const DEFAULT_LOCALE = 'default_locale'
  On fetch - Add 'default_locale' field for guide_settings from an url request
  On deploy - send and api request to update the default language if it was changed
  */
-const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, brandIdToClient = {} }) => ({
+const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, brandIdToClient = {}, definitions }) => ({
   name: 'guideDefaultLanguage',
   onFetch: async elements => {
     if (!isGuideEnabled(config[FETCH_CONFIG])) {
@@ -119,7 +119,13 @@ const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, brand
           [change],
           // Deploying with the default_locale field does nothing, but we ignore it for safety
           async c => {
-            await deployChange(c, client, oldApiDefinitions, [DEFAULT_LOCALE])
+            await deployChange({
+              change: c,
+              client,
+              apiDefinitions: oldApiDefinitions,
+              definitions,
+              fieldsToIgnore: [DEFAULT_LOCALE],
+            })
           },
         )
       })

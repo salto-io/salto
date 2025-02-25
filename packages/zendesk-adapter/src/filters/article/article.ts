@@ -401,7 +401,14 @@ const shouldIgnoreUserSegment = (change: Change<InstanceElement>): boolean => {
 /**
  * Deploys articles and adds default user_segment value to visible articles
  */
-const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, elementSource, brandIdToClient = {} }) => {
+const filterCreator: FilterCreator = ({
+  config,
+  oldApiDefinitions,
+  client,
+  elementSource,
+  brandIdToClient = {},
+  definitions,
+}) => {
   const articleNameToAttachments: Record<string, number[]> = {}
   return {
     name: 'articleFilter',
@@ -517,7 +524,13 @@ const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, eleme
         if (shouldIgnoreUserSegment(change)) {
           fieldsToIgnore.push('user_segment_id')
         }
-        await deployChange(change, client, oldApiDefinitions, fieldsToIgnore)
+        await deployChange({
+          change,
+          client,
+          apiDefinitions: oldApiDefinitions,
+          definitions,
+          fieldsToIgnore,
+        })
         const articleInstance = getChangeData(change)
         if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {
           await associateAttachments(

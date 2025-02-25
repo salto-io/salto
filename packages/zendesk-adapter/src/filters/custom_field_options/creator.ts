@@ -42,7 +42,7 @@ const { makeArray } = collections.array
 
 export const createCustomFieldOptionsFilterCreator =
   ({ filterName, parentTypeName, childTypeName }: CustomFieldOptionsFilterCreatorParams): FilterCreator =>
-  ({ oldApiDefinitions, client, elementSource }) => ({
+  ({ oldApiDefinitions, client, elementSource, definitions }) => ({
     name: filterName,
     onFetch: async (elements: Element[]): Promise<void> => {
       const parentType = elements.filter(isObjectType).find(inst => inst.elemID.typeName === parentTypeName)
@@ -140,18 +140,30 @@ export const createCustomFieldOptionsFilterCreator =
         const deployResult = await deployChangesByGroups(
           [nonRemovalChanges, removalChanges] as Change<InstanceElement>[][],
           async change => {
-            await deployChange(change, client, oldApiDefinitions)
+            await deployChange({
+              change,
+              client,
+              apiDefinitions: oldApiDefinitions,
+              definitions,
+            })
           },
         )
         return { deployResult, leftoverChanges }
       }
       const deployResult = await deployChanges(parentChanges, async change => {
-        const response = await deployChange(change, client, oldApiDefinitions, [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME])
+        const response = await deployChange({
+          change,
+          client,
+          apiDefinitions: oldApiDefinitions,
+          definitions,
+          fieldsToIgnore: [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
+        })
         return addIdsToChildrenUponAddition({
           response,
           parentChange: change,
           childrenChanges,
           apiDefinitions: oldApiDefinitions,
+          definitions,
           childFieldName: CUSTOM_FIELD_OPTIONS_FIELD_NAME,
           childUniqueFieldName: 'value',
         })

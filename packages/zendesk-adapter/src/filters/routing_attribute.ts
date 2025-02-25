@@ -14,7 +14,7 @@ import { ROUTING_ATTRIBUTE_TYPE_NAME } from '../constants'
 /**
  * Deploys routing attribute
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, definitions }) => ({
   name: 'routingAttributeFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -22,7 +22,13 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       change => getChangeData(change).elemID.typeName === ROUTING_ATTRIBUTE_TYPE_NAME && !isRemovalChange(change),
     )
     const deployResult = await deployChanges(relevantChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions, ['values'])
+      await deployChange({
+        change,
+        client,
+        apiDefinitions: oldApiDefinitions,
+        definitions,
+        fieldsToIgnore: ['values'],
+      })
     })
     return { deployResult, leftoverChanges }
   },

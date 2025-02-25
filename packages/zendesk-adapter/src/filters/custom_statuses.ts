@@ -48,7 +48,7 @@ const alignNonRawWithRaw = (change: Change<InstanceElement>): void => {
   value.end_user_description = value.raw_end_user_description
 }
 
-const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
+const filterCreator: FilterCreator = ({ client, oldApiDefinitions, definitions }) => ({
   name: 'customStatus',
   onFetch: async (elements: Element[]): Promise<void> => {
     const defaultCustomStatuses = elements
@@ -103,7 +103,7 @@ const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
       change => CUSTOM_STATUS_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
     const customStatusesDeployResult = await deployChanges(customStatusChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions)
+      await deployChange({ change, client, apiDefinitions: oldApiDefinitions, definitions })
     })
     const [defaultCustomStatusChanges, leftoverChanges] = _.partition(
       firstLeftoverChanges,

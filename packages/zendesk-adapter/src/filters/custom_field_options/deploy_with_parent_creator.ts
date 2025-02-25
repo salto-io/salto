@@ -20,7 +20,7 @@ const log = logger(module)
 
 export const createDeployOptionsWithParentCreator =
   ({ filterName, parentTypeName, childTypeName, onFetch }: CustomFieldOptionsFilterCreatorParams): FilterCreator =>
-  ({ oldApiDefinitions, client }) => ({
+  ({ oldApiDefinitions, client, definitions }) => ({
     name: filterName,
     onFetch,
     preDeploy: async changes => {
@@ -80,12 +80,18 @@ export const createDeployOptionsWithParentCreator =
       })
 
       const deployResult = await deployChanges([...parentChanges, ...additionalParentChanges], async change => {
-        const response = await deployChange(change, client, oldApiDefinitions)
+        const response = await deployChange({
+          change,
+          client,
+          apiDefinitions: oldApiDefinitions,
+          definitions,
+        })
         return addIdsToChildrenUponAddition({
           response,
           parentChange: change,
           childrenChanges,
           apiDefinitions: oldApiDefinitions,
+          definitions,
           childFieldName: CUSTOM_FIELD_OPTIONS_FIELD_NAME,
           childUniqueFieldName: 'value',
         })

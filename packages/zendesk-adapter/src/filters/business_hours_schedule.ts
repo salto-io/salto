@@ -73,7 +73,7 @@ const deployIntervals = async (client: ZendeskClient, change: Change<InstanceEle
 /**
  * Deploys business hours schedules and their intervals
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, definitions }) => ({
   name: 'businessHoursScheduleFilter',
   onFetch: async (elements: Element[]) => {
     elements
@@ -92,7 +92,13 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       change => getChangeData(change).elemID.typeName === BUSINESS_HOURS_SCHEDULE_TYPE_NAME,
     )
     const deployResult = await deployChanges(scheduleChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions, ['holidays'])
+      await deployChange({
+        change,
+        client,
+        apiDefinitions: oldApiDefinitions,
+        definitions,
+        fieldsToIgnore: ['holidays'],
+      })
       await deployIntervals(client, change)
     })
     return { deployResult, leftoverChanges }

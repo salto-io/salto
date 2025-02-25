@@ -25,7 +25,12 @@ const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions, client }
         .includes(getChangeData(change).elemID.typeName),
     )
     const deployResult = await deployChanges(oldInfraChanges.filter(isInstanceChange), async change => {
-      await deployChange(change, client, oldApiDefinitions)
+      await deployChange({
+        change,
+        client,
+        apiDefinitions: oldApiDefinitions,
+        definitions,
+      })
     })
     return { deployResult, leftoverChanges: newInfraChanges }
   },

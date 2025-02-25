@@ -18,30 +18,37 @@ import {
   SaltoError,
   Values,
 } from '@salto-io/adapter-api'
-import { config as configUtils, deployment, client as clientUtils } from '@salto-io/adapter-components'
+import {
+  config as configUtils,
+  deployment,
+  client as clientUtils,
+  definitions as definitionsUtils,
+} from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import ZendeskClient from './client/client'
 import { getZendeskError } from './errors'
 import { ZendeskApiConfig } from './user_config'
+import { Options } from './definitions/types'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
 export const addId = ({
   change,
-  apiDefinitions,
+  definitions,
   response,
   dataField,
   addAlsoOnModification = false,
 }: {
   change: Change<InstanceElement>
-  apiDefinitions: configUtils.AdapterApiConfig
+  definitions: definitionsUtils.ApiDefinitions<Options>
   response: deployment.ResponseResult
   dataField?: string
   addAlsoOnModification?: boolean
 }): void => {
-  const { transformation } = apiDefinitions.types[getChangeData(change).elemID.typeName]
+  const defQuery = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {})
+  const serviceIdFieldNames = defQuery.query(getChangeData(change).elemID.typeName)?.resource?.serviceIDFields ?? ['id']
   if (isAdditionChange(change) || addAlsoOnModification) {
     if (Array.isArray(response)) {
       log.warn(
@@ -50,14 +57,11 @@ export const addId = ({
       )
       return
     }
-    const transformationConfig = configUtils.getConfigWithDefault(
-      transformation,
-      apiDefinitions.typeDefaults.transformation,
-    )
-    const idField = transformationConfig.serviceIdField ?? 'id'
-    const idValue = dataField ? (response?.[dataField] as Values)?.[idField] : response?.[idField]
-    if (idValue !== undefined) {
-      getChangeData(change).value[idField] = idValue
+    const idValues = dataField
+      ? _.pick(response?.[dataField] as Values, serviceIdFieldNames)
+      : _.pick(response, serviceIdFieldNames)
+    if (Object.values(idValues).length > 0) {
+      _.assign(getChangeData(change).value, idValues)
     }
   }
 }
@@ -93,6 +97,7 @@ export const addIdsToChildrenUponAddition = ({
   parentChange,
   childrenChanges,
   apiDefinitions,
+  definitions,
   childFieldName,
   childUniqueFieldName,
 }: {
@@ -100,6 +105,7 @@ export const addIdsToChildrenUponAddition = ({
   parentChange: Change<InstanceElement>
   childrenChanges: Change<InstanceElement>[]
   apiDefinitions: ZendeskApiConfig
+  definitions: definitionsUtils.ApiDefinitions<Options>
   childFieldName: string
   childUniqueFieldName: string
 }): Change<InstanceElement>[] => {
@@ -117,7 +123,7 @@ export const addIdsToChildrenUponAddition = ({
       if (child) {
         addId({
           change,
-          apiDefinitions,
+          definitions,
           response: child,
         })
       }
@@ -126,12 +132,19 @@ export const addIdsToChildrenUponAddition = ({
   return [parentChange, ...childrenChanges]
 }
 
-export const deployChange = async (
-  change: Change<InstanceElement>,
-  client: ZendeskClient,
-  apiDefinitions: configUtils.AdapterApiConfig,
-  fieldsToIgnore?: string[],
-): Promise<deployment.ResponseResult> => {
+export const deployChange = async ({
+  change,
+  client,
+  apiDefinitions,
+  definitions,
+  fieldsToIgnore,
+}: {
+  change: Change<InstanceElement>
+  client: ZendeskClient
+  apiDefinitions: configUtils.AdapterApiConfig
+  definitions: definitionsUtils.ApiDefinitions<Options>
+  fieldsToIgnore?: string[]
+}): Promise<deployment.ResponseResult> => {
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
     const response = await deployment.deployChange({
@@ -142,7 +155,7 @@ export const deployChange = async (
     })
     addId({
       change,
-      apiDefinitions,
+      definitions,
       response,
       dataField: deployRequests?.add?.deployAsField,
     })

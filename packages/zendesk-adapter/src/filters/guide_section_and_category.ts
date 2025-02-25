@@ -89,7 +89,7 @@ export const addRemovalChangesId = (changes: Change<InstanceElement>[]): void =>
  * discards the 'name' and 'description' fields from the section again.
  * Additionally, this filter sends a separate request when `source_locale` is modified
  */
-const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
+const filterCreator: FilterCreator = ({ client, oldApiDefinitions, definitions }) => ({
   name: 'guideSectionCategoryFilter',
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
@@ -114,7 +114,13 @@ const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
         fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
       }
 
-      await deployChange(change, client, oldApiDefinitions, fieldsToIgnore)
+      await deployChange({
+        change,
+        client,
+        apiDefinitions: oldApiDefinitions,
+        definitions,
+        fieldsToIgnore,
+      })
     })
     return { deployResult, leftoverChanges }
   },

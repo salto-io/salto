@@ -14,7 +14,7 @@ import { GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
 /**
  * Deploys Guide types which relate to a certain brand
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, definitions }) => ({
   name: 'deployBrandedGuideTypesFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [guideBrandedTypesChanges, leftoverChanges] = _.partition(
@@ -23,7 +23,13 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
         GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName) && isInstanceChange(change),
     )
     const deployResult = await deployChanges(guideBrandedTypesChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions, ['brand'])
+      await deployChange({
+        change,
+        client,
+        apiDefinitions: oldApiDefinitions,
+        definitions,
+        fieldsToIgnore: ['brand'],
+      })
     })
     return { deployResult, leftoverChanges }
   },

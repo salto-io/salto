@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Element, CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
 import { SALESFORCE, TYPES_PATH } from '../constants'
 import { FilterCreator } from '../filter'
 import { ensureSafeFilterFetch } from './utils'
@@ -22,6 +22,14 @@ const filterCreator: FilterCreator = ({ config }) => ({
     fetchFilterFunc: async elements => {
       elements.filter(isElementWithinTypesFolder).forEach(element => {
         element.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+        if (isObjectType(element)) {
+          const objFields = Object.values(element.fields)
+          objFields.forEach(f => {
+            if (f.refType?.type?.annotations) {
+              f.refType.type.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+            }
+          })
+        }
       })
     },
   }),

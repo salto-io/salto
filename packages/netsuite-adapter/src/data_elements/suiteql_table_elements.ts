@@ -136,7 +136,10 @@ const getColumnSearchResultSchema = (searchColumn: string): Schema => ({
   },
 })
 
-const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, SuiteQLTableQueryParams | undefined> = {
+const QUERIES_BY_TABLE_NAME: Record<
+  Exclude<SuiteQLTableName, AdditionalQueryName>,
+  SuiteQLTableQueryParams | undefined
+> = {
   item: {
     internalIdField: 'id',
     nameField: 'itemid',
@@ -413,6 +416,34 @@ const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, SuiteQLTableQueryParams | 
     internalIdField: 'id',
     nameField: 'name',
   },
+  customfield: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  script: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  role: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  customrecordtype: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  emailtemplate: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  customtransactiontype: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  scriptdeployment: {
+    internalIdField: 'primarykey',
+    nameField: 'title',
+  },
 
   // could not find table
   address: undefined,
@@ -457,12 +488,6 @@ const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, SuiteQLTableQueryParams | 
   // referenced by scriptid
   customList: undefined,
   customRecordType: undefined,
-  customfield: undefined,
-  script: undefined,
-  role: undefined,
-  workflow: undefined,
-  customrecordtype: undefined,
-  emailtemplate: undefined,
 }
 
 export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): InternalIdsMap => {
@@ -766,11 +791,6 @@ export const getSuiteQLTableElements = async (
       .filter(([_tableName, queryParams]) => queryParams !== undefined)
       .map(([tableName, _queryParams]) => tableName)
       .concat(Object.keys(ADDITIONAL_QUERIES))
-      .filter(
-        tableName =>
-          // SALTO-7050 include workflow only if it's in additionalSuiteQLTables in order to avoid noise.
-          tableName !== WORKFLOW || config.suiteAppClient?.additionalSuiteQLTables?.find(row => row.name === WORKFLOW),
-      )
       .map(tableName => getSuiteQLTableInstance(suiteQLTableType, tableName, elementsSource, isPartial)),
   )
 

@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { extractTemplate, replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
+import { replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
 import {
   InstanceElement,
   isInstanceElement,
@@ -22,8 +22,7 @@ import {
 import { FilterCreator } from '../../filter'
 import { FIELD_TYPE_NAME } from '../fields/constants'
 import { referenceFunc, walkOnScripts } from './walk_on_scripts'
-
-const CUSTOM_FIELD_PATTERN = /(customfield_\d+)/
+import { addFieldsTemplateReferences } from '../fields/reference_to_fields'
 
 const removeTemplateReferences =
   (originalInstances: Record<string, TemplateExpression>): referenceFunc =>
@@ -48,26 +47,6 @@ const restoreTemplateReferences =
     resolveTemplates({ values: [value], fieldName }, originalInstances)
   }
 
-const referenceCustomFields = (
-  script: string,
-  fieldInstancesById: Map<string, InstanceElement>,
-): TemplateExpression | string =>
-  extractTemplate(script, [CUSTOM_FIELD_PATTERN], expression => {
-    const instance = fieldInstancesById.get(expression)
-    if (!expression.match(CUSTOM_FIELD_PATTERN) || instance === undefined) {
-      return expression
-    }
-    return new ReferenceExpression(instance.elemID, instance)
-  })
-
-const addTemplateReferences =
-  (fieldInstancesById: Map<string, InstanceElement>): referenceFunc =>
-  (value: Value, fieldName: string): void => {
-    if (typeof value[fieldName] === 'string') {
-      value[fieldName] = referenceCustomFields(value[fieldName], fieldInstancesById)
-    }
-  }
-
 // This filter is used to add and remove template expressions in scriptRunner scripts
 const filter: FilterCreator = ({ config, client }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
@@ -83,7 +62,11 @@ const filter: FilterCreator = ({ config, client }) => {
         fieldInstances.map(instance => [instance.value.id, instance] as [string, InstanceElement]),
       )
 
-      walkOnScripts({ func: addTemplateReferences(fieldInstancesById), isDc: client.isDataCenter, instances })
+      walkOnScripts({
+        func: addFieldsTemplateReferences(fieldInstancesById, config.fetch.enableMissingReferences ?? true),
+        isDc: client.isDataCenter,
+        instances,
+      })
     },
     preDeploy: async changes => {
       if (!config.fetch.enableScriptRunnerAddon) {

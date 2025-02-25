@@ -45,7 +45,7 @@ type Component = {
   children?: Component[]
 }
 
-type AutomationInstance = InstanceElement & {
+export type AutomationInstance = InstanceElement & {
   value: {
     trigger: Component
     components?: Component[]
@@ -65,7 +65,7 @@ const AUTOMATION_INSTANCE_SCHEME = Joi.object({
   }).unknown(true),
 }).unknown(true)
 
-const isAutomationInstance = createSchemeGuard<AutomationInstance>(
+export const isAutomationInstance = createSchemeGuard<AutomationInstance>(
   AUTOMATION_INSTANCE_SCHEME,
   'Received an invalid automation',
 )

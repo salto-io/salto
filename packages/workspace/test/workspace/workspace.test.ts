@@ -696,11 +696,10 @@ describe('workspace', () => {
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
-      expect(errors.strings()).toEqual(['unresolved reference some.type.instance.notExists'])
+      expect(errors.strings()).toEqual(['Unresolved reference some.type.instance.notExists'])
       expect(errors.validation[0].message).toBe('Element has unresolved references')
-      expect(errors.validation[0].detailedMessage).toBe(
-        'Error validating "some.type.instance.instance.a": unresolved reference some.type.instance.notExists',
-      )
+      expect(errors.validation[0].elemID.getFullName()).toBe('some.type.instance.instance.a')
+      expect(errors.validation[0].detailedMessage).toBe('Unresolved reference some.type.instance.notExists')
 
       expect(await erroredWorkspace.hasErrors()).toBeTruthy()
       const workspaceErrors = await Promise.all(wu(errors.all()).map(error => erroredWorkspace.transformError(error)))

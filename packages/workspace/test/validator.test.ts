@@ -854,15 +854,15 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(2)
           expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].elemID.getFullName()).toMatch('salto.nested.instance.nested_inst')
           expect(errors[0].detailedMessage).toMatch(
-            'Error validating "salto.nested.instance.nested_inst":' +
-              " Field 'additional' is not defined in the 'nested' type which does not allow additional properties.",
+            "Field 'additional' is not defined in the 'nested' type which does not allow additional properties.",
           )
           expect(errors[0].elemID).toEqual(extInst.elemID)
           expect(errors[1].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[1].elemID.getFullName()).toMatch('salto.nested.instance.nested_inst')
           expect(errors[1].detailedMessage).toMatch(
-            'Error validating "salto.nested.instance.nested_inst":' +
-              " Field 'additional2' is not defined in the 'nested' type which does not allow additional properties.",
+            "Field 'additional2' is not defined in the 'nested' type which does not allow additional properties.",
           )
           expect(errors[1].elemID).toEqual(extInst.elemID)
         })
@@ -911,9 +911,9 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].elemID.getFullName()).toMatch('salto.nested.instance.nested_inst.reqNested')
           expect(errors[0].detailedMessage).toMatch(
-            'Error validating "salto.nested.instance.nested_inst.reqNested":' +
-              " Field 'additional' is not defined in the 'simple' type which does not allow additional properties.",
+            "Field 'additional' is not defined in the 'simple' type which does not allow additional properties.",
           )
           temp.annotations = simpleTypeClone.annotations
         })
@@ -944,19 +944,19 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(3)
           expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].elemID.getFullName()).toMatch('salto.top.instance.test_inst.mapFieldValidating.d')
           expect(errors[0].detailedMessage).toMatch(
-            'Error validating "salto.top.instance.test_inst.mapFieldValidating.d":' +
-              " Field 'additional4' is not defined in the 'validating' type which does not allow additional properties.",
+            "Field 'additional4' is not defined in the 'validating' type which does not allow additional properties.",
           )
           expect(errors[1].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[1].elemID.getFullName()).toMatch('salto.top.instance.test_inst.listFieldValidating.0')
           expect(errors[1].detailedMessage).toMatch(
-            'Error validating "salto.top.instance.test_inst.listFieldValidating.0":' +
-              " Field 'additional2' is not defined in the 'validating' type which does not allow additional properties.",
+            "Field 'additional2' is not defined in the 'validating' type which does not allow additional properties.",
           )
           expect(errors[2].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[2].elemID.getFullName()).toMatch('salto.top.instance.test_inst.listFieldValidating.2')
           expect(errors[2].detailedMessage).toMatch(
-            'Error validating "salto.top.instance.test_inst.listFieldValidating.2":' +
-              " Field 'additional3' is not defined in the 'validating' type which does not allow additional properties.",
+            "Field 'additional3' is not defined in the 'validating' type which does not allow additional properties.",
           )
         })
       })
@@ -2095,9 +2095,8 @@ describe('Elements validation', () => {
       const errors = await getValidationErrors([instance], createInMemoryElementSource([instance]))
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
-      expect(errors[0].detailedMessage).toBe(
-        'Error validating "instance.notExists.instance.name": type notExists of instance name does not exist',
-      )
+      expect(errors[0].elemID.getFullName()).toBe('instance.notExists.instance.name')
+      expect(errors[0].detailedMessage).toBe('Type notExists of instance name does not exist')
     })
 
     it('should handle circular references in the same instance', async () => {
@@ -2148,9 +2147,8 @@ describe('Elements validation', () => {
         error: new MissingStaticFile('path').message,
       })
       expect(invalidStaticFileError.message).toMatch(INVALID_NACL_CONTENT_ERROR)
-      expect(invalidStaticFileError.detailedMessage).toEqual(
-        'Error validating "adapter.bla": Missing static file: path',
-      )
+      expect(invalidStaticFileError.elemID.getFullName()).toEqual('adapter.bla')
+      expect(invalidStaticFileError.detailedMessage).toEqual('Missing static file: path')
     })
 
     it('should have correct message for invalid', () => {
@@ -2159,9 +2157,8 @@ describe('Elements validation', () => {
         error: new AccessDeniedStaticFile('path').message,
       })
       expect(invalidStaticFileError.message).toMatch(INVALID_NACL_CONTENT_ERROR)
-      expect(invalidStaticFileError.detailedMessage).toEqual(
-        'Error validating "adapter.bla": Unable to access static file: path',
-      )
+      expect(invalidStaticFileError.elemID.getFullName()).toEqual('adapter.bla')
+      expect(invalidStaticFileError.detailedMessage).toEqual('Unable to access static file: path')
     })
   })
 })

@@ -70,7 +70,7 @@ export abstract class ValidationError
   message = ERROR_MESSAGES.INVALID_NACL_CONTENT
 
   get detailedMessage(): string {
-    return `Error validating "${this.elemID.getFullName()}": ${this.error}`
+    return this.error
   }
 
   toString(): string {
@@ -188,7 +188,7 @@ export class InvalidTypeValidationError extends ValidationError {
   constructor(readonly elemID: ElemID) {
     super({
       elemID,
-      error: `type ${elemID.typeName} of instance ${elemID.name} does not exist`,
+      error: `Type ${elemID.typeName} of instance ${elemID.name} does not exist`,
       severity: 'Warning',
     })
   }
@@ -342,7 +342,11 @@ export class AdditionalPropertiesValidationError extends ValidationError {
 export class UnresolvedReferenceValidationError extends ValidationError {
   readonly target: ElemID
   constructor({ elemID, target }: { elemID: ElemID; target: ElemID }) {
-    super({ elemID, error: `unresolved reference ${target.getFullName()}`, severity: 'Warning' })
+    super({
+      elemID,
+      error: `Unresolved reference ${target.getFullName()}`,
+      severity: 'Warning',
+    })
     this.target = target
   }
 
@@ -355,7 +359,7 @@ export const isUnresolvedRefError = (err: SaltoError): err is UnresolvedReferenc
 export class IllegalReferenceValidationError extends ValidationError {
   readonly reason: string
   constructor({ elemID, reason }: { elemID: ElemID; reason: string }) {
-    super({ elemID, error: `illegal reference target, ${reason}`, severity: 'Warning' })
+    super({ elemID, error: `Illegal reference target, ${reason}`, severity: 'Warning' })
     this.reason = reason
   }
 }
@@ -363,7 +367,7 @@ export class IllegalReferenceValidationError extends ValidationError {
 export class CircularReferenceValidationError extends ValidationError {
   readonly ref: string
   constructor({ elemID, ref }: { elemID: ElemID; ref: string }) {
-    super({ elemID, error: `circular reference ${ref}`, severity: 'Warning' })
+    super({ elemID, error: `Circular reference ${ref}`, severity: 'Warning' })
     this.ref = ref
   }
 }

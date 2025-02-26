@@ -469,7 +469,7 @@ export const retrieveMetadataInstances = async ({
 
     if (result.errors !== undefined && result.errors.length > 0) {
       if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
-        log.debug('Excluding non retrievable instances:')
+        log.debug('Excluding non retrievable instances using config suggestion:')
         result.errors.forEach(({ type, instance, error }) => {
           log.debug(`Type: ${type}, Instance: ${instance}`)
           configChanges.push(
@@ -482,7 +482,7 @@ export const retrieveMetadataInstances = async ({
         })
       } else {
         log.debug(
-          'handleInsufficientAccessRightsOnEntity is disabled. Logging non-retrievable instances without exclusion:',
+          'handleInsufficientAccessRightsOnEntity is disabled. Logging non-retrievable instances without exclusion in config file:',
         )
         result.errors.forEach(({ type, instance }) => log.debug(`Type: ${type}, Instance: ${instance}`))
       }

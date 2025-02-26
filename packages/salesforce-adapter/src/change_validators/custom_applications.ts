@@ -15,12 +15,14 @@ import {
   isAdditionOrModificationChange,
   ElemID,
   InstanceElement,
+  ReferenceExpression,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { isInstanceOfTypeSync } from '../filters/utils'
 import { CUSTOM_APPLICATION_METADATA_TYPE } from '../constants'
 
-const { isDefined } = lowerDashValues
+const { DefaultMap } = collections.map
 
 type ActionOverride = {
   formFactor: string
@@ -30,7 +32,8 @@ type ActionOverride = {
 type ProfileActionOverride = {
   formFactor: string
   pageOrSobjectType: string
-  profile: string
+  profile: string | ReferenceExpression
+  recordType?: string | ReferenceExpression
 }
 
 type CustomApplicationWithOverrides = {
@@ -42,59 +45,60 @@ const isValidActionOverride = (action: unknown): boolean =>
   _.isObject(action) && _.isString(_.get(action, 'formFactor')) && _.isString(_.get(action, 'pageOrSobjectType'))
 
 const isValidProfileActionOverride = (action: unknown): boolean =>
-  isValidActionOverride(action) && _.isString(_.get(action, 'profile'))
+  isValidActionOverride(action) &&
+  (_.isString(_.get(action, 'profile')) || isReferenceExpression(_.get(action, 'profile')))
 
-const hasActionOverrides = (value: unknown): boolean =>
-  _.isArray(_.get(value, 'actionOverrides')) && _.every(_.get(value, 'actionOverrides'), isValidActionOverride)
+const hasActionOverrides = (value: unknown): value is CustomApplicationWithOverrides =>
+  _.isObject(value) &&
+  _.isArray(_.get(value, 'actionOverrides')) &&
+  _.every(_.get(value, 'actionOverrides'), isValidActionOverride)
 
-const hasProfileActionOverrides = (value: unknown): boolean =>
+const hasProfileActionOverrides = (value: unknown): value is CustomApplicationWithOverrides =>
+  _.isObject(value) &&
   _.isArray(_.get(value, 'profileActionOverrides')) &&
   _.every(_.get(value, 'profileActionOverrides'), isValidProfileActionOverride)
 
-const isCustomApplicationWithOverrides = (value: unknown): value is CustomApplicationWithOverrides =>
-  _.isObject(value) && (hasActionOverrides(value) || hasProfileActionOverrides(value))
-
 const generateActionOverrideKey = (action: ProfileActionOverride | ActionOverride): string => {
-  const profilePart = 'profile' in action ? `, Profile: ${action.profile}` : ''
-  return `Form Factor: ${action.formFactor}, Page/SObject: ${action.pageOrSobjectType}${profilePart}`
+  const key: string[] = [action.formFactor, action.pageOrSobjectType]
+  if ('profile' in action) {
+    key.push(isReferenceExpression(action.profile) ? action.profile.elemID.name : action.profile)
+  }
+  if ('recordType' in action && action.recordType !== undefined) {
+    key.push(isReferenceExpression(action.recordType) ? action.recordType.elemID.name : action.recordType)
+  }
+  return key.join(':')
 }
 
-const collectDuplicates = (actions: Array<ActionOverride | ProfileActionOverride>): Set<string> => {
-  const seen = new Set<string>()
-  const duplicates = new Set<string>()
-  actions.forEach(action => {
+const collectDuplicates = (
+  actions: Array<ActionOverride | ProfileActionOverride>,
+  fieldName: string,
+  instance: InstanceElement,
+): ElemID[] => {
+  const duplicates = new DefaultMap<string, ElemID[]>(() => [])
+  actions.forEach((action, index) => {
     const key = generateActionOverrideKey(action)
-    if (seen.has(key)) {
-      duplicates.add(key)
-    } else {
-      seen.add(key)
-    }
+    duplicates.get(key).push(instance.elemID.createNestedID(fieldName, index.toString()))
   })
-  return duplicates
+  return Array.from(duplicates.entries()).flatMap(([_key, elemIds]) => (elemIds.length > 1 ? elemIds : []))
 }
 
-const createChangeError = (duplicates: Set<string>, elemId: ElemID): ChangeError => {
-  const duplicateList = Array.from(duplicates)
-    .map(dup => `- ${dup}`)
-    .join('\n')
-  return {
+const createChangeError = (elemIds: ElemID[]): ChangeError[] =>
+  elemIds.map(elemId => ({
     elemID: elemId,
-    severity: 'Error',
-    message: 'Custom Application has conflicting action overrides',
-    detailedMessage: `The following action overrides have multiple definitions:\n${duplicateList}`,
-  }
-}
+    severity: 'Warning',
+    message: 'Duplicate action override',
+    detailedMessage: 'This action override has multiple definitions',
+  }))
 
-const findActionOverridesDuplications = (instance: InstanceElement): ChangeError | undefined => {
+const findActionOverridesDuplications = (instance: InstanceElement): ChangeError[] => {
   const values: unknown = instance.value
-  if (!isCustomApplicationWithOverrides(values)) {
-    return undefined
-  }
-  const actionOverridesArray = values.actionOverrides ?? []
-  const profileActionOverridesArray = values.profileActionOverrides ?? []
-  const allActions = actionOverridesArray.concat(profileActionOverridesArray)
-  const duplicates = collectDuplicates(allActions)
-  return duplicates.size > 0 ? createChangeError(duplicates, instance.elemID) : undefined
+  const actionOverridesErrors = hasActionOverrides(values)
+    ? createChangeError(collectDuplicates(values.actionOverrides, 'actionOverrides', instance))
+    : []
+  const profileActionOverridesErrors = hasProfileActionOverrides(values)
+    ? createChangeError(collectDuplicates(values.profileActionOverrides, 'profileActionOverrides', instance))
+    : []
+  return actionOverridesErrors.concat(profileActionOverridesErrors)
 }
 
 const changeValidator: ChangeValidator = async changes =>
@@ -103,7 +107,6 @@ const changeValidator: ChangeValidator = async changes =>
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(CUSTOM_APPLICATION_METADATA_TYPE))
-    .map(findActionOverridesDuplications)
-    .filter(isDefined)
+    .flatMap(findActionOverridesDuplications)
 
 export default changeValidator

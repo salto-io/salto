@@ -22,6 +22,7 @@ import {
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import { values } from '@salto-io/lowerdash'
 import JiraClient from '../../client/client'
@@ -38,9 +39,10 @@ const log = logger(module)
 const { isDefined } = values
 
 // We search for active options using the jql "cf[<fieldId>] in (<optionId1>,<optionId2>,...)"
-// the jql length is limited, therefore we use chunks
+// We are not aware of a jql size limitation, but we use chunks as precaution.
 const OPTIONS_CHUNK_SIZE = 500
 const MAX_ITERATIONS = 100
+const MAX_RESULTS = 1000
 const MAX_OPTIONS_IN_ERROR_MESSAGE = 10
 
 type OptionInfo = {
@@ -112,9 +114,7 @@ const SEARCH_ISSUES_RESPONSE_SCHEME = Joi.object({
           )
           .required()
           .unknown(true),
-      })
-        .unknown(true)
-        .required(),
+      }).unknown(true),
     )
     .required(),
   nextPageToken: Joi.string(),
@@ -145,7 +145,6 @@ const getOptionInfos = (optionInstances: InstanceElement[]): OptionInfo[] =>
           optionParent.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME ? optionParent.value.value : undefined,
       }
     })
-    .filter(isDefined)
 
 // the options are of the same field
 const getJqlForOptionsUsage = (fieldId: string, optionIds: string[]): string =>
@@ -176,23 +175,33 @@ const getActiveOptionsIds = async ({
   client: JiraClient
   fieldId: string
   optionIds: string[]
-}): Promise<string[] | undefined> => {
+}): Promise<{ activeOptionsIds: string[]; unknownOptionsIds: string[] } | undefined> => {
   const jql = getJqlForOptionsUsage(fieldId, optionIds)
   let nextPageToken: string | undefined
   let currentIteration = 0
-  const result: SearchIssues = []
+  let response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
+  const activeSearchIssues: SearchIssues = []
+  const unknownOptionIds: string[] = []
 
   do {
-    // eslint-disable-next-line no-await-in-loop
-    const response = await client.get({
-      url: 'rest/api/3/search/jql',
-      queryParams: {
-        jql,
-        fields: fieldId,
-        ...(nextPageToken !== undefined ? { nextPageToken } : {}),
-      },
-    })
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      response = await client.post({
+        url: 'rest/api/3/search/jql',
+        data: {
+          jql,
+          fields: [fieldId],
+          maxResults: MAX_RESULTS,
+          ...(nextPageToken !== undefined ? { nextPageToken } : {}),
+        },
+      })
+    } catch (e) {
+      unknownOptionIds.push(...optionIds)
+      log.error('Failed to collect active options ids due to: %o, continuing with the current result', e)
+      break
+    }
     if (!isSearchIssuesResponse(response.data)) {
+      unknownOptionIds.push(...optionIds)
       break
     }
     if (nextPageToken !== undefined && nextPageToken === response.data.nextPageToken) {
@@ -200,48 +209,54 @@ const getActiveOptionsIds = async ({
       break
     }
     nextPageToken = response.data.nextPageToken
-    result.push(...response.data.issues)
+    activeSearchIssues.push(...response.data.issues)
     currentIteration += 1
     if (currentIteration === MAX_ITERATIONS) {
+      unknownOptionIds.push(...optionIds)
       log.error(
         'Reached the maximum number of iterations while collecting active options ids, continuing with the current result',
       )
       break
     }
   } while (nextPageToken !== undefined)
-  return getOptionIdsFromSearchIssues(result)
+  return { activeOptionsIds: getOptionIdsFromSearchIssues(activeSearchIssues), unknownOptionsIds: unknownOptionIds }
 }
 
 const collectActiveOptionsIds = async (
   fieldIdToOptionsInfo: _.Dictionary<OptionInfo[]>,
   client: JiraClient,
-): Promise<Set<string>> => {
-  try {
-    return new Set(
-      (
-        await Promise.all(
-          _.flatMap(fieldIdToOptionsInfo, (optionsInfo, fieldId) =>
-            _.chunk(
-              optionsInfo.map(optionInfo => optionInfo.optionId),
-              OPTIONS_CHUNK_SIZE,
-            ).map(optionIdsChunk => getActiveOptionsIds({ client, fieldId, optionIds: optionIdsChunk })),
-          ),
-        )
-      )
-        .flat()
-        .filter(isDefined),
+): Promise<{ activeOptionsIds: Set<string>; unknownOptionsIds: Set<string> }> => {
+  const { activeOptionsIds: activeOptionIds, unknownOptionsIds: unknownOptionIds } = (
+    await Promise.all(
+      _.flatMap(fieldIdToOptionsInfo, (optionsInfo, fieldId) =>
+        _.chunk(
+          optionsInfo.map(optionInfo => optionInfo.optionId),
+          OPTIONS_CHUNK_SIZE,
+        ).map(optionIdsChunk => getActiveOptionsIds({ client, fieldId, optionIds: optionIdsChunk })),
+      ),
     )
-  } catch (e) {
-    log.error('Failed to collect active options ids with error: %o', e)
-    return new Set()
-  }
+  )
+    .filter(isDefined)
+    .reduce(
+      (acc, { activeOptionsIds: chunkActiveOptionIds, unknownOptionsIds: chunkUnknownOptionIds }) => ({
+        activeOptionsIds: [...acc.activeOptionsIds, ...chunkActiveOptionIds],
+        unknownOptionsIds: [...acc.unknownOptionsIds, ...chunkUnknownOptionIds],
+      }),
+      { activeOptionsIds: [], unknownOptionsIds: [] },
+    )
+  return { activeOptionsIds: new Set(activeOptionIds), unknownOptionsIds: new Set(unknownOptionIds) }
 }
 
 const optionMigrationLink = (fieldOptionContext: OptionInfo, baseUrl: string): string =>
   `${baseUrl}/secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=${fieldOptionContext.contextId}&selectedValue=${fieldOptionContext.optionId}`
 
+const getOptionFullValue = (optionInfo: OptionInfo): string =>
+  optionInfo.parentOptionValue === undefined
+    ? optionInfo.optionValue
+    : `${optionInfo.parentOptionValue}-${optionInfo.optionValue}`
+
 const getOrderDetailedMessage = (options: OptionInfo[]): string => {
-  const optionList = options.map(optionInfo => optionInfo.optionValue).join(', ')
+  const optionList = options.map(optionInfo => `"${getOptionFullValue(optionInfo)}"`).join(', ')
   if (options.length > MAX_OPTIONS_IN_ERROR_MESSAGE) {
     log.info(
       'removing options from detailed message because there are over %d options. The options that removed are: %o',
@@ -271,20 +286,24 @@ const getFieldContextOrderErrors = (
     const orderInstance = orderByParentFullName[parentFullName]
     if (orderInstance === undefined) {
       log.warn('No order found with parent %s, skipping', parentFullName)
+      return undefined
     }
     return {
       elemID: orderInstance.elemID,
       severity: 'Error' as SeverityLevel,
-      message: "This order is not referencing all it's options",
+      message: 'This order cannot be deployed',
       detailedMessage: getOrderDetailedMessage(options),
     }
-  })
+  }).filter(isDefined)
 }
 
-const getOptionFullValue = (optionInfo: OptionInfo): string =>
-  optionInfo.parentOptionValue === undefined
-    ? optionInfo.optionValue
-    : `${optionInfo.parentOptionValue}-${optionInfo.optionValue}`
+const getUnknownContextOptionWarnings = (unknownOptionsInfos: OptionInfo[]): ChangeError[] =>
+  unknownOptionsInfos.map(optionInfo => ({
+    elemID: optionInfo.optionElemID,
+    severity: 'Warning' as SeverityLevel,
+    message: 'Cannot determine the status of the deleted option',
+    detailedMessage: `The option "${getOptionFullValue(optionInfo)}" in the field "${optionInfo.fieldName}" might be assigned to some issues. Please check it before proceeding as it may leads to data loss.`,
+  }))
 
 const getFieldContextOptionErrors = (activeOptionRemovals: OptionInfo[], baseUrl: string): ChangeError[] =>
   activeOptionRemovals.map(optionInfo => ({
@@ -296,16 +315,19 @@ const getFieldContextOptionErrors = (activeOptionRemovals: OptionInfo[], baseUrl
 
 const getOptionAndOrderChangeErrors = ({
   activeOptionsInfos,
+  unknownOptionsInfos,
   changes,
   baseUrl,
 }: {
   activeOptionsInfos: OptionInfo[]
+  unknownOptionsInfos: OptionInfo[]
   changes: readonly Change<ChangeDataType>[]
   baseUrl: string
 }): ChangeError[] => {
   const orderChangeErrors = getFieldContextOrderErrors(activeOptionsInfos, changes)
   const optionRemovalErrors = getFieldContextOptionErrors(activeOptionsInfos, baseUrl)
-  return optionRemovalErrors.concat(orderChangeErrors)
+  const optionRemovalWarnings = getUnknownContextOptionWarnings(unknownOptionsInfos)
+  return optionRemovalErrors.concat(orderChangeErrors).concat(optionRemovalWarnings)
 }
 
 /**
@@ -345,15 +367,19 @@ export const fieldContextOptionRemovalValidator: (config: JiraConfig, client: Ji
     }
 
     const fieldIdToOptionsInfo = _.groupBy(optionInfos, optionInfo => optionInfo.fieldId)
-    const activeOptionsIds = await collectActiveOptionsIds(fieldIdToOptionsInfo, client)
+    const { activeOptionsIds, unknownOptionsIds } = await collectActiveOptionsIds(fieldIdToOptionsInfo, client)
     const activeOptionsInfos = optionInfos.filter(optionInfo => activeOptionsIds.has(optionInfo.optionId))
+    const unknownOptionsInfos = optionInfos.filter(
+      optionInfo => !activeOptionsIds.has(optionInfo.optionId) && unknownOptionsIds.has(optionInfo.optionId),
+    )
 
-    if (activeOptionsInfos.length === 0) {
+    if (activeOptionsInfos.length === 0 && unknownOptionsInfos.length === 0) {
       return []
     }
 
     return getOptionAndOrderChangeErrors({
       activeOptionsInfos,
+      unknownOptionsInfos,
       changes,
       baseUrl: client.baseUrl,
     })

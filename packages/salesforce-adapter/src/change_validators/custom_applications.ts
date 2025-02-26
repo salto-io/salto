@@ -61,12 +61,12 @@ const hasProfileActionOverrides = (value: unknown): value is CustomApplicationWi
 const generateActionOverrideKey = (action: ProfileActionOverride | ActionOverride): string => {
   const key: string[] = [action.formFactor, action.pageOrSobjectType]
   if ('profile' in action) {
-    key.push(isReferenceExpression(action.profile) ? action.profile.elemID.getFullName() : action.profile)
+    key.push(isReferenceExpression(action.profile) ? action.profile.elemID.name : action.profile)
   }
   if ('recordType' in action && action.recordType !== undefined) {
-    key.push(isReferenceExpression(action.recordType) ? action.recordType.elemID.getFullName() : action.recordType)
+    key.push(isReferenceExpression(action.recordType) ? action.recordType.elemID.name : action.recordType)
   }
-  return key.join('')
+  return key.join(':')
 }
 
 const collectDuplicates = (
@@ -92,17 +92,13 @@ const createChangeError = (elemIds: ElemID[]): ChangeError[] =>
 
 const findActionOverridesDuplications = (instance: InstanceElement): ChangeError[] => {
   const values: unknown = instance.value
-  const actionOverridesArray = hasActionOverrides(values) ? values.actionOverrides : []
-  const profileActionOverridesArray = hasProfileActionOverrides(values) ? values.profileActionOverrides : []
-  const actionOverridesDuplicates = collectDuplicates(actionOverridesArray, 'actionOverrides', instance)
-  const profileActionOverridesDuplicates = collectDuplicates(
-    profileActionOverridesArray,
-    'profileActionOverrides',
-    instance,
-  )
-  const actionOverridesErrors = createChangeError(actionOverridesDuplicates)
-  const profileActionOverridesErrors = createChangeError(profileActionOverridesDuplicates)
-  return [...actionOverridesErrors, ...profileActionOverridesErrors]
+  const actionOverridesErrors = hasActionOverrides(values)
+    ? createChangeError(collectDuplicates(values.actionOverrides, 'actionOverrides', instance))
+    : []
+  const profileActionOverridesErrors = hasProfileActionOverrides(values)
+    ? createChangeError(collectDuplicates(values.profileActionOverrides, 'profileActionOverrides', instance))
+    : []
+  return actionOverridesErrors.concat(profileActionOverridesErrors)
 }
 
 const changeValidator: ChangeValidator = async changes =>

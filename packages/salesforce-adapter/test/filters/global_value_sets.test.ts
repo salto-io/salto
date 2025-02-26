@@ -12,6 +12,7 @@ import {
   InstanceElement,
   ReferenceExpression,
   CORE_ANNOTATIONS,
+  Value,
 } from '@salto-io/adapter-api'
 import * as constants from '../../src/constants'
 import filterCreator, { GLOBAL_VALUE_SET, CUSTOM_VALUE, MASTER_LABEL } from '../../src/filters/global_value_sets'
@@ -142,7 +143,7 @@ describe('Global Value Sets filter', () => {
       ).toEqual(
         new ReferenceExpression(
           elements[1].elemID.createNestedID('customValue', 'values', 'val3', 'fullName'),
-          elements[1].value.customValue.values.val3.fullName,
+          (elements[1] as Value).value.customValue.values.val3.fullName,
         ),
       )
       expect(
@@ -152,7 +153,7 @@ describe('Global Value Sets filter', () => {
       ).toEqual(
         new ReferenceExpression(
           elements[0].elemID.createNestedID('customValue', 'values', 'val1', 'fullName'),
-          elements[0].value.customValue.values.val1.fullName,
+          (elements[0] as Value).value.customValue.values.val1.fullName,
         ),
       )
       expect(
@@ -162,7 +163,7 @@ describe('Global Value Sets filter', () => {
       ).toEqual(
         new ReferenceExpression(
           elements[0].elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
-          elements[0].value.customValue.values.val2.fullName,
+          (elements[0] as Value).value.customValue.values.val2.fullName,
         ),
       )
       expect(
@@ -172,7 +173,7 @@ describe('Global Value Sets filter', () => {
       ).toEqual(
         new ReferenceExpression(
           elements[1].elemID.createNestedID('customValue', 'values', 'val4', 'fullName'),
-          elements[1].value.customValue.values.val4.fullName,
+          (elements[1] as Value).value.customValue.values.val4.fullName,
         ),
       )
       expect(
@@ -182,7 +183,7 @@ describe('Global Value Sets filter', () => {
       ).toEqual(
         new ReferenceExpression(
           elements[0].elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
-          elements[0].value.customValue.values.val2.fullName,
+          (elements[0] as Value).value.customValue.values.val2.fullName,
         ),
       )
     })

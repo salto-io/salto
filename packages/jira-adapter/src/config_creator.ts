@@ -6,27 +6,45 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement, ObjectType, Value } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, createOptionsTypeGuard } from '@salto-io/adapter-utils'
+import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import {
+  createDefaultInstanceFromType,
+  createMatchingObjectType,
+  createOptionsTypeGuard,
+} from '@salto-io/adapter-utils'
 import { configType } from './config/config'
 import * as constants from './constants'
 
 const optionsElemId = new ElemID(constants.JIRA, 'configOptionsType')
-
 type ConfigOptionsType = {
   enableScriptRunnerAddon: boolean
   enableJSM?: boolean
 }
+type DataCenterConfigOptionsType = Omit<ConfigOptionsType, 'enableJSM'>
+
 export const optionsType = (adapterContext?: InstanceElement): ObjectType => {
-  const fields: Value = {
-    enableScriptRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
+  if (adapterContext?.value.isDataCenter) {
+    return createMatchingObjectType<DataCenterConfigOptionsType>({
+      elemID: optionsElemId,
+      fields: {
+        enableScriptRunnerAddon: {
+          refType: BuiltinTypes.BOOLEAN,
+          annotations: { _required: true },
+        },
+      },
+    })
   }
-  if (!adapterContext?.value.isDataCenter) {
-    fields.enableJSM = { refType: BuiltinTypes.BOOLEAN }
-  }
-  return new ObjectType({
+  return createMatchingObjectType<ConfigOptionsType>({
     elemID: optionsElemId,
-    fields,
+    fields: {
+      enableScriptRunnerAddon: {
+        refType: BuiltinTypes.BOOLEAN,
+        annotations: { _required: true },
+      },
+      enableJSM: {
+        refType: BuiltinTypes.BOOLEAN,
+      },
+    },
   })
 }
 

@@ -942,7 +942,7 @@ export default class SalesforceClient implements ISalesforceClient {
         retrieveRequest.unpackaged.types.map(async type => {
           const { errors } = await sendChunked({
             input: type.members,
-            chunkSize: type.members.length,
+            chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
             sendChunk: chunk => this.conn.metadata.read(type.name, chunk),
             operationInfo: `readMetadata (${type.name})`,
             isUnhandledError: () => false,

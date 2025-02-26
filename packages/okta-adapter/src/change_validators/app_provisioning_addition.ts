@@ -50,7 +50,7 @@ export const appProvisioningAdditionValidator: ChangeValidator = async changes =
       elemID: instance.elemID,
       severity: 'Error' as const,
       message: 'Application provisioning cannot be added',
-      detailedMessage: 'To deploy this application, you must first remove the provisioning configuration. This is required because provisioning settings cannot be modified directly through Salto. After deployment, enable provisioning in Okta and perform a fetch to sync the latest configuration. For a step-by-step guide, visit https://help.salto.io/en/articles/10199943-deploying-okta-applications-using-salto and refer to the "Application provisioning settings" section.',
-
+      detailedMessage:
+        'To deploy this application, you must first remove the provisioning configuration. This is required because provisioning settings cannot be modified directly through Salto. After deployment, enable provisioning in Okta and perform a fetch to sync the latest configuration. For a step-by-step guide, visit https://help.salto.io/en/articles/10199943-deploying-okta-applications-using-salto and refer to the "Application provisioning settings" section.',
     }))
     .toArray()

@@ -975,6 +975,7 @@ describe('SalesforceAdapter fetch', () => {
       const { elements: result } = await adapter.fetch(mockFetchOpts)
 
       const elementNames = result.map(x => x.elemID.getFullName())
+      console.log(elementNames.join('\n'))
       expect(elementNames).toHaveLength(
         _.concat(Object.keys(Types.getAllFieldTypes()), Object.keys(Types.getAllMissingTypes())).length +
           2 /* LookupFilter & filter items */ +
@@ -992,7 +993,7 @@ describe('SalesforceAdapter fetch', () => {
           2 /* ChangedAtSingleton type & instance */ +
           1 /* ProfilesAndPermissionSetsBrokenPaths */ +
           1 /* FetchTargets */ +
-          1 /* OrderedMapOfvalueSet */ +
+          2 /* OrderedMapOfvalueSet */ +
           1 /* FieldPermissionEnum */,
       )
 

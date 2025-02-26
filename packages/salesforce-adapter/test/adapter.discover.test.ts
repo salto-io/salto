@@ -975,7 +975,6 @@ describe('SalesforceAdapter fetch', () => {
       const { elements: result } = await adapter.fetch(mockFetchOpts)
 
       const elementNames = result.map(x => x.elemID.getFullName())
-      console.log(elementNames.join('\n'))
       expect(elementNames).toHaveLength(
         _.concat(Object.keys(Types.getAllFieldTypes()), Object.keys(Types.getAllMissingTypes())).length +
           2 /* LookupFilter & filter items */ +

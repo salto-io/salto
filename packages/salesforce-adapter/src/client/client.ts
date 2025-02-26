@@ -947,7 +947,6 @@ export default class SalesforceClient implements ISalesforceClient {
             operationInfo: `readMetadata (${type.name})`,
             isUnhandledError: () => false,
           })
-
           errors.forEach(({ input, error }) => {
             if (error.message.match(errorPattern)) {
               log.debug(`Failed to read ${type.name}.${input} due to: ${error.message}`)

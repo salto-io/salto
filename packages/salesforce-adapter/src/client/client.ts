@@ -938,24 +938,26 @@ export default class SalesforceClient implements ISalesforceClient {
       const typesWithInsufficientAccess = new Set<string>()
       const instancesWithInsufficientAccess = new Set<string>()
       const instancesErrors: ErrorInfo[] = []
-      await retrieveRequest.unpackaged.types.reduce(async (prevPromise, type) => {
-        await prevPromise
-        const { errors } = await sendChunked({
-          input: type.members,
-          chunkSize: type.members.length,
-          sendChunk: chunk => this.conn.metadata.read(type.name, chunk),
-          operationInfo: `readMetadata (${type.name})`,
-          isUnhandledError: () => false,
-        })
-        errors.forEach(({ input, error }) => {
-          if (error.message.match(errorPattern)) {
-            log.debug(`Failed to read ${type.name}.${input} due to: ${error.message}`)
-            instancesErrors.push({ type: type.name, instance: input, error })
-            typesWithInsufficientAccess.add(type.name)
-            instancesWithInsufficientAccess.add(input)
-          }
-        })
-      }, Promise.resolve())
+      await Promise.all(
+        retrieveRequest.unpackaged.types.map(async type => {
+          const { errors } = await sendChunked({
+            input: type.members,
+            chunkSize: type.members.length,
+            sendChunk: chunk => this.conn.metadata.read(type.name, chunk),
+            operationInfo: `readMetadata (${type.name})`,
+            isUnhandledError: () => false,
+          })
+
+          errors.forEach(({ input, error }) => {
+            if (error.message.match(errorPattern)) {
+              log.debug(`Failed to read ${type.name}.${input} due to: ${error.message}`)
+              instancesErrors.push({ type: type.name, instance: input, error })
+              typesWithInsufficientAccess.add(type.name)
+              instancesWithInsufficientAccess.add(input)
+            }
+          })
+        }),
+      )
       const newRetrieveRequest = {
         ...retrieveRequest,
         unpackaged: {

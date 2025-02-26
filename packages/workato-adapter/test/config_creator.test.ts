@@ -15,7 +15,7 @@ import { WORKATO } from '../src/constants'
 describe('config creator', () => {
   let options: InstanceElement
   beforeEach(async () => {
-    options = new InstanceElement('instance', optionsType(), { useCase: 'Deploy' })
+    options = new InstanceElement('instance', optionsType, { useCase: 'Deploy' })
   })
   it('should return config creator', async () => {
     const config = configCreator

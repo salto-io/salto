@@ -31,7 +31,7 @@ describe('config_creator', () => {
   let resultConfig: InstanceElement
 
   const createMockOptionsInstance = (value: SalesforceConfigOptionsType): InstanceElement =>
-    new InstanceElement('options', optionsType(), value)
+    new InstanceElement('options', optionsType, value)
   const getClonedDefaultConfig = async (): Promise<InstanceElement> => {
     const conf = (await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)).clone()
     conf.value.fetch.metadata.exclude.push(

@@ -201,7 +201,8 @@ export type AccountInfo = {
 }
 
 export type ConfigCreator = {
-  optionsType: (adapterContext?: InstanceElement) => ObjectType
+  optionsType: ObjectType // deprecated, getOptionsType should be used instead
+  getOptionsType?: (adapterOptionsTypeContext?: InstanceElement) => ObjectType
   getConfig: (options?: InstanceElement) => Promise<InstanceElement>
 }
 

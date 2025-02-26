@@ -255,7 +255,7 @@ describe('adapter creator', () => {
       const creator = adapter.configCreator as ConfigCreator
       expect(creator).toBeDefined()
       const defaultConfig = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, adapter.configType as ObjectType)
-      const createdConfig = await creator.getConfig(new InstanceElement('input', creator.optionsType(), {}))
+      const createdConfig = await creator.getConfig(new InstanceElement('input', creator.optionsType, {}))
       expect(createdConfig).toEqual(defaultConfig)
     })
   })

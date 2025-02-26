@@ -13,5 +13,8 @@ export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapt
 
 export const getAdapterConfigOptionsType = (
   adapterName: string,
-  adapterContext?: InstanceElement,
-): ObjectType | undefined => adapterCreators[adapterName]?.configCreator?.optionsType(adapterContext)
+  adapterOptionsTypeContext?: InstanceElement,
+): ObjectType | undefined =>
+  adapterOptionsTypeContext
+    ? adapterCreators[adapterName]?.configCreator?.getOptionsType?.(adapterOptionsTypeContext)
+    : adapterCreators[adapterName]?.configCreator?.optionsType

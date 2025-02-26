@@ -40,7 +40,8 @@ export const createMockAdapter = (
       getConfig: mockFunction<Required<Adapter>['configCreator']['getConfig']>().mockResolvedValue(
         new InstanceElement(ElemID.CONFIG_NAME, configType, {}),
       ),
-      optionsType: () => optionsType,
+      optionsType,
+      getOptionsType: () => optionsType,
     },
     install: mockFunction<Required<Adapter>['install']>().mockResolvedValue({
       success: true,

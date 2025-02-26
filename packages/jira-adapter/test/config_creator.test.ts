@@ -8,13 +8,13 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { configType } from '../src/config/config'
-import { getConfig, configCreator, optionsType } from '../src/config_creator'
+import { getConfig, configCreator, optionsType, getOptionsType } from '../src/config_creator'
 import { createEmptyType } from './utils'
 
 describe('config creator', () => {
   let options: InstanceElement
   beforeEach(async () => {
-    options = new InstanceElement('instance', optionsType(), {
+    options = new InstanceElement('instance', optionsType, {
       enableScriptRunnerAddon: true,
       enableJSM: true,
     })
@@ -23,6 +23,7 @@ describe('config creator', () => {
     const config = configCreator
     expect(config).toEqual({
       optionsType,
+      getOptionsType,
       getConfig,
     })
   })

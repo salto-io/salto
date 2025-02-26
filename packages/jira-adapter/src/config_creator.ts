@@ -16,20 +16,30 @@ import { configType } from './config/config'
 import * as constants from './constants'
 
 const optionsElemId = new ElemID(constants.JIRA, 'configOptionsType')
+
 type ConfigOptionsType = {
-  enableScriptRunnerAddon: boolean
+  enableScriptRunnerAddon?: boolean
   enableJSM?: boolean
 }
 type DataCenterConfigOptionsType = Omit<ConfigOptionsType, 'enableJSM'>
 
-export const optionsType = (adapterContext?: InstanceElement): ObjectType => {
-  if (adapterContext?.value.isDataCenter) {
+export const optionsType = createMatchingObjectType<ConfigOptionsType>({
+  elemID: optionsElemId,
+  fields: {
+    enableScriptRunnerAddon: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+    enableJSM: { refType: BuiltinTypes.BOOLEAN },
+  },
+})
+
+export const getOptionsType = (adapterOptionsTypeContext?: InstanceElement): ObjectType => {
+  if (adapterOptionsTypeContext?.value.isDataCenter) {
     return createMatchingObjectType<DataCenterConfigOptionsType>({
       elemID: optionsElemId,
       fields: {
         enableScriptRunnerAddon: {
           refType: BuiltinTypes.BOOLEAN,
-          annotations: { _required: true },
         },
       },
     })
@@ -39,7 +49,6 @@ export const optionsType = (adapterContext?: InstanceElement): ObjectType => {
     fields: {
       enableScriptRunnerAddon: {
         refType: BuiltinTypes.BOOLEAN,
-        annotations: { _required: true },
       },
       enableJSM: {
         refType: BuiltinTypes.BOOLEAN,
@@ -64,5 +73,6 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
 
 export const configCreator: ConfigCreator = {
   optionsType,
+  getOptionsType,
   getConfig,
 }

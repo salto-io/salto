@@ -547,7 +547,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
         urlParamsToFields: {
           appId: '_parent.0.id',
         },
-        fieldsToIgnore: ['newAppGroupName'] // determined by the service
+        fieldsToIgnore: ['newAppGroupName'], // determined by the service
       },
       remove: {
         url: '/api/internal/instance/{appId}/grouppush/{pushId}/delete',

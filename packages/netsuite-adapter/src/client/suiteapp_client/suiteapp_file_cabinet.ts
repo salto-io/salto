@@ -631,15 +631,11 @@ const queryFileCabinet = async (
     }
   }
 
-  const filesCountsPerFolder =
-    // TODO: remove this condition
-    maxFilesPerFileCabinetFolder.length > 0
-      ? await queryFilesCountPerFolder(suiteAppClient, {
-          folderIdsToQuery: foldersToIncludeByPath.map(folder => folder.id),
-          isSuiteBundlesEnabled,
-          extensionsToExclude,
-        })
-      : {}
+  const filesCountsPerFolder = await queryFilesCountPerFolder(suiteAppClient, {
+    folderIdsToQuery: foldersToIncludeByPath.map(folder => folder.id),
+    isSuiteBundlesEnabled,
+    extensionsToExclude,
+  })
 
   const { foldersResults, largeFilesCountFoldersError, largeFilesCountFolderWarnings } = filterFoldersByFilesCount({
     filesCountsPerFolder,

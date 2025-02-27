@@ -611,7 +611,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       const instanceName = await apiName(instance)
       const setAndLogZipFile = (fileName: string, content: string | Buffer): void => {
         zipContent.set(fileName, content)
-        log.trace('Added XML file %s with content %s', fileName, content)
+        log.trace('Added XML file %s', fileName)
       }
       const removeNamespacePrefix = (name: string): string => name.replace(/^\w+__/g, '')
       try {

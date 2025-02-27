@@ -43,15 +43,14 @@ const addWalkOnReferences = (instances: InstanceElement[], config: JiraConfig): 
 const filter: FilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async elements => {
-    addWalkOnReferences(elements.filter(isInstanceElement), config)
+    const instances = elements.filter(isInstanceElement)
+    addWalkOnReferences(instances, config)
 
     const fixedDefs = referencesRules.map(def =>
       config.fetch.enableMissingReferences ? def : _.omit(def, 'missingRefStrategy'),
     )
     // Remove once SALTO-6889 is done: ProjectComponents have no references, so don't need to scan them
-    const relevantElements = elements
-      .filter(isInstanceElement)
-      .filter(instance => !NO_REFERENCES_TYPES().includes(instance.elemID.typeName))
+    const relevantElements = instances.filter(instance => !NO_REFERENCES_TYPES().includes(instance.elemID.typeName))
     await referenceUtils.addReferences({
       elements: relevantElements,
       contextElements: elements,

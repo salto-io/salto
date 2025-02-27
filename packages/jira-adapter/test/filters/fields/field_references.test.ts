@@ -104,15 +104,15 @@ describe('fieldReferencesFilter', () => {
         filter = fieldReferencesFilter(getFilterParams({ config })) as filterType
         const fieldType = createEmptyType(FIELD_TYPE_NAME)
         fields = [
-          new InstanceElement('field1', fieldType, { id: 555 }),
-          new InstanceElement('field2', fieldType, { id: 666 }),
+          new InstanceElement('field1', fieldType, { id: '555' }),
+          new InstanceElement('field2', fieldType, { id: '666' }),
         ]
         idToField = new Map(fields.map(field => [field.value.id, field] as [string, InstanceElement]))
         elements.push(...fields)
       })
       it('should call walkOnAutomations with the correct parameters', async () => {
         const automationInstance = new InstanceElement('automation', createEmptyType('Automation'), {
-          id: 1,
+          id: '1',
           components: [
             {
               advancedFields: 'abc cusomtfield_555 def',

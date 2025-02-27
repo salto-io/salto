@@ -28,7 +28,7 @@ import { MetadataInfo } from '@salto-io/jsforce'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { apiName, createInstanceElement, MetadataObjectType, Types } from '../src/transformers/transformer'
@@ -2894,7 +2894,16 @@ describe('Fetch via retrieve API', () => {
     let metadataRetrieveSpy: jest.SpyInstance
     let metadataReadSpy: jest.SpyInstance
     let fetchProfile: FetchProfile
-    const typeError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ApexClass'
+    const retrieveResult = {
+      done: 'true',
+      errorMessage: 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicType',
+      errorStatusCode: 'UNKNOWN_EXCEPTION',
+      id: '09SVg000005gpT3MAI',
+      status: 'Failed',
+      success: 'false',
+      zipFile: { $: { 'xsi:nil': 'true' } },
+      messages: [],
+    }
     const instanceError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
     beforeEach(async () => {
       metadataRetrieveSpy = jest.spyOn(connection.metadata, 'retrieve')
@@ -2903,13 +2912,14 @@ describe('Fetch via retrieve API', () => {
         { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
         { type: mockTypes.ApexClass, instanceName: 'ProblematicApexClass' },
         { type: mockTypes.CustomObject, instanceName: 'Account' },
+        { type: mockTypes.CustomObject, instanceName: 'Lead' },
       ])
       connection.metadata.retrieve.mockImplementation(retrieveRequest => {
         const hasProblematicApexClass = retrieveRequest.unpackaged?.types.some(type =>
           type.members.includes('ProblematicApexClass'),
         )
         if (hasProblematicApexClass) {
-          throw new Error(typeError)
+          return mockRetrieveLocator(retrieveResult)
         }
         return mockRetrieveLocator(mockRetrieveResult({}))
       })
@@ -2955,9 +2965,16 @@ describe('Fetch via retrieve API', () => {
             },
           ]),
         )
-        expect(metadataReadSpy).toHaveBeenCalledTimes(2)
-        expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['SomeApexClass']))
+      })
+      it('should call read once for each type, and for the type that contains the problematic instance, there should be as many read calls as the number of members of that type', () => {
+        expect(metadataReadSpy).toHaveBeenCalledTimes(4)
+        expect(metadataReadSpy).toHaveBeenCalledWith('CustomObject', expect.arrayContaining(['Account', 'Lead']))
+        expect(metadataReadSpy).toHaveBeenCalledWith(
+          'ApexClass',
+          expect.arrayContaining(['SomeApexClass', 'ProblematicApexClass']),
+        )
         expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['ProblematicApexClass']))
+        expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['SomeApexClass']))
         expect(metadataRetrieveSpy).toHaveBeenCalledTimes(2)
         expect(metadataRetrieveSpy).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -3020,10 +3037,17 @@ describe('Fetch via retrieve API', () => {
           })
         } catch (error) {
           expect(metadataRetrieveSpy).toHaveBeenCalledOnce()
-          expect(error.message).toEqual(typeError)
-          expect(metadataReadSpy).toHaveBeenCalledTimes(2)
-          expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['SomeApexClass']))
+          expect(error.message).toContain(
+            `Retrieve request for ApexClass,CustomObject failed. messages: ${makeArray(safeJsonStringify(retrieveResult.messages)).concat(retrieveResult.errorMessage ?? [])}`,
+          )
+          expect(metadataReadSpy).toHaveBeenCalledTimes(4)
+          expect(metadataReadSpy).toHaveBeenCalledWith('CustomObject', expect.arrayContaining(['Account', 'Lead']))
+          expect(metadataReadSpy).toHaveBeenCalledWith(
+            'ApexClass',
+            expect.arrayContaining(['SomeApexClass', 'ProblematicApexClass']),
+          )
           expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['ProblematicApexClass']))
+          expect(metadataReadSpy).toHaveBeenCalledWith('ApexClass', expect.arrayContaining(['SomeApexClass']))
         }
       })
     })

@@ -928,34 +928,30 @@ export default class SalesforceClient implements ISalesforceClient {
     fetchProfile?: FetchProfile,
   ): Promise<RetrieveResultWithErrors> {
     const errorPattern = /INSUFFICIENT_ACCESS: insufficient access rights on entity: (\w+)/g
-    const handleInsufficientAccessErrors = async (
-      matches: string[],
-    ): Promise<{ instancesErrors: ErrorInfo[]; newRetrieveRequest: RetrieveRequest }> => {
+    const handleInsufficientAccessErrors = async (): Promise<{
+      instancesErrors: ErrorInfo[]
+      newRetrieveRequest: RetrieveRequest
+    }> => {
       if (retrieveRequest.unpackaged === undefined || retrieveRequest.unpackaged.types === undefined) {
         return { instancesErrors: [], newRetrieveRequest: retrieveRequest }
       }
       const typesWithInsufficientAccess = new Set<string>()
       const instancesWithInsufficientAccess = new Set<string>()
       const instancesErrors: ErrorInfo[] = []
-      const { unpackaged } = retrieveRequest
       await Promise.all(
-        matches.map(async match => {
-          const failedType = match[1]
-          typesWithInsufficientAccess.add(failedType)
-          log.debug(`Failed to retrieve due ${match[0] + match[1]}`)
-          log.debug('Reading each instance separately to find the ones with insufficient access rights')
-          const instancesOfFailedType = unpackaged.types.find(t => t.name === failedType)?.members ?? []
+        retrieveRequest.unpackaged.types.map(async type => {
           const { errors } = await sendChunked({
-            input: instancesOfFailedType,
-            chunkSize: 1,
-            sendChunk: chunk => this.conn.metadata.read(failedType, chunk),
-            operationInfo: `readMetadata (${failedType})`,
+            input: type.members,
+            chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
+            sendChunk: chunk => this.conn.metadata.read(type.name, chunk),
+            operationInfo: `readMetadata (${type.name})`,
             isUnhandledError: () => false,
           })
           errors.forEach(({ input, error }) => {
             if (error.message.match(errorPattern)) {
-              log.debug(`Failed to read ${failedType}.${input} due to: ${error.message}`)
-              instancesErrors.push({ type: failedType, instance: input, error })
+              log.debug(`Failed to read ${type.name}.${input} due to: ${error.message}`)
+              instancesErrors.push({ type: type.name, instance: input, error })
+              typesWithInsufficientAccess.add(type.name)
               instancesWithInsufficientAccess.add(input)
             }
           })
@@ -964,37 +960,39 @@ export default class SalesforceClient implements ISalesforceClient {
       const newRetrieveRequest = {
         ...retrieveRequest,
         unpackaged: {
-          ...unpackaged,
-          types:
-            unpackaged.types.map(type => {
-              if (typesWithInsufficientAccess.has(type.name)) {
-                return {
-                  ...type,
-                  members: type.members.filter(member => !instancesWithInsufficientAccess.has(member)),
-                }
+          ...retrieveRequest.unpackaged,
+          types: retrieveRequest.unpackaged.types.map(type => {
+            if (typesWithInsufficientAccess.has(type.name)) {
+              return {
+                ...type,
+                members: type.members.filter(member => !instancesWithInsufficientAccess.has(member)),
               }
-              return type
-            }) ?? retrieveRequest.unpackaged.types,
+            }
+            return type
+          }),
         },
       }
       return { instancesErrors, newRetrieveRequest }
     }
-    try {
-      return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
-    } catch (e) {
-      const matches = [...e.message.matchAll(errorPattern)]
-      if (matches.length > 0) {
-        const { instancesErrors, newRetrieveRequest } = await handleInsufficientAccessErrors(matches)
+
+    const result = flatValues(
+      await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()),
+    ) as RetrieveResult
+    if (_.isString(result.zipFile)) return result
+    const errorMessage = result.errorMessage ?? ''
+    if (errorMessage.match(errorPattern)) {
+      log.debug(`Failed to retrieve due to: ${errorMessage} reading each type separately`)
+      const { instancesErrors, newRetrieveRequest } = await handleInsufficientAccessErrors()
+      if (instancesErrors.length > 0) {
         log.debug('Found the following errors while trying to retrieve:')
         instancesErrors.forEach(({ instance, error }) => {
           log.debug(`Instance: ${instance}, Error: ${error.message}`)
         })
         if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
-          log.debug(
-            'updating original retrieve request: %s to new retrieve request: %s',
-            inspectValue(retrieveRequest.unpackaged?.types),
-            inspectValue(newRetrieveRequest.unpackaged?.types),
-          )
+          log.debug('Excluding the following instances from retrieve:')
+          instancesErrors.forEach(({ type, instance }) => {
+            log.debug(`Type: ${type}, Instance: ${instance}`)
+          })
           const retrieveResult = await this.retrieve(newRetrieveRequest)
           return {
             ...retrieveResult,
@@ -1002,13 +1000,16 @@ export default class SalesforceClient implements ISalesforceClient {
           }
         }
         log.debug(
-          'handleInsufficientAccessRightsOnEntity is disabled. Skipping retrieve call. original retrieve request: %s new retrieve request: %s',
-          inspectValue(retrieveRequest.unpackaged?.types),
-          inspectValue(newRetrieveRequest.unpackaged?.types),
+          'handleInsufficientAccessRightsOnEntity is disabled. Logging instances without exclusion from retrieve:',
         )
+        instancesErrors.forEach(({ type, instance }) => {
+          log.debug(`Type: ${type}, Instance: ${instance}`)
+        })
+      } else {
+        log.debug('No errors found while reading')
       }
-      throw e
     }
+    return result
   }
 
   private async reportDeployProgressUntilComplete(

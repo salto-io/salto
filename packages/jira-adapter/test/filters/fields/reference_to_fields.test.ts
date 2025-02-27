@@ -23,22 +23,6 @@ describe('addFieldsTemplateReferences', () => {
       return [id, new InstanceElement(`field_${index + 1}`, createEmptyType('Field'), { id })]
     }),
   )
-
-  // beforeEach(() => {
-  //   context = new InstanceElement(
-  //     'context',
-  //     new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }),
-  //     {
-  //       id: 2,
-  //       projectIds: ['3', '4'],
-  //     },
-  //     undefined,
-  //     {
-  //       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)],
-  //     },
-  //   )
-  // })
-
   it('should make a reference to a custom field', async () => {
     const value: Value = {
       script: 'abc customfield_2 def',

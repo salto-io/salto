@@ -34,7 +34,7 @@ export const advancedFieldsReferenceFunc =
     if (value == null) {
       return WALK_NEXT_STEP.SKIP
     }
-    if (Object.prototype.hasOwnProperty.call(value, ADVANCED_FIELDS)) {
+    if (value[ADVANCED_FIELDS] !== undefined) {
       func(value, ADVANCED_FIELDS)
       return WALK_NEXT_STEP.SKIP
     }

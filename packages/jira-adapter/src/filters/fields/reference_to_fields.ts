@@ -15,11 +15,15 @@ import { FIELD_TYPE_NAME } from './constants'
 
 const CUSTOM_FIELD_PATTERN = /(customfield_\d+)/
 
-const referenceCustomFields = (
-  text: string,
-  fieldInstancesById: Map<string, InstanceElement>,
-  enableMissingReferences: boolean,
-): TemplateExpression | string =>
+const referenceCustomFields = ({
+  text,
+  fieldInstancesById,
+  enableMissingReferences,
+}: {
+  text: string
+  fieldInstancesById: Map<string, InstanceElement>
+  enableMissingReferences: boolean
+}): TemplateExpression | string =>
   extractTemplate(text, [CUSTOM_FIELD_PATTERN], expression => {
     if (!expression.match(CUSTOM_FIELD_PATTERN)) {
       return expression
@@ -37,6 +41,6 @@ export const addFieldsTemplateReferences =
   (fieldInstancesById: Map<string, InstanceElement>, enableMissingReferences: boolean): referenceFunc =>
   (value: Value, fieldName: string): void => {
     if (typeof value[fieldName] === 'string') {
-      value[fieldName] = referenceCustomFields(value[fieldName], fieldInstancesById, enableMissingReferences)
+      value[fieldName] = referenceCustomFields({ text: value[fieldName], fieldInstancesById, enableMissingReferences })
     }
   }

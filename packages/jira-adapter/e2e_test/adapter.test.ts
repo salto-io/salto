@@ -67,7 +67,7 @@ const nullProgressReporter: ProgressReporter = {
   reportProgress: () => {},
 }
 
-const deleteElementsAtTheEnd = true // use for debugging
+const deleteElementsAtTheEnd = true // when debugging you can change to false to keep the created elements and see the deployed elements in the service
 
 each([
   ['Cloud', false],

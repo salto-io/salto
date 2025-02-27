@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../reference_mapping'
@@ -22,14 +22,15 @@ import { addFieldsTemplateReferences } from './fields/reference_to_fields'
 
 const NO_REFERENCES_TYPES = (): string[] => [PROJECT_COMPONENT_TYPE, FIELD_CONFIGURATION_TYPE_NAME]
 
-const addWalkOnReferences = (elements: Element[], config: JiraConfig): void => {
+const addWalkOnReferences = (instances: InstanceElement[], config: JiraConfig): void => {
   if (!config.fetch.walkOnReferences) {
     return
   }
-  const instances = elements.filter(isInstanceElement)
   const fieldInstances = instances.filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
   const fieldInstancesById = new Map(
-    fieldInstances.map(instance => [instance.value.id, instance] as [string, InstanceElement]),
+    fieldInstances
+      .filter(instance => typeof instance.value.id === 'string')
+      .map(instance => [instance.value.id, instance] as [string, InstanceElement]),
   )
   walkOnAutomations(
     instances.filter(instance => instance.elemID.typeName === AUTOMATION_TYPE),
@@ -42,7 +43,7 @@ const addWalkOnReferences = (elements: Element[], config: JiraConfig): void => {
 const filter: FilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async elements => {
-    addWalkOnReferences(elements, config)
+    addWalkOnReferences(elements.filter(isInstanceElement), config)
 
     const fixedDefs = referencesRules.map(def =>
       config.fetch.enableMissingReferences ? def : _.omit(def, 'missingRefStrategy'),

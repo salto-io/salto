@@ -95,15 +95,24 @@ describe('groupPushToApplicationUniquenessValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
+  it('should return empty list with same group is mapped to a different app', async () => {
+    const elementSource = buildElementsSourceFromElements([
+      groupPush1,
+      groupPush2,
+    ])
+    const changeErrors = await groupPushToApplicationUniquenessValidator(
+      [toChange({ after: groupPush1 })],
+      elementSource,
+    )
+    expect(changeErrors).toHaveLength(0)
+  })
   it('should return errors only when group to application are defined in element source', async () => {
     const elementSource = buildElementsSourceFromElements([
       groupPushInElementSource,
       groupPush1,
-      groupPush2,
-      groupPush3,
     ])
     const changeErrors = await groupPushToApplicationUniquenessValidator(
-      [toChange({ after: groupPush1 }), toChange({ after: groupPush2 }), toChange({ after: groupPush3 })],
+      [toChange({ after: groupPush1 })],
       elementSource,
     )
     expect(changeErrors).toEqual([

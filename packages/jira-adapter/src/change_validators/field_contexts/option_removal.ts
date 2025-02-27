@@ -205,6 +205,7 @@ const getActiveOptionsIds = async ({
       break
     }
     if (nextPageToken !== undefined && nextPageToken === response.data.nextPageToken) {
+      unknownOptionIds.push(...optionIds)
       log.error('Jira search API returned the same nextPageToken, continuing with the current result')
       break
     }
@@ -226,7 +227,7 @@ const collectActiveOptionsIds = async (
   fieldIdToOptionsInfo: _.Dictionary<OptionInfo[]>,
   client: JiraClient,
 ): Promise<{ activeOptionsIds: Set<string>; unknownOptionsIds: Set<string> }> => {
-  const { activeOptionsIds: activeOptionIds, unknownOptionsIds: unknownOptionIds } = (
+  const chunksResult = (
     await Promise.all(
       _.flatMap(fieldIdToOptionsInfo, (optionsInfo, fieldId) =>
         _.chunk(
@@ -235,16 +236,12 @@ const collectActiveOptionsIds = async (
         ).map(optionIdsChunk => getActiveOptionsIds({ client, fieldId, optionIds: optionIdsChunk })),
       ),
     )
-  )
-    .filter(isDefined)
-    .reduce(
-      (acc, { activeOptionsIds: chunkActiveOptionIds, unknownOptionsIds: chunkUnknownOptionIds }) => ({
-        activeOptionsIds: [...acc.activeOptionsIds, ...chunkActiveOptionIds],
-        unknownOptionsIds: [...acc.unknownOptionsIds, ...chunkUnknownOptionIds],
-      }),
-      { activeOptionsIds: [], unknownOptionsIds: [] },
-    )
-  return { activeOptionsIds: new Set(activeOptionIds), unknownOptionsIds: new Set(unknownOptionIds) }
+  ).filter(isDefined)
+
+  return {
+    activeOptionsIds: new Set(chunksResult.flatMap(({ activeOptionsIds }) => activeOptionsIds)),
+    unknownOptionsIds: new Set(chunksResult.flatMap(({ unknownOptionsIds }) => unknownOptionsIds)),
+  }
 }
 
 const optionMigrationLink = (fieldOptionContext: OptionInfo, baseUrl: string): string =>

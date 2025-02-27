@@ -24,22 +24,8 @@ import {
   FIELD_TYPE_NAME,
   OPTIONS_ORDER_TYPE_NAME,
 } from '../../../src/filters/fields/constants'
-import { createEmptyType, mockClient } from '../../utils'
+import { createEmptyType, generateOptionInstances, mockClient } from '../../utils'
 import JiraClient from '../../../src/client/client'
-
-const generateNOptions = (n: number, fieldParent: InstanceElement): InstanceElement[] =>
-  _.range(n).map(
-    i =>
-      new InstanceElement(
-        `option${i}`,
-        createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
-        { value: `option${i}`, id: `${i}` },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(fieldParent.elemID, fieldParent)],
-        },
-      ),
-  )
 
 describe('fieldContextOptionRemovalValidator', () => {
   let config: JiraConfig
@@ -78,7 +64,7 @@ describe('fieldContextOptionRemovalValidator', () => {
       createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
       {
         value: 'optionValue',
-        id: '11',
+        id: '10011',
       },
       undefined,
       {
@@ -102,7 +88,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '1',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -128,7 +114,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=11 and then refresh your deployment.',
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
       })
       expect(errors[1]).toMatchObject({
         elemID: orderInstance.elemID,
@@ -148,7 +134,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
         {
           value: 'optionValue2',
-          id: '22',
+          id: '10022',
         },
         undefined,
         {
@@ -164,10 +150,10 @@ describe('fieldContextOptionRemovalValidator', () => {
               fields: {
                 customfield_1234: [
                   {
-                    id: '11',
+                    id: '10011',
                   },
                   {
-                    id: '22',
+                    id: '10022',
                   },
                 ],
               },
@@ -177,7 +163,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               fields: {
                 customfield_1234: [
                   {
-                    id: '11',
+                    id: '10011',
                   },
                 ],
               },
@@ -199,14 +185,14 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=11 and then refresh your deployment.',
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
       })
       expect(errors[1]).toMatchObject({
         elemID: optionInstance2.elemID,
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue2" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=22 and then refresh your deployment.',
+          'The option "optionValue2" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10022 and then refresh your deployment.',
       })
       expect(errors[2]).toMatchObject({
         elemID: orderInstance.elemID,
@@ -227,7 +213,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
         {
           value: 'cascadingOptionValue',
-          id: '33',
+          id: '10033',
         },
         undefined,
         {
@@ -251,9 +237,9 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '1',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                   child: {
-                    id: '33',
+                    id: '10033',
                   },
                 },
               },
@@ -271,7 +257,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue-cascadingOptionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=33 and then refresh your deployment.',
+          'The option "optionValue-cascadingOptionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10033 and then refresh your deployment.',
       })
       expect(errors[1]).toMatchObject({
         elemID: cascadingOrderInstance.elemID,
@@ -296,14 +282,14 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=11 and then refresh your deployment.',
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
       })
       expect(errors[1]).toMatchObject({
         elemID: cascadingOptionInstance.elemID,
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue-cascadingOptionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=33 and then refresh your deployment.',
+          'The option "optionValue-cascadingOptionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10033 and then refresh your deployment.',
       })
       expect(errors[2]).toMatchObject({
         elemID: orderInstance.elemID,
@@ -351,7 +337,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
         {
           value: 'optionValue2',
-          id: '22',
+          id: '10022',
         },
         undefined,
         {
@@ -363,7 +349,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
         {
           value: 'optionValue3',
-          id: '33',
+          id: '10033',
         },
         undefined,
         {
@@ -375,7 +361,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
         {
           value: 'optionValue4',
-          id: '44',
+          id: '10044',
         },
         undefined,
         {
@@ -395,7 +381,7 @@ describe('fieldContextOptionRemovalValidator', () => {
                   id: '1',
                   fields: {
                     customfield_1234: {
-                      id: '11',
+                      id: '10011',
                     },
                   },
                 },
@@ -403,7 +389,7 @@ describe('fieldContextOptionRemovalValidator', () => {
                   id: '2',
                   fields: {
                     customfield_1234: {
-                      id: '22',
+                      id: '10022',
                     },
                   },
                 },
@@ -420,7 +406,7 @@ describe('fieldContextOptionRemovalValidator', () => {
                   id: '1',
                   fields: {
                     customfield_5678: {
-                      id: '22',
+                      id: '10022',
                     },
                   },
                 },
@@ -428,7 +414,7 @@ describe('fieldContextOptionRemovalValidator', () => {
                   id: '2',
                   fields: {
                     customfield_5678: {
-                      id: '33',
+                      id: '10033',
                     },
                   },
                 },
@@ -436,7 +422,7 @@ describe('fieldContextOptionRemovalValidator', () => {
                   id: '3',
                   fields: {
                     customfield_5678: {
-                      id: '44',
+                      id: '10044',
                     },
                   },
                 },
@@ -462,7 +448,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=11 and then refresh your deployment.',
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
       })
     })
 
@@ -484,28 +470,28 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue2" in the field "field2" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=456&selectedValue=22 and then refresh your deployment.',
+          'The option "optionValue2" in the field "field2" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=456&selectedValue=10022 and then refresh your deployment.',
       })
       expect(errors[1]).toMatchObject({
         elemID: optionInstance3.elemID,
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue3" in the field "field2" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=456&selectedValue=33 and then refresh your deployment.',
+          'The option "optionValue3" in the field "field2" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=456&selectedValue=10033 and then refresh your deployment.',
       })
       expect(errors[2]).toMatchObject({
         elemID: optionInstance4.elemID,
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue4" in the field "field2" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=456&selectedValue=44 and then refresh your deployment.',
+          'The option "optionValue4" in the field "field2" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=456&selectedValue=10044 and then refresh your deployment.',
       })
       expect(errors[3]).toMatchObject({
         elemID: optionInstance.elemID,
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=11 and then refresh your deployment.',
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
       })
       expect(errors[4]).toMatchObject({
         elemID: orderInstance2.elemID,
@@ -529,7 +515,7 @@ describe('fieldContextOptionRemovalValidator', () => {
       expect(errors).toHaveLength(0)
     })
 
-    it.only('should do nothing if the context is being deleted as well', async () => {
+    it('should do nothing if the context is being deleted as well', async () => {
       const changes = [
         toChange({ before: optionInstance }),
         toChange({ before: orderInstance, after: orderInstance }),
@@ -579,7 +565,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '1',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -601,7 +587,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=11 and then refresh your deployment.',
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
       })
     })
 
@@ -614,7 +600,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '1',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -636,7 +622,49 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=11 and then refresh your deployment.',
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
+      })
+      expect(errors[1]).toMatchObject({
+        elemID: optionInstance2.elemID,
+        severity: 'Warning',
+        message: 'Cannot determine the status of the deleted option',
+        detailedMessage:
+          'The option "optionValue2" in the field "field2" might be assigned to some issues. Please check it before proceeding as it may leads to data loss.',
+      })
+    })
+
+    it('should return the collected errors before receiving unexpected response', async () => {
+      connection.post.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          issues: [
+            {
+              id: '1',
+              fields: {
+                customfield_1234: {
+                  id: '10011',
+                },
+              },
+            },
+          ],
+          newPageToken: 'nextPageToken',
+        },
+      })
+      connection.post.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          bla: ['error'],
+        },
+      })
+      const changes = [toChange({ before: optionInstance }), toChange({ before: optionInstance2 })]
+      const errors = await validator(changes)
+      expect(errors).toHaveLength(2)
+      expect(errors[0]).toMatchObject({
+        elemID: optionInstance.elemID,
+        severity: 'Error',
+        message: 'Cannot remove field context option as it is still in use by existing issues',
+        detailedMessage:
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
       })
       expect(errors[1]).toMatchObject({
         elemID: optionInstance2.elemID,
@@ -647,7 +675,7 @@ describe('fieldContextOptionRemovalValidator', () => {
       })
     })
     it('should use chunks when there are too many options', async () => {
-      const options = generateNOptions(1250, contextInstance)
+      const options = generateOptionInstances({ count: 1250, parent: contextInstance, addId: true })
       const changes = options.map(option => toChange({ before: option }))
       const errors = await validator(changes)
       expect(errors).toHaveLength(2)
@@ -664,7 +692,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '1',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -672,7 +700,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '2',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -688,7 +716,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '1',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -696,7 +724,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '2',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -712,7 +740,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '1',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -720,7 +748,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '2',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -735,7 +763,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         1,
         'rest/api/3/search/jql',
         {
-          jql: 'cf[1234] in (11)',
+          jql: 'cf[1234] in (10011)',
           fields: ['customfield_1234'],
           maxResults: 1000,
         },
@@ -745,7 +773,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         2,
         'rest/api/3/search/jql',
         {
-          jql: 'cf[1234] in (11)',
+          jql: 'cf[1234] in (10011)',
           fields: ['customfield_1234'],
           nextPageToken: 'nextPageToken1',
           maxResults: 1000,
@@ -756,7 +784,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         3,
         'rest/api/3/search/jql',
         {
-          jql: 'cf[1234] in (11)',
+          jql: 'cf[1234] in (10011)',
           fields: ['customfield_1234'],
           nextPageToken: 'nextPageToken2',
           maxResults: 1000,
@@ -768,7 +796,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=11 and then refresh your deployment.',
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
       })
     })
 
@@ -781,7 +809,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '1',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -789,7 +817,7 @@ describe('fieldContextOptionRemovalValidator', () => {
               id: '2',
               fields: {
                 customfield_1234: {
-                  id: '11',
+                  id: '10011',
                 },
               },
             },
@@ -805,7 +833,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         1,
         'rest/api/3/search/jql',
         {
-          jql: 'cf[1234] in (11)',
+          jql: 'cf[1234] in (10011)',
           fields: ['customfield_1234'],
           maxResults: 1000,
         },
@@ -815,7 +843,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         2,
         'rest/api/3/search/jql',
         {
-          jql: 'cf[1234] in (11)',
+          jql: 'cf[1234] in (10011)',
           fields: ['customfield_1234'],
           nextPageToken: 'nextPageToken',
           maxResults: 1000,
@@ -827,7 +855,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=11 and then refresh your deployment.',
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
       })
     })
     it('should stop pagination when max iterations reached', async () => {
@@ -840,7 +868,7 @@ describe('fieldContextOptionRemovalValidator', () => {
                 id: '1',
                 fields: {
                   customfield_1234: {
-                    id: '11',
+                    id: '10011',
                   },
                 },
               },
@@ -858,7 +886,7 @@ describe('fieldContextOptionRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove field context option as it is still in use by existing issues',
         detailedMessage:
-          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=11 and then refresh your deployment.',
+          'The option "optionValue" in the field "field" is currently assigned to some issues. Please migrate these issues to a different option using the Jira UI via https://ori-salto-test.atlassian.net//secure/admin/EditCustomFieldOptions!remove.jspa?fieldConfigId=123&selectedValue=10011 and then refresh your deployment.',
       })
     })
   })

@@ -51,7 +51,7 @@ import { unresolvedReferenceValidator } from './unresolved_references'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './projects/project_category'
-import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
+import { fieldSecondContextValidator } from './field_contexts/second_context'
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
 import { automationProjectsValidator } from './automation/automation_projects'
@@ -131,7 +131,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     masking: maskingValidator(client),
     issueTypeDeletion: issueTypeDeletionValidator(client),
     lockedFields: lockedFieldsValidator,
-    fieldSecondGlobalContext: fieldSecondGlobalContextValidator,
+    fieldSecondContext: fieldSecondContextValidator,
     systemFields: systemFieldsValidator,
     workflowProperties: workflowPropertiesValidator,
     permissionScheme: permissionSchemeValidator,

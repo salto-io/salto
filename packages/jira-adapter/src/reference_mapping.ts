@@ -75,6 +75,7 @@ import {
   SLA_CONDITIONS_STOP_TYPE,
   SLA_CONDITIONS_START_TYPE,
   SLA_CONDITIONS_PAUSE_TYPE,
+  FORM_TYPE,
 } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
@@ -1459,6 +1460,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',
     target: { type: 'UnknownType' },
+  },
+  {
+    src: { field: 'templateFormIds', parentTypes: ['TemplateFormsConfig'] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: FORM_TYPE },
   },
 ]
 

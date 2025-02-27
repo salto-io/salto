@@ -254,7 +254,7 @@ const isHTMLBodyContentAutomationValue = ({ value }: TransformFuncArgs): boolean
 
 const extractHTMLContentToStaticFile =
   (): TransformFuncSync =>
-  async ({ value, path }) => {
+  ({ value, path }) => {
     if (path !== undefined && isHTMLBodyContentAutomationValue({ value })) {
       value.body = new StaticFile({
         filepath: `${JIRA}/${AUTOMATION_TYPE}/${getHTMLStaticFileName(path)}.html`,
@@ -266,9 +266,19 @@ const extractHTMLContentToStaticFile =
 
 const transformStaticFileBufferToHTML =
   (): TransformFuncSync =>
-  async ({ value }) => {
+  ({ value }) => {
     if (isHTMLBodyContentAutomationValue({ value })) {
       value.body = value.body.toString()
+    }
+    return value
+  }
+
+const transformIdNumberToString =
+  (): TransformFuncSync =>
+  ({ value }) => {
+    if (_.isPlainObject(value) && value?.type === 'jira.proforma.form.add.action') {
+      const templateFormIdsAsString = String(value.value.templateFormsConfig.templateFormIds)
+      value.value.templateFormsConfig.templateFormIds = templateFormIdsAsString
     }
     return value
   }
@@ -395,6 +405,7 @@ const filter: FilterCreator = ({ client }) => {
             createTransformDeleteLinkTypesFunc(),
             createTransformHasAttachmentValueFunc(),
             extractHTMLContentToStaticFile(),
+            transformIdNumberToString(),
           ])
           instance.value = (
             await transformElement({

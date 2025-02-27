@@ -225,7 +225,7 @@ export const fetchMetadataInstances = async ({
   metadataQuery: MetadataQuery
   maxInstancesPerType?: number
   addNamespacePrefixToFullName?: boolean
-  fetchProfile: FetchProfile
+  fetchProfile?: FetchProfile
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }

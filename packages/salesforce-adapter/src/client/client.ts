@@ -853,7 +853,7 @@ export default class SalesforceClient implements ISalesforceClient {
             // some way on sandboxes and for some reason this causes the SF API to fail reading
             (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid') ||
             error.name === 'sf:INSUFFICIENT_ACCESS',
-      isUnhandledError,
+      isUnhandledError: isUnhandledError ?? isSFDCUnhandledException,
     })
   }
 

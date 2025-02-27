@@ -29,9 +29,9 @@ describe('appProvisioningAdditionValidator', () => {
           {
             elemID: app.elemID,
             severity: 'Error',
-            message: 'Application provisioning cannot be added',
+            message: 'Application provisioning settings cannot be added via Salto.',
             detailedMessage:
-              'To deploy this application, you must first remove the provisioning configuration. This is required because provisioning settings cannot be modified directly through Salto. After deployment, enable provisioning in Okta and perform a fetch to sync the latest configuration. For a step-by-step guide, visit https://help.salto.io/en/articles/10199943-deploying-okta-applications-using-salto and refer to the "Application provisioning settings" section.',
+              'Salto cannot add provisioning settings because credentials are required to establish the initial connection. To deploy this application, remove the following provisioning fields: applicationUserProvisioning, applicationInboundProvisioning, applicationProvisioningUsers, applicationProvisioningGeneral if present. After deployment, configure provisioning settings directly in the Okta Admin Console. Learn more at help.salto.io/en/articles/10199943-deploying-okta-applications-using-salto#h_a3697a03a3.',
           },
         ])
       })
@@ -73,9 +73,9 @@ describe('appProvisioningAdditionValidator', () => {
           {
             elemID: after.elemID,
             severity: 'Error',
-            message: 'Application provisioning cannot be added',
+            message: 'Application provisioning settings cannot be added via Salto.',
             detailedMessage:
-              'To deploy this application, you must first remove the provisioning configuration. This is required because provisioning settings cannot be modified directly through Salto. After deployment, enable provisioning in Okta and perform a fetch to sync the latest configuration. For a step-by-step guide, visit https://help.salto.io/en/articles/10199943-deploying-okta-applications-using-salto and refer to the "Application provisioning settings" section.',
+              'Salto cannot add provisioning settings because credentials are required to establish the initial connection. To deploy this application, remove the following provisioning fields: applicationUserProvisioning, applicationInboundProvisioning, applicationProvisioningUsers, applicationProvisioningGeneral if present. After deployment, configure provisioning settings directly in the Okta Admin Console. Learn more at help.salto.io/en/articles/10199943-deploying-okta-applications-using-salto#h_a3697a03a3.',
           },
         ])
       })

@@ -8,8 +8,8 @@
 import {
   ChangeError,
   ChangeValidator,
-  ElemID,
   getChangeData,
+  InstanceElement,
   isAdditionChange,
   isAdditionOrModificationChange,
   isInstanceChange,
@@ -17,7 +17,12 @@ import {
   ReferenceExpression,
   SeverityLevel,
 } from '@salto-io/adapter-api'
-import { getElementPrettyName, getInstancesFromElementSource, getParentElemID } from '@salto-io/adapter-utils'
+import {
+  getElementPrettyName,
+  getInstancesFromElementSource,
+  getParent,
+  getParentElemID,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
@@ -26,18 +31,18 @@ import { AddOrModifyInstanceChange } from '../../common/general'
 
 const log = logger(module)
 
-const createSecondGlobalContextErrorMessage = (elemID: ElemID, fieldName: string): ChangeError => ({
-  elemID,
+const createSecondGlobalContextErrorMessage = (instance: InstanceElement): ChangeError => ({
+  elemID: instance.elemID,
   severity: 'Error' as SeverityLevel,
   message: 'A field can only have a single global context',
-  detailedMessage: `Can't deploy this global context because the deployment will result in more than a single global context for field ${fieldName}.`,
+  detailedMessage: `Can't deploy this global context because the deployment will result in more than a single global context for field ${getElementPrettyName(getParent(instance))}.`,
 })
 
-const createProjectScopeErrorMessage = (elemID: ElemID, fieldName: string, projectName: string): ChangeError => ({
-  elemID,
+const createProjectScopeErrorMessage = (instance: InstanceElement, projectName: string): ChangeError => ({
+  elemID: instance.elemID,
   severity: 'Error' as SeverityLevel,
   message: 'A field can only have a single context per project',
-  detailedMessage: `Can't deploy this project scoped context because the deployment will result in more than one context for field ${fieldName} with a scope for project ${projectName}`,
+  detailedMessage: `Can't deploy this project scoped context because the deployment will result in more than one context for field ${getElementPrettyName(getParent(instance))} with a scope for project ${projectName}`,
 })
 
 export const fieldSecondContextValidator: ChangeValidator = async (changes, elementSource) => {
@@ -66,55 +71,41 @@ export const fieldSecondContextValidator: ChangeValidator = async (changes, elem
   )
   const contextCountByFieldNameAndProject = _.mapValues(contextsByFieldName, instances =>
     _.chain(instances)
-      .flatMap(context => (context.value.projectIds ? context.value.projectIds : []))
+      .flatMap(context => context.value.projectIds ?? [])
       .filter(isReferenceExpression)
       .map(projectReference => projectReference.elemID.getFullName())
       .countBy()
       .value(),
   )
 
-  const addedGlobalContext = (change: AddOrModifyInstanceChange): boolean =>
+  const isAddedGlobalContext = (change: AddOrModifyInstanceChange): boolean =>
     isGlobalContext(change.data.after) && (isAdditionChange(change) || !isGlobalContext(change.data.before))
 
-  const secondGlobalErrors = Promise.all(
-    contextChanges
-      .filter(addedGlobalContext)
-      .map(getChangeData)
-      .filter(instance => globalContextCountByFieldName[getParentElemID(instance).getFullName()] > 1)
-      .map(async instance =>
-        createSecondGlobalContextErrorMessage(
-          instance.elemID,
-          getElementPrettyName(await elementSource.get(getParentElemID(instance))),
+  const secondGlobalErrors = contextChanges
+    .filter(isAddedGlobalContext)
+    .map(getChangeData)
+    .filter(instance => globalContextCountByFieldName[getParentElemID(instance).getFullName()] > 1)
+    .map(createSecondGlobalContextErrorMessage)
+
+  const secondProjectErrors = contextChanges
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(instance => Array.isArray(instance.value.projectIds) && instance.value.projectIds.length > 0)
+    .filter(instance => contextCountByFieldNameAndProject[getParentElemID(instance).getFullName()] !== undefined)
+    .map(instance => ({
+      instance,
+      secondProjectScopes: instance.value.projectIds
+        .filter(isReferenceExpression)
+        .map((projectReference: ReferenceExpression) => projectReference.elemID.getFullName())
+        .filter(
+          (projectName: string) =>
+            contextCountByFieldNameAndProject[getParentElemID(instance).getFullName()][projectName] > 1,
         ),
-      ),
-  )
+    }))
+    .filter(({ secondProjectScopes }) => secondProjectScopes.length > 0)
+    .flatMap(({ instance, secondProjectScopes }) =>
+      secondProjectScopes.map((projectFullName: string) => createProjectScopeErrorMessage(instance, projectFullName)),
+    )
 
-  const secondProjectErrors = Promise.all(
-    contextChanges
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(instance => instance.value.projectIds && instance.value.projectIds.length > 0)
-      .map(instance => ({
-        instance,
-        secondProjectScopes: instance.value.projectIds
-          .filter(isReferenceExpression)
-          .map((projectReference: ReferenceExpression) => projectReference.elemID.getFullName())
-          .filter(
-            (projectName: string) =>
-              contextCountByFieldNameAndProject[getParentElemID(instance).getFullName()][projectName] > 1,
-          ),
-      }))
-      .filter(({ secondProjectScopes }) => secondProjectScopes.length > 0)
-      .map(async ({ instance, secondProjectScopes }) => {
-        const fieldName = getElementPrettyName(await elementSource.get(getParentElemID(instance)))
-        return secondProjectScopes.map((projectFullName: string) =>
-          createProjectScopeErrorMessage(instance.elemID, fieldName, projectFullName),
-        )
-      }),
-  )
-
-  return Promise.all([secondGlobalErrors, secondProjectErrors]).then(([globalErrors, projectErrors]) => [
-    ...globalErrors,
-    ...projectErrors.flat(),
-  ])
+  return secondGlobalErrors.concat(secondProjectErrors)
 }

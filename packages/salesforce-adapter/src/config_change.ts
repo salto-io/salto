@@ -38,6 +38,7 @@ const {
   INVALID_TYPE,
   UNKNOWN_EXCEPTION,
   INVALID_QUERY_FILTER_OPERATOR,
+  INSUFFICIENT_ACCESS,
 } = SALESFORCE_ERRORS
 
 const CONFIG_SUGGESTIONS_GENERAL_MESSAGE =
@@ -123,6 +124,9 @@ const isInvalidCrossReferenceKeyError: CreateConfigSuggestionPredicate = (e: Err
   const errorCode = _.get(e, 'errorCode')
   return _.isString(errorCode) && errorCode === INVALID_CROSS_REFERENCE_KEY
 }
+const INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY = 'INSUFFICIENT_ACCESS: insufficient access rights on entity'
+const isInsufficientAccessRightsOnEntitySalesforceError: CreateConfigSuggestionPredicate = (e: Error): boolean =>
+  e.name === INSUFFICIENT_ACCESS && e.message.includes(INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY)
 
 export const NON_TRANSIENT_SALESFORCE_ERRORS: SalesforceErrorName[] = [
   DUPLICATE_VALUE,
@@ -140,6 +144,14 @@ type ConfigSuggestionCreator = {
   predicate: CreateConfigSuggestionPredicate
   create: CreateConfigSuggestionFunc
 }
+
+const createInsufficientAccessRightsOnEntitySalesforceErrorConfigSuggestion: CreateConfigSuggestionFunc = (
+  input: ConfigSuggestionsCreatorInput,
+): MetadataConfigSuggestion => ({
+  type: 'metadataExclude',
+  value: input,
+  reason: `${input.metadataType} with name ${input.name} failed due to ${INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY}`,
+})
 
 const createSocketTimeoutConfigSuggestion: CreateConfigSuggestionFunc = (
   input: ConfigSuggestionsCreatorInput,
@@ -171,6 +183,7 @@ type ConfigSuggestionCreatorName =
   | typeof SOCKET_TIMEOUT
   | typeof INVALID_CROSS_REFERENCE_KEY
   | typeof NON_TRANSIENT_SALESFORCE_ERROR
+  | typeof INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY
 
 const CONFIG_SUGGESTION_CREATORS: Record<ConfigSuggestionCreatorName, ConfigSuggestionCreator> = {
   [SOCKET_TIMEOUT]: {
@@ -184,6 +197,10 @@ const CONFIG_SUGGESTION_CREATORS: Record<ConfigSuggestionCreatorName, ConfigSugg
   [NON_TRANSIENT_SALESFORCE_ERROR]: {
     predicate: isNonTransientSalesforceError,
     create: createNonTransientSalesforceErrorConfigSuggestion,
+  },
+  [INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY]: {
+    predicate: isInsufficientAccessRightsOnEntitySalesforceError,
+    create: createInsufficientAccessRightsOnEntitySalesforceErrorConfigSuggestion,
   },
 }
 

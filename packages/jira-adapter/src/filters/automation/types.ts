@@ -149,16 +149,16 @@ export const createAutomationTypes = (): {
   })
 
   const templateFormIdsType = new ObjectType({
-    elemID: new ElemID(JIRA, 'TemplateFormsConfig'),
+    elemID: new ElemID(JIRA, 'TemplateFormsIds'),
     fields: {
       key: {
         refType: BuiltinTypes.STRING,
       },
       value: {
-        refType: new ListType(BuiltinTypes.STRING),
+        refType: new ListType(BuiltinTypes.NUMBER),
       },
     },
-    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'TemplateFormsConfig'],
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'TemplateFormsIds'],
   })
 
   const templateFormsConfigType = new ObjectType({

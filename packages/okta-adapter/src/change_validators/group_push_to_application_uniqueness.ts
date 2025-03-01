@@ -57,10 +57,7 @@ export const groupPushToApplicationUniquenessValidator: ChangeValidator = async 
     )
     .toArray()
 
-  const groupPushByApp = groupBy(
-    existingGroupPushInstances,
-    groupPush => getParentElemID(groupPush).getFullName(),
-  )
+  const groupPushByApp = groupBy(existingGroupPushInstances, groupPush => getParentElemID(groupPush).getFullName())
 
   return addedGroupPushInstances.flatMap((instance): ChangeError[] => {
     const groupElemId = instance.value.userGroupId.elemID

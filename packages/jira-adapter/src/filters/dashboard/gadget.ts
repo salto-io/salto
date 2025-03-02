@@ -161,7 +161,7 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
         values: propertyValues,
         type: propertiesType,
         allowEmptyArrays: true,
-        allowAllEmptyObjects: true,
+        allowExistingEmptyObjects: true,
       })
     })
 

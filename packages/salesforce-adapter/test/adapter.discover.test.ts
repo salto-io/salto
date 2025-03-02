@@ -2409,7 +2409,7 @@ public class LargeClass${index} {
             config: {
               fetch: {
                 optionalFeatures: {
-                  handleInsufficientAccessRightsOnEntity: true,
+                  handleInsufficientAccessRightsOnEntityInRead: true,
                 },
                 metadata: {
                   exclude: metadataExclude,
@@ -2958,7 +2958,7 @@ describe('Fetch via retrieve API', () => {
         fetchProfile = buildFetchProfile({
           fetchParams: {
             optionalFeatures: {
-              handleInsufficientAccessRightsOnEntity: true,
+              handleInsufficientAccessRightsOnEntityInRetrieve: true,
             },
             addNamespacePrefixToFullName: false,
             metadata: {

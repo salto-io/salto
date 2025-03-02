@@ -842,7 +842,7 @@ export default class SalesforceClient implements ISalesforceClient {
       input: name,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.read(type, chunk)),
       chunkSize: this.readMetadataChunkSize.overrides[type] ?? this.readMetadataChunkSize.default,
-      isSuppressedError: fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')
+      isSuppressedError: fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntityInRead')
         ? error =>
             // This seems to happen with actions that relate to sending emails - these are disabled in
             // some way on sandboxes and for some reason this causes the SF API to fail reading
@@ -1002,7 +1002,7 @@ export default class SalesforceClient implements ISalesforceClient {
         instancesErrors.forEach(({ instance, error }) => {
           log.debug(`Instance: ${instance}, Error: ${error.message}`)
         })
-        if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
+        if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntityInRetrieve')) {
           log.debug('Excluding the following instances from retrieve:')
           instancesErrors.forEach(({ type, instance }) => {
             log.debug(`Type: ${type}, Instance: ${instance}`)
@@ -1014,7 +1014,7 @@ export default class SalesforceClient implements ISalesforceClient {
           }
         }
         log.debug(
-          'handleInsufficientAccessRightsOnEntity is disabled. Logging instances without exclusion from retrieve:',
+          'handleInsufficientAccessRightsOnEntityInRetrieve is disabled. Logging instances without exclusion from retrieve:',
         )
         instancesErrors.forEach(({ type, instance }) => {
           log.debug(`Type: ${type}, Instance: ${instance}`)

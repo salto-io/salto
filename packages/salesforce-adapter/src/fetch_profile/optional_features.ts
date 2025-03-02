@@ -27,8 +27,9 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   supportProfileTabVisibilities: false,
   disablePermissionsOmissions: true,
   omitStandardFieldsNonDeployableValues: true,
-  handleInsufficientAccessRightsOnEntity: false,
+  handleInsufficientAccessRightsOnEntityInRetrieve: false,
   shuffleRetrieveInstances: false,
+  handleInsufficientAccessRightsOnEntityInRead: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

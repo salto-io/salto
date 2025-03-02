@@ -379,7 +379,7 @@ describe('salesforce client', () => {
           fetchProfile = buildFetchProfile({
             fetchParams: {
               optionalFeatures: {
-                handleInsufficientAccessRightsOnEntity: true,
+                handleInsufficientAccessRightsOnEntityInRead: true,
               },
               addNamespacePrefixToFullName: false,
               metadata: {
@@ -417,7 +417,7 @@ describe('salesforce client', () => {
           fetchProfile = buildFetchProfile({
             fetchParams: {
               optionalFeatures: {
-                handleInsufficientAccessRightsOnEntity: false,
+                handleInsufficientAccessRightsOnEntityInRead: false,
               },
               addNamespacePrefixToFullName: false,
               metadata: {

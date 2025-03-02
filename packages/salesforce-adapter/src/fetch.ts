@@ -472,7 +472,7 @@ export const retrieveMetadataInstances = async ({
     log.debug('retrieve result for types %s: %o', typesToRetrieve, _.omit(result, ['zipFile', 'fileProperties']))
 
     if (result.errors !== undefined && result.errors.length > 0) {
-      if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
+      if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntityInRetrieve')) {
         log.debug('Excluding non retrievable instances using config suggestion:')
         result.errors.forEach(({ type, instance, error }) => {
           log.debug(`Type: ${type}, Instance: ${instance}`)
@@ -486,7 +486,7 @@ export const retrieveMetadataInstances = async ({
         })
       } else {
         log.debug(
-          'handleInsufficientAccessRightsOnEntity is disabled. Logging non-retrievable instances without exclusion in config file:',
+          'handleInsufficientAccessRightsOnEntityInRetrieve is disabled. Logging non-retrievable instances without exclusion in config file:',
         )
         result.errors.forEach(({ type, instance }) => log.debug(`Type: ${type}, Instance: ${instance}`))
       }

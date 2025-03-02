@@ -2924,7 +2924,8 @@ describe('Fetch via retrieve API', () => {
       zipFile: { $: { 'xsi:nil': 'true' } },
       messages: [],
     }
-    const instanceError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
+    const instanceErrorName = 'sf:INSUFFICIENT_ACCESS'
+    const instanceErrorMessage = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
     beforeEach(async () => {
       metadataRetrieveSpy = jest.spyOn(connection.metadata, 'retrieve')
       metadataReadSpy = jest.spyOn(connection.metadata, 'read')
@@ -2945,7 +2946,9 @@ describe('Fetch via retrieve API', () => {
       })
       connection.metadata.read.mockImplementation(async (_type, fullNames) => {
         if (fullNames.includes('ProblematicApexClass')) {
-          throw new Error(instanceError)
+          const error = new Error(instanceErrorMessage)
+          error.name = instanceErrorName
+          throw error
         }
         return []
       })
@@ -2977,7 +2980,7 @@ describe('Fetch via retrieve API', () => {
           expect.arrayContaining([
             {
               type: 'metadataExclude',
-              reason: instanceError,
+              reason: instanceErrorMessage,
               value: {
                 metadataType: 'ApexClass',
                 name: 'ProblematicApexClass',

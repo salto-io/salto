@@ -5,29 +5,52 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../reference_mapping'
 import { FilterCreator } from '../filter'
-import { FIELD_CONFIGURATION_TYPE_NAME, PROJECT_COMPONENT_TYPE } from '../constants'
+import { AUTOMATION_TYPE, FIELD_CONFIGURATION_TYPE_NAME, PROJECT_COMPONENT_TYPE } from '../constants'
+import { JiraConfig } from '../config/config'
+import { FIELD_TYPE_NAME } from './fields/constants'
+import { advancedFieldsReferenceFunc, walkOnAutomations } from './automation/walk_on_automation'
+import { addFieldsTemplateReferences } from './fields/reference_to_fields'
 
 /**
  * Convert field values into references, based on predefined rules.
  */
 
-const noReferencesTypes = [PROJECT_COMPONENT_TYPE, FIELD_CONFIGURATION_TYPE_NAME]
+const NO_REFERENCES_TYPES = (): string[] => [PROJECT_COMPONENT_TYPE, FIELD_CONFIGURATION_TYPE_NAME]
+
+const addWalkOnReferences = (instances: InstanceElement[], config: JiraConfig): void => {
+  if (!config.fetch.walkOnReferences) {
+    return
+  }
+  const fieldInstances = instances.filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
+  const fieldInstancesById = new Map(
+    fieldInstances
+      .filter(instance => typeof instance.value.id === 'string')
+      .map(instance => [instance.value.id, instance] as [string, InstanceElement]),
+  )
+  walkOnAutomations(
+    instances.filter(instance => instance.elemID.typeName === AUTOMATION_TYPE),
+    advancedFieldsReferenceFunc(
+      addFieldsTemplateReferences(fieldInstancesById, config.fetch.enableMissingReferences ?? true),
+    ),
+  )
+}
 
 const filter: FilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
-  onFetch: async (elements: Element[]) => {
+  onFetch: async elements => {
+    const instances = elements.filter(isInstanceElement)
+    addWalkOnReferences(instances, config)
+
     const fixedDefs = referencesRules.map(def =>
       config.fetch.enableMissingReferences ? def : _.omit(def, 'missingRefStrategy'),
     )
     // Remove once SALTO-6889 is done: ProjectComponents have no references, so don't need to scan them
-    const relevantElements = elements
-      .filter(isInstanceElement)
-      .filter(instance => !noReferencesTypes.includes(instance.elemID.typeName))
+    const relevantElements = instances.filter(instance => !NO_REFERENCES_TYPES().includes(instance.elemID.typeName))
     await referenceUtils.addReferences({
       elements: relevantElements,
       contextElements: elements,

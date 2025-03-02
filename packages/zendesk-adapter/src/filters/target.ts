@@ -15,7 +15,7 @@ import { TARGET_TYPE_NAME } from '../constants'
 /**
  * Removes the authentication data from target if it wasn't changed
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, definitions }) => ({
   name: 'targetFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [targetModificationChanges, leftoverChanges] = _.partition(
@@ -31,7 +31,12 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       if (instance.value.password) {
         delete instance.value.password
       }
-      await deployChange(clonedChange, client, oldApiDefinitions)
+      await deployChange({
+        change: clonedChange,
+        client,
+        apiDefinitions: oldApiDefinitions,
+        definitions,
+      })
       getChangeData(change).value.id = getChangeData(clonedChange).value.id
     })
     return { deployResult, leftoverChanges }

@@ -16,7 +16,7 @@ import { LOGO_FIELD } from './brand_logo'
  * Ignores the logo field from brand instances when deploying,
  * for they are covered as brand_logo instances
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, definitions }) => ({
   name: 'removeBrandLogoFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [brandChanges, leftoverChanges] = _.partition(
@@ -24,7 +24,13 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_TYPE_NAME,
     )
     const deployResult = await deployChanges(brandChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
+      await deployChange({
+        change,
+        client,
+        apiDefinitions: oldApiDefinitions,
+        definitions,
+        fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
+      })
     })
     return { deployResult, leftoverChanges }
   },

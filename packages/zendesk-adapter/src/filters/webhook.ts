@@ -88,7 +88,7 @@ const templateToEndpoint = (
  * to the brand's brand_url. In preDeploy the template expressions are turned back to string.
  * deploy: Removes the authentication data from webhook if it wasn't changed
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => {
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, definitions }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return {
     name: 'webhookFilter',
@@ -165,7 +165,13 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => {
           instance.value.authentication.data = placeholder
         }
         // Ignore external_source because it is impossible to deploy, the user was warned at externalSourceWebhook.ts
-        await deployChange(clonedChange, client, oldApiDefinitions, ['external_source'])
+        await deployChange({
+          change: clonedChange,
+          client,
+          apiDefinitions: oldApiDefinitions,
+          definitions,
+          fieldsToIgnore: ['external_source'],
+        })
         getChangeData(change).value.id = getChangeData(clonedChange).value.id
       })
       return { deployResult, leftoverChanges }

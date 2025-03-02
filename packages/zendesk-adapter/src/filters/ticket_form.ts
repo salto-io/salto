@@ -85,7 +85,7 @@ const removeCustomTicketStatusFromTicketFieldIDsField = (
  * this filter deploys ticket_form changes. if the instance has both statuses and custom_statuses under
  * required_on_statuses then it removes the statuses field.
  */
-const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, elementSource }) => ({
+const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, elementSource, definitions }) => ({
   name: 'ticketFormDeploy',
   onFetch: async (elements: Element[]): Promise<void> => {
     if (config[FETCH_CONFIG].omitTicketStatusTicketField !== true) {
@@ -130,10 +130,10 @@ const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, eleme
           newAfter !== undefined ? toChange({ before: change.data.before, after: newAfter }) : undefined
         if (intermediateChange !== undefined) {
           // first deploy is without the removed fields
-          await deployChange(intermediateChange, client, oldApiDefinitions)
+          await deployChange({ change: intermediateChange, client, apiDefinitions: oldApiDefinitions, definitions })
         }
       }
-      await deployChange(change, client, oldApiDefinitions)
+      await deployChange({ change, client, apiDefinitions: oldApiDefinitions, definitions })
     })
     const deployedChangesElemId = new Set(
       tempDeployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),

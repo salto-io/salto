@@ -74,6 +74,7 @@ const allOptionsWithSameContextAndField = (
   fieldId: string,
 ): boolean =>
   relevantChanges
+    .map(getChangeData)
     .map(getContextAndFieldIds)
     .find(
       ({ contextId: currContextId, fieldId: currFieldId }) => currContextId !== contextId || currFieldId !== fieldId,
@@ -94,7 +95,7 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
 
     // Validate that all changes are of the same context and field
     // It should be impossible to have changes of different contexts and fields in the same deploy, if there are such changes, it is a bug in the grouping logic
-    const { contextId, fieldId } = getContextAndFieldIds(relevantChanges[0])
+    const { contextId, fieldId } = getContextAndFieldIds(getChangeData(relevantChanges[0]))
     if (!allOptionsWithSameContextAndField(relevantChanges, contextId, fieldId)) {
       log.error('All field context options must be of the same context and field')
       const message = 'Inner problem occurred during deployment of custom field context options, please contact support'

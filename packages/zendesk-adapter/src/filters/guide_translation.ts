@@ -70,7 +70,7 @@ const needToOmit = (change: Change<InstanceElement>, languageSettingsByIds: Reco
  * we transform the change to a modification change and deploy it in this way.
  * The rest of the translations will be deployed in the default deploy filter.
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client, elementSource }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, elementSource, definitions }) => ({
   name: 'guideTranslationFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const translationInstances = changes.filter(change =>
@@ -112,7 +112,12 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client, elementSource
     const articleTranslationDeployResult = await deployChanges(
       defaultArticleTranslationModificationChanges,
       async change => {
-        await deployChange(change, client, oldApiDefinitions)
+        await deployChange({
+          change,
+          client,
+          apiDefinitions: oldApiDefinitions,
+          definitions,
+        })
       },
     )
     const successfulModificationDeployChangesSet = new Set(

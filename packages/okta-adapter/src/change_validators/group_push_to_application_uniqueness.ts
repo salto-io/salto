@@ -17,6 +17,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { getParentElemID } from '@salto-io/adapter-utils'
 import { groupBy } from 'lodash'
 import { GROUP_PUSH_TYPE_NAME } from '../constants'
 
@@ -56,17 +57,14 @@ export const groupPushToApplicationUniquenessValidator: ChangeValidator = async 
     )
     .toArray()
 
-  const groupPushByApp = groupBy(
-    existingGroupPushInstances,
-    groupPush => groupPush.annotations[CORE_ANNOTATIONS.PARENT][0],
-  )
+  const groupPushByApp = groupBy(existingGroupPushInstances, groupPush => getParentElemID(groupPush).getFullName())
 
   return addedGroupPushInstances.flatMap((instance): ChangeError[] => {
     const groupElemId = instance.value.userGroupId.elemID
     const applicationElemId = instance.annotations[CORE_ANNOTATIONS.PARENT][0].elemID
     const groupName = groupElemId.getFullName()
     const applicationName = applicationElemId.getFullName()
-    const existingGroupPushInstance = (groupPushByApp[applicationElemId] ?? []).find(
+    const existingGroupPushInstance = (groupPushByApp[applicationName] ?? []).find(
       groupPush =>
         groupPush.value.userGroupId.elemID.isEqual(groupElemId) && !groupPush.elemID.isEqual(instance.elemID),
     )

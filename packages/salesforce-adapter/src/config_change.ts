@@ -23,7 +23,12 @@ import {
   MetadataQueryParams,
 } from './types'
 import * as constants from './constants'
-import { SALESFORCE_ERRORS, SalesforceErrorName, SOCKET_TIMEOUT } from './constants'
+import {
+  SALESFORCE_ERRORS,
+  SalesforceErrorName,
+  SOCKET_TIMEOUT,
+  INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY,
+} from './constants'
 
 const { isDefined } = values
 const { makeArray } = collections.array
@@ -124,7 +129,6 @@ const isInvalidCrossReferenceKeyError: CreateConfigSuggestionPredicate = (e: Err
   const errorCode = _.get(e, 'errorCode')
   return _.isString(errorCode) && errorCode === INVALID_CROSS_REFERENCE_KEY
 }
-const INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY = 'INSUFFICIENT_ACCESS: insufficient access rights on entity'
 const isInsufficientAccessRightsOnEntitySalesforceError: CreateConfigSuggestionPredicate = (e: Error): boolean =>
   e.name === INSUFFICIENT_ACCESS && e.message.includes(INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY)
 

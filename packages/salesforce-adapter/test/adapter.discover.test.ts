@@ -2403,6 +2403,25 @@ public class LargeClass${index} {
       const ROLE_INSTANCE_NAMES = ['CEO', 'JiraAdmin']
       const FAILING_ROLE_INSTANCE_NAMES = ['SalesforceAdmin', 'ProductManager']
       beforeEach(() => {
+        ;({ connection, adapter } = mockAdapter({
+          adapterParams: {
+            getElemIdFunc: mockGetElemIdFunc,
+            config: {
+              fetch: {
+                optionalFeatures: {
+                  handleInsufficientAccessRightsOnEntity: true,
+                },
+                metadata: {
+                  exclude: metadataExclude,
+                },
+              },
+              maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
+              client: {
+                readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
+              },
+            },
+          },
+        }))
         mockMetadataType(
           { xmlName: 'Role', directoryName: 'roles' },
           {
@@ -2459,6 +2478,7 @@ public class LargeClass${index} {
           errorCode: INVALID_CROSS_REFERENCE_KEY,
         }),
         ...NON_TRANSIENT_SALESFORCE_ERRORS.map(errorName => new SFError(errorName)),
+        new SFError(SALESFORCE_ERRORS.INSUFFICIENT_ACCESS, constants.INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY),
       ])('when client throws %p', thrownError => {
         beforeEach(() => {
           connection.metadata.read.mockImplementation(async (_typeName, fullNames) => {

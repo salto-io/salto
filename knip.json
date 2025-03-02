@@ -24,7 +24,7 @@
       ],
       "ignoreDependencies": ["webpack-cli"]
     },
-    "packages/element-test-utils": {
+    "packages/adapter-api-test-utils": {
       "entry": ["index.ts", "src/all.ts"]
     },
     "packages/local-workspace": {

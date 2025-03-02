@@ -13,7 +13,7 @@
     { "path": "../adapter-components" },
     { "path": "../e2e-test-utils" },
     { "path": "../e2e-credentials-store" },
-    { "path": "../element-test-utils" },
+    { "path": "../adapter-api-test-utils" },
     { "path": "../logging" },
     { "path": "../parser" },
     { "path": "../workspace" }

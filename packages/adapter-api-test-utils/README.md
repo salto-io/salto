@@ -1,4 +1,4 @@
-# Salto - element test utilities
+# Salto - Adapter api test utilities
 
 ---
 
@@ -9,7 +9,7 @@ This package contains utilities for working with the [jest framework](https://je
 The standard way to use the jest extensions in this package is to install them all by adding
 
 ```
-setupFilesAfterEnv: ['@salto-io/element-test-utils/all'],
+setupFilesAfterEnv: ['@salto-io/adapter-api-test-utils/all'],
 ```
 
 to the jest config file.

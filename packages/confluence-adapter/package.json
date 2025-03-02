@@ -40,8 +40,8 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
+    "@salto-io/adapter-api-test-utils": "0.5.1",
     "@salto-io/e2e-credentials-store": "0.5.1",
-    "@salto-io/element-test-utils": "0.5.1",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "axios": "^1.7.2",

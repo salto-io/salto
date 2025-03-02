@@ -11,7 +11,7 @@
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-utils" },
-    { "path": "../element-test-utils" },
+    { "path": "../adapter-api-test-utils" },
     { "path": "../logging" },
     { "path": "../lowerdash" }
   ]

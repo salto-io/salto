@@ -44,7 +44,7 @@
     "unique-names-generator": "^4.3.1"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.1",
+    "@salto-io/adapter-api-test-utils": "0.5.1",
     "@types/jest": "^29.5.12",
     "@types/seedrandom": "^2.4.28",
     "eslint": "^9.16.0",

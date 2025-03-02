@@ -9,7 +9,7 @@ import type { Tester } from '@jest/expect-utils'
 import { expect } from '@jest/globals'
 import { ElemID } from '../src/element_id'
 
-// We cannot import this from @salto-io/element-test-utils because it would cause a cyclic dependency
+// We cannot import this from @salto-io/adapter-api-test-utils because it would cause a cyclic dependency
 // so we have to define this here separately
 export const isEqualElemID: Tester = function isEqualElemID(a, b) {
   if (a instanceof ElemID && b instanceof ElemID) {

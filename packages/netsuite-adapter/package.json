@@ -58,8 +58,8 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
+    "@salto-io/adapter-api-test-utils": "0.5.1",
     "@salto-io/e2e-credentials-store": "0.5.1",
-    "@salto-io/element-test-utils": "0.5.1",
     "@salto-io/test-utils": "0.5.1",
     "@types/async-lock": "^1.1.2",
     "@types/he": "^1.1.1",

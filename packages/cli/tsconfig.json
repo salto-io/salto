@@ -19,7 +19,7 @@
     { "path": "../core" },
     { "path": "../dag" },
     { "path": "../e2e-credentials-store" },
-    { "path": "../element-test-utils" },
+    { "path": "../adapter-api-test-utils" },
     { "path": "../file" },
     { "path": "../logging" },
     { "path": "../lowerdash" },

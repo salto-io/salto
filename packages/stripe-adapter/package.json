@@ -37,7 +37,7 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.1",
+    "@salto-io/adapter-api-test-utils": "0.5.1",
     "@salto-io/jest-extended": "^4.0.3",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",

@@ -45,8 +45,8 @@
       "path": "packages/e2e-credentials-store",
     },
     {
-      "name": "element-test-utils",
-      "path": "packages/element-test-utils",
+      "name": "adapter-api-test-utils",
+      "path": "packages/adapter-api-test-utils",
     },
     {
       "name": "file",

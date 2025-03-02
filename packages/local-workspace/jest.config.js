@@ -20,5 +20,5 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
       statements: 93.26,
     },
   },
-  setupFilesAfterEnv: ['@salto-io/jest-extended/all', '@salto-io/element-test-utils/all'],
+  setupFilesAfterEnv: ['@salto-io/jest-extended/all', '@salto-io/adapter-api-test-utils/all'],
 })

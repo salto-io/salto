@@ -13,7 +13,7 @@
     { "path": "../adapter-utils" },
     { "path": "../dag" },
     { "path": "../e2e-credentials-store" },
-    { "path": "../element-test-utils" },
+    { "path": "../adapter-api-test-utils" },
     { "path": "../logging" },
     { "path": "../lowerdash" },
     { "path": "../test-utils" }

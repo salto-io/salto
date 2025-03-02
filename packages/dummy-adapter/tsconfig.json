@@ -10,7 +10,7 @@
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },
     { "path": "../adapter-utils" },
-    { "path": "../element-test-utils" },
+    { "path": "../adapter-api-test-utils" },
     { "path": "../local-workspace" },
     { "path": "../logging" },
     { "path": "../lowerdash" },

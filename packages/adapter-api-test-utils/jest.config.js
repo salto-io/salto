@@ -8,7 +8,7 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  displayName: 'element-test-utils',
+  displayName: 'adapter-api-test-utils',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts', '!<rootDir>/src/all.ts'],
   coverageThreshold: {

@@ -45,8 +45,8 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@salto-io/adapter-api-test-utils": "0.5.1",
     "@salto-io/e2e-credentials-store": "0.5.1",
-    "@salto-io/element-test-utils": "0.5.1",
     "@salto-io/jest-extended": "^4.0.3",
     "@salto-io/test-utils": "0.5.1",
     "@types/jest": "^29.5.12",

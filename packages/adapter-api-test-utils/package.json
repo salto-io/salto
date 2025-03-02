@@ -1,8 +1,8 @@
 {
-  "name": "@salto-io/element-test-utils",
+  "name": "@salto-io/adapter-api-test-utils",
   "version": "0.5.1",
   "license": "SEE LICENSE IN LICENSE",
-  "description": "Test utilities for jest with Salto Elements",
+  "description": "Test utilities for Adapter Api Package",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto"

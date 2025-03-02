@@ -9,7 +9,7 @@
   "include": ["src/**/*", "test/**/*", "index.ts"],
   "references": [
     { "path": "../adapter-api" },
-    { "path": "../element-test-utils" },
+    { "path": "../adapter-api-test-utils" },
     { "path": "../logging" },
     { "path": "../lowerdash" },
     { "path": "../test-utils" }

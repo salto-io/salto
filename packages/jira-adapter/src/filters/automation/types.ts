@@ -148,11 +148,24 @@ export const createAutomationTypes = (): {
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, DELETE_LINK_TYPES],
   })
 
+  const templateFormIdsType = new ObjectType({
+    elemID: new ElemID(JIRA, 'TemplateFormsIds'),
+    fields: {
+      key: {
+        refType: BuiltinTypes.STRING,
+      },
+      value: {
+        refType: new ListType(BuiltinTypes.NUMBER),
+      },
+    },
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'TemplateFormsIds'],
+  })
+
   const templateFormsConfigType = new ObjectType({
     elemID: new ElemID(JIRA, 'TemplateFormsConfig'),
     fields: {
       projectId: { refType: BuiltinTypes.NUMBER },
-      templateFormIds: { refType: new ListType(BuiltinTypes.NUMBER) },
+      templateFormIds: { refType: new ListType(templateFormIdsType) },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'TemplateFormsConfig'],
   })
@@ -283,6 +296,7 @@ export const createAutomationTypes = (): {
       compareFieldValueType,
       deleteLinkTypes,
       queryType,
+      templateFormIdsType,
     ],
   }
 }

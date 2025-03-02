@@ -79,7 +79,7 @@ export const createCascadeFieldValues = (name: string): Values => ({
   type: 'com.atlassian.jira.plugin.system.customfieldtypes:cascadingselect',
 })
 
-export const createContextValues = (name: string, allElements: Element[]): Values => ({
+const createContextValues = (name: string, allElements: Element[]): Values => ({
   name,
   issueTypeIds: [
     createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Epic'), allElements),

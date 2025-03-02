@@ -33,9 +33,8 @@ const ADDITIONAL_CHILD_PARENT_RELATIONSHIPS: ChildParentRelationship[] = [
 ]
 
 const getParentToStandaloneFields = (
-  definitions: definitionsUtils.ApiDefinitions<Options>,
+  defQuery: definitionsUtils.DefQuery<definitionsUtils.fetch.InstanceFetchApiDefinitions<Options>>,
 ): Record<string, string[]> => {
-  const defQuery = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {})
   const allDefs = defQuery.getAll()
   const parentToStandaloneMap = Object.entries(allDefs).reduce<Record<string, string[]>>(
     (currentRecord, [typeName, def]) => {
@@ -62,7 +61,7 @@ export const getChildAndParentTypeNames = (
   definitions: definitionsUtils.ApiDefinitions<Options>,
 ): ChildParentRelationship[] => {
   const defQuery = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {})
-  const parentToStandaloneMap = getParentToStandaloneFields(definitions)
+  const parentToStandaloneMap = getParentToStandaloneFields(defQuery)
   const parentTypes = Object.keys(parentToStandaloneMap)
   return parentTypes
     .flatMap(parentType => {

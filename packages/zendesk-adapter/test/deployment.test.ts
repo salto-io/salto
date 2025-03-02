@@ -61,8 +61,6 @@ describe('deployment', () => {
     })
   })
 
-  // ... existing code ...
-
   describe('addId', () => {
     const mockedDefinitions = {
       fetch: {

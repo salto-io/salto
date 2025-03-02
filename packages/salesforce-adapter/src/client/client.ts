@@ -1002,7 +1002,7 @@ export default class SalesforceClient implements ISalesforceClient {
         instancesErrors.forEach(({ instance, error }) => {
           log.debug(`Instance: ${instance}, Error: ${error.message}`)
         })
-        if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntityInRetrieve')) {
+        if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
           log.debug('Excluding the following instances from retrieve:')
           instancesErrors.forEach(({ type, instance }) => {
             log.debug(`Type: ${type}, Instance: ${instance}`)
@@ -1014,7 +1014,7 @@ export default class SalesforceClient implements ISalesforceClient {
           }
         }
         log.debug(
-          'handleInsufficientAccessRightsOnEntityInRetrieve is disabled. Logging instances without exclusion from retrieve:',
+          'handleInsufficientAccessRightsOnEntity is disabled. Logging instances without exclusion from retrieve:',
         )
         instancesErrors.forEach(({ type, instance }) => {
           log.debug(`Type: ${type}, Instance: ${instance}`)

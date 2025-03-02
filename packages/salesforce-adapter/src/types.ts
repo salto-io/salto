@@ -109,7 +109,7 @@ const OPTIONAL_FEATURES = [
   'supportProfileTabVisibilities',
   'disablePermissionsOmissions',
   'omitStandardFieldsNonDeployableValues',
-  'handleInsufficientAccessRightsOnEntityInRetrieve',
+  'handleInsufficientAccessRightsOnEntity',
   'shuffleRetrieveInstances',
   'handleInsufficientAccessRightsOnEntityInRead',
 ] as const

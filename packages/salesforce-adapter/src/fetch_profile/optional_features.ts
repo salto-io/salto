@@ -27,7 +27,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   supportProfileTabVisibilities: false,
   disablePermissionsOmissions: true,
   omitStandardFieldsNonDeployableValues: true,
-  handleInsufficientAccessRightsOnEntityInRetrieve: false,
+  handleInsufficientAccessRightsOnEntity: false,
   shuffleRetrieveInstances: false,
   handleInsufficientAccessRightsOnEntityInRead: false,
 }

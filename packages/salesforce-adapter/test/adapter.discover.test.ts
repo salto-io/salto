@@ -2958,7 +2958,7 @@ describe('Fetch via retrieve API', () => {
         fetchProfile = buildFetchProfile({
           fetchParams: {
             optionalFeatures: {
-              handleInsufficientAccessRightsOnEntityInRetrieve: true,
+              handleInsufficientAccessRightsOnEntity: true,
             },
             addNamespacePrefixToFullName: false,
             metadata: {

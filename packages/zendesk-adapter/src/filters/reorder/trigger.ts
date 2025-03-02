@@ -56,7 +56,7 @@ const areTriggerOrderEntries = (value: unknown): value is TriggerOrderEntry[] =>
   return true
 }
 
-const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
+const deployFunc: DeployFuncType = async (change, client, apiDefinitions, definitions) => {
   const clonedChange = await applyFunctionToChangeData(change, inst => inst.clone())
   const instance = getChangeData(clonedChange)
   const { order } = instance.value
@@ -85,7 +85,12 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
   instance.value.action = 'patch'
   instance.value.items = { trigger_categories: triggerCategories, triggers }
   delete instance.value.order
-  await deployChange(clonedChange, client, apiDefinitions)
+  await deployChange({
+    change: clonedChange,
+    client,
+    apiDefinitions,
+    definitions,
+  })
 }
 
 /**

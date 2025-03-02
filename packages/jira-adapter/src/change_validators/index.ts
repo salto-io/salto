@@ -51,7 +51,7 @@ import { unresolvedReferenceValidator } from './unresolved_references'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './projects/project_category'
-import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
+import { fieldSecondContextValidator } from './field_contexts/second_context'
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
 import { automationProjectsValidator } from './automation/automation_projects'
@@ -71,6 +71,7 @@ import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
 import { fieldContextDefaultValueValidator } from './field_contexts/field_context_default_value'
 import { fieldContextOrderRemovalValidator } from './field_contexts/order_removal'
+import { fieldContextOptionRemovalValidator } from './field_contexts/option_removal'
 import { optionValueValidator } from './field_contexts/option_value'
 import { enhancedSearchDeploymentValidator } from './script_runner/enhanced_search_deployment'
 import { emptyProjectScopedContextValidator } from './field_contexts/empty_project_scoped_context'
@@ -131,7 +132,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     masking: maskingValidator(client),
     issueTypeDeletion: issueTypeDeletionValidator(client),
     lockedFields: lockedFieldsValidator,
-    fieldSecondGlobalContext: fieldSecondGlobalContextValidator,
+    fieldSecondContext: fieldSecondContextValidator,
     systemFields: systemFieldsValidator,
     workflowProperties: workflowPropertiesValidator,
     permissionScheme: permissionSchemeValidator,
@@ -158,6 +159,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     fieldContextOptions: fieldContextOptionsValidator(config),
     fieldContextDefaultValue: fieldContextDefaultValueValidator(config),
     fieldContextOrderRemoval: fieldContextOrderRemovalValidator(config),
+    fieldContextOptionRemoval: fieldContextOptionRemovalValidator(config, client),
     optionValue: optionValueValidator(config),
     enhancedSearchDeployment: enhancedSearchDeploymentValidator,
     emptyProjectScopedContext: emptyProjectScopedContextValidator,

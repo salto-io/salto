@@ -5,13 +5,14 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ElemID, ReferenceExpression, StaticFile, Values } from '@salto-io/adapter-api'
+import { ElemID, ReferenceExpression, StaticFile, TemplateExpression, Values, Element } from '@salto-io/adapter-api'
 import * as path from 'path'
 import * as fs from 'fs'
 import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
+import { createReference } from '../../utils'
 
-export const createAutomationValues = (name: string): Values => ({
+export const createAutomationValues = (name: string, allElements: Element[]): Values => ({
   name,
   state: 'ENABLED',
   canOtherRuleTrigger: false,
@@ -218,6 +219,36 @@ export const createAutomationValues = (name: string): Values => ({
           newComponent: false,
         },
       ],
+      conditions: [],
+      optimisedIds: [],
+      newComponent: false,
+    },
+    {
+      component: 'ACTION',
+      type: 'jira.issue.edit',
+      value: {
+        operations: [
+          {
+            fieldId: 'assignee',
+            fieldType: 'assignee',
+            type: 'SET',
+            value: {
+              type: 'CLEAR',
+              value: 'clear',
+            },
+          },
+        ],
+        advancedFields: new TemplateExpression({
+          parts: [
+            '{\n"update": {\n"',
+            createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Sprint__gh_sprint__c@uubuu'), allElements),
+            '" : [\n{\n"remove": {\n"value":"Pre-ship containment"\n}\n}\n]\n}\n}',
+          ],
+        }),
+        sendNotifications: true,
+        useLegacyRendering: false,
+      },
+      children: [],
       conditions: [],
       optimisedIds: [],
       newComponent: false,

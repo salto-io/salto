@@ -23,12 +23,17 @@ import {
   SaltoError,
   isSaltoError,
 } from '@salto-io/adapter-api'
-import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
+import {
+  elements as elementsUtils,
+  config as configUtils,
+  definitions as definitionsUtils,
+} from '@salto-io/adapter-components'
 import { createSaltoElementError, applyFunctionToChangeData, pathNaclCase, inspectValue } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ZENDESK } from '../../constants'
 import { deployChange } from '../../deployment'
 import ZendeskClient from '../../client/client'
+import { Options } from '../../definitions/types'
 
 const { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH, SETTINGS_NESTED_PATH } = elementsUtils
 
@@ -36,6 +41,7 @@ export type DeployFuncType = (
   change: Change<InstanceElement>,
   client: ZendeskClient,
   apiDefinitions: configUtils.AdapterApiConfig,
+  definitions: definitionsUtils.ApiDefinitions<Options>,
 ) => Promise<void>
 
 type ReorderFilterCreatorParams = {
@@ -56,13 +62,18 @@ export const createReorderFilterCreator =
     typeName,
     orderFieldName,
     iterateesToSortBy = [instance => instance.value.position],
-    deployFunc = async (change, client, apiDefinitions) => {
-      await deployChange(change, client, apiDefinitions)
+    deployFunc = async (change, client, apiDefinitions, definitions) => {
+      await deployChange({
+        change,
+        client,
+        apiDefinitions,
+        definitions,
+      })
     },
     activeFieldName,
     filterName,
   }: ReorderFilterCreatorParams): FilterCreator =>
-  ({ oldApiDefinitions, client }) => ({
+  ({ oldApiDefinitions, client, definitions }) => ({
     name: filterName,
     onFetch: async (elements: Element[]): Promise<void> => {
       const orderTypeName = createOrderTypeName(typeName)
@@ -160,7 +171,7 @@ export const createReorderFilterCreator =
             elemID: getChangeData(change).elemID,
           })
         }
-        await deployFunc(change, client, oldApiDefinitions)
+        await deployFunc(change, client, oldApiDefinitions, definitions)
       } catch (err) {
         if (!isSaltoError(err)) {
           throw err
@@ -181,7 +192,7 @@ const idsAreNumbers = (ids: unknown): ids is number[] => _.isArray(ids) && ids.e
 
 export const deployFuncCreator =
   (fieldName: string): DeployFuncType =>
-  async (change, client, apiDefinitions) => {
+  async (change, client, apiDefinitions, definitions) => {
     const clonedChange = await applyFunctionToChangeData(change, inst => inst.clone())
     const instance = getChangeData(clonedChange)
     const { ids } = instance.value
@@ -198,5 +209,10 @@ export const deployFuncCreator =
     const idsWithPositions = ids.map((id, position) => ({ id, position: position + 1 }))
     instance.value[fieldName] = idsWithPositions
     delete instance.value.ids
-    await deployChange(clonedChange, client, apiDefinitions)
+    await deployChange({
+      change: clonedChange,
+      client,
+      apiDefinitions,
+      definitions,
+    })
   }

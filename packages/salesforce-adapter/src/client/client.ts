@@ -54,6 +54,7 @@ import {
   ClientRetryConfig,
   Credentials,
   CustomObjectsDeployRetryConfig,
+  FetchProfile,
   OauthAccessTokenCredentials,
   ReadMetadataChunkSizeConfig,
   SalesforceClientConfig,
@@ -157,6 +158,9 @@ const errorMessagesToRetry = [
   'INVALID_LOCATOR',
   'FUNCTIONALITY_TEMPORARILY_UNAVAILABLE',
 ]
+
+type ErrorInfo = { type: string; instance: string; error: Error }
+type RetrieveResultWithErrors = RetrieveResult & { errors?: ErrorInfo[] }
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
 
@@ -919,8 +923,93 @@ export default class SalesforceClient implements ISalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'retrieve' })
   @logDecorator()
   @requiresLogin()
-  public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
-    return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
+  public async retrieve(
+    retrieveRequest: RetrieveRequest,
+    fetchProfile?: FetchProfile,
+  ): Promise<RetrieveResultWithErrors> {
+    const errorPattern = /INSUFFICIENT_ACCESS: insufficient access rights on entity: (\w+)/g
+    const handleInsufficientAccessErrors = async (): Promise<{
+      instancesErrors: ErrorInfo[]
+      newRetrieveRequest: RetrieveRequest
+    }> => {
+      if (retrieveRequest.unpackaged === undefined || retrieveRequest.unpackaged.types === undefined) {
+        return { instancesErrors: [], newRetrieveRequest: retrieveRequest }
+      }
+      const typesWithInsufficientAccess = new Set<string>()
+      const instancesWithInsufficientAccess = new Set<string>()
+      const instancesErrors: ErrorInfo[] = []
+      await Promise.all(
+        retrieveRequest.unpackaged.types.map(async type => {
+          const { errors } = await sendChunked({
+            input: type.members,
+            chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
+            sendChunk: chunk => this.conn.metadata.read(type.name, chunk),
+            operationInfo: `readMetadata (${type.name})`,
+            isUnhandledError: () => false,
+          })
+          errors.forEach(({ input, error }) => {
+            if (error.message.match(errorPattern)) {
+              log.debug(`Failed to read ${type.name}.${input} due to: ${error.message}`)
+              instancesErrors.push({ type: type.name, instance: input, error })
+              typesWithInsufficientAccess.add(type.name)
+              instancesWithInsufficientAccess.add(input)
+            }
+          })
+        }),
+      )
+      const newRetrieveRequest = {
+        ...retrieveRequest,
+        unpackaged: {
+          ...retrieveRequest.unpackaged,
+          types: retrieveRequest.unpackaged.types.map(type => {
+            if (typesWithInsufficientAccess.has(type.name)) {
+              return {
+                ...type,
+                members: type.members.filter(member => !instancesWithInsufficientAccess.has(member)),
+              }
+            }
+            return type
+          }),
+        },
+      }
+      return { instancesErrors, newRetrieveRequest }
+    }
+
+    const result = flatValues(
+      await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()),
+    ) as RetrieveResult
+    if (_.isString(result.zipFile)) return result
+    const errorMessage = result.errorMessage ?? ''
+    if (errorMessage.match(errorPattern)) {
+      log.debug(`Failed to retrieve due to: ${errorMessage} reading each type separately`)
+      const { instancesErrors, newRetrieveRequest } = await handleInsufficientAccessErrors()
+      if (instancesErrors.length > 0) {
+        log.debug('Found the following errors while trying to retrieve:')
+        instancesErrors.forEach(({ instance, error }) => {
+          log.debug(`Instance: ${instance}, Error: ${error.message}`)
+        })
+        if (fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntity')) {
+          log.debug('Excluding the following instances from retrieve:')
+          instancesErrors.forEach(({ type, instance }) => {
+            log.debug(`Type: ${type}, Instance: ${instance}`)
+          })
+          const retrieveResult = await this.retrieve(newRetrieveRequest)
+          return {
+            ...retrieveResult,
+            errors: [...(retrieveResult.errors ?? []), ...instancesErrors],
+          }
+        }
+        log.debug(
+          'handleInsufficientAccessRightsOnEntity is disabled. Logging instances without exclusion from retrieve:',
+        )
+        instancesErrors.forEach(({ type, instance }) => {
+          log.debug(`Type: ${type}, Instance: ${instance}`)
+        })
+      } else {
+        log.debug('No errors found while reading')
+      }
+    }
+    return result
   }
 
   private async reportDeployProgressUntilComplete(

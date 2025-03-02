@@ -5,8 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { ObjectType } from '@salto-io/adapter-api'
 import { AdditionalSuiteQLTable } from '../config/types'
 
 const ITEM_TYPES = [
@@ -158,12 +158,25 @@ const TABLE_TO_INTERNAL_ID = {
 const MANUALLY_TABLE_TO_INTERNAL_ID = {
   // Some types from the original map were wrong and some were missing.
   // This map was manually added with corrected types to ids.
-  role: '-264',
+  role: ['-264', '-118'],
   workflow: '-129',
-  vendor: '-9',
-  customrecordtype: TABLE_TO_INTERNAL_ID.customRecordType,
-  priceLevel: TABLE_TO_INTERNAL_ID.item,
+  vendor: ['-3', '-9'],
+  customrecordtype: ['-123', '-125'],
+  priceLevel: '-10',
   emailtemplate: '-120',
+  customtransactiontype: '-100',
+  scriptdeployment: '-418',
+  savedsearch: '-119',
+  workflowReleaseStatus: '-236',
+  workflowTriggerType: '-235',
+  fileType: '-147',
+  fieldType: '-213',
+  shipItem: '-192',
+  entityStatus: '-104',
+  supportCaseStatus: ['-132', '-320'],
+  employeeStatus: '-166',
+  accountingBook: '-253',
+  jobResourceRole: '-517',
 } as const
 
 const ALL_TABLE_TO_INTERNAL_ID = {
@@ -171,16 +184,7 @@ const ALL_TABLE_TO_INTERNAL_ID = {
   ...MANUALLY_TABLE_TO_INTERNAL_ID,
 } as const
 
-type AdditionalTables =
-  | 'entityStatus'
-  | 'campaignEvent'
-  | 'revenueRecognitionRule'
-  | 'incoterm'
-  | 'approvalStatus'
-  | 'accountingBook'
-  | 'shipItem'
-  | 'employeeStatus'
-  | 'jobResourceRole'
+type AdditionalTables = 'campaignEvent' | 'revenueRecognitionRule' | 'incoterm' | 'approvalStatus'
 
 export type SuiteQLTableName = keyof typeof ALL_TABLE_TO_INTERNAL_ID | AdditionalTables
 
@@ -265,7 +269,11 @@ export const getTypesToInternalId = (
     .concat(SCRIPT_TYPES.map(name => ({ name, typeId: TABLE_TO_INTERNAL_ID.script })))
     .concat(FIELD_TYPES.map(name => ({ name, typeId: TABLE_TO_INTERNAL_ID.customfield })))
     .concat(TRANSACTION_TYPES.map(name => ({ name, typeId: TABLE_TO_INTERNAL_ID.transaction })))
-    .concat(Object.entries(ALL_TABLE_TO_INTERNAL_ID).map(([name, typeId]) => ({ name, typeId })))
+    .concat(
+      Object.entries(ALL_TABLE_TO_INTERNAL_ID).flatMap(([name, typeIds]) =>
+        (typeof typeIds === 'string' ? [typeIds] : typeIds).map(typeId => ({ name, typeId })),
+      ),
+    )
 
   const groupedByTypeId = _.groupBy(allSuiteQLTables, row => row.typeId)
   const groupedByName = _.groupBy(allSuiteQLTables, row => row.name)

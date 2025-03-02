@@ -31,7 +31,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       if (isRemovalChange(change)) {
         return
       }
-      const { contextId, fieldId } = getContextAndFieldIds(change)
+      const { contextId, fieldId } = getContextAndFieldIds(getChangeData(change))
       const baseUrl = `/rest/api/3/field/${fieldId}/context/${contextId}/option`
       const optionsValues = collections.array
         .makeArray(getChangeData(change).value.options)

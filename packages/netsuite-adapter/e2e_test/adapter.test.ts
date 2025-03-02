@@ -71,6 +71,7 @@ import {
   BUNDLE,
   PLUGIN_IMPLEMENTATION,
   PLUGIN_TYPE,
+  IS_LOCKED,
 } from '../src/constants'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
 import { mockDefaultValues } from './mock_elements'
@@ -462,7 +463,6 @@ describe('Netsuite adapter E2E with real account', () => {
         ],
       },
       exclude: emptyQueryParams(),
-      fetchPluginImplementations: true,
     }
 
     const elementsMap = _.keyBy(elementsToCreate, instance => instance.elemID.getFullName())
@@ -763,6 +763,7 @@ describe('Netsuite adapter E2E with real account', () => {
           .filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
           .filter(element => !isInstanceElement(element) || !ignoreCustomRecordInstanceAlias(element.getTypeSync()))
           .filter(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] !== true)
+          .filter(element => element.annotations[IS_LOCKED] !== true)
 
         expect(elementsWithoutAlias.map(element => element.elemID.getFullName())).toEqual([])
       })

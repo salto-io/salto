@@ -200,6 +200,9 @@ salesforce {
           User = "InternalId"
         }
       }
+      saltoManagementFieldSettings = {
+              defaultFieldName = "ManagedBySalto__c"
+      }
     }
   }
   maxItemsInRetrieveRequest = 2500
@@ -496,6 +499,9 @@ salesforce {
               ]
             },
           ]
+        }
+        saltoManagementFieldSettings = {
+              defaultFieldName = "ManagedBySalto__c"
         }
     }
   }

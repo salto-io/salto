@@ -52,6 +52,7 @@ import {
   isRemovalChange,
   Adapter,
   Change,
+  CompareOptions,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults,
@@ -143,8 +144,9 @@ export const getDetailedChanges = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
+  compareOptions?: CompareOptions,
 ): Promise<DetailedChangeWithBaseChange[]> => {
-  const changes = await calculateDiff({ before, after, topLevelFilters })
+  const changes = await calculateDiff({ before, after, topLevelFilters, compareOptions })
   return awu(changes)
     .map(change => getDetailedChangesFromChange(change))
     .flat()

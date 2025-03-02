@@ -76,6 +76,8 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   splitFieldContextOptions?: boolean
   enableRequestTypeFieldNameAlignment?: boolean
   removeFieldConfigurationDefaultValues?: boolean
+  walkOnReferences?: boolean
+  remove10KOptionsContexts: boolean
 }
 
 export type MaskingConfig = {
@@ -185,6 +187,8 @@ const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     enableAssetsObjectFieldConfiguration: true,
     removeFieldConfigurationDefaultValues: false,
     splitFieldContextOptions: true,
+    remove10KOptionsContexts: false, // starting value, to be changed
+    walkOnReferences: true,
   },
   deploy: {
     forceDelete: false,
@@ -261,7 +265,7 @@ const CHANGE_VALIDATOR_NAMES = [
   'issueTypeDeletion',
   'lockedFields',
   'fieldContext',
-  'fieldSecondGlobalContext',
+  'fieldSecondContext',
   'systemFields',
   'workflowProperties',
   'permissionScheme',
@@ -297,6 +301,7 @@ const CHANGE_VALIDATOR_NAMES = [
   'kanbanBoardBacklog',
   'globalTransition',
   'htmlBodyContentAction',
+  'fieldContextOptionRemoval',
   'automationIssueType',
   'systemGeneratedFields',
 ]
@@ -352,6 +357,8 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     splitFieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
     enableRequestTypeFieldNameAlignment: { refType: BuiltinTypes.BOOLEAN },
     removeFieldConfigurationDefaultValues: { refType: BuiltinTypes.BOOLEAN },
+    remove10KOptionsContexts: { refType: BuiltinTypes.BOOLEAN },
+    walkOnReferences: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,
@@ -424,6 +431,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.parseAdditionalAutomationExpressions',
       'fetch.enableRequestTypeFieldNameAlignment',
       'fetch.removeFieldConfigurationDefaultValues',
+      'fetch.walkOnReferences',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       'deploy.ignoreMissingExtensions',

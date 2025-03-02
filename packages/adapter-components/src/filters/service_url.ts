@@ -66,7 +66,7 @@ export const addUrlToInstance: <Options extends FetchApiDefinitionsOptions = {}>
   )
   const parentContext = parentValues?.reduce((result: Values, parentVal: Values, idx: number) => {
     Object.entries(parentVal).forEach(([key, value]) => {
-      result[`_parent.${idx}.${key}`] = value
+      _.set(result, `_parent.${idx}.${key}`, value)
     })
     return result
   }, {})

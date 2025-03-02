@@ -36,5 +36,5 @@ export {
   ExtractionParams,
 } from './shared'
 export { RequiredDefinitions } from './types'
-export { mergeDefinitionsWithOverrides } from './overrides'
+export { mergeDefinitionsWithOverrides, DEFINITIONS_OVERRIDES } from './overrides'
 export * from './utils'

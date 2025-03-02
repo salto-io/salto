@@ -6,16 +6,31 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { TARGET_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createAuthenticationChangeError, targetValidator } from '../../src/change_validators/target'
 import ZendeskClient from '../../src/client/client'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
+import { Options } from '../../src/definitions/types'
 
 describe('targetValidator', () => {
   const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
-  const config = _.cloneDeep(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])
-  const changeValidator = targetValidator(client, config)
+  const mockedDefinitions = {
+    fetch: {
+      instances: {
+        default: {},
+        customizations: {
+          target: {
+            element: {
+              topLevel: {
+                serviceUrl: { path: '/admin/apps-integrations/targets/targets' },
+              },
+            },
+          },
+        },
+      },
+    },
+  } as unknown as definitionsUtils.ApiDefinitions<Options>
+  const changeValidator = targetValidator(client, mockedDefinitions)
 
   const targetType = new ObjectType({
     elemID: new ElemID(ZENDESK, TARGET_TYPE_NAME),
@@ -35,7 +50,7 @@ describe('targetValidator', () => {
           targetInstanceWithAuth.elemID,
           targetInstanceWithAuth.value.title,
           client.getUrl().href,
-          config.types.target.transformation?.serviceUrl,
+          '/admin/apps-integrations/targets/targets',
         ),
       ])
     })
@@ -60,7 +75,7 @@ describe('targetValidator', () => {
           targetInstanceWithAuth.elemID,
           targetInstanceWithAuth.value.title,
           client.getUrl().href,
-          config.types.target.transformation?.serviceUrl,
+          '/admin/apps-integrations/targets/targets',
         ),
       ])
     })
@@ -74,7 +89,7 @@ describe('targetValidator', () => {
           targetInstanceWithAuth.elemID,
           targetInstanceWithAuth.value.title,
           client.getUrl().href,
-          config.types.target.transformation?.serviceUrl,
+          '/admin/apps-integrations/targets/targets',
         ),
       ])
     })

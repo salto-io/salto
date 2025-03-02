@@ -71,6 +71,7 @@ import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
 import { fieldContextDefaultValueValidator } from './field_contexts/field_context_default_value'
 import { fieldContextOrderRemovalValidator } from './field_contexts/order_removal'
+import { fieldContextOptionRemovalValidator } from './field_contexts/option_removal'
 import { optionValueValidator } from './field_contexts/option_value'
 import { enhancedSearchDeploymentValidator } from './script_runner/enhanced_search_deployment'
 import { emptyProjectScopedContextValidator } from './field_contexts/empty_project_scoped_context'
@@ -158,6 +159,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     fieldContextOptions: fieldContextOptionsValidator(config),
     fieldContextDefaultValue: fieldContextDefaultValueValidator(config),
     fieldContextOrderRemoval: fieldContextOrderRemovalValidator(config),
+    fieldContextOptionRemoval: fieldContextOptionRemovalValidator(config, client),
     optionValue: optionValueValidator(config),
     enhancedSearchDeployment: enhancedSearchDeploymentValidator,
     emptyProjectScopedContext: emptyProjectScopedContextValidator,

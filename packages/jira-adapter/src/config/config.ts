@@ -299,6 +299,7 @@ const CHANGE_VALIDATOR_NAMES = [
   'kanbanBoardBacklog',
   'globalTransition',
   'htmlBodyContentAction',
+  'fieldContextOptionRemoval',
   'automationIssueType',
   'systemGeneratedFields',
 ]

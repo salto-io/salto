@@ -106,7 +106,7 @@ const connectAppOwnedToInstallation = (instances: InstanceElement[]): void => {
 /**
  * Edits app_installation value on fetch, Deploys app_installation on deploy
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, definitions }) => ({
   name: 'appInstallationsFilter',
   onFetch: async (elements: Element[]) => {
     elements
@@ -125,11 +125,13 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
         isAdditionOrModificationChange(change) && getChangeData(change).elemID.typeName === APP_INSTALLATION_TYPE_NAME,
     )
     const deployResult = await deployChanges(relevantChanges, async change => {
-      const response = await deployChange(change, client, oldApiDefinitions, [
-        'app',
-        'settings.title',
-        'settings_objects',
-      ])
+      const response = await deployChange({
+        change,
+        client,
+        apiDefinitions: oldApiDefinitions,
+        definitions,
+        fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+      })
       if (isAdditionChange(change)) {
         if (response == null || _.isArray(response) || !_.isString(response.pending_job_id)) {
           const message = 'Got an invalid response when tried to install app'

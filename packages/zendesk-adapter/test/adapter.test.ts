@@ -27,7 +27,8 @@ import {
   StaticFile,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { elements as elementsUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
+import { setupEnvVar } from '@salto-io/test-utils'
 import defaultBrandMockReplies from './mock_replies/myBrand_mock_replies.json'
 import brandWithGuideMockReplies from './mock_replies/brandWithGuide_mock_replies.json'
 import { adapter } from '../src/adapter_creator'
@@ -98,6 +99,7 @@ const nullProgressReporter: ProgressReporter = {
 
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
+
   const userSegmentType = new ObjectType({
     elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
   })
@@ -105,7 +107,7 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('/api/v2/account').replyOnce(200, { settings: {} })
+    mockAxiosAdapter.onGet('/api/v2/account').reply(200, { settings: {} })
   })
 
   afterEach(() => {
@@ -123,6 +125,7 @@ describe('adapter', () => {
               password: 'token456',
               subdomain: 'myBrand',
             }),
+            accountName: 'zendesk',
             config: new InstanceElement('config', configType, {
               [FETCH_CONFIG]: {
                 include: [
@@ -641,6 +644,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
+            accountName: 'zendesk',
             credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
@@ -1215,68 +1219,142 @@ describe('adapter', () => {
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
       })
-      it('should generate the right elements on fetch with new infra, with elemID customization', async () => {
-        mockAxiosAdapter.onGet().reply(callbackResponseFunc)
-        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
-        const { elements } = await adapter
-          .operations({
-            credentials: new InstanceElement('config', basicCredentialsType, {
-              username: 'user123',
-              password: 'token456',
-              subdomain: 'myBrand',
-            }),
-            config: new InstanceElement('config', configType, {
-              [FETCH_CONFIG]: {
-                include: [
-                  {
-                    type: 'group',
+      // this describe should be deleted once we migrate all customers to use the new config and remove the old api definitions config
+      describe('elemID customization old api definitions config', () => {
+        it('should generate the right elements on fetch with new infra, with elemID customization', async () => {
+          mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+          mockAxiosAdapter.onPost().reply(callbackResponseFunc)
+          const { elements } = await adapter
+            .operations({
+              accountName: 'zendesk',
+              credentials: new InstanceElement('config', basicCredentialsType, {
+                username: 'user123',
+                password: 'token456',
+                subdomain: 'myBrand',
+              }),
+              config: new InstanceElement('config', configType, {
+                [FETCH_CONFIG]: {
+                  include: [
+                    {
+                      type: 'group',
+                    },
+                  ],
+                  exclude: [],
+                  guide: {
+                    brands: ['.*'],
                   },
-                ],
-                exclude: [],
-                guide: {
-                  brands: ['.*'],
+                  useNewInfra: true,
+                  omitInactive: {
+                    default: false,
+                    customizations: {},
+                  },
                 },
-                useNewInfra: true,
-                omitInactive: {
-                  default: false,
-                  customizations: {},
-                },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                types: {
-                  group: {
-                    transformation: {
-                      idFields: ['default', 'name'],
+                [API_DEFINITIONS_CONFIG]: {
+                  types: {
+                    group: {
+                      transformation: {
+                        idFields: ['default', 'name'],
+                      },
                     },
                   },
                 },
-              },
-            }),
-            elementsSource: buildElementsSourceFromElements([]),
-          })
-          .fetch({ progressReporter: { reportProgress: () => null } })
+              }),
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+            .fetch({ progressReporter: { reportProgress: () => null } })
 
-        expect(
-          elements
-            .map(e => e.elemID.getFullName())
-            .filter(a => a.includes('group'))
-            .sort(),
-        ).toEqual([
-          'zendesk.group',
-          'zendesk.group.instance.false_Support2',
-          'zendesk.group.instance.false_Support4',
-          'zendesk.group.instance.false_Support5',
-          'zendesk.group.instance.true_Support',
-          'zendesk.groups',
-          'zendesk.permission_group',
-          'zendesk.permission_groups',
-        ])
+          expect(
+            elements
+              .map(e => e.elemID.getFullName())
+              .filter(a => a.includes('group'))
+              .sort(),
+          ).toEqual([
+            'zendesk.group',
+            'zendesk.group.instance.false_Support2',
+            'zendesk.group.instance.false_Support4',
+            'zendesk.group.instance.false_Support5',
+            'zendesk.group.instance.true_Support',
+            'zendesk.groups',
+            'zendesk.permission_group',
+            'zendesk.permission_groups',
+          ])
+        })
+      })
+      describe('elemID customization', () => {
+        const jsonString = `{
+          "zendesk": {
+            "fetch": {
+              "instances": {
+                "customizations": {
+                  "group": {
+                    "element": {
+                      "topLevel": {
+                        "elemID": { "parts": [{ "fieldName": "default" }, { "fieldName": "name" }] }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }`
+        setupEnvVar(definitionsUtils.DEFINITIONS_OVERRIDES, jsonString)
+        it('should generate the right elements on fetch with new infra, with elemID customization', async () => {
+          mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+          mockAxiosAdapter.onPost().reply(callbackResponseFunc)
+          const { elements } = await adapter
+            .operations({
+              accountName: 'zendesk',
+              credentials: new InstanceElement('config', basicCredentialsType, {
+                username: 'user123',
+                password: 'token456',
+                subdomain: 'myBrand',
+              }),
+              config: new InstanceElement('config', configType, {
+                [FETCH_CONFIG]: {
+                  include: [
+                    {
+                      type: 'group',
+                    },
+                  ],
+                  exclude: [],
+                  guide: {
+                    brands: ['.*'],
+                  },
+                  useNewInfra: true,
+                  omitInactive: {
+                    default: false,
+                    customizations: {},
+                  },
+                },
+              }),
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+            .fetch({ progressReporter: { reportProgress: () => null } })
+
+          expect(
+            elements
+              .map(e => e.elemID.getFullName())
+              .filter(a => a.includes('group'))
+              .sort(),
+          ).toEqual([
+            'zendesk.group',
+            'zendesk.group.instance.false_Support2',
+            'zendesk.group.instance.false_Support4',
+            'zendesk.group.instance.false_Support5',
+            'zendesk.group.instance.true_Support',
+            'zendesk.groups',
+            'zendesk.permission_group',
+            'zendesk.permission_groups',
+          ])
+        })
       })
       it('should not generate tags when excluded', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
+            accountName: 'zendesk',
             credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
@@ -1844,6 +1922,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
+            accountName: 'zendesk',
             credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
@@ -2404,6 +2483,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
+            accountName: 'zendesk',
             credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
@@ -2460,6 +2540,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFuncWith403)
         const { elements, errors } = await adapter
           .operations({
+            accountName: 'zendesk',
             credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
@@ -2557,6 +2638,7 @@ describe('adapter', () => {
         })
         const { elements } = await adapter
           .operations({
+            accountName: 'zendesk',
             credentials: creds,
             config,
             elementsSource: buildElementsSourceFromElements([]),
@@ -2585,6 +2667,7 @@ describe('adapter', () => {
         config.value[FETCH_CONFIG].guide.brands = ['[^myBrand]']
         const fetchRes = await adapter
           .operations({
+            accountName: 'zendesk',
             credentials: creds,
             config,
             elementsSource: buildElementsSourceFromElements([]),
@@ -2627,6 +2710,7 @@ describe('adapter', () => {
         })
         const fetchRes = await adapter
           .operations({
+            accountName: 'zendesk',
             credentials: creds,
             config,
             elementsSource: buildElementsSourceFromElements([]),
@@ -2671,6 +2755,7 @@ describe('adapter', () => {
         })
         const { elements } = await adapter
           .operations({
+            accountName: 'zendesk',
             credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'pwd456',
@@ -2684,23 +2769,6 @@ describe('adapter', () => {
                   },
                 ],
                 exclude: [],
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                types: {
-                  group: {
-                    transformation: {
-                      sourceTypeName: 'groups__groups',
-                    },
-                  },
-                  groups: {
-                    request: {
-                      url: '/api/v2/groups',
-                    },
-                    transformation: {
-                      dataField: 'groups',
-                    },
-                  },
-                },
               },
             }),
             elementsSource: buildElementsSourceFromElements([]),
@@ -2733,6 +2801,7 @@ describe('adapter', () => {
       })
       const supportInstanceId = 1500002894482
       const operations = adapter.operations({
+        accountName: 'zendesk',
         credentials: new InstanceElement('config', basicCredentialsType, {
           username: 'user123',
           password: 'pwd456',
@@ -2746,23 +2815,6 @@ describe('adapter', () => {
               },
             ],
             exclude: [],
-          },
-          [API_DEFINITIONS_CONFIG]: {
-            types: {
-              group: {
-                transformation: {
-                  sourceTypeName: 'groups__groups',
-                },
-              },
-              groups: {
-                request: {
-                  url: '/api/v2/groups',
-                },
-                transformation: {
-                  dataField: 'groups',
-                },
-              },
-            },
           },
         }),
         elementsSource: buildElementsSourceFromElements([]),
@@ -2856,6 +2908,27 @@ describe('adapter', () => {
   })
 
   describe('deploy', () => {
+    const jsonString = `{
+      "zendesk": {
+        "fetch": {
+          "instances": {
+            "customizations": {
+              "brand": {
+                "resource": {
+                  "serviceIDFields": ["id","key"]
+                }
+              },
+              "anotherType": {
+                "resource": {
+                  "serviceIDFields": ["key"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }`
+    setupEnvVar(definitionsUtils.DEFINITIONS_OVERRIDES, jsonString)
     let operations: AdapterOperations
     const groupType = new ObjectType({ elemID: new ElemID(ZENDESK, 'group') })
     const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, 'brand') })
@@ -2883,6 +2956,7 @@ describe('adapter', () => {
         return { key: 2 }
       })
       operations = adapter.operations({
+        accountName: 'zendesk',
         credentials: new InstanceElement('config', basicCredentialsType, {
           username: 'user123',
           password: 'pwd456',
@@ -2928,9 +3002,6 @@ describe('adapter', () => {
                 },
               },
               brand: {
-                transformation: {
-                  serviceIdField: 'key',
-                },
                 deployRequests: {
                   add: {
                     url: '/api/v2/brands',
@@ -2948,30 +3019,11 @@ describe('adapter', () => {
                 },
               },
               anotherType: {
-                transformation: {
-                  serviceIdField: 'key',
-                },
                 deployRequests: {
                   add: {
                     url: '/api/v2/anotherType',
                     method: 'post',
                   },
-                },
-              },
-              groups: {
-                request: {
-                  url: '/api/v2/groups',
-                },
-                transformation: {
-                  dataField: 'groups',
-                },
-              },
-              brands: {
-                request: {
-                  url: '/api/v2/brands',
-                },
-                transformation: {
-                  dataField: 'brands',
                 },
               },
             },

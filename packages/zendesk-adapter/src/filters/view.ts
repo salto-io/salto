@@ -18,7 +18,7 @@ const valToString = (val: Value): string | string[] => (_.isArray(val) ? val.map
 /**
  * Deploys views
  */
-const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client, definitions }) => ({
   name: 'viewFilter',
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(changes, [VIEW_TYPE_NAME], (instance: InstanceElement) => {
@@ -58,7 +58,13 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       change => getChangeData(change).elemID.typeName === VIEW_TYPE_NAME && !isRemovalChange(change),
     )
     const deployResult = await deployChanges(viewChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions, ['conditions', 'execution'])
+      await deployChange({
+        change,
+        client,
+        apiDefinitions: oldApiDefinitions,
+        definitions,
+        fieldsToIgnore: ['conditions', 'execution'],
+      })
     })
     return { deployResult, leftoverChanges }
   },

@@ -39,7 +39,6 @@ import {
   UNIQUE_NAME,
 } from './e2e_instance_generator'
 import { verifyCustomObject, verifyInstanceValues } from './verificationUtils'
-import { CONVERSATION_BOT } from '@salto-io/zendesk-adapter/dist/src/constants'
 
 const log = logger(module)
 const {
@@ -52,6 +51,7 @@ const {
   SUPPORT_ADDRESS_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
+  CONVERSATION_BOT,
 } = e2eUtils
 
 // Set long timeout as we communicate with Zendesk APIs

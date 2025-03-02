@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import _ from 'lodash'
+import _, { isArray } from 'lodash'
 import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { e2eUtils, adapter } from '@salto-io/zendesk-adapter'
@@ -18,6 +18,7 @@ import {
   InstanceElement,
   isInstanceElement,
   isObjectType,
+  isReferenceExpression,
   ObjectType,
   ReferenceExpression,
   Value,
@@ -38,6 +39,7 @@ import {
   UNIQUE_NAME,
 } from './e2e_instance_generator'
 import { verifyCustomObject, verifyInstanceValues } from './verificationUtils'
+import { CONVERSATION_BOT } from '@salto-io/zendesk-adapter/dist/src/constants'
 
 const log = logger(module)
 const {
@@ -289,6 +291,16 @@ describe('Zendesk adapter E2E', () => {
           // toMatchObject does not work well with circular references and crashes
           if ([CUSTOM_OBJECT_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME].includes(instanceToAdd.elemID.typeName)) {
             verifyCustomObject(instance, instanceToAdd)
+          } else if (instanceToAdd.elemID.typeName === CONVERSATION_BOT) {
+            const fieldsToCheck = Object.keys(instanceToAdd.value)
+            const clonedInstance = instance.clone() as InstanceElement
+            // talk to a human answer is created automatically and we don't want to test it
+            clonedInstance.value.subflows = isArray(clonedInstance.value.subflows)
+              ? clonedInstance.value.subflows.filter(
+                  answer => isReferenceExpression(answer) && !answer.elemID.name.includes('Talk_to_a_human'),
+                )
+              : clonedInstance.value.subflows
+            verifyInstanceValues(clonedInstance, instanceToAdd, fieldsToCheck)
           } else {
             const fieldsToCheck = Object.keys(instanceToAdd.value)
             verifyInstanceValues(instance as InstanceElement, instanceToAdd, fieldsToCheck)

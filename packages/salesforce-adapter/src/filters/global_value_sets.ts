@@ -79,10 +79,7 @@ const addGlobalValueSetRefToObject = async (
               }
 
               vs.controllingFieldValue = vs.controllingFieldValue.map((cfv: string | ReferenceExpression) => {
-                if (isReferenceExpression(cfv)) {
-                  return cfv
-                }
-                if (!_.isUndefined(controllingValueSet.value?.customValue?.values[naclCase(cfv)])) {
+                if (_.isString(cfv) && !_.isUndefined(controllingValueSet.value?.customValue?.values[naclCase(cfv)])) {
                   return new ReferenceExpression(
                     controllingValueSet.elemID.createNestedID('customValue', 'values', naclCase(cfv), 'fullName'),
                     naclCase(cfv),

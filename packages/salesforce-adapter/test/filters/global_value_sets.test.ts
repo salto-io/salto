@@ -59,6 +59,8 @@ const createPicklistObjectType = (
   apiName: string,
   valueSetName: string,
   secondValueSetName: string,
+  includeFieldDependencies = true,
+  includeOnlyExistingValue = true,
 ): ObjectType =>
   new ObjectType({
     elemID: mockElemID,
@@ -83,19 +85,24 @@ const createPicklistObjectType = (
         refType: Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
         annotations: {
           [constants.VALUE_SET_FIELDS.VALUE_SET_NAME]: secondValueSetName,
-          [constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
-            [constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'state',
-            [constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
-              {
-                [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'val3',
-                [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['val1', 'val2'],
-              },
-              {
-                [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'val4',
-                [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['val2'],
-              },
-            ],
-          },
+          ...(includeFieldDependencies && {
+            [constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
+              [constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'state',
+              [constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
+                {
+                  [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'val3',
+                  [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
+                    'val1',
+                    includeOnlyExistingValue ? 'val2' : 'val',
+                  ],
+                },
+                {
+                  [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'val4',
+                  [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['val2'],
+                },
+              ],
+            },
+          }),
         },
       },
     },
@@ -187,7 +194,6 @@ describe('Global Value Sets filter', () => {
         ),
       )
     })
-
     it('should not replace value set with references if value set name does not exist', async () => {
       elements.push(createPicklistObjectType(mockElemID, 'test', 'not_exist', 'another_fake'))
       await filter.onFetch(elements)
@@ -226,6 +232,25 @@ describe('Global Value Sets filter', () => {
           constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][1].controllingFieldValue[0],
       ).toEqual('val2')
+    })
+    describe('when field does not have fieldDependency field', () => {
+      it('should still create reference to valueSet', async () => {
+        elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2', false))
+        await filter.onFetch(elements)
+        expect((elements[2] as ObjectType).fields.customPicklistField.annotations.valueSetName).toBeInstanceOf(
+          ReferenceExpression,
+        )
+      })
+    })
+    describe('when one of the controllingFieldValues doesnt exist in the controllingField ValueSet', () => {
+      it('should keep the string value', async () => {
+        elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2', true, false))
+        await filter.onFetch(elements)
+        expect(
+          (elements[2] as ObjectType).fields.customPicklistField.annotations.fieldDependency.valueSettings[0]
+            .controllingFieldValue[1],
+        ).toEqual('val')
+      })
     })
   })
 })

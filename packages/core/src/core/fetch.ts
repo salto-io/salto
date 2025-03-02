@@ -572,8 +572,7 @@ const updateInconsistentTypes = (validAccountElements: Element[]): void =>
     const isInconsistentType = (e: InstanceElement | Field): boolean =>
       e.refType.type !== undefined &&
       objectTypesByElemID[e.refType.elemID.getFullName()] !== undefined &&
-      !isEqualElements(e.refType.type, objectTypesByElemID[e.refType.elemID.getFullName()][0]) &&
-      !(objectTypesByElemID[e.refType.elemID.getFullName()].length > 1)
+      !isEqualElements(e.refType.type, objectTypesByElemID[e.refType.elemID.getFullName()][0])
     const fields = Object.values(objectTypesByElemID)
       .flat()
       .flatMap(obj => Object.values(obj.fields))

@@ -1219,6 +1219,67 @@ describe('adapter', () => {
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
       })
+      // this describe should be deleted once we migrate all customers to use the new config and remove the old api definitions config
+      describe('elemID customization old api definitions config', () => {
+        it('should generate the right elements on fetch with new infra, with elemID customization', async () => {
+          mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+          mockAxiosAdapter.onPost().reply(callbackResponseFunc)
+          const { elements } = await adapter
+            .operations({
+              accountName: 'zendesk',
+              credentials: new InstanceElement('config', basicCredentialsType, {
+                username: 'user123',
+                password: 'token456',
+                subdomain: 'myBrand',
+              }),
+              config: new InstanceElement('config', configType, {
+                [FETCH_CONFIG]: {
+                  include: [
+                    {
+                      type: 'group',
+                    },
+                  ],
+                  exclude: [],
+                  guide: {
+                    brands: ['.*'],
+                  },
+                  useNewInfra: true,
+                  omitInactive: {
+                    default: false,
+                    customizations: {},
+                  },
+                },
+                [API_DEFINITIONS_CONFIG]: {
+                  types: {
+                    group: {
+                      transformation: {
+                        idFields: ['default', 'name'],
+                      },
+                    },
+                  },
+                },
+              }),
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+            .fetch({ progressReporter: { reportProgress: () => null } })
+
+          expect(
+            elements
+              .map(e => e.elemID.getFullName())
+              .filter(a => a.includes('group'))
+              .sort(),
+          ).toEqual([
+            'zendesk.group',
+            'zendesk.group.instance.false_Support2',
+            'zendesk.group.instance.false_Support4',
+            'zendesk.group.instance.false_Support5',
+            'zendesk.group.instance.true_Support',
+            'zendesk.groups',
+            'zendesk.permission_group',
+            'zendesk.permission_groups',
+          ])
+        })
+      })
       describe('elemID customization', () => {
         const jsonString = `{
           "zendesk": {

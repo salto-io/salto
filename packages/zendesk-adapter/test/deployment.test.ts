@@ -178,6 +178,4 @@ describe('deployment', () => {
       expect(instance.value).toEqual({ name: 'Test' })
     })
   })
-
-  // ... existing code ...
 })

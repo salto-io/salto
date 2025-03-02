@@ -31,7 +31,7 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
   const automation = new InstanceElement(
     randomString,
     findType(AUTOMATION_TYPE, fetchedElements),
-    createAutomationValues(randomString),
+    createAutomationValues(randomString, fetchedElements),
   )
 
   const workflow = new InstanceElement(

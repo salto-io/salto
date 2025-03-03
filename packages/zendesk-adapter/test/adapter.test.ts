@@ -719,7 +719,6 @@ describe('adapter', () => {
                   guide: {
                     brands: ['.*'],
                   },
-                  useNewInfra: true,
                   omitInactive: {
                     default: false,
                     customizations: {},
@@ -797,7 +796,6 @@ describe('adapter', () => {
                   guide: {
                     brands: ['.*'],
                   },
-                  useNewInfra: true,
                   omitInactive: {
                     default: false,
                     customizations: {},

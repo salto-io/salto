@@ -14,9 +14,10 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../user_config'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../client/client'
 import { TARGET_TYPE_NAME } from '../constants'
+import { Options } from '../definitions/types'
 
 export const createAuthenticationChangeError = (
   instanceElemId: ElemID,
@@ -59,35 +60,35 @@ Targets besides email target types have been deprecated.
 See more here: https://support.zendesk.com/hc/en-us/articles/6468124845210-Announcing-the-deprecation-of-URL-targets-and-branded-targets`,
 })
 
-export const targetValidator: (client: ZendeskClient, apiConfig: ZendeskApiConfig) => ChangeValidator =
-  (client, apiConfig) => async changes => {
-    const targetChanges = changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === TARGET_TYPE_NAME)
+export const targetValidator: (
+  client: ZendeskClient,
+  definitions: definitionsUtils.ApiDefinitions<Options>,
+) => ChangeValidator = (client, definitions) => async changes => {
+  const targetChanges = changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .filter(change => getChangeData(change).elemID.typeName === TARGET_TYPE_NAME)
 
-    const targetChangesWithAuthData = targetChanges
-      .filter(change => change.data.after.value.username || change.data.after.value.password)
-      .filter(
-        change =>
-          isAdditionChange(change) ||
-          change.data.before.value.username !== change.data.after.value.username ||
-          change.data.before.value.password !== change.data.after.value.password,
-      )
-      .map(getChangeData)
-      .flatMap(instance => [
-        createAuthenticationChangeError(
-          instance.elemID,
-          instance.value.title,
-          client.getUrl().href,
-          apiConfig.types.target.transformation?.serviceUrl,
-        ),
-      ])
+  const defQuery = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {})
+  const serviceUrl = defQuery.query(TARGET_TYPE_NAME)?.element?.topLevel?.serviceUrl?.path
 
-    const targetChangesWithInvalidTypes = targetChanges
-      .map(getChangeData)
-      .filter(element => element.value.type !== 'email_target')
-      .map(element => createInvalidTypeChangeError(element.elemID, element.value.title))
+  const targetChangesWithAuthData = targetChanges
+    .filter(change => change.data.after.value.username || change.data.after.value.password)
+    .filter(
+      change =>
+        isAdditionChange(change) ||
+        change.data.before.value.username !== change.data.after.value.username ||
+        change.data.before.value.password !== change.data.after.value.password,
+    )
+    .map(getChangeData)
+    .flatMap(instance => [
+      createAuthenticationChangeError(instance.elemID, instance.value.title, client.getUrl().href, serviceUrl),
+    ])
 
-    return targetChangesWithAuthData.concat(targetChangesWithInvalidTypes)
-  }
+  const targetChangesWithInvalidTypes = targetChanges
+    .map(getChangeData)
+    .filter(element => element.value.type !== 'email_target')
+    .map(element => createInvalidTypeChangeError(element.elemID, element.value.title))
+
+  return targetChangesWithAuthData.concat(targetChangesWithInvalidTypes)
+}

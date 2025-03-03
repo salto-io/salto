@@ -22,7 +22,8 @@ import {
   isAdditionChange,
 } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import { ZendeskApiConfig } from '../../user_config'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
+import { Options } from '../../definitions/types'
 import { getChildAndParentTypeNames } from './utils'
 
 const createChildReferencesError = (
@@ -76,9 +77,9 @@ const hasRelevantFieldChanged = (
  * and the parent annotation in the child instance isn't updated
  */
 export const childMissingParentAnnotationValidatorCreator =
-  (apiConfig: ZendeskApiConfig): ChangeValidator =>
+  (definitions: definitionsUtils.ApiDefinitions<Options>): ChangeValidator =>
   async changes => {
-    const relationships = getChildAndParentTypeNames(apiConfig)
+    const relationships = getChildAndParentTypeNames(definitions)
     const parentTypes = new Set(relationships.map(r => r.parent))
 
     const relevantParentChanges = changes

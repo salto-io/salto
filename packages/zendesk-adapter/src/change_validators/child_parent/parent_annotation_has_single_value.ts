@@ -13,13 +13,14 @@ import {
   CORE_ANNOTATIONS,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../user_config'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
+import { Options } from '../../definitions/types'
 import { getChildAndParentTypeNames } from './utils'
 
 export const parentAnnotationToHaveSingleValueValidatorCreator =
-  (apiConfig: ZendeskApiConfig): ChangeValidator =>
+  (definitions: definitionsUtils.ApiDefinitions<Options>): ChangeValidator =>
   async changes => {
-    const relationships = getChildAndParentTypeNames(apiConfig)
+    const relationships = getChildAndParentTypeNames(definitions)
     const childrenTypes = new Set(relationships.map(r => r.child))
     return changes
       .map(getChangeData)

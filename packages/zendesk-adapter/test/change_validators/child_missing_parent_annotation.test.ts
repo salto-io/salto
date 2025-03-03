@@ -15,11 +15,16 @@ import {
   toChange,
   ModificationChange,
 } from '@salto-io/adapter-api'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
 import { childMissingParentAnnotationValidatorCreator } from '../../src/change_validators'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
+import { createFetchDefinitions } from '../../src/definitions'
+import { Options } from '../../src/definitions/types'
 
 describe('childMissingParentAnnotationValidatorCreator', () => {
+  const definitions = {
+    fetch: { ...createFetchDefinitions({}) },
+  } as unknown as definitionsUtils.ApiDefinitions<Options>
   const ticketFieldType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'ticket_field'),
   })
@@ -57,7 +62,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
     ]
 
     const addTicketField = toChange({ after: clonedTicketField }) as AdditionChange<InstanceElement>
-    const errors = await childMissingParentAnnotationValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
+    const errors = await childMissingParentAnnotationValidatorCreator(definitions)([
       addTicketField,
       toChange({ after: anotherTicketField }),
       toChange({ after: option2 }),
@@ -82,7 +87,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       before: ticketField,
       after: clonedTicketField,
     }) as ModificationChange<InstanceElement>
-    const errors = await childMissingParentAnnotationValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
+    const errors = await childMissingParentAnnotationValidatorCreator(definitions)([
       modifyTicketField,
       toChange({ after: anotherTicketField }),
       toChange({ after: option2 }),
@@ -100,7 +105,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
     const clonedTicketField = ticketField.clone()
 
     const addTicketField = toChange({ after: clonedTicketField }) as AdditionChange<InstanceElement>
-    const errors = await childMissingParentAnnotationValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
+    const errors = await childMissingParentAnnotationValidatorCreator(definitions)([
       addTicketField,
       toChange({ after: anotherTicketField }),
     ])
@@ -114,7 +119,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       before: clonedTicketField,
       after: ticketField,
     }) as ModificationChange<InstanceElement>
-    const errors = await childMissingParentAnnotationValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
+    const errors = await childMissingParentAnnotationValidatorCreator(definitions)([
       modifyTicketField,
       toChange({ after: anotherTicketField }),
     ])
@@ -128,9 +133,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       before: clonedTicketField,
       after: ticketField,
     }) as ModificationChange<InstanceElement>
-    const errors = await childMissingParentAnnotationValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
-      modifyTicketField,
-    ])
+    const errors = await childMissingParentAnnotationValidatorCreator(definitions)([modifyTicketField])
     expect(errors).toEqual([])
   })
   it('should return an error when we add a ticket_field instance but the child instance has no _parent annotation', async () => {
@@ -140,9 +143,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
     ]
 
     const addTicketField = toChange({ after: clonedTicketField }) as AdditionChange<InstanceElement>
-    const errors = await childMissingParentAnnotationValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
-      addTicketField,
-    ])
+    const errors = await childMissingParentAnnotationValidatorCreator(definitions)([addTicketField])
     expect(errors).toEqual([
       {
         elemID: clonedTicketField.elemID,

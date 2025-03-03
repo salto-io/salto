@@ -5,12 +5,12 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../src/client/client'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 import { helpCenterCreationOrRemovalValidator } from '../../src/change_validators'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { Options } from '../../src/definitions/types'
 
 describe('helpCenterCreationOrRemovalValidator', () => {
   const client = new ZendeskClient({
@@ -20,8 +20,23 @@ describe('helpCenterCreationOrRemovalValidator', () => {
       subdomain: 'ignore',
     },
   })
-  const config = _.cloneDeep(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])
-  const changeValidator = helpCenterCreationOrRemovalValidator(client, config)
+  const mockedDefinitions = {
+    fetch: {
+      instances: {
+        default: {},
+        customizations: {
+          brand: {
+            element: {
+              topLevel: {
+                serviceUrl: { path: '/admin/account/brand_management/brands' },
+              },
+            },
+          },
+        },
+      },
+    },
+  } as unknown as definitionsUtils.ApiDefinitions<Options>
+  const changeValidator = helpCenterCreationOrRemovalValidator(client, mockedDefinitions)
 
   const BrandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
@@ -46,7 +61,7 @@ describe('helpCenterCreationOrRemovalValidator', () => {
         message: 'Creation or removal of help center for a brand is not supported via Salto.',
         // we expect the service url to always exist.
         detailedMessage: `Creation or removal of help center for brand ${brandTwoInstance.elemID.getFullName()} is not supported via Salto.
-      To create or remove a help center, please go to ${client.getUrl().href}${config.types.brand.transformation?.serviceUrl?.slice(1)}`,
+      To create or remove a help center, please go to ${client.getUrl().href}admin/account/brand_management/brands`,
       },
     ])
   })
@@ -69,7 +84,7 @@ describe('helpCenterCreationOrRemovalValidator', () => {
         severity: 'Warning',
         message: 'Creation of a brand with a help center is not supported via Salto.',
         detailedMessage: `Creation of a brand with a help center is not supported via Salto. The brand ${brandOneInstance.elemID.getFullName()} will be created without a help center. After creating the brand, 
-            to create a help center, please go to ${client.getUrl().href}${config.types.brand.transformation?.serviceUrl?.slice(1)}`,
+            to create a help center, please go to ${client.getUrl().href}admin/account/brand_management/brands`,
       },
     ])
   })

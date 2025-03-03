@@ -465,6 +465,8 @@ export const getAllInstancesToDeploy = async ({
     valuesOverride: {},
     parent: conversationBotAnswerInstance,
   })
+  conversationBotAnswerInstance.value.nodes = [new ReferenceExpression(conversationBotNodeInstance.elemID)]
+  conversationBotInstance.value.subflows = [new ReferenceExpression(conversationBotAnswerInstance.elemID)]
 
   // ***************** guide instances ******************* //
 

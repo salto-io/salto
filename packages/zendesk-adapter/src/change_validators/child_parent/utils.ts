@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { fetch as fetchUtils } from '@salto-io/adapter-components'
+import { fetch as fetchUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
 import {
   AdditionChange,
   InstanceElement,
@@ -16,7 +16,7 @@ import {
   ModificationChange,
   ElemID,
 } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../user_config'
+import { Options } from '../../definitions/types'
 
 const { makeArray } = collections.array
 
@@ -32,22 +32,45 @@ const ADDITIONAL_CHILD_PARENT_RELATIONSHIPS: ChildParentRelationship[] = [
   { parent: 'article', child: 'article_attachment', fieldName: 'attachments' },
 ]
 
-export const getChildAndParentTypeNames = (config: ZendeskApiConfig): ChildParentRelationship[] => {
-  const parentTypes = Object.keys(
-    _.omitBy(config.types, typeConfig => _.isEmpty(typeConfig.transformation?.standaloneFields)),
+const getParentToStandaloneFields = (
+  defQuery: definitionsUtils.DefQuery<definitionsUtils.fetch.InstanceFetchApiDefinitions<Options>>,
+): Record<string, string[]> => {
+  const allDefs = defQuery.getAll()
+  const parentToStandaloneMap = Object.entries(allDefs).reduce<Record<string, string[]>>(
+    (currentRecord, [typeName, def]) => {
+      const fieldCustomizations = def.element?.fieldCustomizations
+      if (fieldCustomizations === undefined) {
+        return currentRecord
+      }
+      const standaloneFields = Object.keys(_.pickBy(fieldCustomizations, field => field.standalone))
+      if (_.isEmpty(standaloneFields)) {
+        return currentRecord
+      }
+      return {
+        ...currentRecord,
+        [typeName]: standaloneFields,
+      }
+    },
+    {},
   )
-  return parentTypes
-    .flatMap(parentType => {
-      const fields = config.types[parentType].transformation?.standaloneFields ?? []
-      return fields.map(field => {
-        const fullChildTypeName = fetchUtils.element.toNestedTypeName(parentType, field.fieldName)
+
+  return parentToStandaloneMap
+}
+
+export const getChildAndParentTypeNames = (
+  definitions: definitionsUtils.ApiDefinitions<Options>,
+): ChildParentRelationship[] => {
+  const defQuery = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {})
+  const parentToStandaloneMap = getParentToStandaloneFields(defQuery)
+  return Object.entries(parentToStandaloneMap)
+    .flatMap(([parentType, fields]) =>
+      fields.map(field => {
+        const fullChildTypeName = fetchUtils.element.toNestedTypeName(parentType, field)
         const childTypeName =
-          Object.entries(config.types).find(
-            ([_typeName, typeConfig]) => typeConfig.transformation?.sourceTypeName === fullChildTypeName,
-          )?.[0] ?? fullChildTypeName
-        return { parent: parentType, child: childTypeName, fieldName: field.fieldName }
-      })
-    })
+          defQuery.query(parentType)?.element?.fieldCustomizations?.[field]?.standalone?.typeName ?? fullChildTypeName
+        return { parent: parentType, child: childTypeName, fieldName: field }
+      }),
+    )
     .concat(ADDITIONAL_CHILD_PARENT_RELATIONSHIPS)
 }
 

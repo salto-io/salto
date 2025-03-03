@@ -31,3 +31,4 @@ export {
   isInitializedFolder,
   initFolder,
 } from './src/core/adapter_format'
+export { getAdapterConfigOptionsType } from './src/core/adapters/creators_utils'

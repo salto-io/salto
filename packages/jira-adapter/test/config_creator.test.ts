@@ -8,7 +8,7 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { configType } from '../src/config/config'
-import { getConfig, configCreator, optionsType, getOptionsType } from '../src/config_creator'
+import { getConfig, configCreator, optionsType, getOptionsType, configContextType } from '../src/config_creator'
 import { createEmptyType } from './utils'
 
 describe('config creator', () => {
@@ -22,7 +22,7 @@ describe('config creator', () => {
   it('should return config creator', async () => {
     const config = configCreator
     expect(config).toEqual({
-      optionsType,
+      configContextType,
       getOptionsType,
       getConfig,
     })

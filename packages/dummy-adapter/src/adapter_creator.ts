@@ -310,7 +310,6 @@ const optionsType = new ObjectType({
 })
 
 const configCreator: ConfigCreator = {
-  optionsType,
   getOptionsType: () => optionsType,
   getConfig: options => {
     log.debug('Invoked dummy configCreator with options %s', inspectValue(options))

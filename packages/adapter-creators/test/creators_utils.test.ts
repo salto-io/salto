@@ -14,9 +14,7 @@ import {
   ElemID,
   FixElementsFunc,
   GetAdditionalReferencesFunc,
-  InstanceElement,
   ObjectType,
-  TypeReference,
 } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getAdapterConfigOptionsType } from '../src/creators_utils'
@@ -74,18 +72,6 @@ describe('getAdapterConfigOptionsType', () => {
 
   it('should returns adapter configCreator.optionsType when defined', () => {
     expect(getAdapterConfigOptionsType(mockServiceWithConfigCreator)).toEqual(mockConfigOptionsObjectType)
-  })
-  it('should returns adapter configCreator.getOptionsType when defined', () => {
-    const adapterOptionsTypeContext = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      new TypeReference(new ElemID('someAdapter')),
-      {
-        someField: true,
-      },
-    )
-    expect(getAdapterConfigOptionsType(mockServiceWithConfigCreator, adapterOptionsTypeContext)).toEqual(
-      mockConfigOptionsObjectType,
-    )
   })
   it('should returns undefined when adapter configCreator is undefined', () => {
     expect(getAdapterConfigOptionsType(mockService)).toBeUndefined()

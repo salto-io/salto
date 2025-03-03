@@ -39,7 +39,7 @@ const deleteParentFields = (elem: InstanceElement): void => {
   delete elem.value.direct_parent_type
 }
 
-export const addParentFields = (value: Values): void => {
+const addParentFields = (value: Values): void => {
   if (value.parent_section_id === undefined || value.parent_section_id === null) {
     value.direct_parent_id = value.category_id
     value.direct_parent_type = CATEGORY_TYPE_NAME

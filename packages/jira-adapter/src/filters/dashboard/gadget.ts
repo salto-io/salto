@@ -23,7 +23,7 @@ import { logger } from '@salto-io/logging'
 import { getParents, safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as adapterElements } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import {
   CONTENT_TYPE_HEADER,
@@ -38,6 +38,7 @@ import { defaultDeployChange, deployChanges } from '../../deployment/standard_de
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 export type InstantToPropertiesResponse = {
   instance: InstanceElement
@@ -152,23 +153,23 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
   onFetch: async elements => {
     const instantsToPropertiesResponse: InstantToPropertiesResponse[] = adapterContext.dashboardPropertiesPromise
 
-    await Promise.all(
-      instantsToPropertiesResponse.map(async ({ instance, promisePropertyValues: PromisePromisePropertyValues }) => {
-        const propertyValues = Object.fromEntries(
-          await Promise.all(
-            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
-          ),
-        )
-        instance.value.properties = _.pickBy(propertyValues, values.isDefined)
-      }),
-    )
+    const { configType, propertiesType } = getSubTypes()
+
+    await awu(instantsToPropertiesResponse).forEach(async ({ instance, promisePropertyValues }) => {
+      const propertyValues = await promises.object.resolveValues(await promisePropertyValues)
+      instance.value.properties = adapterElements.removeNullValues({
+        values: propertyValues,
+        type: propertiesType,
+        allowEmptyArrays: true,
+        allowExistingEmptyObjects: true,
+      })
+    })
 
     const gadgetType = findObject(elements, DASHBOARD_GADGET_TYPE)
     if (gadgetType === undefined) {
       log.warn(`${DASHBOARD_GADGET_TYPE} type not found`)
       return
     }
-    const { configType, propertiesType } = getSubTypes()
     gadgetType.fields.properties = new Field(gadgetType, 'properties', propertiesType)
     elements.push(configType, propertiesType)
     setFieldDeploymentAnnotations(gadgetType, 'properties')

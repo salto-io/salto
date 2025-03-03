@@ -1,9 +1,5 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "rules": {
-    "exports": "off",
-    "types": "off"
-  },
   "workspaces": {
     ".": {
       "entry": ["*.{js,mjs}", ".circleci/scripts/*.js", "build_utils/*.js"],
@@ -11,8 +7,13 @@
       "ignoreDependencies": ["jest-junit", "turbo"]
     },
     "packages/*": {
-      "entry": ["index.ts", "e2e_test/**/*.test.ts"],
-      "ignore": ["jest-dynalite-config.js", "e2e_test/credentials_store/adapter.ts", "test/**/test_data/**/*"]
+      "entry": ["index.ts", "e2e_test/**/*.test.ts", "e2e_test/jest_environment.ts"],
+      "ignore": [
+        "jest-dynalite-config.js",
+        "src/**/autogen/**",
+        "e2e_test/credentials_store/adapter.ts",
+        "test/**/test_data/**/*"
+      ]
     },
     "packages/cli": {
       "entry": [

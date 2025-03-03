@@ -20,7 +20,8 @@ import {
   isAdditionOrModificationChange,
   ElemID,
 } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../user_config'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
+import { Options } from '../../definitions/types'
 import { getChildAndParentTypeNames, getRemovedAndAddedChildren } from './utils'
 
 const createParentReferencesError = (change: AdditionChange<InstanceElement>, parentElemId: ElemID): ChangeError => {
@@ -34,9 +35,9 @@ const createParentReferencesError = (change: AdditionChange<InstanceElement>, pa
 }
 
 export const missingFromParentValidatorCreator =
-  (apiConfig: ZendeskApiConfig): ChangeValidator =>
+  (definitions: definitionsUtils.ApiDefinitions<Options>): ChangeValidator =>
   async changes => {
-    const relationships = getChildAndParentTypeNames(apiConfig)
+    const relationships = getChildAndParentTypeNames(definitions)
     const childrenTypes = new Set(relationships.map(r => r.child))
     const instanceChanges = changes.filter(isInstanceChange)
     const relevantChanges = instanceChanges

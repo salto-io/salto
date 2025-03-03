@@ -15,10 +15,12 @@ import {
   isInstanceChange,
   isModificationChange,
 } from '@salto-io/adapter-api'
+import { definitions as definitionUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import { BRAND_TYPE_NAME } from '../constants'
 import ZendeskClient from '../client/client'
-import { ZendeskApiConfig } from '../user_config'
 import { isBrand, invalidBrandChange } from './guide_activation'
+import { Options } from '../definitions/types'
 
 const invalidBrandAdditionChange = (
   change: Change<InstanceElement>,
@@ -38,14 +40,20 @@ const invalidBrandAdditionChange = (
  */
 export const helpCenterCreationOrRemovalValidator: (
   client: ZendeskClient,
-  apiConfig: ZendeskApiConfig,
-) => ChangeValidator = (client, apiConfig) => async changes => {
+  definitions: definitionUtils.ApiDefinitions<Options>,
+) => ChangeValidator = (client, definitions) => async changes => {
   const relevantChanges = changes
     .filter(isInstanceChange)
     .filter(change => getChangeData(change).elemID.typeName === BRAND_TYPE_NAME)
     .filter(
       change => invalidBrandChange(change, 'has_help_center') || invalidBrandAdditionChange(change, 'has_help_center'),
     )
+  if (_.isEmpty(relevantChanges)) {
+    return []
+  }
+
+  const defQuery = definitionUtils.queryWithDefault(definitions.fetch?.instances ?? {})
+  const serviceUrl = defQuery.query(BRAND_TYPE_NAME)?.element?.topLevel?.serviceUrl?.path
 
   return relevantChanges.flatMap((change: Change): ChangeError[] => {
     if (isModificationChange(change)) {
@@ -56,7 +64,7 @@ export const helpCenterCreationOrRemovalValidator: (
           message: 'Creation or removal of help center for a brand is not supported via Salto.',
           // we expect the service url to always exist.
           detailedMessage: `Creation or removal of help center for brand ${getChangeData(change).elemID.getFullName()} is not supported via Salto.
-      To create or remove a help center, please go to ${client.getUrl().href}${apiConfig.types.brand.transformation?.serviceUrl?.slice(1)}`,
+      To create or remove a help center, please go to ${client.getUrl().href}${serviceUrl?.slice(1)}`,
         },
       ]
     }
@@ -66,7 +74,7 @@ export const helpCenterCreationOrRemovalValidator: (
         severity: 'Warning',
         message: 'Creation of a brand with a help center is not supported via Salto.',
         detailedMessage: `Creation of a brand with a help center is not supported via Salto. The brand ${getChangeData(change).elemID.getFullName()} will be created without a help center. After creating the brand, 
-            to create a help center, please go to ${client.getUrl().href}${apiConfig.types.brand.transformation?.serviceUrl?.slice(1)}`,
+            to create a help center, please go to ${client.getUrl().href}${serviceUrl?.slice(1)}`,
       },
     ]
   })

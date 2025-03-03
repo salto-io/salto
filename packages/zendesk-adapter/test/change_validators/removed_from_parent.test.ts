@@ -13,12 +13,16 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
 import { removedFromParentValidatorCreator } from '../../src/change_validators/child_parent/removed_from_parent'
-
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
+import { createFetchDefinitions } from '../../src/definitions'
+import { Options } from '../../src/definitions/types'
 
 describe('removedFromParentValidatorCreator', () => {
+  const definitions = {
+    fetch: { ...createFetchDefinitions({}) },
+  } as unknown as definitionsUtils.ApiDefinitions<Options>
   describe('ticket/user/organization field', () => {
     const ticketFieldType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'ticket_field'),
@@ -40,7 +44,7 @@ describe('removedFromParentValidatorCreator', () => {
     it('should return a warning when removing an option from the parent but keeping the instance', async () => {
       const clonedTicketField = ticketField.clone()
       clonedTicketField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [new ReferenceExpression(option1.elemID, option1)]
-      const errors = await removedFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
+      const errors = await removedFromParentValidatorCreator(definitions)([
         toChange({ before: ticketField, after: clonedTicketField }),
       ])
       expect(errors).toEqual([
@@ -58,7 +62,7 @@ If you continue with the deploy they will be removed from the service, and any r
     it('should not return an error when remove an option from the parent and remove the instance as well', async () => {
       const clonedTicketField = ticketField.clone()
       clonedTicketField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [new ReferenceExpression(option1.elemID, option1)]
-      const errors = await removedFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
+      const errors = await removedFromParentValidatorCreator(definitions)([
         toChange({ before: option2 }),
         toChange({ before: ticketField, after: clonedTicketField }),
       ])
@@ -90,7 +94,7 @@ If you continue with the deploy they will be removed from the service, and any r
     it('should return a warning when removing an option from the parent but keeping the instance', async () => {
       const clonedDynamicContentItem = dynamicContentItem.clone()
       clonedDynamicContentItem.value.variants = [new ReferenceExpression(variant1.elemID, variant2)]
-      const errors = await removedFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
+      const errors = await removedFromParentValidatorCreator(definitions)([
         toChange({ before: dynamicContentItem, after: clonedDynamicContentItem }),
       ])
       expect(errors).toEqual([
@@ -106,7 +110,7 @@ Please make sure to remove these references in order to remove the element`,
     it('should not return an error when remove an option from the parent and remove the instance as well', async () => {
       const clonedDynamicContentItem = dynamicContentItem.clone()
       clonedDynamicContentItem.value.variants = [new ReferenceExpression(variant1.elemID, variant1)]
-      const errors = await removedFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
+      const errors = await removedFromParentValidatorCreator(definitions)([
         toChange({ before: variant2 }),
         toChange({ before: dynamicContentItem, after: clonedDynamicContentItem }),
       ])

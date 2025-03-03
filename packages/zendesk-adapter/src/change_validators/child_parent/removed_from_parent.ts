@@ -14,16 +14,17 @@ import {
   isRemovalChange,
   ChangeError,
 } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../user_config'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
+import { Options } from '../../definitions/types'
 import { getChildAndParentTypeNames, getRemovedAndAddedChildren, ChildParentRelationship } from './utils'
 import { FIELD_TYPE_NAMES } from '../../constants'
 
 const WARNING_ONLY_PARENT_TYPES = FIELD_TYPE_NAMES
 
 export const removedFromParentValidatorCreator =
-  (apiConfig: ZendeskApiConfig): ChangeValidator =>
+  (definitions: definitionsUtils.ApiDefinitions<Options>): ChangeValidator =>
   async changes => {
-    const relationships = getChildAndParentTypeNames(apiConfig)
+    const relationships = getChildAndParentTypeNames(definitions)
     const parentTypes = new Set(relationships.map(r => r.parent))
     const instanceChanges = changes.filter(isInstanceChange)
     const relevantChanges = instanceChanges

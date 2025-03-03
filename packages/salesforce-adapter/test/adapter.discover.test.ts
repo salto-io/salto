@@ -992,7 +992,7 @@ describe('SalesforceAdapter fetch', () => {
           2 /* ChangedAtSingleton type & instance */ +
           1 /* ProfilesAndPermissionSetsBrokenPaths */ +
           1 /* FetchTargets */ +
-          2 /* OrderedMapOfvalueSet */ +
+          1 /* OrderedMapOfvalueSet */ +
           1 /* FieldPermissionEnum */,
       )
 

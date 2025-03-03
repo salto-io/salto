@@ -62,17 +62,15 @@ export const getChildAndParentTypeNames = (
 ): ChildParentRelationship[] => {
   const defQuery = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {})
   const parentToStandaloneMap = getParentToStandaloneFields(defQuery)
-  const parentTypes = Object.keys(parentToStandaloneMap)
-  return parentTypes
-    .flatMap(parentType => {
-      const fields = parentToStandaloneMap[parentType] ?? []
-      return fields.map(field => {
+  return Object.entries(parentToStandaloneMap)
+    .flatMap(([parentType, fields]) =>
+      fields.map(field => {
         const fullChildTypeName = fetchUtils.element.toNestedTypeName(parentType, field)
         const childTypeName =
           defQuery.query(parentType)?.element?.fieldCustomizations?.[field]?.standalone?.typeName ?? fullChildTypeName
         return { parent: parentType, child: childTypeName, fieldName: field }
-      })
-    })
+      }),
+    )
     .concat(ADDITIONAL_CHILD_PARENT_RELATIONSHIPS)
 }
 

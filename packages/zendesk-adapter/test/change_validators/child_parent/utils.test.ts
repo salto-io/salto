@@ -6,11 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { definitions as definitionsUtils } from '@salto-io/adapter-components'
-import { getChildAndParentTypeNames } from '../../../src/change_validators/child_parent/utils'
+import { ChildParentRelationship, getChildAndParentTypeNames } from '../../../src/change_validators/child_parent/utils'
 import { Options } from '../../../src/definitions/types'
 
 describe('getChildAndParentTypeNames', () => {
   let mockDefinitions: definitionsUtils.ApiDefinitions<Options>
+  let result: ChildParentRelationship[]
 
   beforeEach(() => {
     mockDefinitions = {
@@ -44,11 +45,10 @@ describe('getChildAndParentTypeNames', () => {
         },
       },
     } as unknown as definitionsUtils.ApiDefinitions<Options>
+    result = getChildAndParentTypeNames(mockDefinitions)
   })
 
   it('should return relationships for standalone fields with custom type names', () => {
-    const result = getChildAndParentTypeNames(mockDefinitions)
-
     expect(result).toContainEqual({
       parent: 'parent_type',
       child: 'custom_type_name',
@@ -57,8 +57,6 @@ describe('getChildAndParentTypeNames', () => {
   })
 
   it('should use nested type name when no custom type name is provided', () => {
-    const result = getChildAndParentTypeNames(mockDefinitions)
-
     expect(result).toContainEqual({
       parent: 'parent_type',
       child: 'parent_type__field2',
@@ -67,15 +65,11 @@ describe('getChildAndParentTypeNames', () => {
   })
 
   it('should not include non-standalone fields', () => {
-    const result = getChildAndParentTypeNames(mockDefinitions)
-
     const field3Relationship = result.find(res => res.parent === 'parent_type' && res.fieldName === 'field3')
     expect(field3Relationship).toBeUndefined()
   })
 
   it('should include additional predefined relationships', () => {
-    const result = getChildAndParentTypeNames(mockDefinitions)
-
     // Check predefined relationships
     expect(result).toContainEqual({
       parent: 'macro',
@@ -99,11 +93,14 @@ describe('getChildAndParentTypeNames', () => {
   it('should handle empty definitions', () => {
     const emptyDefinitions = {
       fetch: {
-        instances: {},
+        instances: {
+          default: {},
+          customizations: {},
+        },
       },
     } as unknown as definitionsUtils.ApiDefinitions<Options>
 
-    const result = getChildAndParentTypeNames(emptyDefinitions)
+    result = getChildAndParentTypeNames(emptyDefinitions)
 
     expect(result).toHaveLength(3)
     expect(result).toContainEqual({
@@ -117,14 +114,17 @@ describe('getChildAndParentTypeNames', () => {
     const defsWithoutCustomizations = {
       fetch: {
         instances: {
-          parent_type: {
-            element: {},
+          default: {},
+          customizations: {
+            parent_type: {
+              element: {},
+            },
           },
         },
       },
     } as unknown as definitionsUtils.ApiDefinitions<Options>
 
-    const result = getChildAndParentTypeNames(defsWithoutCustomizations)
+    result = getChildAndParentTypeNames(defsWithoutCustomizations)
 
     expect(result).toHaveLength(3) // The predefined relationships
   })

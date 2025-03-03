@@ -363,6 +363,7 @@ describe('suiteapp_file_cabinet', () => {
         maxFileCabinetSizeInGB: 1,
         extensionsToExclude: ['.*\\.csv'],
         maxFilesPerFileCabinetFolder: [{ folderPath: '/folder5/largeFolder1.*', limit: 2000 }],
+        wrapFolderIdsWithQuotes: false,
       }
     })
 

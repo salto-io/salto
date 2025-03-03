@@ -109,6 +109,7 @@ export type FetchParams = {
   singletonCustomRecords?: string[]
   visibleLockedCustomRecordTypes?: boolean
   fetchPluginImplementations?: boolean
+  wrapFolderIdsWithQuotes?: boolean
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -122,6 +123,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   singletonCustomRecords: 'singletonCustomRecords',
   visibleLockedCustomRecordTypes: 'visibleLockedCustomRecordTypes',
   fetchPluginImplementations: 'fetchPluginImplementations',
+  wrapFolderIdsWithQuotes: 'wrapFolderIdsWithQuotes',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -648,6 +650,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     singletonCustomRecords: { refType: new ListType(BuiltinTypes.STRING) },
     visibleLockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
     fetchPluginImplementations: { refType: BuiltinTypes.BOOLEAN },
+    wrapFolderIdsWithQuotes: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

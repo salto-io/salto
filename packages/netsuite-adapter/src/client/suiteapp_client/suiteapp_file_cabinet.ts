@@ -339,11 +339,12 @@ const getFilesWhereQueries = ({
   return whereQueries
 }
 
-const queryFiles = (suiteAppClient: SuiteAppClient, params: FilesQueryParams): Promise<FileResult[]> =>
-  retryOnRetryableError(async () => {
-    const whereQueries = getFilesWhereQueries(params)
-    const results = await Promise.all(
-      whereQueries.map(async whereQuery => {
+const queryFiles = async (suiteAppClient: SuiteAppClient, params: FilesQueryParams): Promise<FileResult[]> => {
+  const whereQueries = getFilesWhereQueries(params)
+
+  const results = await Promise.all(
+    whereQueries.map(async whereQuery =>
+      retryOnRetryableError(async () => {
         const filesResults = await suiteAppClient.runSuiteQL({
           select: `id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url${params.isSuiteBundlesEnabled ? ', bundleable, hideinbundle' : ''}`,
           from: 'file',
@@ -362,19 +363,21 @@ const queryFiles = (suiteAppClient: SuiteAppClient, params: FilesQueryParams): P
         }
         return filesResults
       }),
-    )
+    ),
+  )
 
-    return results.flat()
-  })
+  return results.flat()
+}
 
-const queryFilesCountPerFolder = (
+const queryFilesCountPerFolder = async (
   suiteAppClient: SuiteAppClient,
   params: FilesQueryParams,
-): Promise<Record<string, number>> =>
-  retryOnRetryableError(async () => {
-    const whereQueries = getFilesWhereQueries(params)
-    const results = await Promise.all(
-      whereQueries.map(async whereQuery => {
+): Promise<Record<string, number>> => {
+  const whereQueries = getFilesWhereQueries(params)
+
+  const results = await Promise.all(
+    whereQueries.map(async whereQuery =>
+      retryOnRetryableError(async () => {
         const filesCountResults = await suiteAppClient.runSuiteQL({
           select: 'folder, count(*) as count',
           from: 'file',
@@ -394,10 +397,11 @@ const queryFilesCountPerFolder = (
         }
         return filesCountResults
       }),
-    )
+    ),
+  )
 
-    return Object.fromEntries(results.flat().map(({ folder, count }) => [folder, parseInt(count, 10)]))
-  })
+  return Object.fromEntries(results.flat().map(({ folder, count }) => [folder, parseInt(count, 10)]))
+}
 
 const removeResultsWithoutParentFolder = (foldersResults: FolderResult[]): FolderResult[] => {
   const folderIdsSet = new Set(foldersResults.map(folder => folder.id))

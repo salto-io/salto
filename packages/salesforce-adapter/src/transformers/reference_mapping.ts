@@ -178,6 +178,10 @@ export type ReferenceContextStrategyName =
   | 'parentSObjectTypeLookupTopLevel'
   | 'grandparentObjectLookup'
   | 'grandparentOutputSObjectTypeLookup'
+  | 'grandparentObjectLookup'
+  | 'greatGrandparentObjectTypeLookup'
+  | 'greatGreatGrandparentObjectTypeLookup'
+  | 'grandparentObjectTypeLookup'
 
 type SourceDef = {
   field: string | RegExp

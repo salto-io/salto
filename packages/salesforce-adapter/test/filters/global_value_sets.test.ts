@@ -20,8 +20,7 @@ import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-explicit-any
-const picklistValueListToMap = (values: any[]) =>
+const picklistValueListToMap = (values: Value[]): Value =>
   values.reduce<Record<string, Object>>((acc, element) => {
     acc[element.fullName] = element
     return acc

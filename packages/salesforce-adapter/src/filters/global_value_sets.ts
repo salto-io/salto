@@ -15,6 +15,7 @@ import {
   isReferenceExpression,
   ReadOnlyElementsSource,
   isElement,
+  isField,
 } from '@salto-io/adapter-api'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -30,6 +31,11 @@ const { awu } = collections.asynciterable
 export const GLOBAL_VALUE_SET = 'GlobalValueSet'
 export const CUSTOM_VALUE = 'customValue'
 export const MASTER_LABEL = 'master_label'
+
+const isValidValueSettings = (vs: Value): vs is ValueSettings =>
+  !(_.isUndefined(vs.valueName) || _.isUndefined(vs.controllingFieldValue)) &&
+  (isReferenceExpression(vs.valueName) || _.isString(vs.valueName)) &&
+  Array.isArray(vs.controllingFieldValue)
 
 const addGlobalValueSetRefToObject = async (
   object: ObjectType,
@@ -57,7 +63,7 @@ const addGlobalValueSetRefToObject = async (
     const fieldDependency = f.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
     const controllingFieldName = fieldDependency[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]
     const controllingField = _.isString(controllingFieldName) ? object.fields[controllingFieldName] : undefined
-    if (!isElement(controllingField)) {
+    if (!isField(controllingField)) {
       return
     }
     fieldDependency[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD] = new ReferenceExpression(
@@ -71,23 +77,27 @@ const addGlobalValueSetRefToObject = async (
     } else if (_.isString(controllingFieldValueSetNameOrRef)) {
       controllingValueSet = gvsToRef.get(controllingFieldValueSetNameOrRef)
     }
+    const isControllingValueSet = isElement(controllingValueSet)
     if (!_.isArray(fieldDependency[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS])) {
       return
     }
-    fieldDependency[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS].forEach((vs: ValueSettings) => {
+    fieldDependency[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS].forEach((vs: Value) => {
+      if (!isValidValueSettings(vs)) {
+        return
+      }
       if (_.isString(vs.valueName)) {
-        vs.valueName = !_.isUndefined(valueSetInstance.value?.customValue?.values[naclCase(vs.valueName)])
+        vs.valueName = !_.isUndefined(valueSetInstance.value.customValue.values[naclCase(vs.valueName)])
           ? new ReferenceExpression(
               valueSetInstance.elemID.createNestedID('customValue', 'values', naclCase(vs.valueName), 'fullName'),
               naclCase(vs.valueName),
             )
           : vs.valueName
       }
-      if (!isElement(controllingValueSet)) {
+      if (!isControllingValueSet) {
         return
       }
-      vs.controllingFieldValue = vs.controllingFieldValue.map((cfv: string | ReferenceExpression) => {
-        if (_.isString(cfv) && !_.isUndefined(controllingValueSet.value?.customValue?.values[naclCase(cfv)])) {
+      vs.controllingFieldValue = vs.controllingFieldValue.map((cfv: Value) => {
+        if (_.isString(cfv) && !_.isUndefined(controllingValueSet.value.customValue.values[naclCase(cfv)])) {
           return new ReferenceExpression(
             controllingValueSet.elemID.createNestedID('customValue', 'values', naclCase(cfv), 'fullName'),
             naclCase(cfv),

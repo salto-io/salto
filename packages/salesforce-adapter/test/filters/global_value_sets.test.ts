@@ -19,6 +19,7 @@ import filterCreator, { GLOBAL_VALUE_SET, CUSTOM_VALUE, MASTER_LABEL } from '../
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
+import * as optionalFeatures from '../../src/fetch_profile/optional_features'
 
 const picklistValueListToMap = (values: Value[]): Value =>
   values.reduce<Record<string, Object>>((acc, element) => {
@@ -40,8 +41,7 @@ const createGlobalValueSetInstanceElement = (name: string, values: string[]): In
       [constants.DESCRIPTION]: name,
       sorted: false,
       [CUSTOM_VALUE]: {
-        // eslint-disable-next-line no-useless-computed-key
-        ['values']: picklistValueListToMap(
+        values: picklistValueListToMap(
           values.map(v => ({
             [constants.CUSTOM_VALUE.FULL_NAME]: v,
             [constants.CUSTOM_VALUE.DEFAULT]: false,
@@ -129,134 +129,17 @@ describe('Global Value Sets filter', () => {
   })
 
   describe('on fetch', () => {
-    it('should replace value set, controllingField, valeName and controllingFieldValue with references', async () => {
-      elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2'))
-      await filter.onFetch(elements)
-      const globalValueSetInstance = elements[0] as InstanceElement
-      const customObjectType = elements[2] as ObjectType
-      expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-        new ReferenceExpression(globalValueSetInstance.elemID, globalValueSetInstance),
-      )
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME],
-      ).toEqual(new ReferenceExpression(elements[1].elemID, elements[1]))
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
-        ],
-      ).toEqual(new ReferenceExpression(customObjectType.fields.state.elemID, customObjectType.fields.state))
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
-        ][0].valueName,
-      ).toEqual(
-        new ReferenceExpression(
-          elements[1].elemID.createNestedID('customValue', 'values', 'val3', 'fullName'),
-          (elements[1] as Value).value.customValue.values.val3.fullName,
-        ),
-      )
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
-        ][0].controllingFieldValue[0],
-      ).toEqual(
-        new ReferenceExpression(
-          elements[0].elemID.createNestedID('customValue', 'values', 'val1', 'fullName'),
-          (elements[0] as Value).value.customValue.values.val1.fullName,
-        ),
-      )
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
-        ][0].controllingFieldValue[1],
-      ).toEqual(
-        new ReferenceExpression(
-          elements[0].elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
-          (elements[0] as Value).value.customValue.values.val2.fullName,
-        ),
-      )
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
-        ][1].valueName,
-      ).toEqual(
-        new ReferenceExpression(
-          elements[1].elemID.createNestedID('customValue', 'values', 'val4', 'fullName'),
-          (elements[1] as Value).value.customValue.values.val4.fullName,
-        ),
-      )
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
-        ][1].controllingFieldValue[0],
-      ).toEqual(
-        new ReferenceExpression(
-          elements[0].elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
-          (elements[0] as Value).value.customValue.values.val2.fullName,
-        ),
-      )
-    })
-    it('should not replace value set with references if value set name does not exist', async () => {
-      elements.push(createPicklistObjectType(mockElemID, 'test', 'not_exist', 'another_fake'))
-      await filter.onFetch(elements)
-      const customObjectType = elements[2] as ObjectType
-      expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual('not_exist')
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME],
-      ).toEqual('another_fake')
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
-        ],
-      ).toEqual('state')
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
-        ][0].valueName,
-      ).toEqual('val3')
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
-        ][0].controllingFieldValue[0],
-      ).toEqual('val1')
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
-        ][0].controllingFieldValue[1],
-      ).toEqual('val2')
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
-        ][1].valueName,
-      ).toEqual('val4')
-      expect(
-        customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
-        ][1].controllingFieldValue[0],
-      ).toEqual('val2')
-    })
-    describe('when field does not have fieldDependency field', () => {
-      it('should still create reference to valueSet', async () => {
-        elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2', false))
-        await filter.onFetch(elements)
-        expect((elements[2] as ObjectType).fields.customPicklistField.annotations.valueSetName).toBeInstanceOf(
-          ReferenceExpression,
-        )
+    describe('when picklistsAsMaps optional feature is enabled', () => {
+      beforeEach(() => {
+        jest.spyOn(optionalFeatures, 'isFeatureEnabled').mockImplementation(feature => {
+          if (feature === 'picklistsAsMaps') {
+            return true
+          }
+          return jest.requireActual<typeof optionalFeatures>('./myModule').isFeatureEnabled(feature)
+        })
       })
-    })
-    describe('when one of the controllingFieldValues doesnt exist in the controllingField ValueSet', () => {
-      it('should keep the string value', async () => {
-        elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2', true, false))
-        await filter.onFetch(elements)
-        expect(
-          (elements[2] as ObjectType).fields.customPicklistField.annotations.fieldDependency.valueSettings[0]
-            .controllingFieldValue[1],
-        ).toEqual('val')
-      })
-    })
-    describe('when valueSetName of controlling field is string and not reference', () => {
-      it('should create references as usual', async () => {
-        elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2', true, true, false))
+      it('should replace value set, controllingField, valeName and controllingFieldValue with references', async () => {
+        elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2'))
         await filter.onFetch(elements)
         const globalValueSetInstance = elements[0] as InstanceElement
         const customObjectType = elements[2] as ObjectType
@@ -270,7 +153,7 @@ describe('Global Value Sets filter', () => {
           customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
           ],
-        ).toEqual(new ReferenceExpression(customObjectType.fields.regular.elemID, customObjectType.fields.regular))
+        ).toEqual(new ReferenceExpression(customObjectType.fields.state.elemID, customObjectType.fields.state))
         expect(
           customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
@@ -322,71 +205,290 @@ describe('Global Value Sets filter', () => {
           ),
         )
       })
-    })
-    describe('when valueSetName of unrelated field is not defined', () => {
-      it('should create references as usual', async () => {
-        elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2', true, true, false, false))
+      it('should not replace value set with references if value set name does not exist', async () => {
+        elements.push(createPicklistObjectType(mockElemID, 'test', 'not_exist', 'another_fake'))
         await filter.onFetch(elements)
         const customObjectType = elements[2] as ObjectType
-        expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).not.toBeDefined()
+        expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
+          'not_exist',
+        )
         expect(
           customObjectType.fields.customPicklistField.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME],
-        ).toEqual(new ReferenceExpression(elements[1].elemID, elements[1]))
+        ).toEqual('another_fake')
         expect(
           customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
           ],
-        ).toEqual(new ReferenceExpression(customObjectType.fields.regular.elemID, customObjectType.fields.regular))
+        ).toEqual('state')
         expect(
           customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][0].valueName,
-        ).toEqual(
-          new ReferenceExpression(
-            elements[1].elemID.createNestedID('customValue', 'values', 'val3', 'fullName'),
-            (elements[1] as Value).value.customValue.values.val3.fullName,
-          ),
-        )
+        ).toEqual('val3')
         expect(
           customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][0].controllingFieldValue[0],
-        ).toEqual(
-          new ReferenceExpression(
-            elements[0].elemID.createNestedID('customValue', 'values', 'val1', 'fullName'),
-            (elements[0] as Value).value.customValue.values.val1.fullName,
-          ),
-        )
+        ).toEqual('val1')
         expect(
           customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][0].controllingFieldValue[1],
-        ).toEqual(
-          new ReferenceExpression(
-            elements[0].elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
-            (elements[0] as Value).value.customValue.values.val2.fullName,
-          ),
-        )
+        ).toEqual('val2')
         expect(
           customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][1].valueName,
-        ).toEqual(
-          new ReferenceExpression(
-            elements[1].elemID.createNestedID('customValue', 'values', 'val4', 'fullName'),
-            (elements[1] as Value).value.customValue.values.val4.fullName,
-          ),
-        )
+        ).toEqual('val4')
         expect(
           customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][1].controllingFieldValue[0],
-        ).toEqual(
-          new ReferenceExpression(
-            elements[0].elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
-            (elements[0] as Value).value.customValue.values.val2.fullName,
-          ),
+        ).toEqual('val2')
+      })
+      describe('when field does not have fieldDependency field', () => {
+        it('should still create reference to valueSet', async () => {
+          elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2', false))
+          await filter.onFetch(elements)
+          expect((elements[2] as ObjectType).fields.customPicklistField.annotations.valueSetName).toBeInstanceOf(
+            ReferenceExpression,
+          )
+        })
+      })
+      describe('when one of the controllingFieldValues doesnt exist in the controllingField ValueSet', () => {
+        it('should keep the string value', async () => {
+          elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2', true, false))
+          await filter.onFetch(elements)
+          expect(
+            (elements[2] as ObjectType).fields.customPicklistField.annotations.fieldDependency.valueSettings[0]
+              .controllingFieldValue[1],
+          ).toEqual('val')
+        })
+      })
+      describe('when valueSetName of controlling field is string and not reference', () => {
+        it('should create references as usual', async () => {
+          elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2', true, true, false))
+          await filter.onFetch(elements)
+          const globalValueSetInstance = elements[0] as InstanceElement
+          const customObjectType = elements[2] as ObjectType
+          expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
+            new ReferenceExpression(globalValueSetInstance.elemID, globalValueSetInstance),
+          )
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME],
+          ).toEqual(new ReferenceExpression(elements[1].elemID, elements[1]))
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
+            ],
+          ).toEqual(new ReferenceExpression(customObjectType.fields.regular.elemID, customObjectType.fields.regular))
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+            ][0].valueName,
+          ).toEqual(
+            new ReferenceExpression(
+              elements[1].elemID.createNestedID('customValue', 'values', 'val3', 'fullName'),
+              (elements[1] as Value).value.customValue.values.val3.fullName,
+            ),
+          )
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+            ][0].controllingFieldValue[0],
+          ).toEqual(
+            new ReferenceExpression(
+              elements[0].elemID.createNestedID('customValue', 'values', 'val1', 'fullName'),
+              (elements[0] as Value).value.customValue.values.val1.fullName,
+            ),
+          )
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+            ][0].controllingFieldValue[1],
+          ).toEqual(
+            new ReferenceExpression(
+              elements[0].elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
+              (elements[0] as Value).value.customValue.values.val2.fullName,
+            ),
+          )
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+            ][1].valueName,
+          ).toEqual(
+            new ReferenceExpression(
+              elements[1].elemID.createNestedID('customValue', 'values', 'val4', 'fullName'),
+              (elements[1] as Value).value.customValue.values.val4.fullName,
+            ),
+          )
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+            ][1].controllingFieldValue[0],
+          ).toEqual(
+            new ReferenceExpression(
+              elements[0].elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
+              (elements[0] as Value).value.customValue.values.val2.fullName,
+            ),
+          )
+        })
+      })
+      describe('when valueSetName of unrelated field is not defined', () => {
+        it('should create references as usual', async () => {
+          elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2', true, true, false, false))
+          await filter.onFetch(elements)
+          const customObjectType = elements[2] as ObjectType
+          expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).not.toBeDefined()
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME],
+          ).toEqual(new ReferenceExpression(elements[1].elemID, elements[1]))
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
+            ],
+          ).toEqual(new ReferenceExpression(customObjectType.fields.regular.elemID, customObjectType.fields.regular))
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+            ][0].valueName,
+          ).toEqual(
+            new ReferenceExpression(
+              elements[1].elemID.createNestedID('customValue', 'values', 'val3', 'fullName'),
+              (elements[1] as Value).value.customValue.values.val3.fullName,
+            ),
+          )
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+            ][0].controllingFieldValue[0],
+          ).toEqual(
+            new ReferenceExpression(
+              elements[0].elemID.createNestedID('customValue', 'values', 'val1', 'fullName'),
+              (elements[0] as Value).value.customValue.values.val1.fullName,
+            ),
+          )
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+            ][0].controllingFieldValue[1],
+          ).toEqual(
+            new ReferenceExpression(
+              elements[0].elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
+              (elements[0] as Value).value.customValue.values.val2.fullName,
+            ),
+          )
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+            ][1].valueName,
+          ).toEqual(
+            new ReferenceExpression(
+              elements[1].elemID.createNestedID('customValue', 'values', 'val4', 'fullName'),
+              (elements[1] as Value).value.customValue.values.val4.fullName,
+            ),
+          )
+          expect(
+            customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+              constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+            ][1].controllingFieldValue[0],
+          ).toEqual(
+            new ReferenceExpression(
+              elements[0].elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
+              (elements[0] as Value).value.customValue.values.val2.fullName,
+            ),
+          )
+        })
+      })
+    })
+    describe('when picklistsAsMaps optional feature is disabled', () => {
+      beforeEach(() => {
+        jest.spyOn(optionalFeatures, 'isFeatureEnabled').mockImplementation(feature => {
+          if (feature === 'picklistsAsMaps') {
+            return false
+          }
+          return jest.requireActual<typeof optionalFeatures>('./myModule').isFeatureEnabled(feature)
+        })
+      })
+      it('should create reference only at valueSetName', async () => {
+        elements.push(createPicklistObjectType(mockElemID, 'test', 'test1', 'test2'))
+        await filter.onFetch(elements)
+        const globalValueSetInstance = elements[0] as InstanceElement
+        const customObjectType = elements[2] as ObjectType
+        expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
+          new ReferenceExpression(globalValueSetInstance.elemID, globalValueSetInstance),
         )
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
+          ],
+        ).toEqual('state')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0].valueName,
+        ).toEqual('val3')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0].controllingFieldValue[0],
+        ).toEqual('val1')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0].controllingFieldValue[1],
+        ).toEqual('val2')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][1].valueName,
+        ).toEqual('val4')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][1].controllingFieldValue[0],
+        ).toEqual('val2')
+      })
+      it('should not replace value set with references if value set name does not exist', async () => {
+        elements.push(createPicklistObjectType(mockElemID, 'test', 'not_exist', 'another_fake'))
+        await filter.onFetch(elements)
+        const customObjectType = elements[2] as ObjectType
+        expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
+          'not_exist',
+        )
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME],
+        ).toEqual('another_fake')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
+          ],
+        ).toEqual('state')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0].valueName,
+        ).toEqual('val3')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0].controllingFieldValue[0],
+        ).toEqual('val1')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0].controllingFieldValue[1],
+        ).toEqual('val2')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][1].valueName,
+        ).toEqual('val4')
+        expect(
+          customObjectType.fields.customPicklistField.annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][1].controllingFieldValue[0],
+        ).toEqual('val2')
       })
     })
   })

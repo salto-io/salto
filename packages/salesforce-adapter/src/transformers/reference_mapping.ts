@@ -176,6 +176,8 @@ export type ReferenceContextStrategyName =
   | 'neighborAssignedToTypeLookup'
   | 'neighborRelatedEntityTypeLookup'
   | 'parentSObjectTypeLookupTopLevel'
+  | 'grandparentObjectLookup'
+  | 'grandparentOutputSObjectTypeLookup'
 
 type SourceDef = {
   field: string | RegExp

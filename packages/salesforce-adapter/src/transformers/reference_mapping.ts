@@ -176,6 +176,7 @@ export type ReferenceContextStrategyName =
   | 'neighborAssignedToTypeLookup'
   | 'neighborRelatedEntityTypeLookup'
   | 'parentSObjectTypeLookupTopLevel'
+  | 'flowCondition'
   | 'grandparentObjectLookup'
   | 'grandparentOutputSObjectTypeLookup'
   | 'grandparentObjectLookup'

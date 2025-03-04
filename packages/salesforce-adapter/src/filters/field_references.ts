@@ -89,6 +89,19 @@ export const createContextStrategyLookups = (
     contextValueMapper?: referenceUtils.ContextValueMapperFunc
   }): referenceUtils.ContextFunc => neighborContextGetter({ ...args, getLookUpName: getLookupNameFunc })
   return {
+    flowCondition: async ({ instance, field, elemByElemID, fieldPath }) => {
+      if (fieldPath === undefined) return undefined
+      const path = fieldPath.getFullNameParts()
+      if (path.some(part => part === 'FlowWaitEvent')) {
+        return neighborContextFunc({
+          contextFieldName: 'objectType',
+          levelsUp: 2,
+        })({ instance, field, elemByElemID, fieldPath })
+      }
+      const parentRef = getParents(instance)[0]
+      const parent = isReferenceExpression(parentRef) ? elemByElemID.get(parentRef.elemID.getFullName()) : undefined
+      return parent !== undefined ? apiName(parent) : undefined
+    },
     instanceParent: async ({ instance, elemByElemID }) => {
       const parentRef = getParents(instance)[0]
       const parent = isReferenceExpression(parentRef) ? elemByElemID.get(parentRef.elemID.getFullName()) : undefined

@@ -14,8 +14,9 @@ import {
   toChange,
   ChangeValidator,
 } from '@salto-io/adapter-api'
+import { DescribeSObjectResult } from '@salto-io/jsforce'
 import changeValidatorCreator from '../../src/change_validators/custom_object_instances'
-import { FIELD_ANNOTATIONS, METADATA_TYPE, CUSTOM_OBJECT, API_NAME } from '../../src/constants'
+import { METADATA_TYPE, CUSTOM_OBJECT, API_NAME } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
 import mockClient from '../client'
@@ -29,19 +30,9 @@ describe('custom object instances change validator', () => {
     fields: {
       nonUpdateable: {
         refType: BuiltinTypes.STRING,
-        annotations: {
-          [FIELD_ANNOTATIONS.UPDATEABLE]: false,
-          [FIELD_ANNOTATIONS.CREATABLE]: true,
-          [FIELD_ANNOTATIONS.QUERYABLE]: true,
-        },
       },
       nonCreatable: {
         refType: BuiltinTypes.STRING,
-        annotations: {
-          [FIELD_ANNOTATIONS.CREATABLE]: false,
-          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          [FIELD_ANNOTATIONS.QUERYABLE]: true,
-        },
       },
     },
     annotations: {
@@ -51,6 +42,28 @@ describe('custom object instances change validator', () => {
   })
   beforeEach(() => {
     client = mockClient().client
+    jest.spyOn(client, 'describeSObjects').mockResolvedValue({
+      result: [
+        {
+          name: 'obj',
+          fields: [
+            {
+              name: 'nonUpdateable',
+              updateable: false,
+              createable: true,
+              queryable: true,
+            },
+            {
+              name: 'nonCreatable',
+              updateable: true,
+              createable: false,
+              queryable: true,
+            },
+          ],
+        } as unknown as DescribeSObjectResult,
+      ],
+      errors: [],
+    })
     customObjectInstancesValidator = changeValidatorCreator(getLookUpName(defaultFilterContext.fetchProfile), client)
   })
 

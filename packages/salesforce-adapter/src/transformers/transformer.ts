@@ -46,7 +46,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
-import { naclCase, pathNaclCase, transformElement, TransformFunc, TransformFuncSync } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase, TransformFunc, TransformFuncSync, transformValues } from '@salto-io/adapter-utils'
 
 import { logger } from '@salto-io/logging'
 import { SalesforceRecord } from '../client/types'
@@ -1426,13 +1426,20 @@ export const toDeployableInstance = async (element: InstanceElement): Promise<In
     }
     return value
   }
-  return transformElement({
-    element,
-    transformFunc: removeNonDeployableValues,
-    strict: false,
-    allowEmptyArrays: true,
-    allowExistingEmptyObjects: true,
-  })
+  // Annotations are not deployed.
+  return new InstanceElement(
+    element.elemID.name,
+    element.refType,
+    await transformValues({
+      values: element.value,
+      type: await element.getType(),
+      transformFunc: removeNonDeployableValues,
+      strict: false,
+      pathID: element.elemID,
+      allowEmptyArrays: true,
+      allowExistingEmptyObjects: true,
+    }),
+  )
 }
 
 export const toMetadataInfo = async (instance: InstanceElement): Promise<MetadataInfo> => ({

@@ -13,39 +13,51 @@ import {
   InstanceElement,
   ChangeError,
   isAdditionChange,
-  Change,
+  ModificationChange,
 } from '@salto-io/adapter-api'
-import { Field } from '@salto-io/jsforce'
-import { GetLookupNameFunc, inspectValue } from '@salto-io/adapter-utils'
+import { DescribeSObjectResult, Field } from '@salto-io/jsforce'
+import { detailedCompare, GetLookupNameFunc, inspectValue } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 
 import SalesforceClient from '../client/client'
 import { apiNameSync, isInstanceOfCustomObjectChangeSync } from '../filters/utils'
+import { resolveSalesforceChanges } from '../transformers/reference_mapping'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
 const log = logger(module)
 
-const getDescribeFieldsByType = async ({
-  customObjectInstancesChanges,
+const describeType = async ({
+  typeName,
   client,
 }: {
-  customObjectInstancesChanges: Change<InstanceElement>[]
+  typeName: string
+  client: SalesforceClient
+}): Promise<DescribeSObjectResult | undefined> => {
+  try {
+    return (await client.describeSObjects([typeName])).result[0]
+  } catch (e) {
+    log.error('failed to describe type %s: %s', typeName, inspectValue(e))
+    return undefined
+  }
+}
+
+const getDescribeFieldsByType = async ({
+  typesToDescribe,
+  client,
+}: {
+  typesToDescribe: string[]
   client: SalesforceClient
 }): Promise<Record<string, Record<string, Field>>> => {
-  const typesToDescribe = _.uniq(
-    customObjectInstancesChanges
-      .map(getChangeData)
-      .map(instance => apiNameSync(instance.getTypeSync()))
-      .filter(isDefined),
-  )
-  const { result } = await client.describeSObjects(typesToDescribe)
   const describeFieldsByType: Record<string, Record<string, Field>> = {}
-  result.forEach(typeDescribe => {
-    describeFieldsByType[typeDescribe.name] = _.keyBy(typeDescribe.fields, field => field.name)
-  })
+  await Promise.all(
+    typesToDescribe.map(async typeToDescribe => {
+      const describeResult = await describeType({ typeName: typeToDescribe, client })
+      describeFieldsByType[typeToDescribe] = describeResult ? _.keyBy(describeResult.fields, field => field.name) : {}
+    }),
+  )
   log.trace('describeFieldsByType: %s', inspectValue(describeFieldsByType, { maxArrayLength: null }))
   return describeFieldsByType
 }
@@ -53,25 +65,23 @@ const getDescribeFieldsByType = async ({
 const getUpdateErrorsForNonUpdateableFields = async (
   before: InstanceElement,
   after: InstanceElement,
-  getLookupNameFunc: GetLookupNameFunc,
   describeFieldsByType: Record<string, Record<string, Field>>,
 ): Promise<ReadonlyArray<ChangeError>> => {
   const describeFields = describeFieldsByType[apiNameSync(after.getTypeSync()) ?? ''] ?? {}
-  const beforeResolved = await resolveValues(before, getLookupNameFunc)
-  const afterResolved = await resolveValues(after, getLookupNameFunc)
-  return Object.values((await afterResolved.getType()).fields)
-    .filter(field => !describeFields[field.name] || !describeFields[field.name].updateable)
-    .map(field => {
-      if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
-        return {
-          elemID: beforeResolved.elemID,
+  const detailedChanges = detailedCompare(before, after, { createFieldChanges: true })
+  return detailedChanges
+    .filter(
+      detailedChange => !describeFields[detailedChange.id.name] || !describeFields[detailedChange.id.name].updateable,
+    )
+    .map(
+      detailedChange =>
+        ({
+          elemID: before.elemID,
           severity: 'Warning',
           message: 'Cannot modify the value of a non-updatable field',
-          detailedMessage: `Cannot modify ${field.name}’s value of ${beforeResolved.elemID.getFullName()} because its field is defined as non-updateable.`,
-        } as ChangeError
-      }
-      return undefined
-    })
+          detailedMessage: `Cannot modify ${detailedChange.id.name}’s value of ${before.elemID.getFullName()} because its field is defined as non-updateable.`,
+        }) as ChangeError,
+    )
     .filter(values.isDefined)
 }
 
@@ -107,16 +117,21 @@ const changeValidator =
     if (customObjectInstancesChanges.length === 0) {
       return []
     }
-    const describeFieldsByType = await getDescribeFieldsByType({ customObjectInstancesChanges, client })
-    const updateChangeErrors = await awu(customObjectInstancesChanges)
-      .filter(isModificationChange)
+    const typesToDescribe = _.uniq(
+      customObjectInstancesChanges
+        .map(getChangeData)
+        .map(instance => apiNameSync(instance.getTypeSync()))
+        .filter(isDefined),
+    )
+    const describeFieldsByType = await getDescribeFieldsByType({ typesToDescribe, client })
+    const updateChangeErrors = await awu(
+      (await resolveSalesforceChanges(
+        customObjectInstancesChanges.filter(isModificationChange),
+        getLookupNameFunc,
+      )) as ModificationChange<InstanceElement>[],
+    )
       .flatMap(change =>
-        getUpdateErrorsForNonUpdateableFields(
-          change.data.before,
-          change.data.after,
-          getLookupNameFunc,
-          describeFieldsByType,
-        ),
+        getUpdateErrorsForNonUpdateableFields(change.data.before, change.data.after, describeFieldsByType),
       )
       .toArray()
 

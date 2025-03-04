@@ -16,15 +16,17 @@ import {
   Change,
 } from '@salto-io/adapter-api'
 import { Field } from '@salto-io/jsforce'
-import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, inspectValue } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 
 import SalesforceClient from '../client/client'
 import { apiNameSync, isInstanceOfCustomObjectChangeSync } from '../filters/utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
+const log = logger(module)
 
 const getDescribeFieldsByType = async ({
   customObjectInstancesChanges,
@@ -44,6 +46,7 @@ const getDescribeFieldsByType = async ({
   result.forEach(typeDescribe => {
     describeFieldsByType[typeDescribe.name] = _.keyBy(typeDescribe.fields, field => field.name)
   })
+  log.trace('describeFieldsByType: %s', inspectValue(describeFieldsByType, { maxArrayLength: null }))
   return describeFieldsByType
 }
 
@@ -57,7 +60,7 @@ const getUpdateErrorsForNonUpdateableFields = async (
   const beforeResolved = await resolveValues(before, getLookupNameFunc)
   const afterResolved = await resolveValues(after, getLookupNameFunc)
   return Object.values((await afterResolved.getType()).fields)
-    .filter(field => describeFields[field.name]?.updateable === false)
+    .filter(field => !describeFields[field.name] || !describeFields[field.name].updateable)
     .map(field => {
       if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
         return {
@@ -81,7 +84,7 @@ const getCreateErrorsForNonCreatableFields = async (
   const describeFields = describeFieldsByType[apiNameSync(objectType) ?? ''] ?? {}
   const afterResolved = await resolveValues(after, getLookupNameFunc)
   return awu(Object.values(objectType.fields))
-    .filter(field => describeFields[field.name]?.createable === false)
+    .filter(field => !describeFields[field.name] || !describeFields[field.name].createable)
     .map(field => {
       if (!_.isUndefined(afterResolved.value[field.name])) {
         return {

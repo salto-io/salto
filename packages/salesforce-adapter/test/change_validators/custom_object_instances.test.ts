@@ -18,9 +18,12 @@ import changeValidatorCreator from '../../src/change_validators/custom_object_in
 import { FIELD_ANNOTATIONS, METADATA_TYPE, CUSTOM_OBJECT, API_NAME } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
+import mockClient from '../client'
+import { SalesforceClient } from '../../index'
 
 describe('custom object instances change validator', () => {
   let customObjectInstancesValidator: ChangeValidator
+  let client: SalesforceClient
   const obj = new ObjectType({
     elemID: new ElemID('salesforce', 'obj'),
     fields: {
@@ -47,7 +50,8 @@ describe('custom object instances change validator', () => {
     },
   })
   beforeEach(() => {
-    customObjectInstancesValidator = changeValidatorCreator(getLookUpName(defaultFilterContext.fetchProfile))
+    client = mockClient().client
+    customObjectInstancesValidator = changeValidatorCreator(getLookUpName(defaultFilterContext.fetchProfile), client)
   })
 
   describe('onAdd of instance of customObject', () => {

@@ -13,25 +13,51 @@ import {
   InstanceElement,
   ChangeError,
   isAdditionChange,
+  Change,
 } from '@salto-io/adapter-api'
+import { Field } from '@salto-io/jsforce'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-components'
 
-import { FIELD_ANNOTATIONS } from '../constants'
-import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
+import SalesforceClient from '../client/client'
+import { apiNameSync, isInstanceOfCustomObjectChangeSync } from '../filters/utils'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
+
+const getDescribeFieldsByType = async ({
+  customObjectInstancesChanges,
+  client,
+}: {
+  customObjectInstancesChanges: Change<InstanceElement>[]
+  client: SalesforceClient
+}): Promise<Record<string, Record<string, Field>>> => {
+  const typesToDescribe = _.uniq(
+    customObjectInstancesChanges
+      .map(getChangeData)
+      .map(instance => apiNameSync(instance.getTypeSync()))
+      .filter(isDefined),
+  )
+  const { result } = await client.describeSObjects(typesToDescribe)
+  const describeFieldsByType: Record<string, Record<string, Field>> = {}
+  result.forEach(typeDescribe => {
+    describeFieldsByType[typeDescribe.name] = _.keyBy(typeDescribe.fields, field => field.name)
+  })
+  return describeFieldsByType
+}
 
 const getUpdateErrorsForNonUpdateableFields = async (
   before: InstanceElement,
   after: InstanceElement,
   getLookupNameFunc: GetLookupNameFunc,
+  describeFieldsByType: Record<string, Record<string, Field>>,
 ): Promise<ReadonlyArray<ChangeError>> => {
+  const describeFields = describeFieldsByType[apiNameSync(after.getTypeSync()) ?? ''] ?? {}
   const beforeResolved = await resolveValues(before, getLookupNameFunc)
   const afterResolved = await resolveValues(after, getLookupNameFunc)
   return Object.values((await afterResolved.getType()).fields)
-    .filter(field => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
+    .filter(field => describeFields[field.name]?.updateable === false)
     .map(field => {
       if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
         return {
@@ -49,10 +75,13 @@ const getUpdateErrorsForNonUpdateableFields = async (
 const getCreateErrorsForNonCreatableFields = async (
   after: InstanceElement,
   getLookupNameFunc: GetLookupNameFunc,
+  describeFieldsByType: Record<string, Record<string, Field>>,
 ): Promise<ReadonlyArray<ChangeError>> => {
+  const objectType = after.getTypeSync()
+  const describeFields = describeFieldsByType[apiNameSync(objectType) ?? ''] ?? {}
   const afterResolved = await resolveValues(after, getLookupNameFunc)
-  return awu(Object.values((await afterResolved.getType()).fields))
-    .filter(field => !field.annotations[FIELD_ANNOTATIONS.CREATABLE])
+  return awu(Object.values(objectType.fields))
+    .filter(field => describeFields[field.name]?.createable === false)
     .map(field => {
       if (!_.isUndefined(afterResolved.value[field.name])) {
         return {
@@ -69,25 +98,29 @@ const getCreateErrorsForNonCreatableFields = async (
 }
 
 const changeValidator =
-  (getLookupNameFunc: GetLookupNameFunc): ChangeValidator =>
+  (getLookupNameFunc: GetLookupNameFunc, client: SalesforceClient): ChangeValidator =>
   async changes => {
-    const updateChangeErrors = await awu(changes)
-      .filter(isInstanceOfCustomObjectChange)
+    const customObjectInstancesChanges = changes.filter(isInstanceOfCustomObjectChangeSync)
+    if (customObjectInstancesChanges.length === 0) {
+      return []
+    }
+    const describeFieldsByType = await getDescribeFieldsByType({ customObjectInstancesChanges, client })
+    const updateChangeErrors = await awu(customObjectInstancesChanges)
       .filter(isModificationChange)
       .flatMap(change =>
         getUpdateErrorsForNonUpdateableFields(
-          change.data.before as InstanceElement,
-          change.data.after as InstanceElement,
+          change.data.before,
+          change.data.after,
           getLookupNameFunc,
+          describeFieldsByType,
         ),
       )
       .toArray()
 
-    const createChangeErrors = await awu(changes)
-      .filter(isInstanceOfCustomObjectChange)
+    const createChangeErrors = await awu(customObjectInstancesChanges)
       .filter(isAdditionChange)
       .flatMap(change =>
-        getCreateErrorsForNonCreatableFields(getChangeData(change) as InstanceElement, getLookupNameFunc),
+        getCreateErrorsForNonCreatableFields(getChangeData(change), getLookupNameFunc, describeFieldsByType),
       )
       .toArray()
 

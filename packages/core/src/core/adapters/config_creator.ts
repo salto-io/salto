@@ -12,25 +12,32 @@ import { validateElement } from '@salto-io/workspace'
 
 const log = logger(module)
 
-export const getAdapterConfigOptionsType = (
-  adapterName: string,
-  adapterCreators: Record<string, Adapter>,
-  adapterOptionsTypeContext?: Values,
-): ObjectType | undefined => {
+export const getAdapterConfigOptionsType = ({
+  adapterName,
+  adapterCreators,
+  configContext,
+}: {
+  adapterName: string
+  adapterCreators: Record<string, Adapter>
+  configContext?: Values
+}): ObjectType | undefined => {
   const configContextType = adapterCreators[adapterName]?.configCreator?.configContextType
-  if (!configContextType || !adapterOptionsTypeContext) {
-    const getOptionsType = adapterCreators[adapterName]?.configCreator?.getOptionsType
-    return getOptionsType ? getOptionsType() : undefined
+  if (configContextType === undefined || configContext === undefined) {
+    return adapterCreators[adapterName]?.configCreator?.getOptionsType?.()
   }
 
-  const adapterContextInstance = new InstanceElement(ElemID.CONFIG_NAME, configContextType, adapterOptionsTypeContext)
+  const adapterContextInstance = new InstanceElement(ElemID.CONFIG_NAME, configContextType, configContext)
   const validationErrors = validateElement(adapterContextInstance)
   if (validationErrors.length > 0) {
-    log.warn(
-      `Invalid adapterOptionsTypeContext for adapter: ${adapterName}. ` +
-        `Expected structure: ${configContextType.fields}, `,
-    )
-    return undefined
+    validationErrors.forEach(error => {
+      log.warn(
+        'Invalid configContext for adapter: %s. Error message: %s, Element ID: %o',
+        adapterName,
+        error.message,
+        error.elemID.getFullName(),
+      )
+    })
   }
+
   return adapterCreators[adapterName]?.configCreator?.getOptionsType?.(adapterContextInstance)
 }

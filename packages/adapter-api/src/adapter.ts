@@ -202,7 +202,7 @@ export type AccountInfo = {
 
 export type ConfigCreator = {
   configContextType?: ObjectType
-  getOptionsType?: (adapterOptionsTypeContext?: InstanceElement) => ObjectType
+  getOptionsType?: (configContext?: InstanceElement) => ObjectType
   getConfig: (options?: InstanceElement) => Promise<InstanceElement>
 }
 

@@ -187,7 +187,6 @@ describe('api.ts', () => {
     ...mockAdapter,
     configCreator: {
       getConfig: jest.fn(),
-      optionsType: mockConfigOptionsObjectType,
       getOptionsType: () => mockConfigOptionsObjectType,
     },
   }

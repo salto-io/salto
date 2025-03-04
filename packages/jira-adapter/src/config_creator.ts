@@ -29,9 +29,11 @@ type ConfigOptionsType = {
   enableScriptRunnerAddon?: boolean
   enableJSM?: boolean
 }
+
 type ConfigContextType = {
   isDataCenter: boolean
 }
+
 type DataCenterConfigOptionsType = Omit<ConfigOptionsType, 'enableJSM'>
 
 export const configContextType = createMatchingObjectType<ConfigContextType>({
@@ -55,29 +57,17 @@ export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   },
 })
 
-export const getOptionsType = (adapterOptionsTypeContext?: InstanceElement): ObjectType => {
-  if (adapterOptionsTypeContext?.value.isDataCenter) {
-    return createMatchingObjectType<DataCenterConfigOptionsType>({
-      elemID: optionsElemId,
-      fields: {
-        enableScriptRunnerAddon: {
-          refType: BuiltinTypes.BOOLEAN,
-        },
-      },
-    })
-  }
-  return createMatchingObjectType<ConfigOptionsType>({
-    elemID: optionsElemId,
-    fields: {
-      enableScriptRunnerAddon: {
-        refType: BuiltinTypes.BOOLEAN,
-      },
-      enableJSM: {
-        refType: BuiltinTypes.BOOLEAN,
-      },
+const jiraDataCenterOptionsType = createMatchingObjectType<DataCenterConfigOptionsType>({
+  elemID: optionsElemId,
+  fields: {
+    enableScriptRunnerAddon: {
+      refType: BuiltinTypes.BOOLEAN,
     },
-  })
-}
+  },
+})
+
+export const getOptionsType = (configContext?: InstanceElement): ObjectType =>
+  configContext?.value.isDataCenter ? jiraDataCenterOptionsType : optionsType
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)

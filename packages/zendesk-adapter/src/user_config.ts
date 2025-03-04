@@ -50,8 +50,6 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
   convertJsonIdsToReferences?: boolean
   omitInactive?: OmitInactiveConfig
   omitTicketStatusTicketField?: boolean
-  useNewInfra?: boolean
-  useGuideNewInfra?: boolean
   translationBodyAsStaticFile?: boolean
   fetchBotBuilder?: boolean
 }

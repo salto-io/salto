@@ -10,14 +10,13 @@ import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/add_recurse_into_field'
 import { ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
-import { DEFAULT_CONFIG, FETCH_CONFIG, ZendeskConfig } from '../../src/config'
+import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 
 describe('add empty recurseInto fields in new infra', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   let client: ZendeskClient
-  let oldInfraConfig: ZendeskConfig
 
   const businessHoursScheduleTypeName = 'business_hours_schedule'
   const routingAttributeTypeName = 'routing_attribute'
@@ -31,13 +30,6 @@ describe('add empty recurseInto fields in new infra', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    oldInfraConfig = {
-      ...DEFAULT_CONFIG,
-      fetch: {
-        ...DEFAULT_CONFIG[FETCH_CONFIG],
-        useNewInfra: false,
-      },
-    }
   })
 
   describe('onFetch', () => {
@@ -55,23 +47,6 @@ describe('add empty recurseInto fields in new infra', () => {
       await filter.onFetch(elements)
       expect(businessHoursScheduleInstance.value.holidays).toEqual([])
       expect(routingAttributeInstance.value.values).toEqual([])
-    })
-    it('should not add fields when using the old infra', async () => {
-      filter = filterCreator(createFilterCreatorParams({ client, config: oldInfraConfig })) as FilterType
-
-      const businessHoursScheduleInstance = new InstanceElement('instance1', businessHoursScheduleType, {
-        name: 'business hours schedule',
-      })
-      const routingAttributeInstance = new InstanceElement('instance2', routingAttributeType, {
-        name: 'routing attribute name',
-      })
-      const clonedBusinessHoursScheduleInstance = businessHoursScheduleInstance.clone()
-      const clonedRoutingAttributeInstance = routingAttributeInstance.clone()
-
-      const elements = [businessHoursScheduleInstance, routingAttributeInstance]
-      await filter.onFetch(elements)
-      expect(businessHoursScheduleInstance).toEqual(clonedBusinessHoursScheduleInstance)
-      expect(routingAttributeInstance).toEqual(clonedRoutingAttributeInstance)
     })
     it('should not add new fields when object types do not align', async () => {
       filter = filterCreator(createFilterCreatorParams({ client, config: DEFAULT_CONFIG })) as FilterType

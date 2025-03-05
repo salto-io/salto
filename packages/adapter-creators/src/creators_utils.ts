@@ -11,5 +11,6 @@ import adapterCreators from './creators'
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)
 
+// TODO: After SALTO-7473 is done, this function should be removed
 export const getAdapterConfigOptionsType = (adapterName: string): ObjectType | undefined =>
-  adapterCreators[adapterName]?.configCreator?.optionsType
+  adapterCreators[adapterName]?.configCreator?.getOptionsType?.()

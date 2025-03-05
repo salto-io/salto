@@ -837,7 +837,7 @@ const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] 
 
 const validateVariable = (element: Variable): ValidationError[] => validateVariableValue(element.elemID, element.value)
 
-const validateElement = (element: Element): ValidationError[] => {
+export const validateElement = (element: Element): ValidationError[] => {
   if (isInstanceElement(element)) {
     return validateInstanceElements(element)
   }

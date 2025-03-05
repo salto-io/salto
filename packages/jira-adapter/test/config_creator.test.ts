@@ -27,6 +27,18 @@ describe('config creator', () => {
       getConfig,
     })
   })
+  it('getOptionsType should return jiraDataCenterOptionsType when isDataCenter is true', async () => {
+    const configContext = new InstanceElement('instance', configContextType, { isDataCenter: true })
+    options.value = getOptionsType(configContext)
+    expect(options.value.fields.enableScriptRunnerAddon).toBeDefined()
+    expect(options.value.fields.enableJSM).toBeUndefined()
+  })
+  it('should return default optionsType when isDataCenter is false (jira Cloud)', async () => {
+    const configContext = new InstanceElement('instance', configContextType, { isDataCenter: false })
+    options.value = getOptionsType(configContext)
+    expect(options.value.fields.enableScriptRunnerAddon).toBeDefined()
+    expect(options.value.fields.enableJSM).toBeDefined()
+  })
   it('get config should return default config', async () => {
     const config = await getConfig()
     expect(config).toEqual(await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType))

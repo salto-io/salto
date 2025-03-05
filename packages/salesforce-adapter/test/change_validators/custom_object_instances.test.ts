@@ -13,6 +13,7 @@ import {
   ChangeError,
   toChange,
   ChangeValidator,
+  Change,
 } from '@salto-io/adapter-api'
 import { DescribeSObjectResult } from '@salto-io/jsforce'
 import changeValidatorCreator from '../../src/change_validators/custom_object_instances'
@@ -46,6 +47,8 @@ describe('custom object instances change validator', () => {
       result: [
         {
           name: 'obj',
+          createable: true,
+          updateable: true,
           fields: [
             {
               name: 'nonUpdateable',
@@ -113,6 +116,87 @@ describe('custom object instances change validator', () => {
       afterInstance.value.nonCreatable = 'IamTryingToUpdateBeforeICan'
       changeErrors = await customObjectInstancesValidator([toChange({ before, after })])
       expect(changeErrors).toHaveLength(0)
+    })
+  })
+  describe('when the whole record is non-creatable or non-updateable', () => {
+    let addedInstance: InstanceElement
+    let modifiedInstance: InstanceElement
+    let changes: Change[]
+
+    let changeErrors: readonly ChangeError[]
+
+    beforeEach(async () => {
+      addedInstance = new InstanceElement('added', obj, {
+        nonUpdateable: 'value',
+        nonCreatable: 'value',
+      })
+      modifiedInstance = new InstanceElement('added', obj, {
+        nonUpdateable: 'value',
+        nonCreatable: 'value',
+      })
+      changes = [toChange({ after: addedInstance }), toChange({ before: modifiedInstance, after: modifiedInstance })]
+    })
+
+    describe('when describe fails on the type', () => {
+      beforeEach(async () => {
+        jest.spyOn(client, 'describeSObjects').mockRejectedValue(new Error(''))
+        changeErrors = await customObjectInstancesValidator(changes)
+      })
+      it('should create change errors for both modification and addition of the instance', () => {
+        expect(changeErrors).toHaveLength(2)
+        expect(changeErrors).toSatisfyAny(
+          (e: ChangeError) => e.elemID.isEqual(addedInstance.elemID) && e.message === 'Cannot create records of type',
+        )
+        expect(changeErrors).toSatisfyAny(
+          (e: ChangeError) =>
+            e.elemID.isEqual(modifiedInstance.elemID) && e.message === 'Cannot modify records of type',
+        )
+      })
+    })
+    describe('when creatable is false', () => {
+      beforeEach(async () => {
+        jest.spyOn(client, 'describeSObjects').mockResolvedValue({
+          result: [
+            {
+              name: 'obj',
+              createable: false,
+              updateable: true,
+              fields: [],
+            } as unknown as DescribeSObjectResult,
+          ],
+          errors: [],
+        })
+        changeErrors = await customObjectInstancesValidator(changes)
+      })
+      it('should create change error for the added instance', () => {
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0]).toSatisfy(
+          (e: ChangeError) => e.elemID.isEqual(addedInstance.elemID) && e.message === 'Cannot create records of type',
+        )
+      })
+    })
+    describe('when updateable is false', () => {
+      beforeEach(async () => {
+        jest.spyOn(client, 'describeSObjects').mockResolvedValue({
+          result: [
+            {
+              name: 'obj',
+              createable: true,
+              updateable: false,
+              fields: [],
+            } as unknown as DescribeSObjectResult,
+          ],
+          errors: [],
+        })
+        changeErrors = await customObjectInstancesValidator(changes)
+      })
+      it('should create change error for the modified instance', () => {
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0]).toSatisfy(
+          (e: ChangeError) =>
+            e.elemID.isEqual(modifiedInstance.elemID) && e.message === 'Cannot modify records of type',
+        )
+      })
     })
   })
 })

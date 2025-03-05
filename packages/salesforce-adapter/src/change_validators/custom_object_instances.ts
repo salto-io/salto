@@ -61,8 +61,8 @@ const getUpdateErrorsForNonUpdateableFields = async (
       {
         elemID: before.elemID,
         severity: 'Warning',
-        message: 'Cannot update records of type',
-        detailedMessage: `The deploying user lacks the permission to update records of type ${typeName}`,
+        message: 'Cannot modify records of type',
+        detailedMessage: `The deploying user lacks the permission to modify records of type ${typeName}`,
       },
     ]
   }

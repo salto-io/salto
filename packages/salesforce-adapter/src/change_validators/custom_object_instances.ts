@@ -15,8 +15,8 @@ import {
   isAdditionChange,
   ModificationChange,
 } from '@salto-io/adapter-api'
-import { DescribeSObjectResult, Field } from '@salto-io/jsforce'
-import { detailedCompare, GetLookupNameFunc, inspectValue } from '@salto-io/adapter-utils'
+import { DescribeSObjectResult } from '@salto-io/jsforce'
+import { detailedCompare, GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -29,49 +29,52 @@ const { awu } = collections.asynciterable
 const { isDefined } = values
 const log = logger(module)
 
-const describeType = async ({
-  typeName,
-  client,
-}: {
-  typeName: string
-  client: SalesforceClient
-}): Promise<DescribeSObjectResult | undefined> => {
-  try {
-    return (await client.describeSObjects([typeName])).result[0]
-  } catch (e) {
-    log.error('failed to describe type %s: %s', typeName, inspectValue(e))
-    return undefined
-  }
-}
-
-const getDescribeFieldsByType = async ({
+const describeTypes = async ({
   typesToDescribe,
   client,
 }: {
   typesToDescribe: string[]
   client: SalesforceClient
-}): Promise<Record<string, Record<string, Field>>> => {
-  const describeFieldsByType: Record<string, Record<string, Field>> = {}
+}): Promise<Map<string, DescribeSObjectResult>> => {
+  const describeResultByType: Map<string, DescribeSObjectResult> = new Map()
   await Promise.all(
     typesToDescribe.map(async typeToDescribe => {
-      const describeResult = await describeType({ typeName: typeToDescribe, client })
-      describeFieldsByType[typeToDescribe] = describeResult ? _.keyBy(describeResult.fields, field => field.name) : {}
+      try {
+        describeResultByType.set(typeToDescribe, (await client.describeSObjects([typeToDescribe])).result[0])
+      } catch (e) {
+        log.error('Failed to describe type %s: %s', typeToDescribe, e)
+      }
     }),
   )
-  log.trace('describeFieldsByType: %s', inspectValue(describeFieldsByType, { maxArrayLength: null }))
-  return describeFieldsByType
+  return describeResultByType
 }
 
 const getUpdateErrorsForNonUpdateableFields = async (
   before: InstanceElement,
   after: InstanceElement,
-  describeFieldsByType: Record<string, Record<string, Field>>,
+  describeResultByType: Map<string, DescribeSObjectResult>,
 ): Promise<ReadonlyArray<ChangeError>> => {
-  const describeFields = describeFieldsByType[apiNameSync(after.getTypeSync()) ?? ''] ?? {}
+  const typeName = apiNameSync(before.getTypeSync()) ?? ''
+  const describeResult = describeResultByType.get(typeName)
+  if (!describeResult || !describeResult.updateable) {
+    return [
+      {
+        elemID: before.elemID,
+        severity: 'Warning',
+        message: 'Cannot update records of type',
+        detailedMessage: `The deploying user lacks the permission to update records of type ${typeName}`,
+      },
+    ]
+  }
+  const fieldsDescribeByName = _.keyBy(describeResult.fields, field => field.name)
+  if (Object.keys(fieldsDescribeByName).length === 0) {
+    return []
+  }
   const detailedChanges = detailedCompare(before, after, { createFieldChanges: true })
   return detailedChanges
     .filter(
-      detailedChange => !describeFields[detailedChange.id.name] || !describeFields[detailedChange.id.name].updateable,
+      detailedChange =>
+        !fieldsDescribeByName[detailedChange.id.name] || !fieldsDescribeByName[detailedChange.id.name].updateable,
     )
     .map(
       detailedChange =>
@@ -88,13 +91,28 @@ const getUpdateErrorsForNonUpdateableFields = async (
 const getCreateErrorsForNonCreatableFields = async (
   after: InstanceElement,
   getLookupNameFunc: GetLookupNameFunc,
-  describeFieldsByType: Record<string, Record<string, Field>>,
+  describeResultByType: Map<string, DescribeSObjectResult>,
 ): Promise<ReadonlyArray<ChangeError>> => {
   const objectType = after.getTypeSync()
-  const describeFields = describeFieldsByType[apiNameSync(objectType) ?? ''] ?? {}
+  const typeName = apiNameSync(objectType) ?? ''
+  const describeResult = describeResultByType.get(typeName)
+  if (!describeResult || !describeResult.createable) {
+    return [
+      {
+        elemID: after.elemID,
+        severity: 'Warning',
+        message: 'Cannot create records of type',
+        detailedMessage: `The deploying user lacks the permission to create records of type ${typeName}`,
+      },
+    ]
+  }
+  const fieldsDescribeByName = _.keyBy(describeResult.fields, field => field.name)
+  if (Object.keys(fieldsDescribeByName).length === 0) {
+    return []
+  }
   const afterResolved = await resolveValues(after, getLookupNameFunc)
   return awu(Object.values(objectType.fields))
-    .filter(field => !describeFields[field.name] || !describeFields[field.name].createable)
+    .filter(field => !fieldsDescribeByName[field.name] || !fieldsDescribeByName[field.name].createable)
     .map(field => {
       if (!_.isUndefined(afterResolved.value[field.name])) {
         return {
@@ -123,7 +141,7 @@ const changeValidator =
         .map(instance => apiNameSync(instance.getTypeSync()))
         .filter(isDefined),
     )
-    const describeFieldsByType = await getDescribeFieldsByType({ typesToDescribe, client })
+    const describeResultByType = await describeTypes({ typesToDescribe, client })
     const updateChangeErrors = await awu(
       (await resolveSalesforceChanges(
         customObjectInstancesChanges.filter(isModificationChange),
@@ -131,14 +149,14 @@ const changeValidator =
       )) as ModificationChange<InstanceElement>[],
     )
       .flatMap(change =>
-        getUpdateErrorsForNonUpdateableFields(change.data.before, change.data.after, describeFieldsByType),
+        getUpdateErrorsForNonUpdateableFields(change.data.before, change.data.after, describeResultByType),
       )
       .toArray()
 
     const createChangeErrors = await awu(customObjectInstancesChanges)
       .filter(isAdditionChange)
       .flatMap(change =>
-        getCreateErrorsForNonCreatableFields(getChangeData(change), getLookupNameFunc, describeFieldsByType),
+        getCreateErrorsForNonCreatableFields(getChangeData(change), getLookupNameFunc, describeResultByType),
       )
       .toArray()
 

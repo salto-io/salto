@@ -138,41 +138,47 @@ const getMergedDefaultAdapterConfig = async (
   return defaultConfig && merger.mergeSingleElement(defaultConfig)
 }
 
-const createElemIDReplacedElementsSource = (
-  elementsSource: ReadOnlyElementsSource,
-  account: string,
-  adapter: string,
-): ReadOnlyElementsSource =>
-  account === adapter
-    ? elementsSource
-    : {
-        getAll: async () =>
-          awu(await elementsSource.getAll()).map(async element => {
-            const ret = element.clone()
-            await updateElementsWithAlternativeAccount([ret], adapter, account, elementsSource)
-            return ret
-          }),
-        get: async id => {
-          const element = (await elementsSource.get(createAdapterReplacedID(id, account)))?.clone()
-          if (element) {
-            await updateElementsWithAlternativeAccount([element], adapter, account, elementsSource)
-          }
-          return element
-        },
-        list: async () => awu(await elementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
-        has: async id => {
-          const transformedId = createAdapterReplacedID(id, account)
-          return elementsSource.has(transformedId)
-        },
-      }
+export const createAdapterElementsSource = ({
+  elementsSource,
+  account,
+  adapter,
+}: {
+  elementsSource: ReadOnlyElementsSource
+  account: string
+  adapter: string
+}): ReadOnlyElementsSource => {
+  const isRelevantID = (elemID: ElemID): boolean => elemID.adapter === account || elemID.adapter === GLOBAL_ADAPTER
 
-const filterElementsSource = (elementsSource: ReadOnlyElementsSource, adapterName: string): ReadOnlyElementsSource => {
-  const isRelevantID = (elemID: ElemID): boolean => elemID.adapter === adapterName || elemID.adapter === GLOBAL_ADAPTER
-  return {
+  const filteredElementsSource: ReadOnlyElementsSource = {
     getAll: async () => awu(await elementsSource.getAll()).filter(elem => isRelevantID(elem.elemID)),
     get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
     list: async () => awu(await elementsSource.list()).filter(isRelevantID),
     has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
+  }
+
+  if (account === adapter) {
+    return filteredElementsSource
+  }
+
+  return {
+    getAll: async () =>
+      awu(await filteredElementsSource.getAll()).map(async element => {
+        const ret = element.clone()
+        await updateElementsWithAlternativeAccount([ret], adapter, account, filteredElementsSource)
+        return ret
+      }),
+    get: async id => {
+      const element = (await filteredElementsSource.get(createAdapterReplacedID(id, account)))?.clone()
+      if (element) {
+        await updateElementsWithAlternativeAccount([element], adapter, account, filteredElementsSource)
+      }
+      return element
+    },
+    list: async () => awu(await filteredElementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
+    has: async id => {
+      const transformedId = createAdapterReplacedID(id, account)
+      return filteredElementsSource.has(transformedId)
+    },
   }
 }
 
@@ -258,16 +264,9 @@ export const getAdaptersCreatorConfigs = async (
   Object.fromEntries(
     await Promise.all(
       accounts.map(async account => {
-        const defaultConfig = await getMergedDefaultAdapterConfig(
-          accountToServiceName[account],
-          account,
-          adapterCreators,
-        )
-        const adapterElementSource = createElemIDReplacedElementsSource(
-          filterElementsSource(elementsSource, account),
-          account,
-          accountToServiceName[account],
-        )
+        const adapter = accountToServiceName[account]
+        const defaultConfig = await getMergedDefaultAdapterConfig(adapter, account, adapterCreators)
+        const adapterElementSource = createAdapterElementsSource({ elementsSource, account, adapter })
         // Currently the type resolving element source has an internal cache and therefore we must not
         // use it in deploy where the underlying element source (the one we get as input here) changes
         const elementsSourceForAdapter = resolveTypes

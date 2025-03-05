@@ -64,9 +64,19 @@ export type ProgressReporter = {
   reportProgress: (progress: Progress) => void
 }
 
+export type TargetedFetchType = {
+  group: string
+  name: string
+}
+
+export type TargetedFetchTypeWithPath = TargetedFetchType & {
+  path: string[]
+}
+
 export type FetchOptions = {
   progressReporter: ProgressReporter
   withChangesDetection?: boolean
+  targetedFetchTypes?: TargetedFetchType[]
 }
 
 export type DeployOptions = {
@@ -87,6 +97,7 @@ export type PostFetchOptions = {
   elementsByAccount: Readonly<Record<string, ReadonlyArray<Readonly<Element>>>>
   accountToServiceNameMap?: Record<string, string>
   progressReporter: ProgressReporter
+  targetedFetchTypes?: TargetedFetchType[]
 }
 
 export type DeployAction = {
@@ -278,6 +289,17 @@ export type AdapterFormat = {
   dumpElementsToFolder?: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>
 }
 
+export type GetTargetedFetchTypesFunc = (params: {
+  elementsSource: ReadOnlyElementsSource
+  adapterConfig: InstanceElement
+  getAlias: (elemId: ElemID) => Promise<string | undefined>
+}) => Promise<TargetedFetchTypeWithPath[]>
+
+export type GetElementsTargetedFetchTypesFunc = (params: {
+  elemIds: ElemID[]
+  elementsSource: ReadOnlyElementsSource
+}) => Promise<TargetedFetchType[]>
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountInfo>
@@ -288,6 +310,8 @@ export type Adapter = {
   getAdditionalReferences?: GetAdditionalReferencesFunc
   adapterFormat?: AdapterFormat
   getCustomReferences?: GetCustomReferencesFunc
+  getTargetedFetchTypes?: GetTargetedFetchTypesFunc
+  getElementsTargetedFetchTypes?: GetElementsTargetedFetchTypesFunc
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

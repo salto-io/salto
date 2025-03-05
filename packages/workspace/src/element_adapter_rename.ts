@@ -55,7 +55,7 @@ export const createAdapterReplacedID = (elemID: ElemID, adapter: string): ElemID
       createAdapterReplacedID(ElemID.fromFullName(containerInfo.innerTypeName), adapter),
     )
   }
-  if (elemID.adapter === GLOBAL_ADAPTER || elemID.adapter === ElemID.VARIABLES_NAMESPACE) {
+  if ([GLOBAL_ADAPTER, ElemID.VARIABLES_NAMESPACE, adapter].includes(elemID.adapter)) {
     return elemID
   }
   return ElemID.fromFullNameParts([adapter, ...elemID.getFullNameParts().slice(1)])

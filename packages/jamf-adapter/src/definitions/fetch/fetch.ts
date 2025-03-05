@@ -22,6 +22,7 @@ import {
   OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
   MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
   MAC_APPLICATION_TYPE_NAME,
+  DISK_ENCRYPTION_CONFIGURATION_TYPE_NAME,
 } from '../../constants'
 import * as transforms from './transforms'
 
@@ -54,6 +55,67 @@ const createCustomizations = (
         serviceUrl: {
           baseUrl,
           path: '/view/settings/network-organization/buildings/{id}',
+        },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
+      },
+    },
+  },
+  [`${DISK_ENCRYPTION_CONFIGURATION_TYPE_NAME}_single`]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/JSSResource/diskencryptionconfigurations/id/{id}',
+          client: 'classicApi',
+        },
+        transformation: {
+          root: 'disk_encryption_configuration',
+        },
+      },
+    ],
+  },
+
+  [DISK_ENCRYPTION_CONFIGURATION_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/JSSResource/diskencryptionconfigurations',
+          // TODON need to enter into /JSSResource/diskencryptionconfigurations/id/{id} + see how to point to them
+          client: 'classicApi',
+        },
+        transformation: {
+          root: 'disk_encryption_configurations',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        full: {
+          context: {
+            args: {
+              id: {
+                root: 'id',
+              },
+            },
+          },
+          typeName: `${DISK_ENCRYPTION_CONFIGURATION_TYPE_NAME}_single`,
+        },
+      },
+      mergeAndTransform: {
+        root: 'full',
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: DEFAULT_ID_PARTS },
+        serviceUrl: {
+          baseUrl,
+          path: '/diskEncryptions.html?id={id}',
         },
       },
       fieldCustomizations: {

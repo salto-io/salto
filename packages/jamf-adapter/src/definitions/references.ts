@@ -10,6 +10,7 @@ import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName, O
 import {
   CATEGORY_TYPE_NAME,
   CLASS_TYPE_NAME,
+  DISK_ENCRYPTION_CONFIGURATION_TYPE_NAME,
   MAC_APPLICATION_TYPE_NAME,
   MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
   OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
@@ -29,6 +30,11 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     src: { field: 'categoryId', parentTypes: [PACKAGE_TYPE_NAME, SCRIPT_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: CATEGORY_TYPE_NAME },
+  },
+  {
+    src: { field: 'disk_encryption_configuration_id', parentTypes: ['policy__disk_encryption'] },
+    serializationStrategy: 'id',
+    target: { type: DISK_ENCRYPTION_CONFIGURATION_TYPE_NAME },
   },
   // idAndNameObject must come before id strategy, we need idAndNameObject for resolution
   {

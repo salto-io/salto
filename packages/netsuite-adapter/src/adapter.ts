@@ -379,6 +379,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         extensionsToExclude: this.config.fetch.exclude.fileCabinet.filter(reg => reg.startsWith(EXTENSION_REGEX)),
         maxFilesPerFileCabinetFolder: this.config.client?.maxFilesPerFileCabinetFolder ?? [],
         wrapFolderIdsWithQuotes: this.config.fetch.wrapFolderIdsWithQuotes ?? false,
+        numOfFolderIdsPerFilesQuery: this.config.suiteAppClient?.numOfFolderIdsPerFilesQuery,
       })
       progressReporter.reportProgress({ message: 'Fetching instances' })
       return result

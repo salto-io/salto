@@ -111,6 +111,7 @@ const OPTIONAL_FEATURES = [
   'omitStandardFieldsNonDeployableValues',
   'handleInsufficientAccessRightsOnEntity',
   'shuffleRetrieveInstances',
+  'handleInsufficientAccessRightsOnEntityInRead',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',

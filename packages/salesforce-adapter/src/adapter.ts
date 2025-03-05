@@ -954,6 +954,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       metadataQuery: fetchProfile.metadataQuery,
       maxInstancesPerType: fetchProfile.maxInstancesPerType,
       addNamespacePrefixToFullName: fetchProfile.addNamespacePrefixToFullName,
+      fetchProfile,
     })
     return {
       elements: instances.elements,

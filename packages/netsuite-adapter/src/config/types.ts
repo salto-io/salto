@@ -210,6 +210,7 @@ export type SuiteAppClientConfig = {
   httpTimeoutLimitInMinutes?: number
   wsdlVersion?: WSDLVersion
   additionalSuiteQLTables?: AdditionalSuiteQLTable[]
+  numOfFolderIdsPerFilesQuery?: number
 }
 
 export const SUITEAPP_CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SuiteAppClientConfig> = {
@@ -217,6 +218,7 @@ export const SUITEAPP_CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SuiteAppClientC
   httpTimeoutLimitInMinutes: 'httpTimeoutLimitInMinutes',
   wsdlVersion: 'wsdlVersion',
   additionalSuiteQLTables: 'additionalSuiteQLTables',
+  numOfFolderIdsPerFilesQuery: 'numOfFolderIdsPerFilesQuery',
 }
 
 export type NetsuiteConfig = {
@@ -462,6 +464,9 @@ const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>(
     },
     additionalSuiteQLTables: {
       refType: new ListType(additionalSuiteQLTableType),
+    },
+    numOfFolderIdsPerFilesQuery: {
+      refType: BuiltinTypes.NUMBER,
     },
   },
   annotations: {

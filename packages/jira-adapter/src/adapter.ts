@@ -168,7 +168,7 @@ import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
 import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
-import projectScopeFilter from './filters/project_scope'
+import projectsScopeFilter from './filters/projects_scope'
 import assetsInstancesDeploymentFilter from './filters/assets/assets_instances_deployment'
 import deployAttributesFilter from './filters/assets/attribute_deploy_filter'
 import objectSchemaDeployFilter from './filters/assets/object_schema_deployment'
@@ -366,7 +366,7 @@ const DEFAULT_FILTERS = [
   deployAttributesFilter,
   objectSchemaDeployFilter, // Must run before deployJsmTypesFilter
   deployJsmTypesFilter,
-  projectScopeFilter,
+  projectsScopeFilter,
   hideTypesFilter, // Must run after defaultAttributesFilter and assetsObjectTypeOrderFilter, which also create types.
   defaultInstancesDeployFilter, // Must be last
 ]

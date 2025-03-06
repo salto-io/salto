@@ -1773,12 +1773,8 @@ const getLookUpNameImpl = ({
     }
     const definitions = await resolverFinder(args.field, args.element)
     const filteredDefinitions = definitions.filter(def => {
-      if (def.target === undefined) {
-        log.debug('could not determine target for field %o', def)
-        return true
-      }
-      if (!isElement(args.ref.value)) {
-        log.debug('reference value is not an element %0', args.ref)
+      if (def.target === undefined || def.target.type === undefined || !isElement(args.ref.value)) {
+        log.debug('could not filter serialization strategies by target type for field %o', def)
         return true
       }
       if (def.target.type === CUSTOM_FIELD) {

@@ -1601,6 +1601,7 @@ describe('transformer', () => {
   })
   describe('getLookUpName', () => {
     const refObject = new ObjectType({
+      annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
       elemID: new ElemID(SALESFORCE, 'Lead'),
       fields: {
         test: {

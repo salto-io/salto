@@ -486,13 +486,14 @@ describe('picklistReferences filter', () => {
     it('should replace value set, controllingField, valeName and controllingFieldValue with references', async () => {
       const elements = [gvs, svs, createPicklistObjectType(new ElemID(SALESFORCE, 'test'), 'test', gvs, svs)]
       await filter.onFetch(elements)
+      const elem = elements[2] as ObjectType
       expect(
-        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
         ],
-      ).toEqual(new ReferenceExpression(elements[2].fields.state.elemID, elements[2].fields.state))
+      ).toEqual(new ReferenceExpression(elem.fields.state.elemID, elem.fields.state))
       expect(
-        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][0][VALUE_SETTINGS_FIELDS.VALUE_NAME],
       ).toEqual(
@@ -502,7 +503,7 @@ describe('picklistReferences filter', () => {
         ),
       )
       expect(
-        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
       ).toEqual(
@@ -512,7 +513,7 @@ describe('picklistReferences filter', () => {
         ),
       )
       expect(
-        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][1],
       ).toEqual(
@@ -522,7 +523,7 @@ describe('picklistReferences filter', () => {
         ),
       )
       expect(
-        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][1][VALUE_SETTINGS_FIELDS.VALUE_NAME],
       ).toEqual(
@@ -532,7 +533,7 @@ describe('picklistReferences filter', () => {
         ),
       )
       expect(
-        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][1][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
       ).toEqual(
@@ -542,32 +543,32 @@ describe('picklistReferences filter', () => {
         ),
       )
       expect(
-        elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
         ],
-      ).toEqual(new ReferenceExpression(elements[2].fields.state.elemID, elements[2].fields.state))
+      ).toEqual(new ReferenceExpression(elem.fields.state.elemID, elem.fields.state))
       expect(
-        elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][0][VALUE_SETTINGS_FIELDS.VALUE_NAME],
       ).toEqual(
         new ReferenceExpression(
-          elements[2].fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val7', 'fullName'),
-          elements[2].fields.fieldPicklist.annotations.valueSet.values.val7.fullName,
+          elem.fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val7', 'fullName'),
+          elem.fields.fieldPicklist.annotations.valueSet.values.val7.fullName,
         ),
       )
       expect(
-        elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][1][VALUE_SETTINGS_FIELDS.VALUE_NAME],
       ).toEqual(
         new ReferenceExpression(
-          elements[2].fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val8', 'fullName'),
-          elements[2].fields.fieldPicklist.annotations.valueSet.values.val8.fullName,
+          elem.fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val8', 'fullName'),
+          elem.fields.fieldPicklist.annotations.valueSet.values.val8.fullName,
         ),
       )
       expect(
-        elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
       ).toEqual(
@@ -577,7 +578,7 @@ describe('picklistReferences filter', () => {
         ),
       )
       expect(
-        elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+        elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][1][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
       ).toEqual(
@@ -591,11 +592,12 @@ describe('picklistReferences filter', () => {
       it('should keep the string value', async () => {
         const elements = [gvs, svs, createPicklistObjectType(new ElemID(SALESFORCE, 'test'), 'test', gvs, svs, false)]
         await filter.onFetch(elements)
+        const elem = elements[2] as ObjectType
         expect(
-          elements[2].fields.customPicklistField.annotations.fieldDependency.valueSettings[0].controllingFieldValue[1],
+          elem.fields.customPicklistField.annotations.fieldDependency.valueSettings[0].controllingFieldValue[1],
         ).toEqual('val')
         expect(
-          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][0].controllingFieldValue[0],
         ).toEqual(
@@ -614,63 +616,64 @@ describe('picklistReferences filter', () => {
           createPicklistObjectType(new ElemID(SALESFORCE, 'test'), 'test', gvs, svs, true, false),
         ]
         await filter.onFetch(elements)
+        const elem = elements[2] as ObjectType
         expect(
-          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
           ],
         ).toEqual('state')
         expect(
-          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][0][VALUE_SETTINGS_FIELDS.VALUE_NAME],
         ).toEqual('val1')
         expect(
-          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
         ).toEqual('val1')
         expect(
-          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][1],
         ).toEqual('val2')
         expect(
-          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][1][VALUE_SETTINGS_FIELDS.VALUE_NAME],
         ).toEqual('val2')
         expect(
-          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][1][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
         ).toEqual(8)
         expect(
-          elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
           ],
-        ).toEqual(new ReferenceExpression(elements[2].fields.state.elemID, elements[2].fields.state))
+        ).toEqual(new ReferenceExpression(elem.fields.state.elemID, elem.fields.state))
         expect(
-          elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][0][VALUE_SETTINGS_FIELDS.VALUE_NAME],
         ).toEqual(
           new ReferenceExpression(
-            elements[2].fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val7', 'fullName'),
-            elements[2].fields.fieldPicklist.annotations.valueSet.values.val7.fullName,
+            elem.fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val7', 'fullName'),
+            elem.fields.fieldPicklist.annotations.valueSet.values.val7.fullName,
           ),
         )
         expect(
-          elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][1][VALUE_SETTINGS_FIELDS.VALUE_NAME],
         ).toEqual(
           new ReferenceExpression(
-            elements[2].fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val8', 'fullName'),
-            elements[2].fields.fieldPicklist.annotations.valueSet.values.val8.fullName,
+            elem.fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val8', 'fullName'),
+            elem.fields.fieldPicklist.annotations.valueSet.values.val8.fullName,
           ),
         )
         expect(
-          elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
         ).toEqual(
@@ -680,7 +683,7 @@ describe('picklistReferences filter', () => {
           ),
         )
         expect(
-          elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][1][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
         ).toEqual(

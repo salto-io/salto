@@ -50,7 +50,7 @@ export const removeValuesFromInstances = (
           values: inst.value,
           type: inst.getTypeSync(),
           transformFunc: removeValuesFunc,
-          strict: true,
+          strict: false,
           allowEmptyArrays: true,
           allowExistingEmptyObjects: true,
           pathID: inst.elemID,

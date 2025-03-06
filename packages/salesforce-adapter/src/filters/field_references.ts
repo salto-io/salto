@@ -40,6 +40,7 @@ import {
   PROFILE_METADATA_TYPE,
   PERMISSION_SET_METADATA_TYPE,
   MUTING_PERMISSION_SET_METADATA_TYPE,
+  SUPPORTED_ELEMENT_REFERENCE_PARENT_FIELDS,
 } from '../constants'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName, isInstanceOfTypeSync } from './utils'
 import { FetchProfile } from '../types'
@@ -89,12 +90,16 @@ export const createContextStrategyLookups = (
     contextValueMapper?: referenceUtils.ContextValueMapperFunc
   }): referenceUtils.ContextFunc => neighborContextGetter({ ...args, getLookUpName: getLookupNameFunc })
   return {
-    flowCondition: async ({ instance, field, elemByElemID, fieldPath }) => {
-      if (fieldPath === undefined) return undefined
-      const path = fieldPath.getFullNameParts()
-      if (path.some(part => part === 'FlowWaitEvent')) {
+    flowElementReferenceField: async ({ instance, field, elemByElemID, fieldPath }) => {
+      const path = fieldPath?.getFullNameParts()
+      if (path === undefined || !path.some(part => SUPPORTED_ELEMENT_REFERENCE_PARENT_FIELDS.includes(part))) {
+        return undefined
+      }
+      const hasInputAssignments = path.includes('inputAssignments')
+      const hasRecordCreatesOrInputAssignments = ['recordCreates', 'recordUpdates'].some(key => path.includes(key))
+      if (hasRecordCreatesOrInputAssignments && hasInputAssignments) {
         return neighborContextFunc({
-          contextFieldName: 'objectType',
+          contextFieldName: 'object',
           levelsUp: 2,
         })({ instance, field, elemByElemID, fieldPath })
       }

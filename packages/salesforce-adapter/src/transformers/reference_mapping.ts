@@ -176,7 +176,7 @@ export type ReferenceContextStrategyName =
   | 'neighborAssignedToTypeLookup'
   | 'neighborRelatedEntityTypeLookup'
   | 'parentSObjectTypeLookupTopLevel'
-  | 'flowCondition'
+  | 'flowElementReferenceField'
   | 'grandparentObjectLookup'
   | 'grandparentOutputSObjectTypeLookup'
   | 'grandparentObjectLookup'
@@ -1771,7 +1771,22 @@ const getLookUpNameImpl = ({
       log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined
     }
-    const strategies = (await resolverFinder(args.field, args.element)).map(def => def.serializationStrategy)
+    const definitions = await resolverFinder(args.field, args.element)
+    const filteredDefinitions = definitions.filter(def => {
+      if (def.target === undefined) {
+        log.debug('could not determine target for field %o', def)
+        return true
+      }
+      if (!isElement(args.ref.value)) {
+        log.debug('reference value is not an element %0', args.ref)
+        return true
+      }
+      if (def.target.type === CUSTOM_FIELD) {
+        return isField(args.ref.value) && args.ref.value.parent.annotations.metadataType === CUSTOM_OBJECT
+      }
+      return def.target.type === args.ref.elemID.typeName
+    })
+    const strategies = filteredDefinitions.map(def => def.serializationStrategy)
 
     if (strategies.length === 0) {
       log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())

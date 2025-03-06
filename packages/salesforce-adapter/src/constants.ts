@@ -882,3 +882,14 @@ export const ProgressReporterSuffix = {
 }
 
 export const METADATA_DEPLOY_PENDING_STATUS = 'Pending'
+
+export const SUPPORTED_ELEMENT_REFERENCE_PARENT_FIELDS = [
+  'actionCalls',
+  'assignmentItems',
+  'conditions',
+  'subflows',
+  'transformValueActions',
+  'filters',
+  'inputs',
+  'inputAssignments',
+]

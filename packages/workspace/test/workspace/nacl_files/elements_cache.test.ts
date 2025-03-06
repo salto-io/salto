@@ -88,6 +88,64 @@ describe('createMergeManager', () => {
         )
       })
     })
+
+    describe('when an element with errors is removed from the nacl source', () => {
+      let element: ObjectType
+      let mergeErrorsMap: RemoteMap<SaltoError[]>
+      let mergeResult: ChangeSet<Change>
+      beforeEach(async () => {
+        element = new ObjectType({ elemID: new ElemID('test', 'type'), annotations: { val: 'val' } })
+        mergeErrorsMap = await remoteMapCreator.create<SaltoError[]>({
+          namespace: 'test-mergeErrors',
+          serialize: async () => '',
+          deserialize: async () => [],
+          persistent: true,
+        })
+
+        // Set up initial state with an element that has errors
+        await sources.state.set(element)
+        // Not adding the element to the nacl source, because it is deleted at this point
+        const currentElements = createInMemoryElementSource([element])
+
+        await mergeErrorsMap.set(element.elemID.getFullName(), [
+          new DuplicateAnnotationError({
+            elemID: element.elemID,
+            key: 'val',
+            existingValue: 'val',
+            newValue: 'val',
+          }),
+        ])
+
+        // Delete the element
+        mergeResult = await manager.mergeComponents({
+          src1Changes: {
+            cacheValid: true,
+            changes: [toChange({ before: element, after: undefined })],
+          },
+          // Note: the workspace code would ensure that if a non-hidden element is removed from the nacl source,
+          // it will also be removed from the state source
+          src2Changes: {
+            cacheValid: true,
+            changes: [toChange({ before: element, after: undefined })],
+          },
+          currentElements,
+          currentErrors: mergeErrorsMap,
+          mergeFunc: elements => mergeElements(elements),
+          src1Prefix: 'nacl',
+          src2Prefix: 'state',
+        })
+      })
+
+      it('should return the deletion change', () => {
+        expect(mergeResult.changes).toHaveLength(1)
+        expect(mergeResult.changes[0]).toEqual(toChange({ before: element, after: undefined }))
+      })
+
+      it('should remove the errors for the deleted element', async () => {
+        const mergeErrors = await awu(mergeErrorsMap.entries()).toArray()
+        expect(mergeErrors).toBeEmpty()
+      })
+    })
   })
 
   describe('On clear', () => {

@@ -404,9 +404,15 @@ export const createMergeManager = async (
       await currentElements.clear()
     } else {
       const removalChanges = mergedChanges.changes.filter(isRemovalChange)
-      await currentElements.deleteAll(removalChanges.map(change => getChangeData(change).elemID))
+      const removedIds = removalChanges.map(change => getChangeData(change).elemID)
+      await currentElements.deleteAll(removedIds)
       logChanges(removalChanges)
-      await currentErrors.deleteAll(noErrorMergeIds.filter(id => !_.isEmpty(currentMergeErrors[id])))
+      await currentErrors.deleteAll(
+        removedIds
+          .map(id => id.getFullName())
+          .concat(noErrorMergeIds)
+          .filter(id => !_.isEmpty(currentMergeErrors[id])),
+      )
     }
     await currentErrors.setAll(awu(mergeErrors).filter(err => !_.isEqual(err.value, currentMergeErrors[err.key])))
     const additionOrModificationChanges = mergedChanges.changes.filter(isAdditionOrModificationChange)

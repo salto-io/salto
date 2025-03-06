@@ -236,7 +236,18 @@ export type FieldReferenceDefinition = {
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
 
-const GEN_AI_REFERENCES_DEF: FieldReferenceDefinition[] = [
+/**
+ * The rules for finding and resolving values into (and back from) reference expressions.
+ * Overlaps between rules are allowed, and the first successful conversion wins.
+ * Current order (defined by generateReferenceResolverFinder):
+ *  1. Exact field names take precedence over regexp
+ *  2. Order within each group is currently *not* guaranteed (groupBy is not stable)
+ *
+ * A value will be converted into a reference expression if:
+ * 1. An element matching the rule is found.
+ * 2. Resolving the resulting reference expression back returns the original value.
+ */
+export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'genAiFunctionName', parentTypes: ['GenAiPlannerFunctionDef'] },
     target: { type: 'GenAiFunction' },
@@ -249,16 +260,10 @@ const GEN_AI_REFERENCES_DEF: FieldReferenceDefinition[] = [
     src: { field: 'functionName', parentTypes: ['GenAiPluginFunctionDef'] },
     target: { type: 'GenAiFunction' },
   },
-]
-
-const PACKAGE_VERSION_REFERENCE_DEF: FieldReferenceDefinition[] = [
   {
     src: { field: 'namespace', parentTypes: ['PackageVersion'] },
     target: { type: 'InstalledPackage' },
   },
-]
-
-const NETWORK_REFERENCES_DEF: FieldReferenceDefinition[] = [
   {
     src: { field: 'changePasswordTemplate', parentTypes: ['Network'] },
     target: { type: 'EmailTemplate' },
@@ -287,20 +292,6 @@ const NETWORK_REFERENCES_DEF: FieldReferenceDefinition[] = [
     src: { field: 'welcomeTemplate', parentTypes: ['Network'] },
     target: { type: 'EmailTemplate' },
   },
-]
-
-/**
- * The rules for finding and resolving values into (and back from) reference expressions.
- * Overlaps between rules are allowed, and the first successful conversion wins.
- * Current order (defined by generateReferenceResolverFinder):
- *  1. Exact field names take precedence over regexp
- *  2. Order within each group is currently *not* guaranteed (groupBy is not stable)
- *
- * A value will be converted into a reference expression if:
- * 1. An element matching the rule is found.
- * 2. Resolving the resulting reference expression back returns the original value.
- */
-export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'field',
@@ -1165,11 +1156,8 @@ const getLookUpNameImpl = ({
   }
 }
 
-export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldReferenceDefinition[] =>
+export const getDefsFromFetchProfile = (_fetchProfile: FetchProfile): FieldReferenceDefinition[] =>
   fieldNameToTypeMappingDefs
-    .concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
-    .concat(fetchProfile.isFeatureEnabled('networkReferences') ? NETWORK_REFERENCES_DEF : [])
-    .concat(fetchProfile.isFeatureEnabled('packageVersionReference') ? PACKAGE_VERSION_REFERENCE_DEF : [])
 
 /**
  * Translate a reference expression back to its original value before deploy.

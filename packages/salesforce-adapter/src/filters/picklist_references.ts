@@ -18,6 +18,7 @@ import {
   isReferenceExpression,
   ObjectType,
   ReferenceExpression,
+  Value,
 } from '@salto-io/adapter-api'
 import { getParents, inspectValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -29,11 +30,13 @@ import { apiNameSync, buildElementsSourceForFetch, isInstanceOfTypeSync, metadat
 import {
   BUSINESS_PROCESS_METADATA_TYPE,
   FIELD_ANNOTATIONS,
+  FIELD_DEPENDENCY_FIELDS,
   RECORD_TYPE_METADATA_TYPE,
   SALESFORCE,
   VALUE_SET_FIELDS,
 } from '../constants'
 import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
+import { ValueSettings } from '../client/types'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
@@ -55,6 +58,72 @@ type RecordTypePicklistValuesItem = {
   values: {
     fullName: string
   }[]
+}
+
+const isValidValueSettings = (vs: Value): vs is ValueSettings =>
+  (isReferenceExpression(vs.valueName) || _.isString(vs.valueName)) &&
+  Array.isArray(vs.controllingFieldValue) &&
+  vs.controllingFieldValue.every((cfv: Value) => _.isString(cfv) || isReferenceExpression(cfv))
+
+const isValidFieldDependency = (fd: Value): boolean =>
+  fd !== undefined &&
+  _.isString(fd.controllingField) &&
+  Array.isArray(fd.valueSettings) &&
+  fd.valueSettings.every(isValidValueSettings)
+
+const getValueSetOfField = (field: Field, picklistIndex: PicklistValuesReferenceIndex): Value => {
+  const index =
+    field.annotations.valueSet !== undefined
+      ? field.elemID.getFullName()
+      : field.annotations?.valueSetName?.elemID?.getFullName()
+  if (!index) {
+    return undefined
+  }
+  return picklistIndex[index]
+}
+
+const addFieldDependencyReferences = (
+  objectType: ObjectType,
+  field: Field,
+  picklistIndex: PicklistValuesReferenceIndex,
+): void => {
+  const valueSetInstance = getValueSetOfField(field, picklistIndex)
+  if (!valueSetInstance) {
+    return
+  }
+  if (!isValidFieldDependency(field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY])) {
+    return
+  }
+
+  const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
+  const controllingFieldName = fieldDependency[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]
+  const controllingField = objectType.fields[controllingFieldName]
+  if (!isField(controllingField)) {
+    return
+  }
+  fieldDependency[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD] = new ReferenceExpression(
+    controllingField.elemID,
+    controllingField,
+  )
+  const controllingValueSet = getValueSetOfField(controllingField, picklistIndex)
+  fieldDependency[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS].forEach((vs: Value) => {
+    if (_.isString(vs.valueName) && valueSetInstance[vs.valueName] !== undefined) {
+      vs.valueName = new ReferenceExpression(valueSetInstance[vs.valueName].elemID, vs.valueName)
+    }
+    vs.controllingFieldValue = vs.controllingFieldValue.map((cfv: Value) => {
+      if (_.isString(cfv) && controllingValueSet[cfv] !== undefined) {
+        return new ReferenceExpression(controllingValueSet[cfv].elemID, cfv)
+      }
+      return cfv
+    })
+  })
+}
+
+const addFieldDependencyReferencesToObjects = (
+  objectType: ObjectType,
+  picklistIndex: PicklistValuesReferenceIndex,
+): void => {
+  Object.values(objectType.fields).forEach(field => addFieldDependencyReferences(objectType, field, picklistIndex))
 }
 
 const isRecordTypePicklistValuesItem = (value: unknown): value is RecordTypePicklistValuesItem =>
@@ -254,6 +323,9 @@ const filterCreator: FilterCreator = ({ config }) => ({
         inspectValue(nonHandledParents),
       )
     }
+    elements
+      .filter(isObjectType)
+      .forEach(objectType => addFieldDependencyReferencesToObjects(objectType, picklistValuesReferenceIndex))
   },
 })
 

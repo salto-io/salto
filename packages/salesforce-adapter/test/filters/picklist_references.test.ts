@@ -5,7 +5,14 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ReferenceExpression, InstanceElement, ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  ReferenceExpression,
+  InstanceElement,
+  ObjectType,
+  ElemID,
+  CORE_ANNOTATIONS,
+  Value,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import filterCreator, { BUSINESS_PROCESS_PARENTS, BusinessProcessParent } from '../../src/filters/picklist_references'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -13,7 +20,18 @@ import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 import { mockTypes } from '../mock_elements'
 import { Types } from '../../src/transformers/transformer'
-import { INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../../src/constants'
+import {
+  API_NAME,
+  CUSTOM_OBJECT,
+  FIELD_ANNOTATIONS,
+  FIELD_DEPENDENCY_FIELDS,
+  FIELD_TYPE_NAMES,
+  INSTANCE_FULL_NAME_FIELD,
+  METADATA_TYPE,
+  SALESFORCE,
+  VALUE_SETTINGS_FIELDS,
+  VALUE_SET_FIELDS,
+} from '../../src/constants'
 
 describe('picklistReferences filter', () => {
   const gvs = new InstanceElement('MyGVS', mockTypes.GlobalValueSet, {
@@ -385,6 +403,292 @@ describe('picklistReferences filter', () => {
             { fullName: 'Non %% Decode-able' },
           ])
         })
+      })
+    })
+  })
+  describe('objectType Instances', () => {
+    const createPicklistObjectType = (
+      mockElemID: ElemID,
+      apiName: string,
+      valueSet: InstanceElement,
+      secondValueSet: InstanceElement,
+      includeOnlyExistingValue = true,
+      validFieldDependencies = true,
+    ): ObjectType =>
+      new ObjectType({
+        elemID: mockElemID,
+        fields: {
+          state: {
+            refType: Types.primitiveDataTypes[FIELD_TYPE_NAMES.PICKLIST],
+            annotations: {
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+              [API_NAME]: apiName,
+              label: 'test label',
+              [VALUE_SET_FIELDS.VALUE_SET_NAME]: new ReferenceExpression(valueSet.elemID, valueSet.elemID.name),
+              [FIELD_ANNOTATIONS.RESTRICTED]: true,
+            },
+          },
+          customPicklistField: {
+            refType: Types.primitiveDataTypes[FIELD_TYPE_NAMES.PICKLIST],
+            annotations: {
+              [VALUE_SET_FIELDS.VALUE_SET_NAME]: new ReferenceExpression(
+                secondValueSet.elemID,
+                secondValueSet.elemID.name,
+              ),
+              [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
+                [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'state',
+                [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
+                  {
+                    [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'val1',
+                    [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
+                      'val1',
+                      includeOnlyExistingValue ? 'val2' : 'val',
+                    ],
+                  },
+                  {
+                    [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'val2',
+                    [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [validFieldDependencies ? 'val2' : 8],
+                  },
+                ],
+              },
+            },
+          },
+          fieldPicklist: {
+            refType: Types.primitiveDataTypes.Picklist,
+            annotations: {
+              valueSet: {
+                values: {
+                  val7: { fullName: 'val7', default: true, label: 'val7' },
+                  val8: { fullName: 'val8', default: false, label: 'val8' },
+                },
+              },
+              [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
+                [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'state',
+                [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
+                  {
+                    [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'val7',
+                    [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['val1'],
+                  },
+                  {
+                    [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'val8',
+                    [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['val2'],
+                  },
+                ],
+              },
+            },
+          },
+        },
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_OBJECT,
+          [API_NAME]: 'Test__c',
+        },
+      })
+    it('should replace value set, controllingField, valeName and controllingFieldValue with references', async () => {
+      const elements = [gvs, svs, createPicklistObjectType(new ElemID(SALESFORCE, 'test'), 'test', gvs, svs)]
+      await filter.onFetch(elements)
+      expect(
+        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
+        ],
+      ).toEqual(new ReferenceExpression(elements[2].fields.state.elemID, elements[2].fields.state))
+      expect(
+        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+        ][0][VALUE_SETTINGS_FIELDS.VALUE_NAME],
+      ).toEqual(
+        new ReferenceExpression(
+          svs.elemID.createNestedID('standardValue', 'values', 'val1', 'fullName'),
+          (svs as Value).value.standardValue.values.val1.fullName,
+        ),
+      )
+      expect(
+        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+        ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
+      ).toEqual(
+        new ReferenceExpression(
+          gvs.elemID.createNestedID('customValue', 'values', 'val1', 'fullName'),
+          gvs.value.customValue.values.val1.fullName,
+        ),
+      )
+      expect(
+        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+        ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][1],
+      ).toEqual(
+        new ReferenceExpression(
+          gvs.elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
+          gvs.value.customValue.values.val2.fullName,
+        ),
+      )
+      expect(
+        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+        ][1][VALUE_SETTINGS_FIELDS.VALUE_NAME],
+      ).toEqual(
+        new ReferenceExpression(
+          svs.elemID.createNestedID('standardValue', 'values', 'val2', 'fullName'),
+          svs.value.standardValue.values.val2.fullName,
+        ),
+      )
+      expect(
+        elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+        ][1][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
+      ).toEqual(
+        new ReferenceExpression(
+          gvs.elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
+          gvs.value.customValue.values.val2.fullName,
+        ),
+      )
+      expect(
+        elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
+        ],
+      ).toEqual(new ReferenceExpression(elements[2].fields.state.elemID, elements[2].fields.state))
+      expect(
+        elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+        ][0][VALUE_SETTINGS_FIELDS.VALUE_NAME],
+      ).toEqual(
+        new ReferenceExpression(
+          elements[2].fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val7', 'fullName'),
+          elements[2].fields.fieldPicklist.annotations.valueSet.values.val7.fullName,
+        ),
+      )
+      expect(
+        elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+        ][1][VALUE_SETTINGS_FIELDS.VALUE_NAME],
+      ).toEqual(
+        new ReferenceExpression(
+          elements[2].fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val8', 'fullName'),
+          elements[2].fields.fieldPicklist.annotations.valueSet.values.val8.fullName,
+        ),
+      )
+      expect(
+        elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+        ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
+      ).toEqual(
+        new ReferenceExpression(
+          gvs.elemID.createNestedID('customValue', 'values', 'val1', 'fullName'),
+          gvs.value.customValue.values.val1.fullName,
+        ),
+      )
+      expect(
+        elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+          FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+        ][1][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
+      ).toEqual(
+        new ReferenceExpression(
+          gvs.elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
+          gvs.value.customValue.values.val2.fullName,
+        ),
+      )
+    })
+    describe('when one of the controllingFieldValues doesnt exist in the controllingField ValueSet', () => {
+      it('should keep the string value', async () => {
+        const elements = [gvs, svs, createPicklistObjectType(new ElemID(SALESFORCE, 'test'), 'test', gvs, svs, false)]
+        await filter.onFetch(elements)
+        expect(
+          elements[2].fields.customPicklistField.annotations.fieldDependency.valueSettings[0].controllingFieldValue[1],
+        ).toEqual('val')
+        expect(
+          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0].controllingFieldValue[0],
+        ).toEqual(
+          new ReferenceExpression(
+            gvs.elemID.createNestedID('customValue', 'values', 'val1', 'fullName'),
+            gvs.value.customValue.values.val1.fullName,
+          ),
+        )
+      })
+    })
+    describe('when fieldDependency is invalid', () => {
+      it('should not create any references at the field but create at other fields', async () => {
+        const elements = [
+          gvs,
+          svs,
+          createPicklistObjectType(new ElemID(SALESFORCE, 'test'), 'test', gvs, svs, true, false),
+        ]
+        await filter.onFetch(elements)
+        expect(
+          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
+          ],
+        ).toEqual('state')
+        expect(
+          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0][VALUE_SETTINGS_FIELDS.VALUE_NAME],
+        ).toEqual('val1')
+        expect(
+          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
+        ).toEqual('val1')
+        expect(
+          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][1],
+        ).toEqual('val2')
+        expect(
+          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][1][VALUE_SETTINGS_FIELDS.VALUE_NAME],
+        ).toEqual('val2')
+        expect(
+          elements[2].fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][1][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
+        ).toEqual(8)
+        expect(
+          elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
+          ],
+        ).toEqual(new ReferenceExpression(elements[2].fields.state.elemID, elements[2].fields.state))
+        expect(
+          elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0][VALUE_SETTINGS_FIELDS.VALUE_NAME],
+        ).toEqual(
+          new ReferenceExpression(
+            elements[2].fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val7', 'fullName'),
+            elements[2].fields.fieldPicklist.annotations.valueSet.values.val7.fullName,
+          ),
+        )
+        expect(
+          elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][1][VALUE_SETTINGS_FIELDS.VALUE_NAME],
+        ).toEqual(
+          new ReferenceExpression(
+            elements[2].fields.fieldPicklist.elemID.createNestedID('valueSet', 'values', 'val8', 'fullName'),
+            elements[2].fields.fieldPicklist.annotations.valueSet.values.val8.fullName,
+          ),
+        )
+        expect(
+          elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
+        ).toEqual(
+          new ReferenceExpression(
+            gvs.elemID.createNestedID('customValue', 'values', 'val1', 'fullName'),
+            gvs.value.customValue.values.val1.fullName,
+          ),
+        )
+        expect(
+          elements[2].fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
+            FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
+          ][1][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
+        ).toEqual(
+          new ReferenceExpression(
+            gvs.elemID.createNestedID('customValue', 'values', 'val2', 'fullName'),
+            gvs.value.customValue.values.val2.fullName,
+          ),
+        )
       })
     })
   })

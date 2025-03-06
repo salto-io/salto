@@ -77,6 +77,6 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
 }
 
 export const configCreator: ConfigCreator = {
-  optionsType,
+  getOptionsType: () => optionsType,
   getConfig,
 }

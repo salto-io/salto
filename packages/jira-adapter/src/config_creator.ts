@@ -6,7 +6,14 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  ConfigCreator,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import {
   createDefaultInstanceFromType,
   createMatchingObjectType,
@@ -16,11 +23,29 @@ import { configType } from './config/config'
 import * as constants from './constants'
 
 const optionsElemId = new ElemID(constants.JIRA, 'configOptionsType')
+const configContextTypeElemId = new ElemID(constants.JIRA, 'configContextType')
 
 type ConfigOptionsType = {
   enableScriptRunnerAddon?: boolean
   enableJSM?: boolean
 }
+
+type ConfigContextType = {
+  isDataCenter: boolean
+}
+
+type DataCenterConfigOptionsType = Omit<ConfigOptionsType, 'enableJSM'>
+
+export const configContextType = createMatchingObjectType<ConfigContextType>({
+  elemID: configContextTypeElemId,
+  fields: {
+    isDataCenter: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: { _required: true },
+    },
+  },
+  annotations: { [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false },
+})
 
 export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
@@ -29,6 +54,18 @@ export const optionsType = createMatchingObjectType<ConfigOptionsType>({
     enableJSM: { refType: BuiltinTypes.BOOLEAN },
   },
 })
+
+const jiraDataCenterOptionsType = createMatchingObjectType<DataCenterConfigOptionsType>({
+  elemID: optionsElemId,
+  fields: {
+    enableScriptRunnerAddon: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+  },
+})
+
+export const getOptionsType = (configContext?: InstanceElement): ObjectType =>
+  configContext?.value.isDataCenter ? jiraDataCenterOptionsType : optionsType
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
@@ -45,6 +82,7 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
 }
 
 export const configCreator: ConfigCreator = {
-  optionsType,
+  configContextType,
+  getOptionsType,
   getConfig,
 }

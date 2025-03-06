@@ -81,6 +81,33 @@ const createSimpleStringValue = (
   }
 }
 
+type TokenGroup =
+  | {
+      type: 'reference'
+      token: Required<Token>
+    }
+  | {
+      type: 'non-reference'
+      tokens: Required<Token>[]
+    }
+
+const groupNonReferenceTokens = (tokens: Required<Token>[]): TokenGroup[] => {
+  const result: TokenGroup[] = []
+  tokens.forEach(token => {
+    if (token.type === TOKEN_TYPES.REFERENCE) {
+      result.push({ type: 'reference', token })
+    } else {
+      const lastGroup = _.last(result)
+      if (lastGroup?.type === 'non-reference') {
+        lastGroup.tokens.push(token)
+      } else {
+        result.push({ type: 'non-reference', tokens: [token] })
+      }
+    }
+  })
+  return result
+}
+
 const createTemplateExpressions = (
   context: Pick<ParseContext, 'errors' | 'filename'>,
   tokens: Required<Token>[],
@@ -89,17 +116,27 @@ const createTemplateExpressions = (
     tokens: Required<Token>[],
     isNextPartReference?: boolean,
   ) => string,
-): TemplateExpression =>
-  createTemplateExpression({
-    parts: tokens.map((token, idx) => {
-      if (token.type === TOKEN_TYPES.REFERENCE) {
-        const ref = createReferenceExpression(token.value)
-        return ref instanceof IllegalReference ? token.text : ref
+): TemplateExpression => {
+  // We must group non reference tokens so that when we unescape the string parts in createSimpleStringValueFunc
+  // we won't miss things due to them being split between two tokens.
+  //
+  // For example, if we had this part in a multiline string: "bla \''' foo" it would be split into the following tokens:
+  //  - "bla "
+  //  - "\'" - an escape token
+  //  - "''' foo"
+  // Sending each token on its own would prevent unescaping the \''' because createSimpleStringValueFunc wouldn't see it in a single call.
+  const tokenGroups = groupNonReferenceTokens(tokens)
+  return createTemplateExpression({
+    parts: tokenGroups.map((tokenGroup, idx) => {
+      if (tokenGroup.type === 'reference') {
+        const ref = createReferenceExpression(tokenGroup.token.value)
+        return ref instanceof IllegalReference ? tokenGroup.token.text : ref
       }
-      const isNextPartReference = tokens[idx + 1]?.type === TOKEN_TYPES.REFERENCE
-      return createSimpleStringValueFunc(context, [token], isNextPartReference)
+      const isNextPartReference = tokenGroups[idx + 1]?.type === 'reference'
+      return createSimpleStringValueFunc(context, tokenGroup.tokens, isNextPartReference)
     }),
   })
+}
 
 export const createStringValue = (
   context: Pick<ParseContext, 'errors' | 'filename'>,

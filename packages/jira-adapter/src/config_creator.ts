@@ -50,9 +50,7 @@ export const configContextType = createMatchingObjectType<ConfigContextType>({
 export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
   fields: {
-    enableScriptRunnerAddon: {
-      refType: BuiltinTypes.BOOLEAN,
-    },
+    enableScriptRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
     enableJSM: { refType: BuiltinTypes.BOOLEAN },
   },
 })

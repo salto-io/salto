@@ -37,6 +37,7 @@ export const getAdapterConfigOptionsType = ({
         error.elemID.getFullName(),
       )
     })
+    return undefined
   }
 
   return adapterCreators[adapterName]?.configCreator?.getOptionsType?.(adapterContextInstance)

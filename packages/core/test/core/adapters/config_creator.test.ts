@@ -6,23 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import {
-  Adapter,
-  AdapterOperations,
-  BuiltinTypes,
-  ChangeValidator,
-  ElemID,
-  FixElementsFunc,
-  GetAdditionalReferencesFunc,
-  ObjectType,
-} from '@salto-io/adapter-api'
-import { mockFunction } from '@salto-io/test-utils'
-import { validateElement } from '@salto-io/workspace'
+import { Adapter, BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { getAdapterConfigOptionsType } from '../../../src/core/adapters/config_creator'
+import { createMockAdapter } from '../../common/helpers'
 
-jest.mock('@salto-io/workspace', () => ({
-  validateElement: jest.fn(),
-}))
 const mockLogWarn = jest.fn()
 jest.mock('@salto-io/logging', () => ({
   ...jest.requireActual<{}>('@salto-io/logging'),
@@ -31,51 +18,21 @@ jest.mock('@salto-io/logging', () => ({
   }),
 }))
 
-const mockServiceWithConfigCreator = 'adapterWithConfigCreator'
 const mockGetOptionsType = new ObjectType({
   elemID: new ElemID('mockGetOptionsType'),
 })
 const mockService = 'salto'
+const mockServiceWithConfigCreator = 'adapterWithConfigCreator'
+const mockServiceWithConfigContextType = 'adapterWithConfigContextType'
+const mockServiceWithoutOptionsTypeConfigCreator = 'adapterWithoutOptionsTypeConfigCreator'
 const mockConfigContextType = new ObjectType({
   elemID: new ElemID('mockConfigContextType'),
   fields: { configContext: { refType: BuiltinTypes.BOOLEAN } },
+  annotations: { [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false },
 })
 const mockConfigContext = { configContext: true }
-const mockValidateElement = validateElement as jest.Mock
-
-const mockConfigType = new ObjectType({
-  elemID: new ElemID(mockService),
-  fields: {
-    username: { refType: BuiltinTypes.STRING },
-    password: { refType: BuiltinTypes.STRING },
-    token: { refType: BuiltinTypes.STRING },
-    sandbox: { refType: BuiltinTypes.BOOLEAN },
-  },
-})
-
-const mockAdapterOps = {
-  fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
-  deploy: mockFunction<AdapterOperations['deploy']>().mockImplementation(({ changeGroup }) =>
-    Promise.resolve({ errors: [], appliedChanges: changeGroup.changes }),
-  ),
-  fixElements: mockFunction<FixElementsFunc>().mockResolvedValue({ fixedElements: [], errors: [] }),
-}
-
-const mockAdapter: Adapter = {
-  operations: mockFunction<Adapter['operations']>().mockReturnValue({
-    ...mockAdapterOps,
-    deployModifiers: { changeValidator: mockFunction<ChangeValidator>().mockResolvedValue([]) },
-  }),
-  authenticationMethods: { basic: { credentialsType: mockConfigType } },
-  validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
-    accountId: '',
-    accountType: 'Sandbox',
-    isProduction: false,
-  }),
-  getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
-}
-
-const mockAdapterCreators: Record<string, Adapter> = {}
+const mockServiceContextInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigContextType, mockConfigContext)
+const mockGetOptionsTypeFn = jest.fn(() => mockGetOptionsType)
 
 const createMockAdapterWithConfigCreator = ({
   getOptionsType,
@@ -84,7 +41,7 @@ const createMockAdapterWithConfigCreator = ({
   getOptionsType?: () => ObjectType
   configContextType?: ObjectType
 }): Adapter => ({
-  ...mockAdapter,
+  ...createMockAdapter(mockService),
   configCreator: {
     configContextType,
     getOptionsType,
@@ -92,63 +49,69 @@ const createMockAdapterWithConfigCreator = ({
   },
 })
 
-describe('getAdapterConfigOptionsType', () => {
-  const mockAdapterWithConfigCreator = createMockAdapterWithConfigCreator({ getOptionsType: () => mockGetOptionsType })
-  const mockAdapterWithConfigContextType = createMockAdapterWithConfigCreator({
-    configContextType: mockConfigContextType,
-    getOptionsType: () => mockGetOptionsType,
-  })
-  const mockAdapterWithoutOptionsTypeConfigCreator = createMockAdapterWithConfigCreator({})
+describe('adapters config creator', () => {
+  describe('getAdapterConfigOptionsType', () => {
+    let mockAdapterCreators: Record<string, Adapter>
 
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
-  it('should return undefined for adapter with no optionsType', () => {
-    mockAdapterCreators[mockServiceWithConfigCreator] = mockAdapterWithoutOptionsTypeConfigCreator
-    const result = getAdapterConfigOptionsType({
-      adapterName: mockServiceWithConfigCreator,
-      adapterCreators: mockAdapterCreators,
-    })
-    expect(result).toBeUndefined()
-  })
-
-  it('should return getOptionsType if exist when configContextType or configContext is undefined', () => {
-    mockAdapterCreators[mockServiceWithConfigCreator] = mockAdapterWithConfigCreator
-    const result = getAdapterConfigOptionsType({
-      adapterName: mockServiceWithConfigCreator,
-      adapterCreators: mockAdapterCreators,
-    })
-    expect(result).toBe(mockGetOptionsType)
-  })
-
-  it('should validate if adapterContextInstance holds a valid configContext, and log warnings if validation fails', () => {
-    mockValidateElement.mockReturnValue([{ message: 'Invalid value', elemID: new ElemID('jira', 'invalidField') }])
-    const mockInvalidConfigContext = { configContext: 'invalid' }
-    mockAdapterCreators[mockServiceWithConfigCreator] = mockAdapterWithConfigContextType
-    getAdapterConfigOptionsType({
-      adapterName: mockServiceWithConfigCreator,
-      adapterCreators: mockAdapterCreators,
-      configContext: mockInvalidConfigContext,
+    beforeEach(() => {
+      jest.clearAllMocks()
+      mockAdapterCreators = {
+        adapterWithConfigCreator: createMockAdapterWithConfigCreator({ getOptionsType: mockGetOptionsTypeFn }),
+        adapterWithConfigContextType: createMockAdapterWithConfigCreator({
+          configContextType: mockConfigContextType,
+          getOptionsType: mockGetOptionsTypeFn,
+        }),
+        adapterWithoutOptionsTypeConfigCreator: createMockAdapterWithConfigCreator({}),
+      }
     })
 
-    expect(mockValidateElement).toHaveBeenCalledTimes(1)
-    expect(mockLogWarn).toHaveBeenCalledWith(
-      'Invalid configContext for adapter: %s. Error message: %s, Element ID: %o',
-      mockServiceWithConfigCreator,
-      'Invalid value',
-      'jira.invalidField',
-    )
-  })
-
-  it('should return getOptionsType for adapter context when validation passes', () => {
-    mockValidateElement.mockReturnValue([])
-    const result = getAdapterConfigOptionsType({
-      adapterName: mockServiceWithConfigCreator,
-      adapterCreators: mockAdapterCreators,
-      configContext: mockConfigContext,
+    it('should return undefined for adapter with no optionsType', () => {
+      const result = getAdapterConfigOptionsType({
+        adapterName: mockServiceWithoutOptionsTypeConfigCreator,
+        adapterCreators: mockAdapterCreators,
+      })
+      expect(result).toBeUndefined()
+      expect(mockGetOptionsTypeFn).not.toHaveBeenCalled()
     })
-    expect(mockValidateElement).toHaveBeenCalledTimes(1)
-    expect(result).toBe(mockGetOptionsType)
+
+    it('should return getOptionsType if exist when configContextType is undefined', () => {
+      const result = getAdapterConfigOptionsType({
+        adapterName: mockServiceWithConfigCreator,
+        adapterCreators: mockAdapterCreators,
+        configContext: mockConfigContext,
+      })
+      expect(result).toBe(mockGetOptionsType)
+      expect(mockGetOptionsTypeFn).toHaveBeenCalledWith()
+    })
+
+    it('should return getOptionsType if exist when configContext is undefined', () => {
+      const result = getAdapterConfigOptionsType({
+        adapterName: mockServiceWithConfigCreator,
+        adapterCreators: mockAdapterCreators,
+      })
+      expect(result).toBe(mockGetOptionsType)
+      expect(mockGetOptionsTypeFn).toHaveBeenCalledWith()
+    })
+    it('should log configContext validation errors and return undefined', () => {
+      const mockInvalidConfigContext = { invalidConfigContext: 'invalid' }
+      const result = getAdapterConfigOptionsType({
+        adapterName: mockServiceWithConfigContextType,
+        adapterCreators: mockAdapterCreators,
+        configContext: mockInvalidConfigContext,
+      })
+      expect(mockLogWarn).toHaveBeenCalled()
+      expect(result).toBeUndefined()
+      expect(mockGetOptionsTypeFn).not.toHaveBeenCalled()
+    })
+
+    it('should return getOptionsType for adapter context when validation passes', () => {
+      const result = getAdapterConfigOptionsType({
+        adapterName: mockServiceWithConfigContextType,
+        adapterCreators: mockAdapterCreators,
+        configContext: mockConfigContext,
+      })
+      expect(result).toBe(mockGetOptionsType)
+      expect(mockGetOptionsTypeFn).toHaveBeenCalledWith(mockServiceContextInstance)
+    })
   })
 })

@@ -363,6 +363,7 @@ describe('suiteapp_file_cabinet', () => {
         maxFileCabinetSizeInGB: 1,
         extensionsToExclude: ['.*\\.csv'],
         maxFilesPerFileCabinetFolder: [{ folderPath: '/folder5/largeFolder1.*', limit: 2000 }],
+        wrapFolderIdsWithQuotes: false,
       }
     })
 
@@ -478,17 +479,6 @@ describe('suiteapp_file_cabinet', () => {
 
     it("return empty result when no top level folder matches the adapter's query", async () => {
       query.isParentFolderMatch.mockReturnValue(false)
-      // mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-      //   if (suiteQlQuery.from === 'file') {
-      //     return getFilesResponse(suiteQlQuery)
-      //   }
-
-      //   if (suiteQlQuery.from === 'mediaitemfolder') {
-      //     return getFoldersResponse(suiteQlQuery)
-      //   }
-      //   throw new Error(`Unexpected query: ${suiteQlQuery}`)
-      // })
-
       expect(await importFileCabinet(suiteAppClient, importFileCabinetParams)).toEqual({
         elements: [],
         failedPaths: { lockedError: [], largeSizeFoldersError: [], largeFilesCountFoldersError: [], otherError: [] },
@@ -594,6 +584,42 @@ describe('suiteapp_file_cabinet', () => {
         expectedResults[4],
         expectedResults[5],
       ])
+    })
+
+    it('should use custom files query chunk size when numOfFolderIdsPerFilesQuery is given', async () => {
+      const { elements } = await importFileCabinet(suiteAppClient, {
+        ...importFileCabinetParams,
+        numOfFolderIdsPerFilesQuery: 4,
+      })
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, {
+        select: 'folder, count(*) as count',
+        from: 'file',
+        where: "NOT REGEXP_LIKE(name, '.*\\.csv') AND hideinbundle = 'F' AND folder IN (5, 3, 4, 11)",
+        orderBy: 'folder',
+        groupBy: 'folder',
+      })
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(4, {
+        select: 'folder, count(*) as count',
+        from: 'file',
+        where: "NOT REGEXP_LIKE(name, '.*\\.csv') AND hideinbundle = 'F' AND folder IN (111, 22, 222)",
+        orderBy: 'folder',
+        groupBy: 'folder',
+      })
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(5, {
+        select:
+          'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
+        from: 'file',
+        where: "NOT REGEXP_LIKE(name, '.*\\.csv') AND hideinbundle = 'F' AND folder IN (5, 3, 4, 11)",
+        orderBy: 'id',
+      })
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(6, {
+        select:
+          'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
+        from: 'file',
+        where: "NOT REGEXP_LIKE(name, '.*\\.csv') AND hideinbundle = 'F' AND folder IN (111)",
+        orderBy: 'id',
+      })
+      expect(_.uniqBy(elements, row => row.values.internalId)).toEqual(expectedResults)
     })
 
     it('should filter out paths under excluded large folders', async () => {
@@ -776,6 +802,60 @@ describe('suiteapp_file_cabinet', () => {
           current: 1900,
         },
       ])
+    })
+
+    it('should not filter large folders when files count query fails', async () => {
+      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
+        if (suiteQlQuery.from === 'file') {
+          if (suiteQlQuery.groupBy === 'folder') {
+            return undefined
+          }
+          return filesQueryResponse
+        }
+
+        if (suiteQlQuery.from === 'mediaitemfolder') {
+          return getFoldersResponse(suiteQlQuery)
+        }
+        throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      })
+
+      const { elements, failedPaths, largeFilesCountFolderWarnings } = await importFileCabinet(
+        suiteAppClient,
+        importFileCabinetParams,
+      )
+      const [folders, files] = _.partition(expectedResults, row => row.typeName === 'folder')
+      const largeFoldersResults = [
+        {
+          path: ['folder5', 'largeFolder2'],
+          typeName: 'folder',
+          values: {
+            bundleable: 'T',
+            isinactive: 'T',
+            isprivate: 'T',
+            description: '',
+            internalId: largeFolders.largeFolder2,
+          },
+        },
+        {
+          path: ['folder5', 'largeFolder2', 'innerNormalFolder'],
+          typeName: 'folder',
+          values: {
+            bundleable: 'T',
+            isinactive: 'T',
+            isprivate: 'T',
+            description: '',
+            internalId: '222',
+          },
+        },
+      ]
+      expect(elements).toEqual(folders.concat(largeFoldersResults).concat(files))
+      expect(failedPaths).toEqual({
+        lockedError: [],
+        otherError: [],
+        largeSizeFoldersError: [],
+        largeFilesCountFoldersError: [],
+      })
+      expect(largeFilesCountFolderWarnings).toEqual([])
     })
   })
 

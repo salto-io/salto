@@ -1433,6 +1433,7 @@ describe('Adapter', () => {
         maxFileCabinetSizeInGB: 3,
         extensionsToExclude: ['.*\\.(csv|pdf|png)'],
         maxFilesPerFileCabinetFolder: [],
+        wrapFolderIdsWithQuotes: false,
       })
     })
 

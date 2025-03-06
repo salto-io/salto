@@ -35,7 +35,6 @@ import {
 } from './salesforce_imports'
 import { SyncZipTreeContainer } from './tree_container'
 import { detailedMessageFromSfError } from './errors'
-import { loadElementsFromFolder } from './sfdx_parser'
 
 const log = logger(module)
 const { withLimitedConcurrency } = promises.array
@@ -238,14 +237,6 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     pathsToDelete.map(pathToDelete => () => rm(pathToDelete)),
     FILE_DELETE_CONCURRENCY,
   )
-
-  log.debug('Loading elements from folder to validate dump.')
-  const { errors: loadErrors } = await loadElementsFromFolder({ baseDir, elementsSource })
-  loadErrors?.forEach(error => {
-    log.error('Got an error validating dumped SFDX: %o', error)
-    error.message = 'Error validating dumped SFDX project'
-    errors.push(error)
-  })
 
   return { errors, unappliedChanges }
 }

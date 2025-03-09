@@ -13,85 +13,156 @@ import {
   InstanceElement,
   ChangeError,
   isAdditionChange,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
-import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { values, collections } from '@salto-io/lowerdash'
-import { resolveValues } from '@salto-io/adapter-components'
+import { DescribeSObjectResult } from '@salto-io/jsforce'
+import { detailedCompare } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 
-import { FIELD_ANNOTATIONS } from '../constants'
-import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
+import SalesforceClient from '../client/client'
+import { apiNameSync, isInstanceOfCustomObjectChangeSync } from '../filters/utils'
 
-const { awu } = collections.asynciterable
+const { isDefined } = values
+const log = logger(module)
 
-const getUpdateErrorsForNonUpdateableFields = async (
-  before: InstanceElement,
-  after: InstanceElement,
-  getLookupNameFunc: GetLookupNameFunc,
-): Promise<ReadonlyArray<ChangeError>> => {
-  const beforeResolved = await resolveValues(before, getLookupNameFunc)
-  const afterResolved = await resolveValues(after, getLookupNameFunc)
-  return Object.values((await afterResolved.getType()).fields)
-    .filter(field => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
-    .map(field => {
-      if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
-        return {
-          elemID: beforeResolved.elemID,
-          severity: 'Warning',
-          message: 'Cannot modify the value of a non-updatable field',
-          detailedMessage: `Cannot modify ${field.name}’s value of ${beforeResolved.elemID.getFullName()} because its field is defined as non-updateable.`,
-        } as ChangeError
+const describeTypes = async ({
+  typesToDescribe,
+  client,
+}: {
+  typesToDescribe: string[]
+  client: SalesforceClient
+}): Promise<Map<string, DescribeSObjectResult>> => {
+  const describeResultByType: Map<string, DescribeSObjectResult> = new Map()
+  await Promise.all(
+    typesToDescribe.map(async typeToDescribe => {
+      try {
+        describeResultByType.set(typeToDescribe, (await client.describeSObjects([typeToDescribe])).result[0])
+      } catch (e) {
+        log.error('Failed to describe type %s: %s', typeToDescribe, e)
       }
-      return undefined
-    })
-    .filter(values.isDefined)
+    }),
+  )
+  return describeResultByType
 }
 
-const getCreateErrorsForNonCreatableFields = async (
+const getUpdateErrors = (
+  before: InstanceElement,
   after: InstanceElement,
-  getLookupNameFunc: GetLookupNameFunc,
-): Promise<ReadonlyArray<ChangeError>> => {
-  const afterResolved = await resolveValues(after, getLookupNameFunc)
-  return awu(Object.values((await afterResolved.getType()).fields))
-    .filter(field => !field.annotations[FIELD_ANNOTATIONS.CREATABLE])
-    .map(field => {
-      if (!_.isUndefined(afterResolved.value[field.name])) {
-        return {
-          elemID: afterResolved.elemID,
+  describeResultByType: Map<string, DescribeSObjectResult>,
+): ReadonlyArray<ChangeError> => {
+  const typeName = apiNameSync(before.getTypeSync()) ?? ''
+  const describeResult = describeResultByType.get(typeName)
+  if (!describeResult || !describeResult.updateable) {
+    return [
+      {
+        elemID: before.elemID,
+        severity: 'Warning',
+        message: 'Cannot modify records of type',
+        detailedMessage: `The deploying user lacks the permissions to modify records of type ${typeName}`,
+      },
+    ]
+  }
+  const fieldsDescribeByName = _.keyBy(describeResult.fields, field => field.name)
+  const detailedChanges = detailedCompare(before, after, { createFieldChanges: true })
+  return detailedChanges
+    .filter(
+      detailedChange =>
+        !fieldsDescribeByName[detailedChange.id.name] || !fieldsDescribeByName[detailedChange.id.name].updateable,
+    )
+    .map(
+      detailedChange =>
+        ({
+          elemID: before.elemID,
+          severity: 'Warning',
+          message: 'Cannot modify the value of a non-updatable field',
+          detailedMessage: `Cannot modify ${detailedChange.id.name}’s value of ${before.elemID.getFullName()} because its field is defined as non-updateable.`,
+        }) as ChangeError,
+    )
+}
+
+const getCreateErrors = (
+  after: InstanceElement,
+  describeResultByType: Map<string, DescribeSObjectResult>,
+): ReadonlyArray<ChangeError> => {
+  const objectType = after.getTypeSync()
+  const typeName = apiNameSync(objectType) ?? ''
+  const describeResult = describeResultByType.get(typeName)
+  if (!describeResult || !describeResult.createable) {
+    return [
+      {
+        elemID: after.elemID,
+        severity: 'Warning',
+        message: 'Cannot create records of type',
+        detailedMessage: `The deploying user lacks the permissions to create records of type ${typeName}`,
+      },
+    ]
+  }
+  const fieldsDescribeByName = _.keyBy(describeResult.fields, field => field.name)
+  return Object.values(objectType.fields)
+    .filter(
+      field =>
+        (!fieldsDescribeByName[field.name] || !fieldsDescribeByName[field.name].createable) &&
+        isDefined(after.value[field.name]),
+    )
+    .map(
+      field =>
+        ({
+          elemID: after.elemID,
           severity: 'Warning',
           message: 'Cannot set a value to a non-creatable field',
-          detailedMessage: `Cannot set a value for ${field.name} of ${afterResolved.elemID.getFullName()} because its field is defined as non-creatable.`,
-        } as ChangeError
+          detailedMessage: `Cannot set a value for ${field.name} of ${after.elemID.getFullName()} because its field is defined as non-creatable.`,
+        }) as ChangeError,
+    )
+}
+
+const getDeleteChangeError = ({
+  instance,
+  describeResultByType,
+}: {
+  instance: InstanceElement
+  describeResultByType: Map<string, DescribeSObjectResult>
+}): ChangeError | undefined => {
+  const typeName = apiNameSync(instance.getTypeSync()) ?? ''
+  const describeResult = describeResultByType.get(typeName)
+  return describeResult && describeResult.deletable
+    ? undefined
+    : {
+        elemID: instance.elemID,
+        severity: 'Warning',
+        message: 'Cannot delete records of type',
+        detailedMessage: `The deploying user lacks the permissions to delete records of type ${typeName}`,
       }
-      return undefined
-    })
-    .filter(values.isDefined)
-    .toArray()
 }
 
 const changeValidator =
-  (getLookupNameFunc: GetLookupNameFunc): ChangeValidator =>
+  (client: SalesforceClient): ChangeValidator =>
   async changes => {
-    const updateChangeErrors = await awu(changes)
-      .filter(isInstanceOfCustomObjectChange)
+    const customObjectInstancesChanges = changes.filter(isInstanceOfCustomObjectChangeSync)
+    if (customObjectInstancesChanges.length === 0) {
+      return []
+    }
+    const typesToDescribe = _.uniq(
+      customObjectInstancesChanges
+        .map(getChangeData)
+        .map(instance => apiNameSync(instance.getTypeSync()))
+        .filter(isDefined),
+    )
+    const describeResultByType = await describeTypes({ typesToDescribe, client })
+    const updateChangeErrors = customObjectInstancesChanges
       .filter(isModificationChange)
-      .flatMap(change =>
-        getUpdateErrorsForNonUpdateableFields(
-          change.data.before as InstanceElement,
-          change.data.after as InstanceElement,
-          getLookupNameFunc,
-        ),
-      )
-      .toArray()
+      .flatMap(change => getUpdateErrors(change.data.before, change.data.after, describeResultByType))
 
-    const createChangeErrors = await awu(changes)
-      .filter(isInstanceOfCustomObjectChange)
+    const createChangeErrors = customObjectInstancesChanges
       .filter(isAdditionChange)
-      .flatMap(change =>
-        getCreateErrorsForNonCreatableFields(getChangeData(change) as InstanceElement, getLookupNameFunc),
-      )
-      .toArray()
+      .flatMap(change => getCreateErrors(getChangeData(change), describeResultByType))
 
-    return [...updateChangeErrors, ...createChangeErrors]
+    const deleteChangeErrors = customObjectInstancesChanges
+      .filter(isRemovalChange)
+      .map(change => getDeleteChangeError({ instance: getChangeData(change), describeResultByType }))
+      .filter(isDefined)
+
+    return updateChangeErrors.concat(createChangeErrors).concat(deleteChangeErrors)
   }
 
 export default changeValidator

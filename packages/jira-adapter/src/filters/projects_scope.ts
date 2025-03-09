@@ -6,17 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
-  BuiltinTypes,
-  CORE_ANNOTATIONS,
   Element,
   ElemID,
-  Field,
   InstanceElement,
   isInstanceElement,
   isReferenceExpression,
-  ListType,
   ReferenceExpression,
-  ObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
@@ -34,7 +29,7 @@ import { FIELD_CONTEXT_TYPE_NAME } from './fields/constants'
 const log = logger(module)
 const { makeArray } = collections.array
 
-const PROJECT_SCOPE_FIELD_NAME = 'projectsScope'
+export const PROJECT_SCOPE_FIELD_NAME = 'projectsScope'
 
 type BoardWithProjectId = {
   location: {
@@ -56,7 +51,7 @@ type AutomationWithProjectId = {
 const isAutomationWithProjectId = (element: unknown): element is InstanceElement & { value: AutomationWithProjectId } =>
   isInstanceElement(element) &&
   element.elemID.typeName === AUTOMATION_TYPE &&
-  element.value.projects !== undefined &&
+  Array.isArray(element.value.projects) &&
   element.value.projects.some((projectInfo: { projectId: unknown }) => isReferenceExpression(projectInfo.projectId))
 
 type ContextWithProjectIds = {
@@ -196,42 +191,6 @@ const getProjectFullNameToScope = (instances: InstanceElement[]): Record<string,
   return projectFullNameToScope
 }
 
-const createProjectScopeField = (objectType: ObjectType): Field =>
-  new Field(objectType, PROJECT_SCOPE_FIELD_NAME, new ListType(BuiltinTypes.STRING), {
-    [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-  })
-
-const addProjectScopeAnnotation = (objectType: ObjectType): void => {
-  const importantValuesByValue = _.keyBy(
-    [
-      ...(objectType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] ?? []),
-      {
-        value: PROJECT_SCOPE_FIELD_NAME,
-        highlighted: false,
-        indexed: true,
-      },
-    ],
-    'value',
-  )
-  objectType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = Object.values(importantValuesByValue)
-}
-
-const addProjectScopeToObjectTypes = (instances: InstanceElement[]): void => {
-  const objectTypes = Object.values(
-    // unique object types
-    _.keyBy(
-      instances.map(instance => instance.getTypeSync()),
-      objectType => objectType.elemID.getFullName(),
-    ),
-  )
-  objectTypes.forEach(objectType => {
-    if (objectType.fields[PROJECT_SCOPE_FIELD_NAME] === undefined) {
-      objectType.fields[PROJECT_SCOPE_FIELD_NAME] = createProjectScopeField(objectType)
-      addProjectScopeAnnotation(objectType)
-    }
-  })
-}
-
 const getInstanceFullNameToChildren = (instances: InstanceElement[]): Record<string, InstanceElement[]> => {
   const instanceFullNameToChildren: Record<string, InstanceElement[]> = {}
   instances.forEach(instance => {
@@ -265,8 +224,9 @@ const getProjectsScopeInfo = (
     .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
     .forEach(project => {
       const projectChildren = getInstanceChildrenTree(project, instanceFullNameToChildren)
-      const instancesReferringToProject = Object.values(
-        _.keyBy(projectFullNameToScope[project.elemID.getFullName()] ?? [], instance => instance.elemID.getFullName()),
+      const instancesReferringToProject = _.unionBy(
+        projectFullNameToScope[project.elemID.getFullName()] ?? [],
+        instance => instance.elemID.getFullName(),
       )
       const scope = getProjectScope(project, projectChildren.concat(instancesReferringToProject))
       scope.forEach(elemId => {
@@ -295,7 +255,6 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
     const instances = elements.filter(isInstanceElement)
-    addProjectScopeToObjectTypes(instances)
 
     const projectFullNameToScope = getProjectFullNameToScope(instances)
     const projectsScopeInfo = getProjectsScopeInfo(instances, projectFullNameToScope)

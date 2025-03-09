@@ -13,19 +13,16 @@ import {
   InstanceElement,
   ChangeError,
   isAdditionChange,
-  ModificationChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import { DescribeSObjectResult } from '@salto-io/jsforce'
-import { detailedCompare, GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { values, collections } from '@salto-io/lowerdash'
+import { detailedCompare } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 
 import SalesforceClient from '../client/client'
 import { apiNameSync, isInstanceOfCustomObjectChangeSync } from '../filters/utils'
-import { resolveSalesforceChanges } from '../transformers/reference_mapping'
 
-const { awu } = collections.asynciterable
 const { isDefined } = values
 const log = logger(module)
 
@@ -49,11 +46,11 @@ const describeTypes = async ({
   return describeResultByType
 }
 
-const getUpdateErrors = async (
+const getUpdateErrors = (
   before: InstanceElement,
   after: InstanceElement,
   describeResultByType: Map<string, DescribeSObjectResult>,
-): Promise<ReadonlyArray<ChangeError>> => {
+): ReadonlyArray<ChangeError> => {
   const typeName = apiNameSync(before.getTypeSync()) ?? ''
   const describeResult = describeResultByType.get(typeName)
   if (!describeResult || !describeResult.updateable) {
@@ -84,10 +81,10 @@ const getUpdateErrors = async (
     )
 }
 
-const getCreateErrors = async (
+const getCreateErrors = (
   after: InstanceElement,
   describeResultByType: Map<string, DescribeSObjectResult>,
-): Promise<ReadonlyArray<ChangeError>> => {
+): ReadonlyArray<ChangeError> => {
   const objectType = after.getTypeSync()
   const typeName = apiNameSync(objectType) ?? ''
   const describeResult = describeResultByType.get(typeName)
@@ -102,7 +99,7 @@ const getCreateErrors = async (
     ]
   }
   const fieldsDescribeByName = _.keyBy(describeResult.fields, field => field.name)
-  return awu(Object.values(objectType.fields))
+  return Object.values(objectType.fields)
     .filter(
       field =>
         (!fieldsDescribeByName[field.name] || !fieldsDescribeByName[field.name].createable) &&
@@ -117,7 +114,6 @@ const getCreateErrors = async (
           detailedMessage: `Cannot set a value for ${field.name} of ${after.elemID.getFullName()} because its field is defined as non-creatable.`,
         }) as ChangeError,
     )
-    .toArray()
 }
 
 const getDeleteChangeError = ({
@@ -140,7 +136,7 @@ const getDeleteChangeError = ({
 }
 
 const changeValidator =
-  (getLookupNameFunc: GetLookupNameFunc, client: SalesforceClient): ChangeValidator =>
+  (client: SalesforceClient): ChangeValidator =>
   async changes => {
     const customObjectInstancesChanges = changes.filter(isInstanceOfCustomObjectChangeSync)
     if (customObjectInstancesChanges.length === 0) {
@@ -153,19 +149,13 @@ const changeValidator =
         .filter(isDefined),
     )
     const describeResultByType = await describeTypes({ typesToDescribe, client })
-    const updateChangeErrors = await awu(
-      (await resolveSalesforceChanges(
-        customObjectInstancesChanges.filter(isModificationChange),
-        getLookupNameFunc,
-      )) as ModificationChange<InstanceElement>[],
-    )
+    const updateChangeErrors = customObjectInstancesChanges
+      .filter(isModificationChange)
       .flatMap(change => getUpdateErrors(change.data.before, change.data.after, describeResultByType))
-      .toArray()
 
-    const createChangeErrors = await awu(customObjectInstancesChanges)
+    const createChangeErrors = customObjectInstancesChanges
       .filter(isAdditionChange)
       .flatMap(change => getCreateErrors(getChangeData(change), describeResultByType))
-      .toArray()
 
     const deleteChangeErrors = customObjectInstancesChanges
       .filter(isRemovalChange)

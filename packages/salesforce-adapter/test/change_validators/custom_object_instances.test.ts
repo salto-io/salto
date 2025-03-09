@@ -14,14 +14,14 @@ import {
   toChange,
   ChangeValidator,
   Change,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { DescribeSObjectResult } from '@salto-io/jsforce'
 import changeValidatorCreator from '../../src/change_validators/custom_object_instances'
 import { METADATA_TYPE, CUSTOM_OBJECT, API_NAME } from '../../src/constants'
-import { defaultFilterContext } from '../utils'
-import { getLookUpName } from '../../src/transformers/reference_mapping'
 import mockClient from '../client'
 import { SalesforceClient } from '../../index'
+import { mockTypes } from '../mock_elements'
 
 describe('custom object instances change validator', () => {
   let customObjectInstancesValidator: ChangeValidator
@@ -67,7 +67,7 @@ describe('custom object instances change validator', () => {
       ],
       errors: [],
     })
-    customObjectInstancesValidator = changeValidatorCreator(getLookUpName(defaultFilterContext.fetchProfile), client)
+    customObjectInstancesValidator = changeValidatorCreator(client)
   })
 
   describe('onAdd of instance of customObject', () => {
@@ -95,7 +95,7 @@ describe('custom object instances change validator', () => {
   describe('onModify of instance of customObject', () => {
     let changeErrors: Readonly<ChangeError[]>
     const before = new InstanceElement('instance', obj, {
-      nonUpdateable: 'youCantUpdateMe',
+      nonUpdateable: new ReferenceExpression(mockTypes.Account.elemID, mockTypes.Account),
       nonCreatable: 'youCanUpdateMe',
     })
     let after: InstanceElement
@@ -104,7 +104,7 @@ describe('custom object instances change validator', () => {
       after = before.clone()
     })
     it('should have change error with warning when editing a non-updateable field', async () => {
-      after.value.nonUpdateable = 'IamTryingToUpdate'
+      after.value.nonUpdateable = new ReferenceExpression(mockTypes.Product2.elemID, mockTypes.Product2)
       changeErrors = await customObjectInstancesValidator([toChange({ before, after })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')

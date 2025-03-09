@@ -1743,15 +1743,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: '/api/v1/features/{id}/{lifecycle}',
                   method: 'post',
-                  queryArgs: {
-                    // Whether to enable or disable the feature
-                    lifecycle: '{lifecycle}',
-                  },
                 },
                 context: {
                   custom:
                     () =>
                     ({ change }) => ({
+                      // Whether to enable or disable the feature
                       lifecycle: getChangeData(change).value.status === 'ENABLED' ? 'ENABLE' : 'DISABLE',
                     }),
                 },

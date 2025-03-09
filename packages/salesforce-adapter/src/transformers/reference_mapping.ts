@@ -206,6 +206,10 @@ export type FieldReferenceDefinition = {
  * A value will be converted into a reference expression if:
  * 1. An element matching the rule is found.
  * 2. Resolving the resulting reference expression back returns the original value.
+ *
+ * The key in this record must follow a strict format that is generated from the definition.
+ * In order to understand the correct key for a new def, put any string as your key and run the `field_references` UT.
+ * They will fail with the expected key in the error message.
  */
 export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
   'WorkflowFieldUpdate_LayoutItem_SummaryLayoutItem_WorkflowEmailRecipient_QuickActionLayoutItem_FieldSetItem@field@CustomField@instanceParent':

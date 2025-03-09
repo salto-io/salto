@@ -22,9 +22,13 @@ import {
   TypeElement,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import filterCreator, { addReferences, createContextStrategyLookups } from '../../src/filters/field_references'
-import { referenceMappingDefs, ReferenceSerializationStrategyLookup } from '../../src/transformers/reference_mapping'
+import {
+  FieldReferenceDefinition,
+  referenceMappingDefs,
+  ReferenceSerializationStrategyLookup,
+} from '../../src/transformers/reference_mapping'
 import {
   OBJECTS_PATH,
   SALESFORCE,
@@ -75,6 +79,18 @@ import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
+
+const getDefKey = (def: FieldReferenceDefinition): string => {
+  const parts = [
+    def.src.parentTypes.join('_'),
+    def.src.field,
+    def.target?.type,
+    def.target?.parentContext,
+    def.target?.typeContext,
+  ].filter(isDefined)
+  return parts.join('@')
+}
 
 const customObjectType = new ObjectType({
   elemID: CUSTOM_OBJECT_TYPE_ID,
@@ -1098,6 +1114,17 @@ describe('Serialization Strategies', () => {
         expect(itemComponentInstanceValue).toBeString()
         expect(fieldInstanceValue).toBeString()
       })
+    })
+  })
+})
+
+describe('Validate Definition Keys', () => {
+  it('should have correct keys', () => {
+    Object.entries(referenceMappingDefs).forEach(([key, def]) => {
+      const expectedKey = getDefKey(def)
+      if (expectedKey !== key) {
+        throw new Error(`expected ref key '${key}' to be '${expectedKey}'`)
+      }
     })
   })
 })

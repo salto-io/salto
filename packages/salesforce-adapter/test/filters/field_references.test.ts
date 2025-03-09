@@ -24,10 +24,7 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import filterCreator, { addReferences, createContextStrategyLookups } from '../../src/filters/field_references'
-import {
-  fieldNameToTypeMappingDefs,
-  ReferenceSerializationStrategyLookup,
-} from '../../src/transformers/reference_mapping'
+import { referenceMappingDefs, ReferenceSerializationStrategyLookup } from '../../src/transformers/reference_mapping'
 import {
   OBJECTS_PATH,
   SALESFORCE,
@@ -537,7 +534,7 @@ describe('FieldReferences filter', () => {
 
     beforeAll(async () => {
       elements = generateElements()
-      const modifiedDefs = fieldNameToTypeMappingDefs.map(def => _.omit(def, 'serializationStrategy'))
+      const modifiedDefs = Object.values(referenceMappingDefs).map(def => _.omit(def, 'serializationStrategy'))
       await addReferences(
         elements,
         buildElementsSourceFromElements(elements),

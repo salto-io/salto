@@ -8,7 +8,7 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { configType } from '../src/config/config'
-import { getConfig, configCreator, optionsType } from '../src/config_creator'
+import { getConfig, configCreator, optionsType, getOptionsType, configContextType } from '../src/config_creator'
 import { createEmptyType } from './utils'
 
 describe('config creator', () => {
@@ -22,9 +22,22 @@ describe('config creator', () => {
   it('should return config creator', async () => {
     const config = configCreator
     expect(config).toEqual({
-      optionsType,
+      configContextType,
+      getOptionsType,
       getConfig,
     })
+  })
+  it('getOptionsType should return jiraDataCenterOptionsType when isDataCenter is true', async () => {
+    const configContext = new InstanceElement('instance', configContextType, { isDataCenter: true })
+    const getOptionsTypeRes = getOptionsType(configContext)
+    expect(getOptionsTypeRes.fields.enableScriptRunnerAddon).toBeDefined()
+    expect(getOptionsTypeRes.fields.enableJSM).toBeUndefined()
+  })
+  it('should return default optionsType when isDataCenter is false (jira Cloud)', async () => {
+    const configContext = new InstanceElement('instance', configContextType, { isDataCenter: false })
+    const getOptionsTypeRes = getOptionsType(configContext)
+    expect(getOptionsTypeRes.fields.enableScriptRunnerAddon).toBeDefined()
+    expect(getOptionsTypeRes.fields.enableJSM).toBeDefined()
   })
   it('get config should return default config', async () => {
     const config = await getConfig()

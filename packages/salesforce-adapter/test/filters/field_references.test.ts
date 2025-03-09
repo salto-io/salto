@@ -22,10 +22,11 @@ import {
   TypeElement,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import filterCreator, { addReferences, createContextStrategyLookups } from '../../src/filters/field_references'
 import {
-  fieldNameToTypeMappingDefs,
+  FieldReferenceDefinition,
+  referenceMappingDefs,
   ReferenceSerializationStrategyLookup,
 } from '../../src/transformers/reference_mapping'
 import {
@@ -78,6 +79,13 @@ import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
+
+const getDefKey = (def: FieldReferenceDefinition): string => {
+  const srcParts = [def.src.parentTypes.join('_'), def.src.field].filter(isDefined)
+  const targetParts = [def.target?.type, def.target?.parentContext, def.target?.typeContext].filter(isDefined)
+  return `${srcParts.join('.')}:${targetParts.join('.')}`
+}
 
 const customObjectType = new ObjectType({
   elemID: CUSTOM_OBJECT_TYPE_ID,
@@ -537,7 +545,7 @@ describe('FieldReferences filter', () => {
 
     beforeAll(async () => {
       elements = generateElements()
-      const modifiedDefs = fieldNameToTypeMappingDefs.map(def => _.omit(def, 'serializationStrategy'))
+      const modifiedDefs = Object.values(referenceMappingDefs).map(def => _.omit(def, 'serializationStrategy'))
       await addReferences(
         elements,
         buildElementsSourceFromElements(elements),
@@ -1019,39 +1027,99 @@ describe('Serialization Strategies', () => {
         },
       }) as FilterWith<'onFetch'>
     })
-    it('should create reference to the CustomField and deserialize it to the original value', async () => {
-      await filter.onFetch([flexiPageInstance, flexiPage, targetType])
-      const expectedReference = 'salesforce.TestType__c.field.TestCustomField__c'
-      const getFullName = (val: string | ReferenceExpression): string => {
-        expect(val).toBeInstanceOf(ReferenceExpression)
-        return (val as ReferenceExpression).elemID.getFullName()
-      }
-      const componentInstanceCreatedReference =
-        flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES][0][
-          COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE
-        ][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE]
-      const itemComponentInstanceCreatedReference =
-        flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES][0][
-          ITEM_INSTANCE_FIELD_NAMES.COMPONENT
-        ][COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][
-          UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE
-        ]
-      const fieldInstanceCreatedReference = flexiPageInstance.value.flexiPageRegions[0][
-        FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES
-      ][1][ITEM_INSTANCE_FIELD_NAMES.FIELD][FIELD_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][
-        UI_FORMULA_RULE_FIELD_NAMES.CRITERIA
-      ][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE] as ReferenceExpression
+    describe('when reference is enabled', () => {
+      beforeEach(() => {
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: { target: [] },
+            }),
+          },
+        }) as FilterWith<'onFetch'>
+      })
+      it('should create reference to the CustomField and deserialize it to the original value', async () => {
+        await filter.onFetch([flexiPageInstance, flexiPage, targetType])
+        const expectedReference = 'salesforce.TestType__c.field.TestCustomField__c'
+        const getFullName = (val: string | ReferenceExpression): string => {
+          expect(val).toBeInstanceOf(ReferenceExpression)
+          return (val as ReferenceExpression).elemID.getFullName()
+        }
+        const componentInstanceCreatedReference =
+          flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES][0][
+            COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE
+          ][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE]
+        const itemComponentInstanceCreatedReference =
+          flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES][0][
+            ITEM_INSTANCE_FIELD_NAMES.COMPONENT
+          ][COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][
+            UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE
+          ]
+        const fieldInstanceCreatedReference = flexiPageInstance.value.flexiPageRegions[0][
+          FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES
+        ][1][ITEM_INSTANCE_FIELD_NAMES.FIELD][FIELD_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][
+          UI_FORMULA_RULE_FIELD_NAMES.CRITERIA
+        ][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE] as ReferenceExpression
 
-      expect(getFullName(componentInstanceCreatedReference)).toEqual(expectedReference)
-      expect(getFullName(itemComponentInstanceCreatedReference)).toEqual(expectedReference)
-      expect(getFullName(fieldInstanceCreatedReference)).toEqual(expectedReference)
-      // Make sure serialization works on the created reference
-      expect(
-        await ReferenceSerializationStrategyLookup.flexiPageleftValueField.serialize({
-          ref: componentInstanceCreatedReference,
-          element: flexiPageInstance,
-        }),
-      ).toEqual(RESOLVED_VALUE)
+        expect(getFullName(componentInstanceCreatedReference)).toEqual(expectedReference)
+        expect(getFullName(itemComponentInstanceCreatedReference)).toEqual(expectedReference)
+        expect(getFullName(fieldInstanceCreatedReference)).toEqual(expectedReference)
+        // Make sure serialization works on the created reference
+        expect(
+          await ReferenceSerializationStrategyLookup.flexiPageleftValueField.serialize({
+            ref: componentInstanceCreatedReference,
+            element: flexiPageInstance,
+          }),
+        ).toEqual(RESOLVED_VALUE)
+      })
+    })
+    describe('when reference is disabled', () => {
+      beforeEach(() => {
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                target: [],
+                disabledReferences: ['UiFormulaCriterion.leftValue:CustomField.instanceParent'],
+              },
+            }),
+          },
+        }) as FilterWith<'onFetch'>
+      })
+      it('should not create references', async () => {
+        await filter.onFetch([flexiPageInstance, flexiPage, targetType])
+        const componentInstanceValue =
+          flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES][0][
+            COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE
+          ][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE]
+        const itemComponentInstanceValue =
+          flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES][0][
+            ITEM_INSTANCE_FIELD_NAMES.COMPONENT
+          ][COMPONENT_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][UI_FORMULA_RULE_FIELD_NAMES.CRITERIA][0][
+            UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE
+          ]
+        const fieldInstanceValue = flexiPageInstance.value.flexiPageRegions[0][
+          FLEXI_PAGE_REGION_FIELD_NAMES.ITEM_INSTANCES
+        ][1][ITEM_INSTANCE_FIELD_NAMES.FIELD][FIELD_INSTANCE_FIELD_NAMES.VISIBILITY_RULE][
+          UI_FORMULA_RULE_FIELD_NAMES.CRITERIA
+        ][0][UI_FORMULA_CRITERION_FIELD_NAMES.LEFT_VALUE] as ReferenceExpression
+
+        expect(componentInstanceValue).toBeString()
+        expect(itemComponentInstanceValue).toBeString()
+        expect(fieldInstanceValue).toBeString()
+      })
+    })
+  })
+})
+
+describe('Validate Definition Keys', () => {
+  it('should have correct keys', () => {
+    Object.entries(referenceMappingDefs).forEach(([key, def]) => {
+      const expectedKey = getDefKey(def)
+      if (expectedKey !== key) {
+        throw new Error(`expected ref key '${key}' to be '${expectedKey}'`)
+      }
     })
   })
 })

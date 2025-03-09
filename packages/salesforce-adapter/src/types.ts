@@ -406,6 +406,7 @@ export type FetchParameters = {
   addNamespacePrefixToFullName?: boolean
   warningSettings?: WarningSettings
   additionalImportantValues?: ImportantValues
+  disabledReferences?: string[]
 }
 
 export type DeprecatedMetadataParams = {
@@ -893,6 +894,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
       refType: new ListType(importantValueType),
     },
     limits: { refType: limitsType },
+    disabledReferences: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1033,6 +1035,7 @@ export type FetchProfile = {
   readonly maxItemsInRetrieveRequest: number
   readonly importantValues: ImportantValues
   readonly limits?: FetchLimits
+  readonly disabledReferences?: string[]
 }
 
 export type TypeWithNestedInstances = (typeof constants.TYPES_WITH_NESTED_INSTANCES)[number]

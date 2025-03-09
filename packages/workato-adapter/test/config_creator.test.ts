@@ -19,10 +19,8 @@ describe('config creator', () => {
   })
   it('should return config creator', async () => {
     const config = configCreator
-    expect(config).toEqual({
-      optionsType,
-      getConfig,
-    })
+    expect(config.getOptionsType?.()).toEqual(optionsType)
+    expect(configCreator.getConfig).toEqual(getConfig)
   })
   it('should return default config when options are not provided', async () => {
     const config = await getConfig()

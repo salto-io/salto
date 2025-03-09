@@ -1420,12 +1420,12 @@ describe('Salto parser', () => {
       const body = `
         type salesforce.multiline_templates {
           tmpl = '''
-multiline
+multiline \\'''
 template {{$\{te@mp.late.instance.multiline_stuff@us}}}
 value
 '''
           escapedTemplateMarker = '''
-multiline
+$\{ template.as.instance.first_part }multiline '''
 \${{$\{te@mp.late.instance.multiline_stuff@us}}} and {{$\{te@mp.late.instance.multiline_stuff@us}}}\${{$\{te@mp.late.instance.multiline_stuff@us}}}{{$\{te@mp.late.instance.multiline_stuff@us}}} hello
 line where the original content looks like an escaped reference but it it is actually not a reference: \\\\\\\${ not.reference }
 line that has \\\\\\\\ and ends with \\
@@ -1442,7 +1442,7 @@ line that has \\\\\\\\ and ends with \\
       it('should parse references to template as TemplateExpression', () => {
         expect(multilineRefObj.annotations.tmpl).toBeInstanceOf(TemplateExpression)
         expect(multilineRefObj.annotations.tmpl.parts).toEqual([
-          'multiline\ntemplate {{',
+          "multiline '''\ntemplate {{",
           expect.objectContaining({
             elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
           }),
@@ -1453,7 +1453,10 @@ line that has \\\\\\\\ and ends with \\
       it('should parse references that exist on the same line as an escaped template marker as TemplateExpression', () => {
         expect(multilineRefObj.annotations.escapedTemplateMarker).toBeInstanceOf(TemplateExpression)
         expect(multilineRefObj.annotations.escapedTemplateMarker.parts).toEqual([
-          'multiline\n${{',
+          expect.objectContaining({
+            elemID: new ElemID('template', 'as', 'instance', 'first_part'),
+          }),
+          "multiline '''\n${{",
           expect.objectContaining({
             elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
           }),

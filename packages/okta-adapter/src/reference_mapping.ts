@@ -335,6 +335,12 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     missingRefStrategy: 'typeAndValue',
     target: { type: 'ResourceSet' },
   },
+  {
+    src: { field: 'excludeZones', parentTypes: ['ThreatInsightConfiguration'] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: NETWORK_ZONE_TYPE_NAME },
+  },
 ]
 
 const userReferenceRules: OktaFieldReferenceDefinition[] = [

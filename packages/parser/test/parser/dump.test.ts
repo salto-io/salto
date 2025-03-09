@@ -162,7 +162,7 @@ describe('Salto Dump', () => {
         // eslint-disable-next-line no-template-curly-in-string
         'Hello \\${ not.reference } and \n line with escaped ref \\',
         new ReferenceExpression(new ElemID('salto', 'ref')),
-        '\n and another \\\\ line\\',
+        "\n and ''' and another \\\\ line\\",
       ],
     }),
     doubleEscapedTemplate: new TemplateExpression({
@@ -292,7 +292,7 @@ describe('Salto Dump', () => {
         expect(body).toMatch(/Hello \\\\\\\$\{ not.reference \}/m)
       })
       it('should not escape backslashes that do not appear before ${', () => {
-        expect(body).toMatch(/and another \\\\ line\\\n\s*'''/m)
+        expect(body).toMatch(/and \\''' and another \\\\ line\\\n\s*'''/m)
       })
     })
 

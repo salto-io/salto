@@ -51,6 +51,7 @@ import {
   APP_PROVISIONING_FIELD_NAMES,
   USER_ROLES_TYPE_NAME,
   API_SCOPES_FIELD_NAME,
+  FEATURE_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -1731,6 +1732,40 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           return ['modify']
         }
         return [change.action]
+      },
+    },
+    [FEATURE_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/features/{id}/{lifecycle}',
+                  method: 'post',
+                  queryArgs: {
+                    // Whether to enable or disable the feature
+                    lifecycle: '{lifecycle}',
+                  },
+                },
+                context: {
+                  custom:
+                    () =>
+                    ({ change }) => ({
+                      lifecycle: getChangeData(change).value.status === 'ENABLED' ? 'ENABLE' : 'DISABLE',
+                    }),
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    ThreatInsightConfiguration: {
+      requestsByAction: {
+        customizations: {
+          modify: [{ request: { endpoint: { path: '/api/v1/threats/configuration', method: 'post' } } }],
+        },
       },
     },
   }

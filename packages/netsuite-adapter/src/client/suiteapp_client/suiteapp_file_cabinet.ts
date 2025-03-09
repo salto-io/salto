@@ -187,6 +187,7 @@ type FilesQueryParams = {
   isSuiteBundlesEnabled: boolean
   extensionsToExclude: string[]
   wrapFolderIdsWithQuotes: boolean
+  numOfFolderIdsPerFilesQuery: number
 }
 
 export type ImportFileCabinetParams = {
@@ -195,6 +196,7 @@ export type ImportFileCabinetParams = {
   extensionsToExclude: string[]
   maxFilesPerFileCabinetFolder: MaxFilesPerFileCabinetFolder[]
   wrapFolderIdsWithQuotes: boolean
+  numOfFolderIdsPerFilesQuery?: number
 }
 
 const FILES_CHUNK_SIZE = 5 * 1024 * 1024
@@ -333,10 +335,11 @@ const getFilesWhereQueries = ({
   isSuiteBundlesEnabled,
   extensionsToExclude,
   wrapFolderIdsWithQuotes,
+  numOfFolderIdsPerFilesQuery,
 }: FilesQueryParams): string[] => {
   const whereNotHideInBundle = isSuiteBundlesEnabled ? "hideinbundle = 'F' AND " : ''
   const whereNotExtension = extensionsToExclude.map(reg => `NOT REGEXP_LIKE(name, '${reg}') AND `).join('')
-  const whereQueries = _.chunk(folderIdsToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk => {
+  const whereQueries = _.chunk(folderIdsToQuery, numOfFolderIdsPerFilesQuery).map(foldersToQueryChunk => {
     const wrappedFolderIds = wrapFolderIdsWithQuotes
       ? foldersToQueryChunk.map(folderId => `'${folderId}'`)
       : foldersToQueryChunk
@@ -383,28 +386,27 @@ const queryFilesCountPerFolder = async (
   const whereQueries = getFilesWhereQueries(params)
 
   const results = await Promise.all(
-    whereQueries.map(async whereQuery =>
-      retryOnRetryableError(async () => {
-        const filesCountResults = await suiteAppClient.runSuiteQL({
-          select: 'folder, count(*) as count',
-          from: 'file',
-          where: whereQuery,
-          orderBy: 'folder',
-          groupBy: 'folder',
-        })
+    whereQueries.map(async whereQuery => {
+      const filesCountResults = await suiteAppClient.runSuiteQL({
+        select: 'folder, count(*) as count',
+        from: 'file',
+        where: whereQuery,
+        orderBy: 'folder',
+        groupBy: 'folder',
+      })
 
-        if (filesCountResults === undefined) {
-          throw new RetryableError(new Error('Failed to list files'))
-        }
+      if (filesCountResults === undefined) {
+        return []
+      }
 
-        const ajv = new Ajv({ allErrors: true, strict: false })
-        if (!ajv.validate<FilesCountResult[]>(FILES_COUNT_SCHEMA, filesCountResults)) {
-          log.error('Got invalid results from files count query - %s: %o', ajv.errorsText(), filesCountResults)
-          throw new RetryableError(new Error('Failed to list files'))
-        }
-        return filesCountResults
-      }),
-    ),
+      const ajv = new Ajv({ allErrors: true, strict: false })
+      if (!ajv.validate<FilesCountResult[]>(FILES_COUNT_SCHEMA, filesCountResults)) {
+        log.error('Got invalid results from files count query - %s: %o', ajv.errorsText(), filesCountResults)
+        return []
+      }
+
+      return filesCountResults
+    }),
   )
 
   return Object.fromEntries(results.flat().map(({ folder, count }) => [folder, parseInt(count, 10)]))
@@ -608,7 +610,13 @@ const filterFilesByPath = ({
 
 const queryFileCabinet = async (
   suiteAppClient: SuiteAppClient,
-  { query, extensionsToExclude, maxFilesPerFileCabinetFolder, wrapFolderIdsWithQuotes }: ImportFileCabinetParams,
+  {
+    query,
+    extensionsToExclude,
+    maxFilesPerFileCabinetFolder,
+    wrapFolderIdsWithQuotes,
+    numOfFolderIdsPerFilesQuery = MAX_ITEMS_IN_WHERE_QUERY,
+  }: ImportFileCabinetParams,
 ): Promise<FileCabinetResults> => {
   const { results: topLevelFolders, isSuiteBundlesEnabled } = await queryTopLevelFolders(suiteAppClient)
   const topLevelFoldersResults = topLevelFolders.filter(folder => query.isParentFolderMatch(`/${folder.name}`))
@@ -647,6 +655,7 @@ const queryFileCabinet = async (
     isSuiteBundlesEnabled,
     extensionsToExclude,
     wrapFolderIdsWithQuotes,
+    numOfFolderIdsPerFilesQuery,
   })
 
   const { foldersResults, largeFilesCountFoldersError, largeFilesCountFolderWarnings } = filterFoldersByFilesCount({
@@ -669,6 +678,7 @@ const queryFileCabinet = async (
     isSuiteBundlesEnabled,
     extensionsToExclude,
     wrapFolderIdsWithQuotes,
+    numOfFolderIdsPerFilesQuery,
   })
 
   const filesWithPath = toFilesWithPaths({ queriedFiles, foldersResults, idToFolder })

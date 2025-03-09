@@ -460,7 +460,7 @@ export const retrieveMetadataInstances = async ({
         type: getManifestTypeName(metadataType),
       }
     })
-    const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
+    const typesToRetrieve = _.sortedUniq(filesToRetrieve.map(prop => prop.type).sort()).join(',')
     log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)
     const result = await client.retrieve(request, fetchProfile)

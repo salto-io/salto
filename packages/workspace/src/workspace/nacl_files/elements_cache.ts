@@ -391,24 +391,18 @@ export const createMergeManager = async (
         )
       }
     }
-    const currentMergeErrors = mergedChanges.cacheValid
-      ? Object.fromEntries(
-          await awu(currentErrors.entries())
-            .map(e => [e.key, e.value] as [string, SaltoError[]])
-            .toArray(),
-        )
-      : {}
     if (!mergedChanges.cacheValid) {
       log.debug('Clearing due to cache invalidation')
       await currentErrors.clear()
       await currentElements.clear()
     } else {
       const removalChanges = mergedChanges.changes.filter(isRemovalChange)
-      await currentElements.deleteAll(removalChanges.map(change => getChangeData(change).elemID))
+      const removedIds = removalChanges.map(change => getChangeData(change).elemID)
+      await currentElements.deleteAll(removedIds)
       logChanges(removalChanges)
-      await currentErrors.deleteAll(noErrorMergeIds.filter(id => !_.isEmpty(currentMergeErrors[id])))
+      await currentErrors.deleteAll(removedIds.map(id => id.getFullName()).concat(noErrorMergeIds))
     }
-    await currentErrors.setAll(awu(mergeErrors).filter(err => !_.isEqual(err.value, currentMergeErrors[err.key])))
+    await currentErrors.setAll(mergeErrors)
     const additionOrModificationChanges = mergedChanges.changes.filter(isAdditionOrModificationChange)
     const [additionChanges, modificationChanges] = _.partition(additionOrModificationChanges, isAdditionChange)
     await currentElements.setAll(additionOrModificationChanges.map(change => getChangeData(change)))

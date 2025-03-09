@@ -208,124 +208,26 @@ export type FieldReferenceDefinition = {
  * 2. Resolving the resulting reference expression back returns the original value.
  */
 export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
-  'GenAiPlannerFunctionDef.genAiFunctionName': {
-    src: {
-      field: 'genAiFunctionName',
-      parentTypes: ['GenAiPlannerFunctionDef'],
+  'WorkflowFieldUpdate_LayoutItem_SummaryLayoutItem_WorkflowEmailRecipient_QuickActionLayoutItem_FieldSetItem@field@CustomField@instanceParent':
+    {
+      src: {
+        field: 'field',
+        parentTypes: [
+          'WorkflowFieldUpdate',
+          'LayoutItem',
+          'SummaryLayoutItem',
+          'WorkflowEmailRecipient',
+          'QuickActionLayoutItem',
+          'FieldSetItem',
+        ],
+      },
+      serializationStrategy: 'relativeApiName',
+      target: {
+        parentContext: 'instanceParent',
+        type: 'CustomField',
+      },
     },
-    target: {
-      type: 'GenAiFunction',
-    },
-  },
-  'GenAiPlannerFunctionDef.genAiPluginName': {
-    src: {
-      field: 'genAiPluginName',
-      parentTypes: ['GenAiPlannerFunctionDef'],
-    },
-    target: {
-      type: 'GenAiPlugin',
-    },
-  },
-  'GenAiPluginFunctionDef.functionName': {
-    src: {
-      field: 'functionName',
-      parentTypes: ['GenAiPluginFunctionDef'],
-    },
-    target: {
-      type: 'GenAiFunction',
-    },
-  },
-  'PackageVersion.namespace': {
-    src: {
-      field: 'namespace',
-      parentTypes: ['PackageVersion'],
-    },
-    target: {
-      type: 'InstalledPackage',
-    },
-  },
-  'Network.changePasswordTemplate': {
-    src: {
-      field: 'changePasswordTemplate',
-      parentTypes: ['Network'],
-    },
-    target: {
-      type: 'EmailTemplate',
-    },
-  },
-  'Network.chgEmailVerNewTemplate': {
-    src: {
-      field: 'chgEmailVerNewTemplate',
-      parentTypes: ['Network'],
-    },
-    target: {
-      type: 'EmailTemplate',
-    },
-  },
-  'Network.chgEmailVerOldTemplate': {
-    src: {
-      field: 'chgEmailVerOldTemplate',
-      parentTypes: ['Network'],
-    },
-    target: {
-      type: 'EmailTemplate',
-    },
-  },
-  'Network.forgotPasswordTemplate': {
-    src: {
-      field: 'forgotPasswordTemplate',
-      parentTypes: ['Network'],
-    },
-    target: {
-      type: 'EmailTemplate',
-    },
-  },
-  'Network.lockoutTemplate': {
-    src: {
-      field: 'lockoutTemplate',
-      parentTypes: ['Network'],
-    },
-    target: {
-      type: 'EmailTemplate',
-    },
-  },
-  'Network.verificationTemplate': {
-    src: {
-      field: 'verificationTemplate',
-      parentTypes: ['Network'],
-    },
-    target: {
-      type: 'EmailTemplate',
-    },
-  },
-  'Network.welcomeTemplate': {
-    src: {
-      field: 'welcomeTemplate',
-      parentTypes: ['Network'],
-    },
-    target: {
-      type: 'EmailTemplate',
-    },
-  },
-  'WorkflowFieldUpdate.field': {
-    src: {
-      field: 'field',
-      parentTypes: [
-        'WorkflowFieldUpdate',
-        'LayoutItem',
-        'SummaryLayoutItem',
-        'WorkflowEmailRecipient',
-        'QuickActionLayoutItem',
-        'FieldSetItem',
-      ],
-    },
-    serializationStrategy: 'relativeApiName',
-    target: {
-      parentContext: 'instanceParent',
-      type: 'CustomField',
-    },
-  },
-  'FlowSubflow.flowName': {
+  'FlowSubflow@flowName@Flow': {
     src: {
       field: 'flowName',
       parentTypes: ['FlowSubflow'],
@@ -334,7 +236,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Flow',
     },
   },
-  'QuickAction.flowDefinition': {
+  'QuickAction@flowDefinition@Flow': {
     src: {
       field: 'flowDefinition',
       parentTypes: ['QuickAction'],
@@ -343,7 +245,16 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Flow',
     },
   },
-  'QuickAction.lightningComponent': {
+  'QuickAction@lightningComponent@AuraDefinitionBundle': {
+    src: {
+      field: 'lightningComponent',
+      parentTypes: ['QuickAction'],
+    },
+    target: {
+      type: 'AuraDefinitionBundle',
+    },
+  },
+  'QuickAction@lightningComponent@ApexPage': {
     src: {
       field: 'lightningComponent',
       parentTypes: ['QuickAction'],
@@ -352,7 +263,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'ApexPage',
     },
   },
-  'EmailTemplate.letterhead': {
+  'EmailTemplate@letterhead@Letterhead': {
     src: {
       field: 'letterhead',
       parentTypes: ['EmailTemplate'],
@@ -361,7 +272,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Letterhead',
     },
   },
-  'WorkflowOutboundMessage.fields': {
+  'WorkflowOutboundMessage@fields@CustomField@instanceParent': {
     src: {
       field: 'fields',
       parentTypes: ['WorkflowOutboundMessage'],
@@ -372,7 +283,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'ReportColumn.field': {
+  'ReportColumn@field@CustomField': {
     src: {
       field: 'field',
       parentTypes: ['ReportColumn'],
@@ -381,7 +292,17 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FilterItem.field': {
+  'FilterItem@field@CustomField': {
+    src: {
+      field: 'field',
+      parentTypes: ['FilterItem'],
+      instanceTypes: [/^(?!SharingRules$).*/],
+    },
+    target: {
+      type: 'CustomField',
+    },
+  },
+  'FilterItem@field@CustomField@instanceParent': {
     src: {
       field: 'field',
       parentTypes: ['FilterItem'],
@@ -393,7 +314,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'WorkflowTask.offsetFromField': {
+  'WorkflowTask_WorkflowTimeTrigger@offsetFromField@CustomField': {
     src: {
       field: 'offsetFromField',
       parentTypes: ['WorkflowTask', 'WorkflowTimeTrigger'],
@@ -402,7 +323,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'LayoutItem.customLink': {
+  'LayoutItem_SummaryLayoutItem@customLink@WebLink@instanceParent': {
     src: {
       field: 'customLink',
       parentTypes: ['LayoutItem', 'SummaryLayoutItem'],
@@ -413,7 +334,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'WebLink',
     },
   },
-  'CustomFieldTranslation.name': {
+  'CustomFieldTranslation@name@CustomField@instanceParent': {
     src: {
       field: 'name',
       parentTypes: ['CustomFieldTranslation'],
@@ -424,7 +345,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FieldSetTranslation.name': {
+  'FieldSetTranslation@name@FieldSet@instanceParent': {
     src: {
       field: 'name',
       parentTypes: ['FieldSetTranslation'],
@@ -435,7 +356,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'FieldSet',
     },
   },
-  'RecordTypeTranslation.name': {
+  'RecordTypeTranslation@name@RecordType@instanceParent': {
     src: {
       field: 'name',
       parentTypes: ['RecordTypeTranslation'],
@@ -446,7 +367,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'RecordType',
     },
   },
-  'SharingReasonTranslation.name': {
+  'SharingReasonTranslation@name@SharingReason@instanceParent': {
     src: {
       field: 'name',
       parentTypes: ['SharingReasonTranslation'],
@@ -457,7 +378,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'SharingReason',
     },
   },
-  'WebLinkTranslation.name': {
+  'WebLinkTranslation@name@WebLink@instanceParent': {
     src: {
       field: 'name',
       parentTypes: ['WebLinkTranslation'],
@@ -468,7 +389,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'WebLink',
     },
   },
-  'WorkflowTaskTranslation.name': {
+  'WorkflowTaskTranslation@name@WorkflowTask@instanceParent': {
     src: {
       field: 'name',
       parentTypes: ['WorkflowTaskTranslation'],
@@ -479,7 +400,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'WorkflowTask',
     },
   },
-  'ValidationRuleTranslation.name': {
+  'ValidationRuleTranslation@name@ValidationRule@instanceParent': {
     src: {
       field: 'name',
       parentTypes: ['ValidationRuleTranslation'],
@@ -490,7 +411,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'ValidationRule',
     },
   },
-  'QuickActionTranslation.name': {
+  'QuickActionTranslation@name@QuickAction@instanceParent': {
     src: {
       field: 'name',
       parentTypes: ['QuickActionTranslation'],
@@ -501,18 +422,18 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'QuickAction',
     },
   },
-  'WorkflowActionReference.name': {
+  'WorkflowActionReference@name@instanceParent@neighborTypeWorkflow': {
     src: {
       field: 'name',
       parentTypes: ['WorkflowActionReference'],
     },
     serializationStrategy: 'relativeApiName',
     target: {
-      parentContext: 'parentSObjectTypeLookupTopLevel',
+      parentContext: 'instanceParent',
       typeContext: 'neighborTypeWorkflow',
     },
   },
-  'GlobalQuickActionTranslation.name': {
+  'GlobalQuickActionTranslation@name@QuickAction': {
     src: {
       field: 'name',
       parentTypes: ['GlobalQuickActionTranslation'],
@@ -521,7 +442,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'QuickAction',
     },
   },
-  'EntitlementProcess.businessHours': {
+  'EntitlementProcess_EntitlementProcessMilestoneItem@businessHours@BusinessHoursEntry': {
     src: {
       field: 'businessHours',
       parentTypes: ['EntitlementProcess', 'EntitlementProcessMilestoneItem'],
@@ -531,7 +452,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
     },
     serializationStrategy: 'mapKey',
   },
-  'RecordType.businessProcess': {
+  'RecordType@businessProcess@BusinessProcess@instanceParent': {
     src: {
       field: 'businessProcess',
       parentTypes: ['RecordType'],
@@ -542,7 +463,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'BusinessProcess',
     },
   },
-  'CustomSite.Page': {
+  'CustomSite@/Page$/@ApexPage': {
     src: {
       field: /Page$/,
       parentTypes: ['CustomSite'],
@@ -551,7 +472,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'ApexPage',
     },
   },
-  'FlowApexPluginCall.apexClass': {
+  'FlowApexPluginCall_FlowVariable_TransactionSecurityPolicy@apexClass@ApexClass': {
     src: {
       field: 'apexClass',
       parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'TransactionSecurityPolicy'],
@@ -560,16 +481,16 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'ApexClass',
     },
   },
-  'WorkflowEmailRecipient.recipient': {
+  'WorkflowEmailRecipient@recipient@Role': {
     src: {
       field: 'recipient',
       parentTypes: ['WorkflowEmailRecipient'],
     },
     target: {
-      type: 'Group',
+      type: 'Role',
     },
   },
-  'PermissionSetGroup.permissionSets': {
+  'PermissionSetGroup_DelegateGroup@permissionSets@PermissionSet': {
     src: {
       field: 'permissionSets',
       parentTypes: ['PermissionSetGroup', 'DelegateGroup'],
@@ -578,7 +499,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'PermissionSet',
     },
   },
-  'CustomApplication.tabs': {
+  'CustomApplication@tabs@CustomTab': {
     src: {
       field: 'tabs',
       parentTypes: ['CustomApplication'],
@@ -587,7 +508,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomTab',
     },
   },
-  'WorkspaceMapping.tab': {
+  'WorkspaceMapping@tab@CustomTab': {
     src: {
       field: 'tab',
       parentTypes: ['WorkspaceMapping'],
@@ -596,7 +517,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomTab',
     },
   },
-  'FlowActionCall.actionName': {
+  'FlowActionCall@actionName@neighborActionTypeFlowLookup': {
     src: {
       field: 'actionName',
       parentTypes: ['FlowActionCall'],
@@ -605,7 +526,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       typeContext: 'neighborActionTypeFlowLookup',
     },
   },
-  'PlatformActionListItem.actionName': {
+  'PlatformActionListItem@actionName@neighborActionTypeLookup': {
     src: {
       field: 'actionName',
       parentTypes: ['PlatformActionListItem'],
@@ -614,7 +535,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       typeContext: 'neighborActionTypeLookup',
     },
   },
-  'QuickActionListItem.quickActionName': {
+  'QuickActionListItem@quickActionName@QuickAction': {
     src: {
       field: 'quickActionName',
       parentTypes: ['QuickActionListItem'],
@@ -623,7 +544,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'QuickAction',
     },
   },
-  'AppActionOverride.content': {
+  'AppActionOverride_ActionOverride@content@LightningPage': {
     src: {
       field: 'content',
       parentTypes: ['AppActionOverride', 'ActionOverride'],
@@ -632,7 +553,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'LightningPage',
     },
   },
-  'AppMenuItem.name': {
+  'AppMenuItem@name@neighborTypeLookup': {
     src: {
       field: 'name',
       parentTypes: ['AppMenuItem'],
@@ -641,7 +562,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       typeContext: 'neighborTypeLookup',
     },
   },
-  'FlowVariable.objectType': {
+  'FlowVariable@objectType@CustomObject': {
     src: {
       field: 'objectType',
       parentTypes: ['FlowVariable'],
@@ -650,23 +571,24 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'FlowDynamicChoiceSet.object': {
-    src: {
-      field: 'object',
-      parentTypes: [
-        'FlowDynamicChoiceSet',
-        'FlowRecordLookup',
-        'FlowRecordUpdate',
-        'FlowRecordCreate',
-        'FlowRecordDelete',
-        'FlowStart',
-      ],
+  'FlowDynamicChoiceSet_FlowRecordLookup_FlowRecordUpdate_FlowRecordCreate_FlowRecordDelete_FlowStart@object@CustomObject':
+    {
+      src: {
+        field: 'object',
+        parentTypes: [
+          'FlowDynamicChoiceSet',
+          'FlowRecordLookup',
+          'FlowRecordUpdate',
+          'FlowRecordCreate',
+          'FlowRecordDelete',
+          'FlowStart',
+        ],
+      },
+      target: {
+        type: 'CustomObject',
+      },
     },
-    target: {
-      type: 'CustomObject',
-    },
-  },
-  'FlowDynamicChoiceSet.picklistObject': {
+  'FlowDynamicChoiceSet@picklistObject@CustomObject': {
     src: {
       field: 'picklistObject',
       parentTypes: ['FlowDynamicChoiceSet'],
@@ -675,7 +597,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'QuickAction.targetObject': {
+  'QuickAction_AnalyticSnapshot@targetObject@CustomObject': {
     src: {
       field: 'targetObject',
       parentTypes: ['QuickAction', 'AnalyticSnapshot'],
@@ -684,7 +606,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'ObjectMapping.inputObject': {
+  'ObjectMapping@inputObject@CustomObject': {
     src: {
       field: 'inputObject',
       parentTypes: ['ObjectMapping'],
@@ -693,7 +615,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'ObjectMapping.outputObject': {
+  'ObjectMapping@outputObject@CustomObject': {
     src: {
       field: 'outputObject',
       parentTypes: ['ObjectMapping'],
@@ -702,7 +624,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'DuplicateRuleMatchRule.matchRuleSObjectType': {
+  'DuplicateRuleMatchRule@matchRuleSObjectType@CustomObject': {
     src: {
       field: 'matchRuleSObjectType',
       parentTypes: ['DuplicateRuleMatchRule'],
@@ -711,7 +633,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'FlowDataTypeMapping.typeValue': {
+  'FlowDataTypeMapping@typeValue@CustomObject': {
     src: {
       field: 'typeValue',
       parentTypes: ['FlowDataTypeMapping'],
@@ -720,7 +642,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'WorkflowFieldUpdate.targetObject': {
+  'WorkflowFieldUpdate@targetObject@CustomField@instanceParent': {
     src: {
       field: 'targetObject',
       parentTypes: ['WorkflowFieldUpdate'],
@@ -730,7 +652,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FieldOverride.field': {
+  'FieldOverride@field@CustomField@instanceParent': {
     src: {
       field: 'field',
       parentTypes: ['FieldOverride'],
@@ -741,7 +663,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'AnalyticSnapshot.targetField': {
+  'AnalyticSnapshot@targetField@CustomField': {
     src: {
       field: 'targetField',
       parentTypes: ['AnalyticSnapshot'],
@@ -750,7 +672,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'ObjectSearchSetting.name': {
+  'ObjectSearchSetting@name@CustomObject': {
     src: {
       field: 'name',
       parentTypes: ['ObjectSearchSetting'],
@@ -759,7 +681,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'DashboardComponent.report': {
+  'DashboardComponent@report@Report': {
     src: {
       field: 'report',
       parentTypes: ['DashboardComponent'],
@@ -768,7 +690,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Report',
     },
   },
-  'Report.reportType': {
+  'Report@reportType@CustomObject': {
     src: {
       field: 'reportType',
       parentTypes: ['Report'],
@@ -777,7 +699,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'EntitlementProcess.entryStartDateField': {
+  'EntitlementProcess@entryStartDateField@CustomField': {
     src: {
       field: 'entryStartDateField',
       parentTypes: ['EntitlementProcess'],
@@ -786,7 +708,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'EntitlementProcess.SObjectType': {
+  'EntitlementProcess@SObjectType@CustomObject': {
     src: {
       field: 'SObjectType',
       parentTypes: ['EntitlementProcess'],
@@ -795,7 +717,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'SBQQ__PriceRule__c.SBQQ__LookupObject__c': {
+  'SBQQ__PriceRule__c_SBQQ__ProductRule__c@SBQQ__LookupObject__c@CustomObject': {
     src: {
       field: 'SBQQ__LookupObject__c',
       parentTypes: ['SBQQ__PriceRule__c', 'SBQQ__ProductRule__c'],
@@ -804,7 +726,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'SBQQ__LookupQuery__c.SBQQ__RuleLookupObject__c': {
+  'SBQQ__LookupQuery__c_SBQQ__PriceAction__c@SBQQ__RuleLookupObject__c@CustomObject': {
     src: {
       field: 'SBQQ__RuleLookupObject__c',
       parentTypes: ['SBQQ__LookupQuery__c', 'SBQQ__PriceAction__c'],
@@ -813,7 +735,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'SBQQ__ConfigurationAttribute__c.SBQQ__DefaultObject__c': {
+  'SBQQ__ConfigurationAttribute__c@SBQQ__DefaultObject__c@CustomObject': {
     src: {
       field: 'SBQQ__DefaultObject__c',
       parentTypes: ['SBQQ__ConfigurationAttribute__c'],
@@ -823,7 +745,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'SBQQ__LookupQuery__c.SBQQ__TestedObject__c': {
+  'SBQQ__LookupQuery__c@SBQQ__TestedObject__c@CustomObject': {
     src: {
       field: 'SBQQ__TestedObject__c',
       parentTypes: ['SBQQ__LookupQuery__c'],
@@ -833,7 +755,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'SBQQ__FieldMetadata__c.SBQQ__ObjectName__c': {
+  'SBQQ__FieldMetadata__c@SBQQ__ObjectName__c@CustomObject': {
     src: {
       field: 'SBQQ__ObjectName__c',
       parentTypes: ['SBQQ__FieldMetadata__c'],
@@ -842,7 +764,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'RelatedListItem.relatedList': {
+  'RelatedListItem@relatedList@CustomField': {
     src: {
       field: 'relatedList',
       parentTypes: ['RelatedListItem'],
@@ -851,7 +773,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FolderShare.sharedTo': {
+  'FolderShare@sharedTo@neighborSharedToTypeLookup': {
     src: {
       field: 'sharedTo',
       parentTypes: ['FolderShare'],
@@ -860,7 +782,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       typeContext: 'neighborSharedToTypeLookup',
     },
   },
-  'SharedTo.role': {
+  'SharedTo@role@Role': {
     src: {
       field: 'role',
       parentTypes: ['SharedTo'],
@@ -869,7 +791,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Role',
     },
   },
-  'SharedTo.roleAndSubordinates': {
+  'SharedTo@roleAndSubordinates@Role': {
     src: {
       field: 'roleAndSubordinates',
       parentTypes: ['SharedTo'],
@@ -878,7 +800,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Role',
     },
   },
-  'SharedTo.group': {
+  'SharedTo@group@Group': {
     src: {
       field: 'group',
       parentTypes: ['SharedTo'],
@@ -887,7 +809,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Group',
     },
   },
-  'RecordType.compactLayoutAssignment': {
+  'RecordType@compactLayoutAssignment@CompactLayout@instanceParent': {
     src: {
       field: 'compactLayoutAssignment',
       parentTypes: ['RecordType'],
@@ -898,7 +820,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CompactLayout',
     },
   },
-  'RuleEntry.template': {
+  'RuleEntry@template@EmailTemplate': {
     src: {
       field: 'template',
       parentTypes: ['RuleEntry'],
@@ -907,7 +829,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'EmailTemplate',
     },
   },
-  'ReportGrouping.field': {
+  'ReportGrouping@field@CustomField@instanceParent': {
     src: {
       field: 'field',
       parentTypes: ['ReportGrouping'],
@@ -917,7 +839,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'ReportTypeColumn.field': {
+  'ReportTypeColumn@field@CustomField@neighborTableLookup': {
     src: {
       field: 'field',
       parentTypes: ['ReportTypeColumn'],
@@ -928,7 +850,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'PublicGroups.publicGroup': {
+  'PublicGroups@publicGroup@Group': {
     src: {
       field: 'publicGroup',
       parentTypes: ['PublicGroups'],
@@ -937,7 +859,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Group',
     },
   },
-  'Roles.role': {
+  'Roles@role@Role': {
     src: {
       field: 'role',
       parentTypes: ['Roles'],
@@ -946,7 +868,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Role',
     },
   },
-  'WorkflowFieldUpdate.lookupValue': {
+  'WorkflowFieldUpdate@lookupValue@neighborLookupValueTypeLookup': {
     src: {
       field: 'lookupValue',
       parentTypes: ['WorkflowFieldUpdate'],
@@ -955,7 +877,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       typeContext: 'neighborLookupValueTypeLookup',
     },
   },
-  'FlowDynamicChoiceSet.displayField': {
+  'FlowDynamicChoiceSet@displayField@CustomField@neighborObjectLookup': {
     src: {
       field: 'displayField',
       parentTypes: ['FlowDynamicChoiceSet'],
@@ -966,7 +888,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FlowDynamicChoiceSet.sortField': {
+  'FlowDynamicChoiceSet@sortField@CustomField@neighborObjectLookup': {
     src: {
       field: 'sortField',
       parentTypes: ['FlowDynamicChoiceSet'],
@@ -977,7 +899,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FlowDynamicChoiceSet.valueField': {
+  'FlowDynamicChoiceSet@valueField@CustomField@neighborObjectLookup': {
     src: {
       field: 'valueField',
       parentTypes: ['FlowDynamicChoiceSet'],
@@ -988,7 +910,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FlowRecordLookup.queriedFields': {
+  'FlowRecordLookup@queriedFields@CustomField@neighborObjectLookup': {
     src: {
       field: 'queriedFields',
       parentTypes: ['FlowRecordLookup'],
@@ -999,7 +921,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FlowRecordLookup.sortField': {
+  'FlowRecordLookup@sortField@CustomField@neighborObjectLookup': {
     src: {
       field: 'sortField',
       parentTypes: ['FlowRecordLookup'],
@@ -1010,7 +932,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FlowRecordFilter.field': {
+  'FlowRecordFilter_FlowInputFieldAssignment_FlowOutputFieldAssignment@field@CustomField@parentObjectLookup': {
     src: {
       field: 'field',
       parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment', 'FlowOutputFieldAssignment'],
@@ -1021,7 +943,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'ObjectMappingField.inputField': {
+  'ObjectMappingField@inputField@CustomField@parentInputObjectLookup': {
     src: {
       field: 'inputField',
       parentTypes: ['ObjectMappingField'],
@@ -1032,7 +954,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'ObjectMappingField.outputField': {
+  'ObjectMappingField@outputField@CustomField@parentOutputObjectLookup': {
     src: {
       field: 'outputField',
       parentTypes: ['ObjectMappingField'],
@@ -1043,7 +965,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FlowDynamicChoiceSet.picklistField': {
+  'FlowDynamicChoiceSet@picklistField@CustomField@neighborPicklistObjectLookup': {
     src: {
       field: 'picklistField',
       parentTypes: ['FlowDynamicChoiceSet'],
@@ -1054,7 +976,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__LookupQuery__c.SBQQ__LookupField__c': {
+  'SBQQ__LookupQuery__c@SBQQ__LookupField__c@CustomField@neighborCPQRuleLookup': {
     src: {
       field: 'SBQQ__LookupField__c',
       parentTypes: ['SBQQ__LookupQuery__c'],
@@ -1065,7 +987,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__PriceAction__c.SBQQ__SourceLookupField__c': {
+  'SBQQ__PriceAction__c@SBQQ__SourceLookupField__c@CustomField@neighborCPQRuleLookup': {
     src: {
       field: 'SBQQ__SourceLookupField__c',
       parentTypes: ['SBQQ__PriceAction__c'],
@@ -1076,7 +998,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'ValidationRule.errorDisplayField': {
+  'ValidationRule@errorDisplayField@CustomField@instanceParent': {
     src: {
       field: 'errorDisplayField',
       parentTypes: ['ValidationRule'],
@@ -1087,7 +1009,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'RecordTypePicklistValue.picklist': {
+  'RecordTypePicklistValue@picklist@CustomField@instanceParent': {
     src: {
       field: 'picklist',
       parentTypes: ['RecordTypePicklistValue'],
@@ -1098,7 +1020,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'WebLink.page': {
+  'WebLink@page@ApexPage': {
     src: {
       field: 'page',
       parentTypes: ['WebLink'],
@@ -1107,7 +1029,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'ApexPage',
     },
   },
-  'ComponentInstanceProperty.value': {
+  'ComponentInstanceProperty@value@Flow': {
     src: {
       field: 'value',
       parentTypes: ['ComponentInstanceProperty'],
@@ -1116,7 +1038,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Flow',
     },
   },
-  'SBQQ__ProductRule__c.SBQQ__LookupProductField__c': {
+  'SBQQ__ProductRule__c_SBQQ__PriceRule__c@SBQQ__LookupProductField__c@CustomField@neighborCPQLookup': {
     src: {
       field: 'SBQQ__LookupProductField__c',
       parentTypes: ['SBQQ__ProductRule__c', 'SBQQ__PriceRule__c'],
@@ -1127,7 +1049,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__ProductRule__c.SBQQ__LookupMessageField__c': {
+  'SBQQ__ProductRule__c_SBQQ__PriceRule__c@SBQQ__LookupMessageField__c@CustomField@neighborCPQLookup': {
     src: {
       field: 'SBQQ__LookupMessageField__c',
       parentTypes: ['SBQQ__ProductRule__c', 'SBQQ__PriceRule__c'],
@@ -1138,7 +1060,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__ProductRule__c.SBQQ__LookupRequiredField__c': {
+  'SBQQ__ProductRule__c_SBQQ__PriceRule__c@SBQQ__LookupRequiredField__c@CustomField@neighborCPQLookup': {
     src: {
       field: 'SBQQ__LookupRequiredField__c',
       parentTypes: ['SBQQ__ProductRule__c', 'SBQQ__PriceRule__c'],
@@ -1149,7 +1071,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__ProductRule__c.SBQQ__LookupTypeField__c': {
+  'SBQQ__ProductRule__c_SBQQ__PriceRule__c@SBQQ__LookupTypeField__c@CustomField@neighborCPQLookup': {
     src: {
       field: 'SBQQ__LookupTypeField__c',
       parentTypes: ['SBQQ__ProductRule__c', 'SBQQ__PriceRule__c'],
@@ -1160,7 +1082,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__CustomScript__c.SBQQ__ConsumptionRateFields__c': {
+  'SBQQ__CustomScript__c@SBQQ__ConsumptionRateFields__c@CustomField': {
     src: {
       field: 'SBQQ__ConsumptionRateFields__c',
       parentTypes: ['SBQQ__CustomScript__c'],
@@ -1171,7 +1093,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__CustomScript__c.SBQQ__ConsumptionScheduleFields__c': {
+  'SBQQ__CustomScript__c@SBQQ__ConsumptionScheduleFields__c@CustomField': {
     src: {
       field: 'SBQQ__ConsumptionScheduleFields__c',
       parentTypes: ['SBQQ__CustomScript__c'],
@@ -1182,7 +1104,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__CustomScript__c.SBQQ__GroupFields__c': {
+  'SBQQ__CustomScript__c@SBQQ__GroupFields__c@CustomField': {
     src: {
       field: 'SBQQ__GroupFields__c',
       parentTypes: ['SBQQ__CustomScript__c'],
@@ -1193,7 +1115,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__CustomScript__c.SBQQ__QuoteFields__c': {
+  'SBQQ__CustomScript__c@SBQQ__QuoteFields__c@CustomField': {
     src: {
       field: 'SBQQ__QuoteFields__c',
       parentTypes: ['SBQQ__CustomScript__c'],
@@ -1204,7 +1126,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__CustomScript__c.SBQQ__QuoteLineFields__c': {
+  'SBQQ__CustomScript__c@SBQQ__QuoteLineFields__c@CustomField': {
     src: {
       field: 'SBQQ__QuoteLineFields__c',
       parentTypes: ['SBQQ__CustomScript__c'],
@@ -1215,7 +1137,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__LineColumn__c.SBQQ__FieldName__c': {
+  'SBQQ__LineColumn__c@SBQQ__FieldName__c@CustomField': {
     src: {
       field: 'SBQQ__FieldName__c',
       parentTypes: ['SBQQ__LineColumn__c'],
@@ -1226,7 +1148,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__FieldMetadata__c.SBQQ__FieldName__c': {
+  'SBQQ__FieldMetadata__c@SBQQ__FieldName__c@CustomField': {
     src: {
       field: 'SBQQ__FieldName__c',
       parentTypes: ['SBQQ__FieldMetadata__c'],
@@ -1237,7 +1159,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'SBQQ__PriceSchedule__c.SBQQ__ConstraintField__c': {
+  'SBQQ__PriceSchedule__c_SBQQ__DiscountSchedule__c@SBQQ__ConstraintField__c@CustomField': {
     src: {
       field: 'SBQQ__ConstraintField__c',
       parentTypes: ['SBQQ__PriceSchedule__c', 'SBQQ__DiscountSchedule__c'],
@@ -1248,7 +1170,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'Report.groupingColumn': {
+  'Report@groupingColumn@CustomField': {
     src: {
       field: 'groupingColumn',
       parentTypes: ['Report'],
@@ -1257,7 +1179,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'Report.secondaryGroupingColumn': {
+  'Report@secondaryGroupingColumn@CustomField': {
     src: {
       field: 'secondaryGroupingColumn',
       parentTypes: ['Report'],
@@ -1266,7 +1188,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'ReportFilterItem.column': {
+  'ReportFilterItem_DashboardFilterColumn_DashboardTableColumn@column@CustomField': {
     src: {
       field: 'column',
       parentTypes: ['ReportFilterItem', 'DashboardFilterColumn', 'DashboardTableColumn'],
@@ -1275,7 +1197,16 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'ListView.queue': {
+  'WorkflowEmailRecipient@recipient@Group': {
+    src: {
+      field: 'recipient',
+      parentTypes: ['WorkflowEmailRecipient'],
+    },
+    target: {
+      type: 'Group',
+    },
+  },
+  'ListView@queue@Queue': {
     src: {
       field: 'queue',
       parentTypes: ['ListView'],
@@ -1284,7 +1215,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Queue',
     },
   },
-  'EmailToCaseRoutingAddress.caseOwner': {
+  'EmailToCaseRoutingAddress@caseOwner@neighborCaseOwnerTypeLookup': {
     src: {
       field: 'caseOwner',
       parentTypes: ['EmailToCaseRoutingAddress'],
@@ -1293,7 +1224,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       typeContext: 'neighborCaseOwnerTypeLookup',
     },
   },
-  'RuleEntry.assignedTo': {
+  'RuleEntry_EscalationAction@assignedTo@neighborAssignedToTypeLookup': {
     src: {
       field: 'assignedTo',
       parentTypes: ['RuleEntry', 'EscalationAction'],
@@ -1302,7 +1233,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       typeContext: 'neighborAssignedToTypeLookup',
     },
   },
-  'EscalationAction.assignedToTemplate': {
+  'EscalationAction@assignedToTemplate@EmailTemplate': {
     src: {
       field: 'assignedToTemplate',
       parentTypes: ['EscalationAction'],
@@ -1311,7 +1242,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'EmailTemplate',
     },
   },
-  'CaseSettings.caseAssignNotificationTemplate': {
+  'CaseSettings@caseAssignNotificationTemplate@EmailTemplate': {
     src: {
       field: 'caseAssignNotificationTemplate',
       parentTypes: ['CaseSettings'],
@@ -1320,7 +1251,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'EmailTemplate',
     },
   },
-  'CaseSettings.caseCloseNotificationTemplate': {
+  'CaseSettings@caseCloseNotificationTemplate@EmailTemplate': {
     src: {
       field: 'caseCloseNotificationTemplate',
       parentTypes: ['CaseSettings'],
@@ -1329,7 +1260,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'EmailTemplate',
     },
   },
-  'CaseSettings.caseCommentNotificationTemplate': {
+  'CaseSettings@caseCommentNotificationTemplate@EmailTemplate': {
     src: {
       field: 'caseCommentNotificationTemplate',
       parentTypes: ['CaseSettings'],
@@ -1338,7 +1269,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'EmailTemplate',
     },
   },
-  'CaseSettings.caseCreateNotificationTemplate': {
+  'CaseSettings@caseCreateNotificationTemplate@EmailTemplate': {
     src: {
       field: 'caseCreateNotificationTemplate',
       parentTypes: ['CaseSettings'],
@@ -1347,7 +1278,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'EmailTemplate',
     },
   },
-  'ServiceChannel.relatedEntityType': {
+  'ServiceChannel@relatedEntityType@CustomObject': {
     src: {
       field: 'relatedEntityType',
       parentTypes: ['ServiceChannel'],
@@ -1356,7 +1287,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'ServiceChannel.secondaryRoutingPriorityField': {
+  'ServiceChannel@secondaryRoutingPriorityField@CustomField@neighborRelatedEntityTypeLookup': {
     src: {
       field: 'secondaryRoutingPriorityField',
       parentTypes: ['ServiceChannel'],
@@ -1367,7 +1298,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'EntitlementTemplate.entitlementProcess': {
+  'EntitlementTemplate@entitlementProcess@EntitlementProcess': {
     src: {
       field: 'entitlementProcess',
       parentTypes: ['EntitlementTemplate'],
@@ -1377,7 +1308,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
     },
     sourceTransformation: 'asCaseInsensitiveString',
   },
-  'FlowElementReferenceOrValue.elementReference': {
+  'FlowElementReferenceOrValue@elementReference@CustomLabel': {
     src: {
       field: 'elementReference',
       parentTypes: ['FlowElementReferenceOrValue'],
@@ -1387,7 +1318,18 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomLabel',
     },
   },
-  'EntitlementProcessMilestoneItem.milestoneName': {
+  'WorkflowActionReference@name@parentSObjectTypeLookupTopLevel@neighborTypeWorkflow': {
+    src: {
+      field: 'name',
+      parentTypes: ['WorkflowActionReference'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'parentSObjectTypeLookupTopLevel',
+      typeContext: 'neighborTypeWorkflow',
+    },
+  },
+  'EntitlementProcessMilestoneItem@milestoneName@MilestoneType': {
     src: {
       field: 'milestoneName',
       parentTypes: ['EntitlementProcessMilestoneItem'],
@@ -1396,7 +1338,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'MilestoneType',
     },
   },
-  'DuplicateRuleFilterItem.field': {
+  'DuplicateRuleFilterItem@field@CustomField@neighborTableLookup': {
     src: {
       field: 'field',
       parentTypes: ['DuplicateRuleFilterItem'],
@@ -1407,7 +1349,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'DuplicateRuleFilterItem.table': {
+  'DuplicateRuleFilterItem@table@CustomObject': {
     src: {
       field: 'table',
       parentTypes: ['DuplicateRuleFilterItem'],
@@ -1417,7 +1359,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'HomePageComponent.links': {
+  'HomePageComponent@links@CustomPageWebLink': {
     src: {
       field: 'links',
       parentTypes: ['HomePageComponent'],
@@ -1426,7 +1368,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomPageWebLink',
     },
   },
-  'AnimationRule.recordTypeName': {
+  'AnimationRule@recordTypeName@RecordType@neighborSobjectLookup': {
     src: {
       field: 'recordTypeName',
       parentTypes: ['AnimationRule'],
@@ -1437,7 +1379,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'RecordType',
     },
   },
-  'AnimationRule.targetField': {
+  'AnimationRule@targetField@CustomField@neighborSobjectLookup': {
     src: {
       field: 'targetField',
       parentTypes: ['AnimationRule'],
@@ -1448,7 +1390,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'AnimationRule.sobjectType': {
+  'AnimationRule@sobjectType@CustomObject': {
     src: {
       field: 'sobjectType',
       parentTypes: ['AnimationRule'],
@@ -1457,7 +1399,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'ProfileFieldLevelSecurity.field': {
+  'ProfileFieldLevelSecurity@field@CustomField': {
     src: {
       field: 'field',
       parentTypes: ['ProfileFieldLevelSecurity'],
@@ -1466,7 +1408,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'ProfileObjectPermissions.object': {
+  'ProfileObjectPermissions@object@CustomObject': {
     src: {
       field: 'object',
       parentTypes: ['ProfileObjectPermissions'],
@@ -1475,7 +1417,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'ProfileApexClassAccess.apexClass': {
+  'ProfileApexClassAccess@apexClass@ApexClass': {
     src: {
       field: 'apexClass',
       parentTypes: ['ProfileApexClassAccess'],
@@ -1484,7 +1426,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'ApexClass',
     },
   },
-  'ProfileLayoutAssignment.layout': {
+  'ProfileLayoutAssignment@layout@Layout': {
     src: {
       field: 'layout',
       parentTypes: ['ProfileLayoutAssignment'],
@@ -1493,7 +1435,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Layout',
     },
   },
-  'ProfileLayoutAssignment.recordType': {
+  'ProfileLayoutAssignment@recordType@RecordType': {
     src: {
       field: 'recordType',
       parentTypes: ['ProfileLayoutAssignment'],
@@ -1502,7 +1444,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'RecordType',
     },
   },
-  'ProfileFlowAccess.flow': {
+  'ProfileFlowAccess@flow@Flow': {
     src: {
       field: 'flow',
       parentTypes: ['ProfileFlowAccess'],
@@ -1511,7 +1453,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Flow',
     },
   },
-  'ProfileRecordTypeVisibility.recordType': {
+  'ProfileRecordTypeVisibility@recordType@RecordType': {
     src: {
       field: 'recordType',
       parentTypes: ['ProfileRecordTypeVisibility'],
@@ -1520,7 +1462,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'RecordType',
     },
   },
-  'ProfileApplicationVisibility.application': {
+  'ProfileApplicationVisibility@application@CustomApplication': {
     src: {
       field: 'application',
       parentTypes: ['ProfileApplicationVisibility'],
@@ -1529,7 +1471,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomApplication',
     },
   },
-  'ListView.columns': {
+  'ListView@columns@CustomField@instanceParent': {
     src: {
       field: 'columns',
       parentTypes: ['ListView'],
@@ -1540,7 +1482,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       parentContext: 'instanceParent',
     },
   },
-  'PermissionSetFieldPermissions.field': {
+  'PermissionSetFieldPermissions@field@CustomField': {
     src: {
       field: 'field',
       parentTypes: ['PermissionSetFieldPermissions'],
@@ -1549,7 +1491,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'PermissionSetObjectPermissions.object': {
+  'PermissionSetObjectPermissions@object@CustomObject': {
     src: {
       field: 'object',
       parentTypes: ['PermissionSetObjectPermissions'],
@@ -1558,7 +1500,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomObject',
     },
   },
-  'FilterItem.value': {
+  'FilterItem@value@RecordType@instanceParent': {
     src: {
       field: 'value',
       parentTypes: ['FilterItem'],
@@ -1569,7 +1511,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'RecordType',
     },
   },
-  'FieldInstance.fieldItem': {
+  'FieldInstance@fieldItem@CustomField@instanceParent': {
     src: {
       field: 'fieldItem',
       parentTypes: ['FieldInstance'],
@@ -1580,30 +1522,31 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'CustomField',
     },
   },
-  'FlowAssignmentItem.assignToReference': {
-    src: {
-      field: 'assignToReference',
-      parentTypes: [
-        'FlowAssignmentItem',
-        'FlowStageStepOutputParameter',
-        'FlowSubflowOutputAssignment',
-        'FlowTransformValueAction',
-        'FlowScreenFieldOutputParameter',
-        'FlowWaitEventOutputParameter',
-        'FlowStageStepExitActionOutputParameter',
-        'FlowApexPluginCallOutputParameter',
-        'FlowActionCallOutputParameter',
-        'FlowOutputFieldAssignment',
-        'FlowStageStepEntryActionOutputParameter',
-      ],
+  'FlowAssignmentItem_FlowStageStepOutputParameter_FlowSubflowOutputAssignment_FlowTransformValueAction_FlowScreenFieldOutputParameter_FlowWaitEventOutputParameter_FlowStageStepExitActionOutputParameter_FlowApexPluginCallOutputParameter_FlowActionCallOutputParameter_FlowOutputFieldAssignment_FlowStageStepEntryActionOutputParameter@assignToReference@CustomField@instanceParent':
+    {
+      src: {
+        field: 'assignToReference',
+        parentTypes: [
+          'FlowAssignmentItem',
+          'FlowStageStepOutputParameter',
+          'FlowSubflowOutputAssignment',
+          'FlowTransformValueAction',
+          'FlowScreenFieldOutputParameter',
+          'FlowWaitEventOutputParameter',
+          'FlowStageStepExitActionOutputParameter',
+          'FlowApexPluginCallOutputParameter',
+          'FlowActionCallOutputParameter',
+          'FlowOutputFieldAssignment',
+          'FlowStageStepEntryActionOutputParameter',
+        ],
+      },
+      serializationStrategy: 'recordFieldDollarPrefix',
+      target: {
+        parentContext: 'instanceParent',
+        type: 'CustomField',
+      },
     },
-    serializationStrategy: 'recordFieldDollarPrefix',
-    target: {
-      parentContext: 'instanceParent',
-      type: 'CustomField',
-    },
-  },
-  'CustomApplication.logo': {
+  'CustomApplication@logo@Document': {
     src: {
       field: 'logo',
       parentTypes: ['CustomApplication'],
@@ -1612,7 +1555,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'Document',
     },
   },
-  'UiFormulaCriterion.leftValue': {
+  'UiFormulaCriterion@leftValue@CustomField@instanceParent': {
     src: {
       field: 'leftValue',
       parentTypes: ['UiFormulaCriterion'],
@@ -1621,6 +1564,105 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
     target: {
       parentContext: 'instanceParent',
       type: 'CustomField',
+    },
+  },
+  'GenAiPlannerFunctionDef@genAiFunctionName@GenAiFunction': {
+    src: {
+      field: 'genAiFunctionName',
+      parentTypes: ['GenAiPlannerFunctionDef'],
+    },
+    target: {
+      type: 'GenAiFunction',
+    },
+  },
+  'GenAiPlannerFunctionDef@genAiPluginName@GenAiPlugin': {
+    src: {
+      field: 'genAiPluginName',
+      parentTypes: ['GenAiPlannerFunctionDef'],
+    },
+    target: {
+      type: 'GenAiPlugin',
+    },
+  },
+  'GenAiPluginFunctionDef@functionName@GenAiFunction': {
+    src: {
+      field: 'functionName',
+      parentTypes: ['GenAiPluginFunctionDef'],
+    },
+    target: {
+      type: 'GenAiFunction',
+    },
+  },
+  'Network@changePasswordTemplate@EmailTemplate': {
+    src: {
+      field: 'changePasswordTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
+  },
+  'Network@chgEmailVerNewTemplate@EmailTemplate': {
+    src: {
+      field: 'chgEmailVerNewTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
+  },
+  'Network@chgEmailVerOldTemplate@EmailTemplate': {
+    src: {
+      field: 'chgEmailVerOldTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
+  },
+  'Network@forgotPasswordTemplate@EmailTemplate': {
+    src: {
+      field: 'forgotPasswordTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
+  },
+  'Network@lockoutTemplate@EmailTemplate': {
+    src: {
+      field: 'lockoutTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
+  },
+  'Network@verificationTemplate@EmailTemplate': {
+    src: {
+      field: 'verificationTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
+  },
+  'Network@welcomeTemplate@EmailTemplate': {
+    src: {
+      field: 'welcomeTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
+  },
+  'PackageVersion@namespace@InstalledPackage': {
+    src: {
+      field: 'namespace',
+      parentTypes: ['PackageVersion'],
+    },
+    target: {
+      type: 'InstalledPackage',
     },
   },
 }

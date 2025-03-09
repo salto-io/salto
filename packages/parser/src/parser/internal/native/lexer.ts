@@ -102,8 +102,8 @@ export const rules: Record<string, moo.Rules> = {
 }
 
 const stringWithReferencesRules = moo.compile({
-  // This handles regular escapes, unicode escapes and escaped template markers ('\${')
-  [TOKEN_TYPES.ESCAPE]: { match: /(?:\\[^$u]|\\u[0-9a-fA-F]{4}|\\\$\{?)+/ },
+  // This handles escaped multiline end (\'''),regular escapes, unicode escapes and escaped template markers ('\${')
+  [TOKEN_TYPES.ESCAPE]: { match: /(?:\\'''|\\[^$u]|\\u[0-9a-fA-F]{4}|\\\$\{?)+/ },
   [TOKEN_TYPES.REFERENCE]: { match: REFERENCE, value: s => s.slice(2, -1).trim() },
   // Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
   [TOKEN_TYPES.CONTENT]: {

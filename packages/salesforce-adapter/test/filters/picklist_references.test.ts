@@ -489,11 +489,6 @@ describe('picklistReferences filter', () => {
       const elem = elements[2] as ObjectType
       expect(
         elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
-        ],
-      ).toEqual(new ReferenceExpression(elem.fields.state.elemID, elem.fields.state))
-      expect(
-        elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
         ][0][VALUE_SETTINGS_FIELDS.VALUE_NAME],
       ).toEqual(
@@ -542,11 +537,6 @@ describe('picklistReferences filter', () => {
           gvs.value.customValue.values.val2.fullName,
         ),
       )
-      expect(
-        elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-          FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
-        ],
-      ).toEqual(new ReferenceExpression(elem.fields.state.elemID, elem.fields.state))
       expect(
         elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
           FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
@@ -619,11 +609,6 @@ describe('picklistReferences filter', () => {
         const elem = elements[2] as ObjectType
         expect(
           elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-            FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
-          ],
-        ).toEqual('state')
-        expect(
-          elem.fields.customPicklistField.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][0][VALUE_SETTINGS_FIELDS.VALUE_NAME],
         ).toEqual('val1')
@@ -647,11 +632,6 @@ describe('picklistReferences filter', () => {
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS
           ][1][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE][0],
         ).toEqual(8)
-        expect(
-          elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
-            FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD
-          ],
-        ).toEqual(new ReferenceExpression(elem.fields.state.elemID, elem.fields.state))
         expect(
           elem.fields.fieldPicklist.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY][
             FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS

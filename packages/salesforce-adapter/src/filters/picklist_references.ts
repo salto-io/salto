@@ -101,10 +101,6 @@ const addFieldDependencyReferences = (
   if (!isField(controllingField)) {
     return
   }
-  fieldDependency[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD] = new ReferenceExpression(
-    controllingField.elemID,
-    controllingField,
-  )
   const controllingValueSet = getValueSetOfField(controllingField, picklistIndex)
   fieldDependency[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS].forEach((vs: Value) => {
     if (_.isString(vs.valueName) && valueSetInstance[vs.valueName] !== undefined) {

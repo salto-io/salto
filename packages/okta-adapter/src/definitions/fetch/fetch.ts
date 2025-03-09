@@ -1625,6 +1625,20 @@ const createCustomizations = ({
     },
   },
   // singleton types
+  ThreatInsightConfiguration: {
+    requests: [{ endpoint: { path: '/api/v1/threats/configuration' } }],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        singleton: true,
+        serviceUrl: { path: '/admin/access/general' },
+      },
+      fieldCustomizations: {
+        _links: { omit: true },
+      },
+    },
+  },
   OrgSetting: {
     requests: [{ endpoint: { path: '/api/v1/org' }, transformation: { root: '.' } }],
     resource: {

@@ -1778,7 +1778,7 @@ const getLookUpNameImpl = ({
         return true
       }
       if (def.target.type === CUSTOM_FIELD) {
-        return isField(args.ref.value) && args.ref.value.parent.annotations.metadataType === CUSTOM_OBJECT
+        return isField(args.ref.value)
       }
       return def.target.type === args.ref.elemID.typeName
     })

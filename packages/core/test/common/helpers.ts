@@ -63,5 +63,9 @@ export const createMockAdapter = (
     },
     getAdditionalReferences: mockFunction<Required<Adapter>['getAdditionalReferences']>().mockResolvedValue([]),
     getCustomReferences: mockFunction<Required<Adapter>['getCustomReferences']>().mockResolvedValue([]),
+    getTargetedFetchTypes: mockFunction<Required<Adapter>['getTargetedFetchTypes']>().mockResolvedValue([]),
+    getElementsTargetedFetchTypes: mockFunction<Required<Adapter>['getElementsTargetedFetchTypes']>().mockResolvedValue(
+      [],
+    ),
   }
 }

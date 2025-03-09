@@ -23,6 +23,7 @@ import {
   isContainerType,
   BuiltinTypes,
   TypeReference,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
@@ -36,6 +37,7 @@ import {
   getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
   createResolvedTypesElementsSource,
+  createAdapterElementsSource,
 } from '../../../src/core/adapters'
 import { createMockAdapter } from '../../common/helpers'
 
@@ -452,6 +454,173 @@ describe('adapters.ts', () => {
       it('should return true for existing element and false otherwise', async () => {
         expect(await elementsSource.has(type.elemID)).toBeTrue()
         expect(await elementsSource.has(new ElemID(ADAPTER, 'NonExistingType'))).toBeFalse()
+      })
+    })
+  })
+
+  describe('createAdapterElementsSource', () => {
+    let elementsSource: ReadOnlyElementsSource
+    let accountElementsSource: ReadOnlyElementsSource
+
+    let type: ObjectType
+    let anotherAccountType: ObjectType
+    let instance: InstanceElement
+    let secondInstance: InstanceElement
+    let anotherAccountInstance: InstanceElement
+    let secondAccountInstance: InstanceElement
+
+    beforeEach(() => {
+      type = new ObjectType({ elemID: new ElemID('salto', 'type'), annotations: { account: 'salto' } })
+      anotherAccountType = new ObjectType({ elemID: new ElemID('salto2', 'type'), annotations: { account: 'salto2' } })
+
+      instance = new InstanceElement('name', type, { account: 'salto' })
+      secondInstance = new InstanceElement('saltoInstance', type)
+
+      anotherAccountInstance = new InstanceElement('name', anotherAccountType, { account: 'salto2' })
+      secondAccountInstance = new InstanceElement('salto2Instance', anotherAccountType)
+
+      elementsSource = buildElementsSourceFromElements([
+        type,
+        anotherAccountType,
+        instance,
+        secondInstance,
+        anotherAccountInstance,
+        secondAccountInstance,
+      ])
+    })
+
+    describe('when account name is the adapter name', () => {
+      beforeEach(() => {
+        accountElementsSource = createAdapterElementsSource({ elementsSource, account: 'salto', adapter: 'salto' })
+      })
+
+      describe('getAll', () => {
+        it('should return only elements of the specific account', async () => {
+          const elements = await toArrayAsync(await accountElementsSource.getAll())
+          expect(elements).toHaveLength(3)
+          expect(elements.find(isObjectType)).toEqual(type)
+          expect(elements.filter(isInstanceElement).find(inst => inst.elemID.name === instance.elemID.name)).toEqual(
+            instance,
+          )
+          expect(
+            elements.filter(isInstanceElement).find(inst => inst.elemID.name === secondInstance.elemID.name),
+          ).toEqual(secondInstance)
+        })
+      })
+
+      describe('list', () => {
+        it('should return only element ids of the specific account', async () => {
+          const elemIds = await toArrayAsync(await accountElementsSource.list())
+          expect(elemIds).toHaveLength(3)
+          expect(elemIds.find(id => id.idType === 'type')).toEqual(type.elemID)
+          expect(elemIds.find(id => id.name === instance.elemID.name)).toEqual(instance.elemID)
+          expect(elemIds.find(id => id.name === secondInstance.elemID.name)).toEqual(secondInstance.elemID)
+        })
+      })
+
+      describe('get', () => {
+        it('should return only elements of the specific account', async () => {
+          expect(await accountElementsSource.get(type.elemID)).toEqual(type)
+          expect(await accountElementsSource.get(instance.elemID)).toEqual(instance)
+          expect(await accountElementsSource.get(secondInstance.elemID)).toEqual(secondInstance)
+
+          expect(await accountElementsSource.get(anotherAccountType.elemID)).toBeUndefined()
+          expect(await accountElementsSource.get(anotherAccountInstance.elemID)).toBeUndefined()
+          expect(await accountElementsSource.get(secondAccountInstance.elemID)).toBeUndefined()
+          expect(
+            await accountElementsSource.get(
+              new ElemID('salto', secondAccountInstance.elemID.typeName, 'instance', secondAccountInstance.elemID.name),
+            ),
+          ).toBeUndefined()
+        })
+      })
+
+      describe('has', () => {
+        it('should return only elements of the specific account', async () => {
+          expect(await accountElementsSource.has(type.elemID)).toBeTrue()
+          expect(await accountElementsSource.has(instance.elemID)).toBeTrue()
+          expect(await accountElementsSource.has(secondInstance.elemID)).toBeTrue()
+
+          expect(await accountElementsSource.has(anotherAccountType.elemID)).toBeFalse()
+          expect(await accountElementsSource.has(anotherAccountInstance.elemID)).toBeFalse()
+          expect(await accountElementsSource.has(secondAccountInstance.elemID)).toBeFalse()
+          expect(
+            await accountElementsSource.has(
+              new ElemID('salto', secondAccountInstance.elemID.typeName, 'instance', secondAccountInstance.elemID.name),
+            ),
+          ).toBeFalse()
+        })
+      })
+    })
+
+    describe('when account name is different from the adapter name', () => {
+      beforeEach(() => {
+        accountElementsSource = createAdapterElementsSource({ elementsSource, account: 'salto2', adapter: 'salto' })
+      })
+
+      describe('getAll', () => {
+        it('should return only elements of the specific account with replaced adapter', async () => {
+          const elements = await toArrayAsync(await accountElementsSource.getAll())
+          expect(elements).toHaveLength(3)
+
+          const typeWithReplacedId = elements.find(isObjectType)
+          expect(typeWithReplacedId?.elemID).toEqual(type.elemID)
+          expect(typeWithReplacedId?.annotations).toEqual(anotherAccountType.annotations)
+
+          const instanceWithReplacedId = elements
+            .filter(isInstanceElement)
+            .find(inst => inst.elemID.name === anotherAccountInstance.elemID.name)
+          expect(instanceWithReplacedId?.elemID).toEqual(instance.elemID)
+          expect(instanceWithReplacedId?.value).toEqual(anotherAccountInstance.value)
+
+          const secondInstanceWithReplacedId = elements
+            .filter(isInstanceElement)
+            .find(inst => inst.elemID.name === secondAccountInstance.elemID.name)
+          expect(secondInstanceWithReplacedId?.elemID).toEqual(
+            new ElemID('salto', secondAccountInstance.elemID.typeName, 'instance', secondAccountInstance.elemID.name),
+          )
+        })
+      })
+
+      describe('list', () => {
+        it('should return only element ids of the specific account with replaced adapter', async () => {
+          const elemIds = await toArrayAsync(await accountElementsSource.list())
+          expect(elemIds).toHaveLength(3)
+          expect(elemIds.find(id => id.idType === 'type')).toEqual(type.elemID)
+          expect(elemIds.find(id => id.name === anotherAccountInstance.elemID.name)).toEqual(instance.elemID)
+          expect(elemIds.find(id => id.name === secondAccountInstance.elemID.name)).toEqual(
+            new ElemID('salto', secondAccountInstance.elemID.typeName, 'instance', secondAccountInstance.elemID.name),
+          )
+        })
+      })
+
+      describe('get', () => {
+        it('should return only elements of the specific account with replaced adapter', async () => {
+          const typeWithReplacedId = await accountElementsSource.get(type.elemID)
+          expect(typeWithReplacedId.elemID).toEqual(type.elemID)
+          expect(typeWithReplacedId.annotations).toEqual(anotherAccountType.annotations)
+
+          const instanceWithReplacedId = await accountElementsSource.get(instance.elemID)
+          expect(instanceWithReplacedId.elemID).toEqual(instance.elemID)
+          expect(instanceWithReplacedId.value).toEqual(anotherAccountInstance.value)
+
+          const secondInstanceWithReplacedId = await accountElementsSource.get(secondAccountInstance.elemID)
+          expect(secondInstanceWithReplacedId.elemID).toEqual(
+            new ElemID('salto', secondAccountInstance.elemID.typeName, 'instance', secondAccountInstance.elemID.name),
+          )
+
+          expect(await accountElementsSource.get(secondInstance.elemID)).toBeUndefined()
+        })
+      })
+
+      describe('has', () => {
+        it('should return only elements of the specific account with replaced adapter', async () => {
+          expect(await accountElementsSource.has(type.elemID)).toBeTrue()
+          expect(await accountElementsSource.has(instance.elemID)).toBeTrue()
+          expect(await accountElementsSource.has(secondAccountInstance.elemID)).toBeTrue()
+
+          expect(await accountElementsSource.has(secondInstance.elemID)).toBeFalse()
+        })
       })
     })
   })

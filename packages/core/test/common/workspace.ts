@@ -71,6 +71,7 @@ export const mockWorkspace = ({
   accountToServiceName = {},
   parsedNaclFiles = {},
   staticFilesSource = undefined,
+  aliasRemoteMap = new workspace.remoteMap.InMemoryRemoteMap(),
 }: {
   elements?: Element[]
   elementsWithoutHidden?: Element[]
@@ -84,6 +85,7 @@ export const mockWorkspace = ({
   accountToServiceName?: Record<string, string>
   parsedNaclFiles?: Record<string, Element[]>
   staticFilesSource?: staticFiles.StaticFilesSource
+  aliasRemoteMap?: workspace.remoteMap.ReadOnlyRemoteMap<string>
 }): workspace.Workspace => {
   const elementIDtoFileMap = Object.entries(parsedNaclFiles).reduce(
     (acc, entry) => {
@@ -124,6 +126,7 @@ export const mockWorkspace = ({
     updateServiceConfig: jest.fn(),
     getReferenceSourcesIndex: mockFunction<workspace.Workspace['getReferenceSourcesIndex']>(),
     getReferenceTargetsIndex: mockFunction<workspace.Workspace['getReferenceSourcesIndex']>(),
+    getAliases: mockFunction<workspace.Workspace['getAliases']>().mockResolvedValue(aliasRemoteMap),
     addAccount: jest.fn(),
     updateAccountCredentials: jest.fn(),
     updateAccountConfig: jest.fn(),

@@ -1092,7 +1092,7 @@ describe('Serialization Strategies', () => {
           },
         }) as FilterWith<'onFetch'>
       })
-      it('should not create reference to the CustomField and deserialize it to the original value', async () => {
+      it('should not create references', async () => {
         await filter.onFetch([flexiPageInstance, flexiPage, targetType])
         const componentInstanceValue =
           flexiPageInstance.value.flexiPageRegions[0][FLEXI_PAGE_REGION_FIELD_NAMES.COMPONENT_INSTANCES][0][

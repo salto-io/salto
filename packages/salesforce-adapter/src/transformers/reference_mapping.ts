@@ -19,7 +19,7 @@ import {
   Change,
 } from '@salto-io/adapter-api'
 import { references as referenceUtils, resolveChangeElement, resolveValues } from '@salto-io/adapter-components'
-import { GetLookupNameFunc, GetLookupNameFuncArgs, ResolveValuesFunc } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, GetLookupNameFuncArgs, inspectValue, ResolveValuesFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -1766,8 +1766,24 @@ const getLookUpNameImpl = ({
   }
 }
 
-export const getDefsFromFetchProfile = (_fetchProfile: FetchProfile): FieldReferenceDefinition[] =>
-  Object.values(referenceMappingDefs)
+export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldReferenceDefinition[] => {
+  const { disabledReferences } = fetchProfile
+  if (!fetchProfile.disabledReferences) {
+    return Object.values(referenceMappingDefs)
+  }
+  const [validDisables, invalidDisables] = _.partition(
+    disabledReferences,
+    disabledReference => referenceMappingDefs[disabledReference] !== undefined,
+  )
+  if (invalidDisables.length > 0) {
+    log.warn('the following disabled references are not supported: %s', invalidDisables)
+  }
+  if (validDisables.length > 0) {
+    log.debug('the following references will be disabled: %s', inspectValue(validDisables))
+    return Object.values(_.omit(referenceMappingDefs, validDisables))
+  }
+  return Object.values(referenceMappingDefs)
+}
 
 /**
  * Translate a reference expression back to its original value before deploy.

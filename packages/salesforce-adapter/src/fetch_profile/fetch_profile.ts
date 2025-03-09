@@ -46,6 +46,7 @@ export const buildFetchProfile = ({
     warningSettings,
     limits,
     additionalImportantValues,
+    disabledReferences,
   } = fetchParams
   const enabledCustomReferencesHandlers = customReferencesConfiguration(customReferencesSettings)
   return {
@@ -61,6 +62,7 @@ export const buildFetchProfile = ({
     maxItemsInRetrieveRequest,
     importantValues: mergeWithDefaultImportantValues(additionalImportantValues),
     limits,
+    disabledReferences,
   }
 }
 

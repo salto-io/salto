@@ -82,14 +82,9 @@ const { awu } = collections.asynciterable
 const { isDefined } = values
 
 const getDefKey = (def: FieldReferenceDefinition): string => {
-  const parts = [
-    def.src.parentTypes.join('_'),
-    def.src.field,
-    def.target?.type,
-    def.target?.parentContext,
-    def.target?.typeContext,
-  ].filter(isDefined)
-  return parts.join('@')
+  const srcParts = [def.src.parentTypes.join('_'), def.src.field].filter(isDefined)
+  const targetParts = [def.target?.type, def.target?.parentContext, def.target?.typeContext].filter(isDefined)
+  return `${srcParts.join('.')}:${targetParts.join('.')}`
 }
 
 const customObjectType = new ObjectType({
@@ -1086,7 +1081,7 @@ describe('Serialization Strategies', () => {
             fetchProfile: buildFetchProfile({
               fetchParams: {
                 target: [],
-                disabledReferences: ['UiFormulaCriterion@leftValue@CustomField@instanceParent'],
+                disabledReferences: ['UiFormulaCriterion.leftValue:CustomField.instanceParent'],
               },
             }),
           },

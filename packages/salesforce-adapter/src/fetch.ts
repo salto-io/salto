@@ -217,6 +217,7 @@ export const fetchMetadataInstances = async ({
   metadataQuery,
   maxInstancesPerType = UNLIMITED_INSTANCES_VALUE,
   addNamespacePrefixToFullName = true,
+  fetchProfile,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
@@ -224,6 +225,7 @@ export const fetchMetadataInstances = async ({
   metadataQuery: MetadataQuery
   maxInstancesPerType?: number
   addNamespacePrefixToFullName?: boolean
+  fetchProfile?: FetchProfile
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
@@ -276,6 +278,8 @@ export const fetchMetadataInstances = async ({
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
     filePropsToRead.map(({ fullName }) => fullName),
+    undefined,
+    fetchProfile,
   )
 
   const fullNamesFromRead = new Set(metadataInfos.map(info => info?.fullName))

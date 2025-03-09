@@ -2403,6 +2403,25 @@ public class LargeClass${index} {
       const ROLE_INSTANCE_NAMES = ['CEO', 'JiraAdmin']
       const FAILING_ROLE_INSTANCE_NAMES = ['SalesforceAdmin', 'ProductManager']
       beforeEach(() => {
+        ;({ connection, adapter } = mockAdapter({
+          adapterParams: {
+            getElemIdFunc: mockGetElemIdFunc,
+            config: {
+              fetch: {
+                optionalFeatures: {
+                  handleInsufficientAccessRightsOnEntityInRead: true,
+                },
+                metadata: {
+                  exclude: metadataExclude,
+                },
+              },
+              maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
+              client: {
+                readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
+              },
+            },
+          },
+        }))
         mockMetadataType(
           { xmlName: 'Role', directoryName: 'roles' },
           {
@@ -2459,6 +2478,7 @@ public class LargeClass${index} {
           errorCode: INVALID_CROSS_REFERENCE_KEY,
         }),
         ...NON_TRANSIENT_SALESFORCE_ERRORS.map(errorName => new SFError(errorName)),
+        new SFError(SALESFORCE_ERRORS.INSUFFICIENT_ACCESS, constants.INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY),
       ])('when client throws %p', thrownError => {
         beforeEach(() => {
           connection.metadata.read.mockImplementation(async (_typeName, fullNames) => {
@@ -2904,7 +2924,8 @@ describe('Fetch via retrieve API', () => {
       zipFile: { $: { 'xsi:nil': 'true' } },
       messages: [],
     }
-    const instanceError = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
+    const instanceErrorName = 'sf:INSUFFICIENT_ACCESS'
+    const instanceErrorMessage = 'INSUFFICIENT_ACCESS: insufficient access rights on entity: ProblematicApexClass'
     beforeEach(async () => {
       metadataRetrieveSpy = jest.spyOn(connection.metadata, 'retrieve')
       metadataReadSpy = jest.spyOn(connection.metadata, 'read')
@@ -2925,7 +2946,9 @@ describe('Fetch via retrieve API', () => {
       })
       connection.metadata.read.mockImplementation(async (_type, fullNames) => {
         if (fullNames.includes('ProblematicApexClass')) {
-          throw new Error(instanceError)
+          const error = new Error(instanceErrorMessage)
+          error.name = instanceErrorName
+          throw error
         }
         return []
       })
@@ -2957,7 +2980,7 @@ describe('Fetch via retrieve API', () => {
           expect.arrayContaining([
             {
               type: 'metadataExclude',
-              reason: instanceError,
+              reason: instanceErrorMessage,
               value: {
                 metadataType: 'ApexClass',
                 name: 'ProblematicApexClass',

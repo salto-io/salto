@@ -835,18 +835,25 @@ export default class SalesforceClient implements ISalesforceClient {
     type: string,
     name: string | string[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
+    fetchProfile?: FetchProfile,
   ): Promise<SendChunkedResult<string, MetadataInfo>> {
     return sendChunked({
       operationInfo: `readMetadata (${type})`,
       input: name,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.read(type, chunk)),
       chunkSize: this.readMetadataChunkSize.overrides[type] ?? this.readMetadataChunkSize.default,
-      isSuppressedError: error =>
-        // This seems to happen with actions that relate to sending emails - these are disabled in
-        // some way on sandboxes and for some reason this causes the SF API to fail reading
-        (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid') ||
-        error.name === 'sf:INSUFFICIENT_ACCESS',
-      isUnhandledError,
+      isSuppressedError: fetchProfile?.isFeatureEnabled('handleInsufficientAccessRightsOnEntityInRead')
+        ? error =>
+            // This seems to happen with actions that relate to sending emails - these are disabled in
+            // some way on sandboxes and for some reason this causes the SF API to fail reading
+            (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid') ||
+            (error.name === 'sf:INSUFFICIENT_ACCESS' && !error.message.includes('insufficient access rights on entity'))
+        : error =>
+            // This seems to happen with actions that relate to sending emails - these are disabled in
+            // some way on sandboxes and for some reason this causes the SF API to fail reading
+            (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid') ||
+            error.name === 'sf:INSUFFICIENT_ACCESS',
+      isUnhandledError: isUnhandledError ?? isSFDCUnhandledException,
     })
   }
 
@@ -945,7 +952,14 @@ export default class SalesforceClient implements ISalesforceClient {
             chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
             sendChunk: chunk => this.conn.metadata.read(type.name, chunk),
             operationInfo: `readMetadata (${type.name})`,
-            isUnhandledError: () => false,
+            isSuppressedError: error =>
+              // The same suppressed errors as in the read flow, except for "insufficient access rights on entity"
+              (this.credentials.isSandbox &&
+                type.name === 'QuickAction' &&
+                error.message === 'targetObject is invalid') ||
+              (error.name === 'sf:INSUFFICIENT_ACCESS' &&
+                !error.message.includes('insufficient access rights on entity')),
+            isUnhandledError: isSFDCUnhandledException,
           })
           errors.forEach(({ input, error }) => {
             if (error.message.match(errorPattern)) {

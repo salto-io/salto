@@ -25,50 +25,10 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isMetadataInstanceElement } from './transformer'
 import {
-  LAYOUT_ITEM_METADATA_TYPE,
-  WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
-  CUSTOM_OBJECT,
   API_NAME_SEPARATOR,
-  WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
-  CPQ_LOOKUP_FIELD,
-  CPQ_LOOKUP_QUERY,
-  CPQ_PRICE_RULE,
-  CPQ_SOURCE_LOOKUP_FIELD,
-  CPQ_PRICE_ACTION,
-  CPQ_LOOKUP_PRODUCT_FIELD,
-  CPQ_PRODUCT_RULE,
-  CPQ_LOOKUP_MESSAGE_FIELD,
-  CPQ_LOOKUP_REQUIRED_FIELD,
-  CPQ_LOOKUP_TYPE_FIELD,
-  CUSTOM_FIELD,
-  CPQ_LOOKUP_OBJECT_NAME,
-  CPQ_RULE_LOOKUP_OBJECT_FIELD,
-  CPQ_OBJECT_NAME,
-  CPQ_FIELD_METADATA,
-  VALIDATION_RULES_METADATA_TYPE,
-  RECORD_TYPE_METADATA_TYPE,
-  BUSINESS_PROCESS_METADATA_TYPE,
-  WEBLINK_METADATA_TYPE,
-  SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
-  CPQ_CUSTOM_SCRIPT,
-  CPQ_QUOTE_FIELDS,
-  CPQ_CONSUMPTION_RATE_FIELDS,
-  CPQ_CONSUMPTION_SCHEDULE_FIELDS,
-  CPQ_GROUP_FIELDS,
-  CPQ_QUOTE_LINE_FIELDS,
   DEFAULT_OBJECT_TO_API_MAPPING,
   SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING,
   TEST_OBJECT_TO_API_MAPPING,
-  CPQ_TESTED_OBJECT,
-  CPQ_PRICE_SCHEDULE,
-  CPQ_DISCOUNT_SCHEDULE,
-  CPQ_CONFIGURATION_ATTRIBUTE,
-  CPQ_DEFAULT_OBJECT_FIELD,
-  CPQ_QUOTE,
-  CPQ_CONSTRAINT_FIELD,
-  CUSTOM_LABEL_METADATA_TYPE,
-  FLOW_FIELD_TYPE_NAMES,
-  ASSIGN_TO_REFERENCE,
 } from '../constants'
 import { instanceInternalId, isOrderedMapTypeOrRefType } from '../filters/utils'
 import { FetchProfile } from '../types'
@@ -247,240 +207,450 @@ export type FieldReferenceDefinition = {
  * 1. An element matching the rule is found.
  * 2. Resolving the resulting reference expression back returns the original value.
  */
-export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
-  {
-    src: { field: 'genAiFunctionName', parentTypes: ['GenAiPlannerFunctionDef'] },
-    target: { type: 'GenAiFunction' },
+export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
+  'GenAiPlannerFunctionDef.genAiFunctionName': {
+    src: {
+      field: 'genAiFunctionName',
+      parentTypes: ['GenAiPlannerFunctionDef'],
+    },
+    target: {
+      type: 'GenAiFunction',
+    },
   },
-  {
-    src: { field: 'genAiPluginName', parentTypes: ['GenAiPlannerFunctionDef'] },
-    target: { type: 'GenAiPlugin' },
+  'GenAiPlannerFunctionDef.genAiPluginName': {
+    src: {
+      field: 'genAiPluginName',
+      parentTypes: ['GenAiPlannerFunctionDef'],
+    },
+    target: {
+      type: 'GenAiPlugin',
+    },
   },
-  {
-    src: { field: 'functionName', parentTypes: ['GenAiPluginFunctionDef'] },
-    target: { type: 'GenAiFunction' },
+  'GenAiPluginFunctionDef.functionName': {
+    src: {
+      field: 'functionName',
+      parentTypes: ['GenAiPluginFunctionDef'],
+    },
+    target: {
+      type: 'GenAiFunction',
+    },
   },
-  {
-    src: { field: 'namespace', parentTypes: ['PackageVersion'] },
-    target: { type: 'InstalledPackage' },
+  'PackageVersion.namespace': {
+    src: {
+      field: 'namespace',
+      parentTypes: ['PackageVersion'],
+    },
+    target: {
+      type: 'InstalledPackage',
+    },
   },
-  {
-    src: { field: 'changePasswordTemplate', parentTypes: ['Network'] },
-    target: { type: 'EmailTemplate' },
+  'Network.changePasswordTemplate': {
+    src: {
+      field: 'changePasswordTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
-    src: { field: 'chgEmailVerNewTemplate', parentTypes: ['Network'] },
-    target: { type: 'EmailTemplate' },
+  'Network.chgEmailVerNewTemplate': {
+    src: {
+      field: 'chgEmailVerNewTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
-    src: { field: 'chgEmailVerOldTemplate', parentTypes: ['Network'] },
-    target: { type: 'EmailTemplate' },
+  'Network.chgEmailVerOldTemplate': {
+    src: {
+      field: 'chgEmailVerOldTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
-    src: { field: 'forgotPasswordTemplate', parentTypes: ['Network'] },
-    target: { type: 'EmailTemplate' },
+  'Network.forgotPasswordTemplate': {
+    src: {
+      field: 'forgotPasswordTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
-    src: { field: 'lockoutTemplate', parentTypes: ['Network'] },
-    target: { type: 'EmailTemplate' },
+  'Network.lockoutTemplate': {
+    src: {
+      field: 'lockoutTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
-    src: { field: 'verificationTemplate', parentTypes: ['Network'] },
-    target: { type: 'EmailTemplate' },
+  'Network.verificationTemplate': {
+    src: {
+      field: 'verificationTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
-    src: { field: 'welcomeTemplate', parentTypes: ['Network'] },
-    target: { type: 'EmailTemplate' },
+  'Network.welcomeTemplate': {
+    src: {
+      field: 'welcomeTemplate',
+      parentTypes: ['Network'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
+  'WorkflowFieldUpdate.field': {
     src: {
       field: 'field',
       parentTypes: [
-        WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
-        LAYOUT_ITEM_METADATA_TYPE,
-        SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
+        'WorkflowFieldUpdate',
+        'LayoutItem',
+        'SummaryLayoutItem',
         'WorkflowEmailRecipient',
         'QuickActionLayoutItem',
         'FieldSetItem',
       ],
     },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'flowName', parentTypes: ['FlowSubflow'] },
-    target: { type: 'Flow' },
+  'FlowSubflow.flowName': {
+    src: {
+      field: 'flowName',
+      parentTypes: ['FlowSubflow'],
+    },
+    target: {
+      type: 'Flow',
+    },
   },
-  {
-    src: { field: 'flowDefinition', parentTypes: ['QuickAction'] },
-    target: { type: 'Flow' },
+  'QuickAction.flowDefinition': {
+    src: {
+      field: 'flowDefinition',
+      parentTypes: ['QuickAction'],
+    },
+    target: {
+      type: 'Flow',
+    },
   },
-  {
-    src: { field: 'lightningComponent', parentTypes: ['QuickAction'] },
-    target: { type: 'AuraDefinitionBundle' },
+  'QuickAction.lightningComponent': {
+    src: {
+      field: 'lightningComponent',
+      parentTypes: ['QuickAction'],
+    },
+    target: {
+      type: 'ApexPage',
+    },
   },
-  {
-    src: { field: 'lightningComponent', parentTypes: ['QuickAction'] },
-    target: { type: 'ApexPage' },
+  'EmailTemplate.letterhead': {
+    src: {
+      field: 'letterhead',
+      parentTypes: ['EmailTemplate'],
+    },
+    target: {
+      type: 'Letterhead',
+    },
   },
-  {
-    src: { field: 'letterhead', parentTypes: ['EmailTemplate'] },
-    target: { type: 'Letterhead' },
-  },
-  {
-    src: { field: 'fields', parentTypes: ['WorkflowOutboundMessage'] },
+  'WorkflowOutboundMessage.fields': {
+    src: {
+      field: 'fields',
+      parentTypes: ['WorkflowOutboundMessage'],
+    },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
   },
-  // note: not all field values under ReportColumn match this rule - but it's ok because
-  // only the ones that match are currently extracted (SALTO-1758)
-  {
+  'ReportColumn.field': {
     src: {
       field: 'field',
       parentTypes: ['ReportColumn'],
     },
-    target: { type: CUSTOM_FIELD },
-  },
-  {
-    src: {
-      field: 'field',
-      parentTypes: ['FilterItem'],
-      // match everything except SharingRules (which uses a different serialization strategy)
-      instanceTypes: [/^(?!SharingRules$).*/],
+    target: {
+      type: 'CustomField',
     },
-    target: { type: CUSTOM_FIELD },
   },
-  {
+  'FilterItem.field': {
     src: {
       field: 'field',
       parentTypes: ['FilterItem'],
       instanceTypes: ['SharingRules'],
     },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
   },
-  {
+  'WorkflowTask.offsetFromField': {
     src: {
       field: 'offsetFromField',
       parentTypes: ['WorkflowTask', 'WorkflowTimeTrigger'],
     },
-    target: { type: CUSTOM_FIELD },
+    target: {
+      type: 'CustomField',
+    },
   },
-  {
+  'LayoutItem.customLink': {
     src: {
       field: 'customLink',
-      parentTypes: [LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE],
-    },
-    serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: WEBLINK_METADATA_TYPE },
-  },
-  ...[
-    CUSTOM_FIELD,
-    'FieldSet',
-    'RecordType',
-    'SharingReason',
-    WEBLINK_METADATA_TYPE,
-    'WorkflowTask',
-    VALIDATION_RULES_METADATA_TYPE,
-    'QuickAction',
-  ].map(
-    (targetType): FieldReferenceDefinition => ({
-      src: { field: 'name', parentTypes: [`${targetType}Translation`] },
-      serializationStrategy: 'relativeApiName',
-      target: { parentContext: 'instanceParent', type: targetType },
-    }),
-  ),
-  {
-    src: {
-      field: 'name',
-      parentTypes: [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE],
+      parentTypes: ['LayoutItem', 'SummaryLayoutItem'],
     },
     serializationStrategy: 'relativeApiName',
     target: {
       parentContext: 'instanceParent',
+      type: 'WebLink',
+    },
+  },
+  'CustomFieldTranslation.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['CustomFieldTranslation'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
+  },
+  'FieldSetTranslation.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['FieldSetTranslation'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'instanceParent',
+      type: 'FieldSet',
+    },
+  },
+  'RecordTypeTranslation.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['RecordTypeTranslation'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'instanceParent',
+      type: 'RecordType',
+    },
+  },
+  'SharingReasonTranslation.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['SharingReasonTranslation'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'instanceParent',
+      type: 'SharingReason',
+    },
+  },
+  'WebLinkTranslation.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['WebLinkTranslation'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'instanceParent',
+      type: 'WebLink',
+    },
+  },
+  'WorkflowTaskTranslation.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['WorkflowTaskTranslation'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'instanceParent',
+      type: 'WorkflowTask',
+    },
+  },
+  'ValidationRuleTranslation.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['ValidationRuleTranslation'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'instanceParent',
+      type: 'ValidationRule',
+    },
+  },
+  'QuickActionTranslation.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['QuickActionTranslation'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'instanceParent',
+      type: 'QuickAction',
+    },
+  },
+  'WorkflowActionReference.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['WorkflowActionReference'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'parentSObjectTypeLookupTopLevel',
       typeContext: 'neighborTypeWorkflow',
     },
   },
-  {
-    src: { field: 'name', parentTypes: ['GlobalQuickActionTranslation'] },
-    target: { type: 'QuickAction' },
+  'GlobalQuickActionTranslation.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['GlobalQuickActionTranslation'],
+    },
+    target: {
+      type: 'QuickAction',
+    },
   },
-  {
+  'EntitlementProcess.businessHours': {
     src: {
       field: 'businessHours',
       parentTypes: ['EntitlementProcess', 'EntitlementProcessMilestoneItem'],
     },
-    target: { type: 'BusinessHoursEntry' },
+    target: {
+      type: 'BusinessHoursEntry',
+    },
     serializationStrategy: 'mapKey',
   },
-  {
-    src: { field: 'businessProcess', parentTypes: [RECORD_TYPE_METADATA_TYPE] },
+  'RecordType.businessProcess': {
+    src: {
+      field: 'businessProcess',
+      parentTypes: ['RecordType'],
+    },
     serializationStrategy: 'relativeApiName',
     target: {
       parentContext: 'instanceParent',
-      type: BUSINESS_PROCESS_METADATA_TYPE,
+      type: 'BusinessProcess',
     },
   },
-  {
-    // includes authorizationRequiredPage, bandwidthExceededPage, fileNotFoundPage, ...
-    src: { field: /Page$/, parentTypes: ['CustomSite'] },
-    target: { type: 'ApexPage' },
+  'CustomSite.Page': {
+    src: {
+      field: /Page$/,
+      parentTypes: ['CustomSite'],
+    },
+    target: {
+      type: 'ApexPage',
+    },
   },
-  {
+  'FlowApexPluginCall.apexClass': {
     src: {
       field: 'apexClass',
       parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'TransactionSecurityPolicy'],
     },
-    target: { type: 'ApexClass' },
+    target: {
+      type: 'ApexClass',
+    },
   },
-  {
-    src: { field: 'recipient', parentTypes: ['WorkflowEmailRecipient'] },
-    target: { type: 'Role' },
+  'WorkflowEmailRecipient.recipient': {
+    src: {
+      field: 'recipient',
+      parentTypes: ['WorkflowEmailRecipient'],
+    },
+    target: {
+      type: 'Group',
+    },
   },
-  {
+  'PermissionSetGroup.permissionSets': {
     src: {
       field: 'permissionSets',
       parentTypes: ['PermissionSetGroup', 'DelegateGroup'],
     },
-    target: { type: 'PermissionSet' },
+    target: {
+      type: 'PermissionSet',
+    },
   },
-  {
-    src: { field: 'tabs', parentTypes: ['CustomApplication'] },
-    target: { type: 'CustomTab' },
+  'CustomApplication.tabs': {
+    src: {
+      field: 'tabs',
+      parentTypes: ['CustomApplication'],
+    },
+    target: {
+      type: 'CustomTab',
+    },
   },
-  {
-    src: { field: 'tab', parentTypes: ['WorkspaceMapping'] },
-    target: { type: 'CustomTab' },
+  'WorkspaceMapping.tab': {
+    src: {
+      field: 'tab',
+      parentTypes: ['WorkspaceMapping'],
+    },
+    target: {
+      type: 'CustomTab',
+    },
   },
-  {
-    src: { field: 'actionName', parentTypes: ['FlowActionCall'] },
-    target: { typeContext: 'neighborActionTypeFlowLookup' },
+  'FlowActionCall.actionName': {
+    src: {
+      field: 'actionName',
+      parentTypes: ['FlowActionCall'],
+    },
+    target: {
+      typeContext: 'neighborActionTypeFlowLookup',
+    },
   },
-  {
-    src: { field: 'actionName', parentTypes: ['PlatformActionListItem'] },
-    // will only resolve for actionType = QuickAction
-    target: { typeContext: 'neighborActionTypeLookup' },
+  'PlatformActionListItem.actionName': {
+    src: {
+      field: 'actionName',
+      parentTypes: ['PlatformActionListItem'],
+    },
+    target: {
+      typeContext: 'neighborActionTypeLookup',
+    },
   },
-  {
-    src: { field: 'quickActionName', parentTypes: ['QuickActionListItem'] },
-    target: { type: 'QuickAction' },
+  'QuickActionListItem.quickActionName': {
+    src: {
+      field: 'quickActionName',
+      parentTypes: ['QuickActionListItem'],
+    },
+    target: {
+      type: 'QuickAction',
+    },
   },
-  {
+  'AppActionOverride.content': {
     src: {
       field: 'content',
       parentTypes: ['AppActionOverride', 'ActionOverride'],
     },
-    target: { type: 'LightningPage' },
+    target: {
+      type: 'LightningPage',
+    },
   },
-  {
-    src: { field: 'name', parentTypes: ['AppMenuItem'] },
-    target: { typeContext: 'neighborTypeLookup' },
+  'AppMenuItem.name': {
+    src: {
+      field: 'name',
+      parentTypes: ['AppMenuItem'],
+    },
+    target: {
+      typeContext: 'neighborTypeLookup',
+    },
   },
-  {
-    src: { field: 'objectType', parentTypes: ['FlowVariable'] },
-    target: { type: CUSTOM_OBJECT },
+  'FlowVariable.objectType': {
+    src: {
+      field: 'objectType',
+      parentTypes: ['FlowVariable'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
+  'FlowDynamicChoiceSet.object': {
     src: {
       field: 'object',
       parentTypes: [
@@ -492,380 +662,701 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
         'FlowStart',
       ],
     },
-    target: { type: CUSTOM_OBJECT },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: 'picklistObject', parentTypes: ['FlowDynamicChoiceSet'] },
-    target: { type: CUSTOM_OBJECT },
+  'FlowDynamicChoiceSet.picklistObject': {
+    src: {
+      field: 'picklistObject',
+      parentTypes: ['FlowDynamicChoiceSet'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
+  'QuickAction.targetObject': {
     src: {
       field: 'targetObject',
       parentTypes: ['QuickAction', 'AnalyticSnapshot'],
     },
-    target: { type: CUSTOM_OBJECT },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: 'inputObject', parentTypes: ['ObjectMapping'] },
-    target: { type: CUSTOM_OBJECT },
+  'ObjectMapping.inputObject': {
+    src: {
+      field: 'inputObject',
+      parentTypes: ['ObjectMapping'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: 'outputObject', parentTypes: ['ObjectMapping'] },
-    target: { type: CUSTOM_OBJECT },
+  'ObjectMapping.outputObject': {
+    src: {
+      field: 'outputObject',
+      parentTypes: ['ObjectMapping'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
+  'DuplicateRuleMatchRule.matchRuleSObjectType': {
     src: {
       field: 'matchRuleSObjectType',
       parentTypes: ['DuplicateRuleMatchRule'],
     },
-    target: { type: CUSTOM_OBJECT },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: 'typeValue', parentTypes: ['FlowDataTypeMapping'] },
-    target: { type: CUSTOM_OBJECT },
+  'FlowDataTypeMapping.typeValue': {
+    src: {
+      field: 'typeValue',
+      parentTypes: ['FlowDataTypeMapping'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: 'targetObject', parentTypes: ['WorkflowFieldUpdate'] },
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  'WorkflowFieldUpdate.targetObject': {
+    src: {
+      field: 'targetObject',
+      parentTypes: ['WorkflowFieldUpdate'],
+    },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'field', parentTypes: ['FieldOverride'] },
+  'FieldOverride.field': {
+    src: {
+      field: 'field',
+      parentTypes: ['FieldOverride'],
+    },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'targetField', parentTypes: ['AnalyticSnapshot'] },
-    target: { type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'name', parentTypes: ['ObjectSearchSetting'] },
-    target: { type: CUSTOM_OBJECT },
-  },
-  {
-    src: { field: 'report', parentTypes: ['DashboardComponent'] },
-    target: { type: 'Report' },
-  },
-  {
-    src: { field: 'reportType', parentTypes: ['Report'] },
-    target: { type: CUSTOM_OBJECT },
-  },
-  {
-    src: { field: 'entryStartDateField', parentTypes: ['EntitlementProcess'] },
-    target: { type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'SObjectType', parentTypes: ['EntitlementProcess'] },
-    target: { type: CUSTOM_OBJECT },
-  },
-  {
-    src: {
-      field: CPQ_LOOKUP_OBJECT_NAME,
-      parentTypes: [CPQ_PRICE_RULE, CPQ_PRODUCT_RULE],
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
     },
-    target: { type: CUSTOM_OBJECT },
   },
-  {
+  'AnalyticSnapshot.targetField': {
     src: {
-      field: CPQ_RULE_LOOKUP_OBJECT_FIELD,
-      parentTypes: [CPQ_LOOKUP_QUERY, CPQ_PRICE_ACTION],
+      field: 'targetField',
+      parentTypes: ['AnalyticSnapshot'],
     },
-    target: { type: CUSTOM_OBJECT },
+    target: {
+      type: 'CustomField',
+    },
   },
-  {
+  'ObjectSearchSetting.name': {
     src: {
-      field: CPQ_DEFAULT_OBJECT_FIELD,
-      parentTypes: [CPQ_CONFIGURATION_ATTRIBUTE],
+      field: 'name',
+      parentTypes: ['ObjectSearchSetting'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
+  },
+  'DashboardComponent.report': {
+    src: {
+      field: 'report',
+      parentTypes: ['DashboardComponent'],
+    },
+    target: {
+      type: 'Report',
+    },
+  },
+  'Report.reportType': {
+    src: {
+      field: 'reportType',
+      parentTypes: ['Report'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
+  },
+  'EntitlementProcess.entryStartDateField': {
+    src: {
+      field: 'entryStartDateField',
+      parentTypes: ['EntitlementProcess'],
+    },
+    target: {
+      type: 'CustomField',
+    },
+  },
+  'EntitlementProcess.SObjectType': {
+    src: {
+      field: 'SObjectType',
+      parentTypes: ['EntitlementProcess'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
+  },
+  'SBQQ__PriceRule__c.SBQQ__LookupObject__c': {
+    src: {
+      field: 'SBQQ__LookupObject__c',
+      parentTypes: ['SBQQ__PriceRule__c', 'SBQQ__ProductRule__c'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
+  },
+  'SBQQ__LookupQuery__c.SBQQ__RuleLookupObject__c': {
+    src: {
+      field: 'SBQQ__RuleLookupObject__c',
+      parentTypes: ['SBQQ__LookupQuery__c', 'SBQQ__PriceAction__c'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
+  },
+  'SBQQ__ConfigurationAttribute__c.SBQQ__DefaultObject__c': {
+    src: {
+      field: 'SBQQ__DefaultObject__c',
+      parentTypes: ['SBQQ__ConfigurationAttribute__c'],
     },
     serializationStrategy: 'configurationAttributeMapping',
-    target: { type: CUSTOM_OBJECT },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: CPQ_TESTED_OBJECT, parentTypes: [CPQ_LOOKUP_QUERY] },
+  'SBQQ__LookupQuery__c.SBQQ__TestedObject__c': {
+    src: {
+      field: 'SBQQ__TestedObject__c',
+      parentTypes: ['SBQQ__LookupQuery__c'],
+    },
     serializationStrategy: 'lookupQueryMapping',
-    target: { type: CUSTOM_OBJECT },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: CPQ_OBJECT_NAME, parentTypes: [CPQ_FIELD_METADATA] },
-    target: { type: CUSTOM_OBJECT },
+  'SBQQ__FieldMetadata__c.SBQQ__ObjectName__c': {
+    src: {
+      field: 'SBQQ__ObjectName__c',
+      parentTypes: ['SBQQ__FieldMetadata__c'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: 'relatedList', parentTypes: ['RelatedListItem'] },
-    target: { type: CUSTOM_FIELD },
+  'RelatedListItem.relatedList': {
+    src: {
+      field: 'relatedList',
+      parentTypes: ['RelatedListItem'],
+    },
+    target: {
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'sharedTo', parentTypes: ['FolderShare'] },
-    target: { typeContext: 'neighborSharedToTypeLookup' },
+  'FolderShare.sharedTo': {
+    src: {
+      field: 'sharedTo',
+      parentTypes: ['FolderShare'],
+    },
+    target: {
+      typeContext: 'neighborSharedToTypeLookup',
+    },
   },
-  {
-    src: { field: 'role', parentTypes: ['SharedTo'] },
-    target: { type: 'Role' },
+  'SharedTo.role': {
+    src: {
+      field: 'role',
+      parentTypes: ['SharedTo'],
+    },
+    target: {
+      type: 'Role',
+    },
   },
-  {
-    src: { field: 'roleAndSubordinates', parentTypes: ['SharedTo'] },
-    target: { type: 'Role' },
+  'SharedTo.roleAndSubordinates': {
+    src: {
+      field: 'roleAndSubordinates',
+      parentTypes: ['SharedTo'],
+    },
+    target: {
+      type: 'Role',
+    },
   },
-  {
-    src: { field: 'group', parentTypes: ['SharedTo'] },
-    target: { type: 'Group' },
+  'SharedTo.group': {
+    src: {
+      field: 'group',
+      parentTypes: ['SharedTo'],
+    },
+    target: {
+      type: 'Group',
+    },
   },
-  {
+  'RecordType.compactLayoutAssignment': {
     src: {
       field: 'compactLayoutAssignment',
-      parentTypes: [RECORD_TYPE_METADATA_TYPE],
+      parentTypes: ['RecordType'],
     },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: 'CompactLayout' },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CompactLayout',
+    },
   },
-  {
-    src: { field: 'template', parentTypes: ['RuleEntry'] },
-    target: { type: 'EmailTemplate' },
+  'RuleEntry.template': {
+    src: {
+      field: 'template',
+      parentTypes: ['RuleEntry'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
-    src: { field: 'field', parentTypes: ['ReportGrouping'] },
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  'ReportGrouping.field': {
+    src: {
+      field: 'field',
+      parentTypes: ['ReportGrouping'],
+    },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'field', parentTypes: ['ReportTypeColumn'] },
+  'ReportTypeColumn.field': {
+    src: {
+      field: 'field',
+      parentTypes: ['ReportTypeColumn'],
+    },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'neighborTableLookup', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'neighborTableLookup',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'publicGroup', parentTypes: ['PublicGroups'] },
-    target: { type: 'Group' },
+  'PublicGroups.publicGroup': {
+    src: {
+      field: 'publicGroup',
+      parentTypes: ['PublicGroups'],
+    },
+    target: {
+      type: 'Group',
+    },
   },
-  {
-    src: { field: 'role', parentTypes: ['Roles'] },
-    target: { type: 'Role' },
+  'Roles.role': {
+    src: {
+      field: 'role',
+      parentTypes: ['Roles'],
+    },
+    target: {
+      type: 'Role',
+    },
   },
-  {
-    // sometimes has a value that is not a reference - should only convert to reference
-    // if lookupValueType exists
-    src: { field: 'lookupValue', parentTypes: ['WorkflowFieldUpdate'] },
-    target: { typeContext: 'neighborLookupValueTypeLookup' },
+  'WorkflowFieldUpdate.lookupValue': {
+    src: {
+      field: 'lookupValue',
+      parentTypes: ['WorkflowFieldUpdate'],
+    },
+    target: {
+      typeContext: 'neighborLookupValueTypeLookup',
+    },
   },
-  ...['displayField', 'sortField', 'valueField'].map(
-    (fieldName): FieldReferenceDefinition => ({
-      src: { field: fieldName, parentTypes: ['FlowDynamicChoiceSet'] },
-      serializationStrategy: 'relativeApiName',
-      target: { parentContext: 'neighborObjectLookup', type: CUSTOM_FIELD },
-    }),
-  ),
-  ...['queriedFields', 'sortField'].map(
-    (fieldName): FieldReferenceDefinition => ({
-      src: { field: fieldName, parentTypes: ['FlowRecordLookup'] },
-      serializationStrategy: 'relativeApiName',
-      target: { parentContext: 'neighborObjectLookup', type: CUSTOM_FIELD },
-    }),
-  ),
-  {
+  'FlowDynamicChoiceSet.displayField': {
+    src: {
+      field: 'displayField',
+      parentTypes: ['FlowDynamicChoiceSet'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'neighborObjectLookup',
+      type: 'CustomField',
+    },
+  },
+  'FlowDynamicChoiceSet.sortField': {
+    src: {
+      field: 'sortField',
+      parentTypes: ['FlowDynamicChoiceSet'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'neighborObjectLookup',
+      type: 'CustomField',
+    },
+  },
+  'FlowDynamicChoiceSet.valueField': {
+    src: {
+      field: 'valueField',
+      parentTypes: ['FlowDynamicChoiceSet'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'neighborObjectLookup',
+      type: 'CustomField',
+    },
+  },
+  'FlowRecordLookup.queriedFields': {
+    src: {
+      field: 'queriedFields',
+      parentTypes: ['FlowRecordLookup'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'neighborObjectLookup',
+      type: 'CustomField',
+    },
+  },
+  'FlowRecordLookup.sortField': {
+    src: {
+      field: 'sortField',
+      parentTypes: ['FlowRecordLookup'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'neighborObjectLookup',
+      type: 'CustomField',
+    },
+  },
+  'FlowRecordFilter.field': {
     src: {
       field: 'field',
       parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment', 'FlowOutputFieldAssignment'],
     },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'parentObjectLookup', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'parentObjectLookup',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'inputField', parentTypes: ['ObjectMappingField'] },
+  'ObjectMappingField.inputField': {
+    src: {
+      field: 'inputField',
+      parentTypes: ['ObjectMappingField'],
+    },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'parentInputObjectLookup', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'parentInputObjectLookup',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'outputField', parentTypes: ['ObjectMappingField'] },
+  'ObjectMappingField.outputField': {
+    src: {
+      field: 'outputField',
+      parentTypes: ['ObjectMappingField'],
+    },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'parentOutputObjectLookup', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'parentOutputObjectLookup',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'picklistField', parentTypes: ['FlowDynamicChoiceSet'] },
+  'FlowDynamicChoiceSet.picklistField': {
+    src: {
+      field: 'picklistField',
+      parentTypes: ['FlowDynamicChoiceSet'],
+    },
     serializationStrategy: 'relativeApiName',
     target: {
       parentContext: 'neighborPicklistObjectLookup',
-      type: CUSTOM_FIELD,
+      type: 'CustomField',
     },
   },
-  {
-    src: { field: CPQ_LOOKUP_FIELD, parentTypes: [CPQ_LOOKUP_QUERY] },
-    serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'neighborCPQRuleLookup', type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: CPQ_SOURCE_LOOKUP_FIELD, parentTypes: [CPQ_PRICE_ACTION] },
-    serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'neighborCPQRuleLookup', type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'errorDisplayField', parentTypes: ['ValidationRule'] },
-    serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'picklist', parentTypes: ['RecordTypePicklistValue'] },
-    serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'page', parentTypes: ['WebLink'] },
-    target: { type: 'ApexPage' },
-  },
-  {
-    src: { field: 'value', parentTypes: ['ComponentInstanceProperty'] },
-    target: { type: 'Flow' },
-  },
-  {
+  'SBQQ__LookupQuery__c.SBQQ__LookupField__c': {
     src: {
-      field: CPQ_LOOKUP_PRODUCT_FIELD,
-      parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE],
+      field: 'SBQQ__LookupField__c',
+      parentTypes: ['SBQQ__LookupQuery__c'],
     },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'neighborCPQRuleLookup',
+      type: 'CustomField',
+    },
   },
-  {
+  'SBQQ__PriceAction__c.SBQQ__SourceLookupField__c': {
     src: {
-      field: CPQ_LOOKUP_MESSAGE_FIELD,
-      parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE],
+      field: 'SBQQ__SourceLookupField__c',
+      parentTypes: ['SBQQ__PriceAction__c'],
     },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'neighborCPQRuleLookup',
+      type: 'CustomField',
+    },
   },
-  {
+  'ValidationRule.errorDisplayField': {
     src: {
-      field: CPQ_LOOKUP_REQUIRED_FIELD,
-      parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE],
+      field: 'errorDisplayField',
+      parentTypes: ['ValidationRule'],
     },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
   },
-  {
+  'RecordTypePicklistValue.picklist': {
     src: {
-      field: CPQ_LOOKUP_TYPE_FIELD,
-      parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE],
+      field: 'picklist',
+      parentTypes: ['RecordTypePicklistValue'],
     },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
   },
-  {
+  'WebLink.page': {
     src: {
-      field: CPQ_CONSUMPTION_RATE_FIELDS,
-      parentTypes: [CPQ_CUSTOM_SCRIPT],
+      field: 'page',
+      parentTypes: ['WebLink'],
+    },
+    target: {
+      type: 'ApexPage',
+    },
+  },
+  'ComponentInstanceProperty.value': {
+    src: {
+      field: 'value',
+      parentTypes: ['ComponentInstanceProperty'],
+    },
+    target: {
+      type: 'Flow',
+    },
+  },
+  'SBQQ__ProductRule__c.SBQQ__LookupProductField__c': {
+    src: {
+      field: 'SBQQ__LookupProductField__c',
+      parentTypes: ['SBQQ__ProductRule__c', 'SBQQ__PriceRule__c'],
     },
     serializationStrategy: 'relativeApiName',
-    target: { parent: 'ConsumptionRate', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'neighborCPQLookup',
+      type: 'CustomField',
+    },
   },
-  {
+  'SBQQ__ProductRule__c.SBQQ__LookupMessageField__c': {
     src: {
-      field: CPQ_CONSUMPTION_SCHEDULE_FIELDS,
-      parentTypes: [CPQ_CUSTOM_SCRIPT],
+      field: 'SBQQ__LookupMessageField__c',
+      parentTypes: ['SBQQ__ProductRule__c', 'SBQQ__PriceRule__c'],
     },
     serializationStrategy: 'relativeApiName',
-    target: { parent: 'ConsumptionSchedule', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'neighborCPQLookup',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: CPQ_GROUP_FIELDS, parentTypes: [CPQ_CUSTOM_SCRIPT] },
-    serializationStrategy: 'relativeApiName',
-    target: { parent: 'SBQQ__QuoteLineGroup__c', type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: CPQ_QUOTE_FIELDS, parentTypes: [CPQ_CUSTOM_SCRIPT] },
-    serializationStrategy: 'relativeApiName',
-    target: { parent: 'SBQQ__Quote__c', type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: CPQ_QUOTE_LINE_FIELDS, parentTypes: [CPQ_CUSTOM_SCRIPT] },
-    serializationStrategy: 'relativeApiName',
-    target: { parent: 'SBQQ__QuoteLine__c', type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'SBQQ__FieldName__c', parentTypes: ['SBQQ__LineColumn__c'] },
-    serializationStrategy: 'relativeApiName',
-    target: { parent: 'SBQQ__QuoteLine__c', type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'SBQQ__FieldName__c', parentTypes: [CPQ_FIELD_METADATA] },
-    serializationStrategy: 'relativeApiName',
-    target: { parent: CPQ_OBJECT_NAME, type: CUSTOM_FIELD },
-  },
-  {
+  'SBQQ__ProductRule__c.SBQQ__LookupRequiredField__c': {
     src: {
-      field: CPQ_CONSTRAINT_FIELD,
-      parentTypes: [CPQ_PRICE_SCHEDULE, CPQ_DISCOUNT_SCHEDULE],
+      field: 'SBQQ__LookupRequiredField__c',
+      parentTypes: ['SBQQ__ProductRule__c', 'SBQQ__PriceRule__c'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'neighborCPQLookup',
+      type: 'CustomField',
+    },
+  },
+  'SBQQ__ProductRule__c.SBQQ__LookupTypeField__c': {
+    src: {
+      field: 'SBQQ__LookupTypeField__c',
+      parentTypes: ['SBQQ__ProductRule__c', 'SBQQ__PriceRule__c'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'neighborCPQLookup',
+      type: 'CustomField',
+    },
+  },
+  'SBQQ__CustomScript__c.SBQQ__ConsumptionRateFields__c': {
+    src: {
+      field: 'SBQQ__ConsumptionRateFields__c',
+      parentTypes: ['SBQQ__CustomScript__c'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parent: 'ConsumptionRate',
+      type: 'CustomField',
+    },
+  },
+  'SBQQ__CustomScript__c.SBQQ__ConsumptionScheduleFields__c': {
+    src: {
+      field: 'SBQQ__ConsumptionScheduleFields__c',
+      parentTypes: ['SBQQ__CustomScript__c'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parent: 'ConsumptionSchedule',
+      type: 'CustomField',
+    },
+  },
+  'SBQQ__CustomScript__c.SBQQ__GroupFields__c': {
+    src: {
+      field: 'SBQQ__GroupFields__c',
+      parentTypes: ['SBQQ__CustomScript__c'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parent: 'SBQQ__QuoteLineGroup__c',
+      type: 'CustomField',
+    },
+  },
+  'SBQQ__CustomScript__c.SBQQ__QuoteFields__c': {
+    src: {
+      field: 'SBQQ__QuoteFields__c',
+      parentTypes: ['SBQQ__CustomScript__c'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parent: 'SBQQ__Quote__c',
+      type: 'CustomField',
+    },
+  },
+  'SBQQ__CustomScript__c.SBQQ__QuoteLineFields__c': {
+    src: {
+      field: 'SBQQ__QuoteLineFields__c',
+      parentTypes: ['SBQQ__CustomScript__c'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parent: 'SBQQ__QuoteLine__c',
+      type: 'CustomField',
+    },
+  },
+  'SBQQ__LineColumn__c.SBQQ__FieldName__c': {
+    src: {
+      field: 'SBQQ__FieldName__c',
+      parentTypes: ['SBQQ__LineColumn__c'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parent: 'SBQQ__QuoteLine__c',
+      type: 'CustomField',
+    },
+  },
+  'SBQQ__FieldMetadata__c.SBQQ__FieldName__c': {
+    src: {
+      field: 'SBQQ__FieldName__c',
+      parentTypes: ['SBQQ__FieldMetadata__c'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parent: 'SBQQ__ObjectName__c',
+      type: 'CustomField',
+    },
+  },
+  'SBQQ__PriceSchedule__c.SBQQ__ConstraintField__c': {
+    src: {
+      field: 'SBQQ__ConstraintField__c',
+      parentTypes: ['SBQQ__PriceSchedule__c', 'SBQQ__DiscountSchedule__c'],
     },
     serializationStrategy: 'scheduleConstraintFieldMapping',
-    target: { parent: CPQ_QUOTE, type: CUSTOM_FIELD },
+    target: {
+      parent: 'SBQQ__Quote__c',
+      type: 'CustomField',
+    },
   },
-
-  // note: not all column and xColumn values match this rule - but it's ok because
-  // only the ones that match are currently extracted (SALTO-1758)
-  {
-    src: { field: 'groupingColumn', parentTypes: ['Report'] },
-    target: { type: CUSTOM_FIELD },
+  'Report.groupingColumn': {
+    src: {
+      field: 'groupingColumn',
+      parentTypes: ['Report'],
+    },
+    target: {
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'secondaryGroupingColumn', parentTypes: ['Report'] },
-    target: { type: CUSTOM_FIELD },
+  'Report.secondaryGroupingColumn': {
+    src: {
+      field: 'secondaryGroupingColumn',
+      parentTypes: ['Report'],
+    },
+    target: {
+      type: 'CustomField',
+    },
   },
-  {
+  'ReportFilterItem.column': {
     src: {
       field: 'column',
       parentTypes: ['ReportFilterItem', 'DashboardFilterColumn', 'DashboardTableColumn'],
     },
-    target: { type: CUSTOM_FIELD },
+    target: {
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'recipient', parentTypes: ['WorkflowEmailRecipient'] },
-    target: { type: 'Group' },
+  'ListView.queue': {
+    src: {
+      field: 'queue',
+      parentTypes: ['ListView'],
+    },
+    target: {
+      type: 'Queue',
+    },
   },
-  {
-    src: { field: 'queue', parentTypes: ['ListView'] },
-    target: { type: 'Queue' },
+  'EmailToCaseRoutingAddress.caseOwner': {
+    src: {
+      field: 'caseOwner',
+      parentTypes: ['EmailToCaseRoutingAddress'],
+    },
+    target: {
+      typeContext: 'neighborCaseOwnerTypeLookup',
+    },
   },
-  {
-    src: { field: 'caseOwner', parentTypes: ['EmailToCaseRoutingAddress'] },
-    target: { typeContext: 'neighborCaseOwnerTypeLookup' },
-  },
-  {
+  'RuleEntry.assignedTo': {
     src: {
       field: 'assignedTo',
       parentTypes: ['RuleEntry', 'EscalationAction'],
     },
-    target: { typeContext: 'neighborAssignedToTypeLookup' },
+    target: {
+      typeContext: 'neighborAssignedToTypeLookup',
+    },
   },
-  {
-    src: { field: 'assignedToTemplate', parentTypes: ['EscalationAction'] },
-    target: { type: 'EmailTemplate' },
+  'EscalationAction.assignedToTemplate': {
+    src: {
+      field: 'assignedToTemplate',
+      parentTypes: ['EscalationAction'],
+    },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
+  'CaseSettings.caseAssignNotificationTemplate': {
     src: {
       field: 'caseAssignNotificationTemplate',
       parentTypes: ['CaseSettings'],
     },
-    target: { type: 'EmailTemplate' },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
+  'CaseSettings.caseCloseNotificationTemplate': {
     src: {
       field: 'caseCloseNotificationTemplate',
       parentTypes: ['CaseSettings'],
     },
-    target: { type: 'EmailTemplate' },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
+  'CaseSettings.caseCommentNotificationTemplate': {
     src: {
       field: 'caseCommentNotificationTemplate',
       parentTypes: ['CaseSettings'],
     },
-    target: { type: 'EmailTemplate' },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
+  'CaseSettings.caseCreateNotificationTemplate': {
     src: {
       field: 'caseCreateNotificationTemplate',
       parentTypes: ['CaseSettings'],
     },
-    target: { type: 'EmailTemplate' },
+    target: {
+      type: 'EmailTemplate',
+    },
   },
-  {
-    src: { field: 'relatedEntityType', parentTypes: ['ServiceChannel'] },
-    target: { type: CUSTOM_OBJECT },
+  'ServiceChannel.relatedEntityType': {
+    src: {
+      field: 'relatedEntityType',
+      parentTypes: ['ServiceChannel'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
+  'ServiceChannel.secondaryRoutingPriorityField': {
     src: {
       field: 'secondaryRoutingPriorityField',
       parentTypes: ['ServiceChannel'],
@@ -873,147 +1364,266 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'relativeApiName',
     target: {
       parentContext: 'neighborRelatedEntityTypeLookup',
-      type: CUSTOM_FIELD,
+      type: 'CustomField',
     },
   },
-  {
-    src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
-    target: { type: 'EntitlementProcess' },
+  'EntitlementTemplate.entitlementProcess': {
+    src: {
+      field: 'entitlementProcess',
+      parentTypes: ['EntitlementTemplate'],
+    },
+    target: {
+      type: 'EntitlementProcess',
+    },
     sourceTransformation: 'asCaseInsensitiveString',
   },
-  {
+  'FlowElementReferenceOrValue.elementReference': {
     src: {
       field: 'elementReference',
       parentTypes: ['FlowElementReferenceOrValue'],
     },
     serializationStrategy: 'customLabel',
-    target: { type: CUSTOM_LABEL_METADATA_TYPE },
-  },
-  {
-    src: { field: 'name', parentTypes: ['WorkflowActionReference'] },
-    serializationStrategy: 'relativeApiName',
     target: {
-      parentContext: 'parentSObjectTypeLookupTopLevel',
-      typeContext: 'neighborTypeWorkflow',
+      type: 'CustomLabel',
     },
   },
-  {
+  'EntitlementProcessMilestoneItem.milestoneName': {
     src: {
       field: 'milestoneName',
       parentTypes: ['EntitlementProcessMilestoneItem'],
     },
-    target: { type: 'MilestoneType' },
+    target: {
+      type: 'MilestoneType',
+    },
   },
-  {
-    src: { field: 'field', parentTypes: ['DuplicateRuleFilterItem'] },
+  'DuplicateRuleFilterItem.field': {
+    src: {
+      field: 'field',
+      parentTypes: ['DuplicateRuleFilterItem'],
+    },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'neighborTableLookup', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'neighborTableLookup',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'table', parentTypes: ['DuplicateRuleFilterItem'] },
+  'DuplicateRuleFilterItem.table': {
+    src: {
+      field: 'table',
+      parentTypes: ['DuplicateRuleFilterItem'],
+    },
     serializationStrategy: 'relativeApiName',
-    target: { type: CUSTOM_OBJECT },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: 'links', parentTypes: ['HomePageComponent'] },
-    target: { type: 'CustomPageWebLink' },
+  'HomePageComponent.links': {
+    src: {
+      field: 'links',
+      parentTypes: ['HomePageComponent'],
+    },
+    target: {
+      type: 'CustomPageWebLink',
+    },
   },
-  {
-    src: { field: 'recordTypeName', parentTypes: ['AnimationRule'] },
+  'AnimationRule.recordTypeName': {
+    src: {
+      field: 'recordTypeName',
+      parentTypes: ['AnimationRule'],
+    },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'neighborSobjectLookup', type: 'RecordType' },
+    target: {
+      parentContext: 'neighborSobjectLookup',
+      type: 'RecordType',
+    },
   },
-  {
-    src: { field: 'targetField', parentTypes: ['AnimationRule'] },
+  'AnimationRule.targetField': {
+    src: {
+      field: 'targetField',
+      parentTypes: ['AnimationRule'],
+    },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'neighborSobjectLookup', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'neighborSobjectLookup',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'sobjectType', parentTypes: ['AnimationRule'] },
-    target: { type: CUSTOM_OBJECT },
+  'AnimationRule.sobjectType': {
+    src: {
+      field: 'sobjectType',
+      parentTypes: ['AnimationRule'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
-    target: { type: CUSTOM_FIELD },
+  'ProfileFieldLevelSecurity.field': {
+    src: {
+      field: 'field',
+      parentTypes: ['ProfileFieldLevelSecurity'],
+    },
+    target: {
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'object', parentTypes: ['ProfileObjectPermissions'] },
-    target: { type: CUSTOM_OBJECT },
+  'ProfileObjectPermissions.object': {
+    src: {
+      field: 'object',
+      parentTypes: ['ProfileObjectPermissions'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: 'apexClass', parentTypes: ['ProfileApexClassAccess'] },
-    target: { type: 'ApexClass' },
+  'ProfileApexClassAccess.apexClass': {
+    src: {
+      field: 'apexClass',
+      parentTypes: ['ProfileApexClassAccess'],
+    },
+    target: {
+      type: 'ApexClass',
+    },
   },
-  {
-    src: { field: 'layout', parentTypes: ['ProfileLayoutAssignment'] },
-    target: { type: 'Layout' },
+  'ProfileLayoutAssignment.layout': {
+    src: {
+      field: 'layout',
+      parentTypes: ['ProfileLayoutAssignment'],
+    },
+    target: {
+      type: 'Layout',
+    },
   },
-  {
-    src: { field: 'recordType', parentTypes: ['ProfileLayoutAssignment'] },
-    target: { type: 'RecordType' },
+  'ProfileLayoutAssignment.recordType': {
+    src: {
+      field: 'recordType',
+      parentTypes: ['ProfileLayoutAssignment'],
+    },
+    target: {
+      type: 'RecordType',
+    },
   },
-  {
-    src: { field: 'flow', parentTypes: ['ProfileFlowAccess'] },
-    target: { type: 'Flow' },
+  'ProfileFlowAccess.flow': {
+    src: {
+      field: 'flow',
+      parentTypes: ['ProfileFlowAccess'],
+    },
+    target: {
+      type: 'Flow',
+    },
   },
-  {
-    src: { field: 'recordType', parentTypes: ['ProfileRecordTypeVisibility'] },
-    target: { type: 'RecordType' },
+  'ProfileRecordTypeVisibility.recordType': {
+    src: {
+      field: 'recordType',
+      parentTypes: ['ProfileRecordTypeVisibility'],
+    },
+    target: {
+      type: 'RecordType',
+    },
   },
-  {
+  'ProfileApplicationVisibility.application': {
     src: {
       field: 'application',
       parentTypes: ['ProfileApplicationVisibility'],
     },
-    target: { type: 'CustomApplication' },
+    target: {
+      type: 'CustomApplication',
+    },
   },
-  {
-    src: { field: 'columns', parentTypes: ['ListView'] },
+  'ListView.columns': {
+    src: {
+      field: 'columns',
+      parentTypes: ['ListView'],
+    },
     serializationStrategy: 'relativeApiName',
-    target: { type: CUSTOM_FIELD, parentContext: 'instanceParent' },
+    target: {
+      type: 'CustomField',
+      parentContext: 'instanceParent',
+    },
   },
-  {
-    src: { field: 'field', parentTypes: ['PermissionSetFieldPermissions'] },
-    target: { type: CUSTOM_FIELD },
+  'PermissionSetFieldPermissions.field': {
+    src: {
+      field: 'field',
+      parentTypes: ['PermissionSetFieldPermissions'],
+    },
+    target: {
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'object', parentTypes: ['PermissionSetObjectPermissions'] },
-    target: { type: CUSTOM_OBJECT },
+  'PermissionSetObjectPermissions.object': {
+    src: {
+      field: 'object',
+      parentTypes: ['PermissionSetObjectPermissions'],
+    },
+    target: {
+      type: 'CustomObject',
+    },
   },
-  {
-    src: { field: 'value', parentTypes: ['FilterItem'] },
+  'FilterItem.value': {
+    src: {
+      field: 'value',
+      parentTypes: ['FilterItem'],
+    },
     serializationStrategy: 'relativeApiName',
     target: {
       parentContext: 'instanceParent',
-      type: RECORD_TYPE_METADATA_TYPE,
+      type: 'RecordType',
     },
   },
-  {
+  'FieldInstance.fieldItem': {
     src: {
       field: 'fieldItem',
       parentTypes: ['FieldInstance'],
     },
     serializationStrategy: 'recordField',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
   },
-  {
+  'FlowAssignmentItem.assignToReference': {
     src: {
-      field: ASSIGN_TO_REFERENCE,
-      parentTypes: Object.values(FLOW_FIELD_TYPE_NAMES),
+      field: 'assignToReference',
+      parentTypes: [
+        'FlowAssignmentItem',
+        'FlowStageStepOutputParameter',
+        'FlowSubflowOutputAssignment',
+        'FlowTransformValueAction',
+        'FlowScreenFieldOutputParameter',
+        'FlowWaitEventOutputParameter',
+        'FlowStageStepExitActionOutputParameter',
+        'FlowApexPluginCallOutputParameter',
+        'FlowActionCallOutputParameter',
+        'FlowOutputFieldAssignment',
+        'FlowStageStepEntryActionOutputParameter',
+      ],
     },
     serializationStrategy: 'recordFieldDollarPrefix',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
   },
-  {
-    src: { field: 'logo', parentTypes: ['CustomApplication'] },
-    target: { type: 'Document' },
+  'CustomApplication.logo': {
+    src: {
+      field: 'logo',
+      parentTypes: ['CustomApplication'],
+    },
+    target: {
+      type: 'Document',
+    },
   },
-  {
-    src: { field: 'leftValue', parentTypes: ['UiFormulaCriterion'] },
+  'UiFormulaCriterion.leftValue': {
+    src: {
+      field: 'leftValue',
+      parentTypes: ['UiFormulaCriterion'],
+    },
     serializationStrategy: 'flexiPageleftValueField',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+    target: {
+      parentContext: 'instanceParent',
+      type: 'CustomField',
+    },
   },
-]
+}
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>
   _.isString(matcher) ? matcher === name : matcher.test(name)
@@ -1157,7 +1767,7 @@ const getLookUpNameImpl = ({
 }
 
 export const getDefsFromFetchProfile = (_fetchProfile: FetchProfile): FieldReferenceDefinition[] =>
-  fieldNameToTypeMappingDefs
+  Object.values(referenceMappingDefs)
 
 /**
  * Translate a reference expression back to its original value before deploy.

@@ -101,9 +101,15 @@ export const rules: Record<string, moo.Rules> = {
   },
 }
 
+// Note: These rules are used for both single and multiline strings.
+// They are not fully correct for the two cases, specifically, in single line strings "\'''" is no a valid escape token
+// and in multiline strings it is valid.
+// Ideally we should use different rules for the two cases, but this is more complex to implement.
+// We chose to err on the side of having bigger tokens since down the line the code for single line strings merges all tokens anyway
+// whereas the code for multiline strings may sometimes consume token-by-token which makes it more sensitive to wrong token splits.
 const stringWithReferencesRules = moo.compile({
-  // This handles regular escapes, unicode escapes and escaped template markers ('\${')
-  [TOKEN_TYPES.ESCAPE]: { match: /(?:\\[^$u]|\\u[0-9a-fA-F]{4}|\\\$\{?)+/ },
+  // This handles escaped multiline end (\'''),regular escapes, unicode escapes and escaped template markers ('\${')
+  [TOKEN_TYPES.ESCAPE]: { match: /(?:\\'''|\\[^$u]|\\u[0-9a-fA-F]{4}|\\\$\{?)+/ },
   [TOKEN_TYPES.REFERENCE]: { match: REFERENCE, value: s => s.slice(2, -1).trim() },
   // Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
   [TOKEN_TYPES.CONTENT]: {

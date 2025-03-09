@@ -78,6 +78,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   removeFieldConfigurationDefaultValues?: boolean
   walkOnReferences?: boolean
   remove10KOptionsContexts: boolean
+  enableProjectsScope: boolean
 }
 
 export type MaskingConfig = {
@@ -189,6 +190,7 @@ const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     splitFieldContextOptions: true,
     remove10KOptionsContexts: false, // starting value, to be changed
     walkOnReferences: true,
+    enableProjectsScope: false,
   },
   deploy: {
     forceDelete: false,
@@ -359,6 +361,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     removeFieldConfigurationDefaultValues: { refType: BuiltinTypes.BOOLEAN },
     remove10KOptionsContexts: { refType: BuiltinTypes.BOOLEAN },
     walkOnReferences: { refType: BuiltinTypes.BOOLEAN },
+    enableProjectsScope: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,

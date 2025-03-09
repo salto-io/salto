@@ -118,23 +118,29 @@ describe('custom object instances change validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
   })
-  describe('when the whole record is non-creatable or non-updateable', () => {
+  describe('when the deploying user lacks CRUD permissions', () => {
     let addedInstance: InstanceElement
     let modifiedInstance: InstanceElement
+    let removedInstance: InstanceElement
     let changes: Change[]
 
     let changeErrors: readonly ChangeError[]
 
     beforeEach(async () => {
       addedInstance = new InstanceElement('added', obj, {
-        nonUpdateable: 'value',
-        nonCreatable: 'value',
+        Field__c: 'value',
       })
       modifiedInstance = new InstanceElement('added', obj, {
-        nonUpdateable: 'value',
-        nonCreatable: 'value',
+        Field__c: 'value',
       })
-      changes = [toChange({ after: addedInstance }), toChange({ before: modifiedInstance, after: modifiedInstance })]
+      removedInstance = new InstanceElement('removed', obj, {
+        Field__c: 'value',
+      })
+      changes = [
+        toChange({ after: addedInstance }),
+        toChange({ before: modifiedInstance, after: modifiedInstance }),
+        toChange({ before: removedInstance }),
+      ]
     })
 
     describe('when describe fails on the type', () => {
@@ -142,14 +148,17 @@ describe('custom object instances change validator', () => {
         jest.spyOn(client, 'describeSObjects').mockRejectedValue(new Error(''))
         changeErrors = await customObjectInstancesValidator(changes)
       })
-      it('should create change errors for both modification and addition of the instance', () => {
-        expect(changeErrors).toHaveLength(2)
+      it('should create change errors for all type of changes', () => {
+        expect(changeErrors).toHaveLength(3)
         expect(changeErrors).toSatisfyAny(
           (e: ChangeError) => e.elemID.isEqual(addedInstance.elemID) && e.message === 'Cannot create records of type',
         )
         expect(changeErrors).toSatisfyAny(
           (e: ChangeError) =>
             e.elemID.isEqual(modifiedInstance.elemID) && e.message === 'Cannot modify records of type',
+        )
+        expect(changeErrors).toSatisfyAny(
+          (e: ChangeError) => e.elemID.isEqual(removedInstance.elemID) && e.message === 'Cannot delete records of type',
         )
       })
     })
@@ -161,7 +170,15 @@ describe('custom object instances change validator', () => {
               name: 'obj',
               createable: false,
               updateable: true,
-              fields: [],
+              deletable: true,
+              fields: [
+                {
+                  name: 'Field__c',
+                  updateable: true,
+                  createable: true,
+                  queryable: true,
+                },
+              ],
             } as unknown as DescribeSObjectResult,
           ],
           errors: [],
@@ -183,7 +200,15 @@ describe('custom object instances change validator', () => {
               name: 'obj',
               createable: true,
               updateable: false,
-              fields: [],
+              deletable: true,
+              fields: [
+                {
+                  name: 'Field__c',
+                  updateable: true,
+                  createable: true,
+                  queryable: true,
+                },
+              ],
             } as unknown as DescribeSObjectResult,
           ],
           errors: [],
@@ -195,6 +220,36 @@ describe('custom object instances change validator', () => {
         expect(changeErrors[0]).toSatisfy(
           (e: ChangeError) =>
             e.elemID.isEqual(modifiedInstance.elemID) && e.message === 'Cannot modify records of type',
+        )
+      })
+    })
+    describe('when deletable is false', () => {
+      beforeEach(async () => {
+        jest.spyOn(client, 'describeSObjects').mockResolvedValue({
+          result: [
+            {
+              name: 'obj',
+              createable: true,
+              updateable: true,
+              deletable: false,
+              fields: [
+                {
+                  name: 'Field__c',
+                  updateable: true,
+                  createable: true,
+                  queryable: true,
+                },
+              ],
+            } as unknown as DescribeSObjectResult,
+          ],
+          errors: [],
+        })
+        changeErrors = await customObjectInstancesValidator(changes)
+      })
+      it('should create change error for the removed instance', () => {
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0]).toSatisfy(
+          (e: ChangeError) => e.elemID.isEqual(removedInstance.elemID) && e.message === 'Cannot delete records of type',
         )
       })
     })

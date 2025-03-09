@@ -14,6 +14,8 @@ import {
   ChangeError,
   isAdditionChange,
   ModificationChange,
+  isRemovalChange,
+  RemovalChange,
 } from '@salto-io/adapter-api'
 import { DescribeSObjectResult } from '@salto-io/jsforce'
 import { detailedCompare, GetLookupNameFunc } from '@salto-io/adapter-utils'
@@ -62,14 +64,11 @@ const getUpdateErrorsForNonUpdateableFields = async (
         elemID: before.elemID,
         severity: 'Warning',
         message: 'Cannot modify records of type',
-        detailedMessage: `The deploying user lacks the permission to modify records of type ${typeName}`,
+        detailedMessage: `The deploying user lacks the permissions to modify records of type ${typeName}`,
       },
     ]
   }
   const fieldsDescribeByName = _.keyBy(describeResult.fields, field => field.name)
-  if (Object.keys(fieldsDescribeByName).length === 0) {
-    return []
-  }
   const detailedChanges = detailedCompare(before, after, { createFieldChanges: true })
   return detailedChanges
     .filter(
@@ -102,30 +101,48 @@ const getCreateErrorsForNonCreatableFields = async (
         elemID: after.elemID,
         severity: 'Warning',
         message: 'Cannot create records of type',
-        detailedMessage: `The deploying user lacks the permission to create records of type ${typeName}`,
+        detailedMessage: `The deploying user lacks the permissions to create records of type ${typeName}`,
       },
     ]
   }
   const fieldsDescribeByName = _.keyBy(describeResult.fields, field => field.name)
-  if (Object.keys(fieldsDescribeByName).length === 0) {
-    return []
-  }
   const afterResolved = await resolveValues(after, getLookupNameFunc)
   return awu(Object.values(objectType.fields))
-    .filter(field => !fieldsDescribeByName[field.name] || !fieldsDescribeByName[field.name].createable)
-    .map(field => {
-      if (!_.isUndefined(afterResolved.value[field.name])) {
-        return {
+    .filter(
+      field =>
+        (!fieldsDescribeByName[field.name] || !fieldsDescribeByName[field.name].createable) &&
+        isDefined(afterResolved.value[field.name]),
+    )
+    .map(
+      field =>
+        ({
           elemID: afterResolved.elemID,
           severity: 'Warning',
           message: 'Cannot set a value to a non-creatable field',
           detailedMessage: `Cannot set a value for ${field.name} of ${afterResolved.elemID.getFullName()} because its field is defined as non-creatable.`,
-        } as ChangeError
-      }
-      return undefined
-    })
+        }) as ChangeError,
+    )
     .filter(values.isDefined)
     .toArray()
+}
+
+const createDeleteChangeError = ({
+  change,
+  describeResultByType,
+}: {
+  change: RemovalChange<InstanceElement>
+  describeResultByType: Map<string, DescribeSObjectResult>
+}): ChangeError | undefined => {
+  const typeName = apiNameSync(getChangeData(change).getTypeSync()) ?? ''
+  const describeResult = describeResultByType.get(typeName)
+  return describeResult && describeResult.deletable
+    ? undefined
+    : {
+        elemID: getChangeData(change).elemID,
+        severity: 'Warning',
+        message: 'Cannot delete records of type',
+        detailedMessage: `The deploying user lacks the permissions to delete records of type ${typeName}`,
+      }
 }
 
 const changeValidator =
@@ -160,7 +177,12 @@ const changeValidator =
       )
       .toArray()
 
-    return [...updateChangeErrors, ...createChangeErrors]
+    const deleteChangeErrors = customObjectInstancesChanges
+      .filter(isRemovalChange)
+      .map(change => createDeleteChangeError({ change, describeResultByType }))
+      .filter(isDefined)
+
+    return updateChangeErrors.concat(createChangeErrors).concat(deleteChangeErrors)
   }
 
 export default changeValidator

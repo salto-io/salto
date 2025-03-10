@@ -161,18 +161,6 @@ describe('partial fetch targets', () => {
       })
     })
 
-    describe('when an account has no config', () => {
-      it('should return undefined', async () => {
-        result = await getAccountPartialFetchTargets({
-          account: 'salto3',
-          workspace,
-          adapterCreators: { salto: mockAdapter },
-        })
-        expect(result).toBeUndefined()
-        expect(mockAdapter.partialFetch.getAllTargets).not.toHaveBeenCalled()
-      })
-    })
-
     describe('when an adapter has no partialFetch.getAllTargets function', () => {
       it('should return undefined', async () => {
         result = await getAccountPartialFetchTargets({

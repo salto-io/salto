@@ -192,6 +192,7 @@ const CHANGE_VALIDATORS = [
   'liveChatButtonRoutingType',
   'flexiPageUnusedOrMissingFacets',
   'uniqueFlowElementName',
+  'accessToSendEmail',
 ] as const
 const DEPRECATED_CHANGE_VALIDATORS = ['multipleDefaults'] as const
 export type ChangeValidatorName = (typeof CHANGE_VALIDATORS)[number]

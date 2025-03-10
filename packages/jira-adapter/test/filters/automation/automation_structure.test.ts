@@ -148,6 +148,14 @@ describe('automationStructureFilter', () => {
           type: 'jira.issue.outgoing.email',
           value: { body: HTML_BODY_TEST, mimeType: 'text/html' },
         },
+        {
+          id: '10',
+          component: 'ACTION',
+          type: 'jira.proforma.form.add.action',
+          value: {
+            templateFormsConfig: { projectId: 10010, templateFormIds: [1, 5] },
+          },
+        },
       ],
       projects: [
         {
@@ -313,6 +321,14 @@ describe('automationStructureFilter', () => {
       await filter.onFetch([longNamedInstance])
       expect(longNamedInstance.value.components[9].value.body).toBeInstanceOf(StaticFile)
       expect(longNamedInstance.value.components[9].value.body.filepath.length).toBeLessThan(255)
+    })
+
+    it('should transform the id type of a templateFormIds from number to string in jira.proforma.form.add.action', async () => {
+      await filter.onFetch([instance])
+      expect(Array.isArray(instance.value.components[10].value.templateFormsConfig.templateFormIds)).toBe(true)
+      expect(instance.value.components[10].value.templateFormsConfig.templateFormIds).toEqual(
+        expect.arrayContaining(['1', '5']),
+      )
     })
 
     it('should not throw if wrong structure', async () => {

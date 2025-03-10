@@ -26,7 +26,7 @@ import {
 const { awu } = collections.asynciterable
 const { capitalizeFirstLetter } = strings
 
-describe('targeted fetch types', () => {
+describe('partial fetch targets', () => {
   let workspace: Workspace
   let mockAdapter: ReturnType<typeof createMockAdapter>
   let mockAliasesMap: jest.Mocked<remoteMap.ReadOnlyRemoteMap<string>>

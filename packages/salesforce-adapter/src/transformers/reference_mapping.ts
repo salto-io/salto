@@ -1690,6 +1690,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
     serializationStrategy: 'recordFieldDollarPrefix',
     target: {
       type: CUSTOM_FIELD,
+      parentContext: 'flowElementReferenceField',
     },
   },
   'FlowCondition.leftValueReference:CustomField': {
@@ -1700,6 +1701,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
     serializationStrategy: 'recordFieldDollarPrefix',
     target: {
       type: CUSTOM_FIELD,
+      parentContext: 'instanceParent',
     },
   },
 }

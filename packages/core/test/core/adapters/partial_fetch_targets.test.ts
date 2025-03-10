@@ -21,7 +21,7 @@ import { mockWorkspace } from '../../common/workspace'
 import {
   getAccountPartialFetchTargets,
   getPartialFetchTargetsForElements,
-} from '../../../src/core/adapters/targeted_fetch_types'
+} from '../../../src/core/adapters/partial_fetch_targets'
 
 const { awu } = collections.asynciterable
 const { capitalizeFirstLetter } = strings

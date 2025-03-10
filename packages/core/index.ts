@@ -24,7 +24,7 @@ export {
 export {
   getAccountPartialFetchTargets,
   getPartialFetchTargetsForElements,
-} from './src/core/adapters/targeted_fetch_types'
+} from './src/core/adapters/partial_fetch_targets'
 export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
 export { RenameElementIdError } from './src/core/rename'
 export * from './src/types'

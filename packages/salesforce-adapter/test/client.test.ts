@@ -29,7 +29,7 @@ import SalesforceClient, {
   validateCredentials,
 } from '../src/client/client'
 import mockClient from './client'
-import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src/types'
+import { FetchProfile, OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
 import {
   APEX_CLASS_METADATA_TYPE,
@@ -43,6 +43,7 @@ import {
   SALESFORCE_DEPLOY_ERROR_MESSAGES,
   SALESFORCE_ERRORS,
   VALIDATION_RULES_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
 } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 import {
@@ -61,6 +62,7 @@ import {
   enrichSaltoDeployErrors,
 } from '../src/client/user_facing_errors'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
+import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -369,6 +371,86 @@ describe('salesforce client', () => {
         ],
       })
       expect(dodoScope.isDone()).toBeTruthy()
+    })
+    describe('handle insufficient access rights on entity', () => {
+      let fetchProfile: FetchProfile
+      describe('when the feature is enabled', () => {
+        beforeEach(() => {
+          fetchProfile = buildFetchProfile({
+            fetchParams: {
+              optionalFeatures: {
+                handleInsufficientAccessRightsOnEntityInRead: true,
+              },
+              addNamespacePrefixToFullName: false,
+              metadata: {
+                exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
+              },
+            },
+          })
+        })
+        it('should return error when response is insufficient access rights on entity salesforce error', async () => {
+          const dodoScope = nock(`http://dodo22/services/Soap/m/${API_VERSION}`)
+            .post(/.*/)
+            .times(1)
+            .reply(
+              500,
+              {
+                'a:Envelope': {
+                  'a:Body': {
+                    'a:Fault': {
+                      faultcode: 'sf:INSUFFICIENT_ACCESS',
+                      faultstring: 'INSUFFICIENT_ACCESS: insufficient access rights on entity: FakeName',
+                    },
+                  },
+                },
+              },
+              headers,
+            )
+          expect(
+            (await client.readMetadata('FakeType', 'FakeName', undefined, fetchProfile)).errors[0].error.message,
+          ).toEqual('INSUFFICIENT_ACCESS: insufficient access rights on entity: FakeName')
+          expect(dodoScope.isDone()).toBeTruthy()
+        })
+      })
+      describe('when the feature is disabled', () => {
+        beforeEach(() => {
+          fetchProfile = buildFetchProfile({
+            fetchParams: {
+              optionalFeatures: {
+                handleInsufficientAccessRightsOnEntityInRead: false,
+              },
+              addNamespacePrefixToFullName: false,
+              metadata: {
+                exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
+              },
+            },
+          })
+        })
+        it('should return error when response is insufficient access rights on entity salesforce error', async () => {
+          const dodoScope = nock(`http://dodo22/services/Soap/m/${API_VERSION}`)
+            .post(/.*/)
+            .times(1)
+            .reply(
+              500,
+              {
+                'a:Envelope': {
+                  'a:Body': {
+                    'a:Fault': {
+                      faultcode: 'sf:INSUFFICIENT_ACCESS',
+                      faultstring: 'INSUFFICIENT_ACCESS: insufficient access rights on entity: FakeName',
+                    },
+                  },
+                },
+              },
+              headers,
+            )
+          expect(await client.readMetadata('FakeType', 'FakeName')).toEqual({
+            result: [],
+            errors: [],
+          })
+          expect(dodoScope.isDone()).toBeTruthy()
+        })
+      })
     })
   })
 

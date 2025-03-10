@@ -806,6 +806,7 @@ export type ErrorProperty = types.ValueOf<typeof ERROR_PROPERTIES>
 
 // Salesforce Errors
 const SALESFORCE_ERROR_PREFIX = 'sf:'
+export const INSUFFICIENT_ACCESS_RIGHTS_ON_ENTITY = 'INSUFFICIENT_ACCESS: insufficient access rights on entity'
 
 export const SALESFORCE_ERRORS = {
   INVALID_CROSS_REFERENCE_KEY: `${SALESFORCE_ERROR_PREFIX}INVALID_CROSS_REFERENCE_KEY`,

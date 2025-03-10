@@ -25,7 +25,7 @@ const accessToSendEmailsError = (instance: InstanceElement): ChangeError => ({
   message:
     "Cannot deploy instances of 'emailActions' when 'Access to Send Email (All Email Services)' is not set to 'All email'",
   detailedMessage:
-    "In order to deploy, you can go to the service, go to setup, in the 'quick find' box search for 'Deliverability', choose it and change the 'Access to Send Email (All Email Services)' to 'All email'",
+    "In order to deploy, you can go to the service at your target environment, go to setup, in the 'quick find' box search for 'Deliverability', choose it and change the 'Access to Send Email (All Email Services)' to 'All email'",
 })
 
 const changeValidator: ChangeValidator = async (changes, elementSource) => {

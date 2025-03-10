@@ -34,7 +34,7 @@ describe('access to send email CV', () => {
       userObject = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'User'),
         fields: {
-          UserPreferencesNativeEmailClient: { refType: BuiltinTypes.STRING },
+          UserPreferencesNativeEmailClient: { refType: BuiltinTypes.BOOLEAN },
           someOtherField: { refType: BuiltinTypes.STRING },
         },
       })
@@ -42,7 +42,7 @@ describe('access to send email CV', () => {
     })
     it('should return no errors', async () => {
       const errors = await changeValidator(createEmailElementsChanges(), elementsSource)
-      expect(errors).toHaveLength(TYPES_EMAILS.length)
+      expect(errors).toBeEmpty()
     })
   })
   describe("when 'Access to Send Email (All Email Services)' is set to 'No access' or 'System email only'", () => {
@@ -53,6 +53,9 @@ describe('access to send email CV', () => {
       })
       elementsSource = buildElementsSourceFromElements([userObject])
     })
-    it('should return an error', async () => {})
+    it('should return an error for each email type', async () => {
+      const errors = await changeValidator(createEmailElementsChanges(), elementsSource)
+      expect(errors).toHaveLength(TYPES_EMAILS.length)
+    })
   })
 })

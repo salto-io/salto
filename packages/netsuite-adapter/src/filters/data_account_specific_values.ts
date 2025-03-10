@@ -33,6 +33,7 @@ import {
   INTERNAL_ID,
   NAME_FIELD,
   NETSUITE,
+  REFERENCE_TYPE_SUFFIX,
   SUBTYPES_PATH,
   TAX_SCHEDULE,
   TYPES_PATH,
@@ -210,7 +211,7 @@ const addReferenceTypes = (elements: Element[]): void => {
     if (isObjectType(fieldType) && (isStandardType(fieldType) || isFileCabinetType(fieldType))) {
       // if fieldType is a SDF type we replace it to avoid validation errors because
       // SDF types has fields with a "required" annotation which might not be fulfilled
-      const referenceTypeName = `${fieldType.elemID.name}Reference`
+      const referenceTypeName = `${fieldType.elemID.name}${REFERENCE_TYPE_SUFFIX}`
       if (referenceTypes[referenceTypeName] === undefined) {
         referenceTypes[referenceTypeName] = new ObjectType({
           elemID: new ElemID(NETSUITE, referenceTypeName),

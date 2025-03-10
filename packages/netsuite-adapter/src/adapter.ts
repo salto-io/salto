@@ -130,6 +130,7 @@ import { getOrCreateObjectIdListElements } from './scriptid_list'
 import { getUpdatedSuiteQLNameToInternalIdsMap } from './account_specific_values_resolver'
 import { getTypesToInternalId } from './data_elements/types'
 import { createLargeFilesCountFolderFetchWarnings } from './client/file_cabinet_utils'
+import { targetedFetchQuery } from './config/targeted_fetch'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -561,9 +562,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
    */
 
   @logDuration('fetching account configuration')
-  public async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
+  public async fetch({
+    progressReporter,
+    withChangesDetection = false,
+    partialFetchTargets,
+  }: FetchOptions): Promise<FetchResult> {
     const isFirstFetch = !(await awu(await this.elementsSource.list()).find(e => !e.isConfigType()))
-    const hasFetchTarget = this.fetchTarget !== undefined
+    const hasFetchTarget = this.fetchTarget !== undefined || partialFetchTargets !== undefined
     if (hasFetchTarget && isFirstFetch) {
       throw new Error("Can't define fetchTarget for the first fetch. Remove fetchTarget from adapter config file")
     }
@@ -580,6 +585,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
     const fetchQuery = [
       buildNetsuiteQuery(this.fetchInclude),
+      partialFetchTargets && targetedFetchQuery(partialFetchTargets),
       this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),
       notQuery(buildNetsuiteQuery(this.fetchExclude)),
       this.lockedElements && notQuery(buildNetsuiteQuery(this.lockedElements)),

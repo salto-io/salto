@@ -39,6 +39,7 @@ import NetsuiteClient from './client/client'
 import NetsuiteAdapter from './adapter'
 import loadElementsFromFolder from './sdf_folder_loader'
 import { customReferenceHandlers } from './custom_references'
+import { getAllTargets, getTargetsForElements } from './config/targeted_fetch'
 
 const log = logger(module)
 
@@ -227,4 +228,8 @@ export const adapter: Adapter = {
   getCustomReferences: combineCustomReferenceGetters(
     _.mapValues(customReferenceHandlers, handler => handler.findWeakReferences),
   ),
+  partialFetch: {
+    getAllTargets,
+    getTargetsForElements,
+  },
 }

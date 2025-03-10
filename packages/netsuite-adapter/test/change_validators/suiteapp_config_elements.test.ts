@@ -7,7 +7,7 @@
  */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { NETSUITE, SELECT_OPTION } from '../../src/constants'
-import { SUITEAPP_CONFIG_TYPE_NAMES } from '../../src/types'
+import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import suiteAppConfigElementsValidator from '../../src/change_validators/suiteapp_config_elements'
 import { mockChangeValidatorParams } from '../utils'
 
@@ -16,7 +16,7 @@ describe('config elements change validator', () => {
     elemID: new ElemID(NETSUITE, SELECT_OPTION),
   })
   const type = new ObjectType({
-    elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPE_NAMES[0]),
+    elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES),
     fields: {
       checkboxField: {
         refType: BuiltinTypes.BOOLEAN,

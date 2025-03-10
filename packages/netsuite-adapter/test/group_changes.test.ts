@@ -32,7 +32,7 @@ import {
 import { APPLICATION_ID, CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE } from '../src/constants'
 import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../src/types/file_cabinet_types'
-import { SUITEAPP_CONFIG_TYPE_NAMES } from '../src/types'
+import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../src/types'
 
 describe('Group Changes without Salto suiteApp', () => {
   const entitycustomfield = entitycustomfieldType().type
@@ -200,7 +200,7 @@ describe('Group Changes with Salto suiteApp', () => {
   const deletedStandardInstance = new InstanceElement('test', entitycustomfieldType().type, { [INTERNAL_ID]: '11' })
 
   const configType = new ObjectType({
-    elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPE_NAMES[0]),
+    elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES),
   })
 
   const configInstance = new InstanceElement(ElemID.CONFIG_NAME, configType)

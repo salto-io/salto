@@ -198,13 +198,14 @@ export const SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES: Record<SuiteAppConfigRecordTyp
   ACCOUNTING_PREFERENCES: 'accountingPreferences',
 }
 
-export const SUITEAPP_CONFIG_TYPE_NAMES = Object.values(SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES)
+const suiteAppConfigTypeNames = new Set(Object.values(SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES))
+export const isSuiteAppConfigTypeName = (typeName: string): boolean =>
+  suiteAppConfigTypeNames.has(typeName as SuiteAppConfigTypeName)
 
-export const isSuiteAppConfigType = (type: ObjectType): boolean =>
-  SUITEAPP_CONFIG_TYPE_NAMES.includes(type.elemID.name as SuiteAppConfigTypeName)
+export const isSuiteAppConfigType = (type: ObjectType): boolean => isSuiteAppConfigTypeName(type.elemID.name)
 
 export const isSuiteAppConfigInstance = (instance: InstanceElement): boolean =>
-  SUITEAPP_CONFIG_TYPE_NAMES.includes(instance.elemID.typeName as SuiteAppConfigTypeName)
+  isSuiteAppConfigTypeName(instance.elemID.typeName)
 
 export const isSDFConfigTypeName = (typeName: string): boolean => typeName === CONFIG_FEATURES
 
@@ -225,6 +226,6 @@ export const isBundleInstance = (element: Element): element is InstanceElement =
 export const netsuiteSupportedTypes: ReadonlyArray<string> = [
   ...getStandardTypesNames(),
   ...SUPPORTED_TYPES,
-  ...SUITEAPP_CONFIG_TYPE_NAMES,
+  ...suiteAppConfigTypeNames,
   CONFIG_FEATURES,
 ].sort()

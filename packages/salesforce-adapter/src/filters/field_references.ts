@@ -170,26 +170,6 @@ export const createContextStrategyLookups = (
       contextFieldName: 'SObjectType',
       levelsUp: 'top',
     }),
-    grandparentObjectLookup: neighborContextFunc({
-      contextFieldName: 'object',
-      levelsUp: 2,
-    }),
-    grandparentOutputSObjectTypeLookup: neighborContextFunc({
-      contextFieldName: 'outputSObjectType',
-      levelsUp: 2,
-    }),
-    greatGrandparentObjectTypeLookup: neighborContextFunc({
-      contextFieldName: 'objectType',
-      levelsUp: 3,
-    }),
-    greatGreatGrandparentObjectTypeLookup: neighborContextFunc({
-      contextFieldName: 'objectType',
-      levelsUp: 4,
-    }),
-    grandparentObjectTypeLookup: neighborContextFunc({
-      contextFieldName: 'objectType',
-      levelsUp: 2,
-    }),
   }
 }
 

@@ -177,12 +177,6 @@ export type ReferenceContextStrategyName =
   | 'neighborRelatedEntityTypeLookup'
   | 'parentSObjectTypeLookupTopLevel'
   | 'flowElementReferenceField'
-  | 'grandparentObjectLookup'
-  | 'grandparentOutputSObjectTypeLookup'
-  | 'grandparentObjectLookup'
-  | 'greatGrandparentObjectTypeLookup'
-  | 'greatGreatGrandparentObjectTypeLookup'
-  | 'grandparentObjectTypeLookup'
 
 type SourceDef = {
   field: string | RegExp

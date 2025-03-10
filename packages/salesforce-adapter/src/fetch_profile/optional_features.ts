@@ -29,8 +29,6 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   omitStandardFieldsNonDeployableValues: true,
   handleInsufficientAccessRightsOnEntity: true,
   shuffleRetrieveInstances: false,
-  leftValueReference: true,
-  elementReference: true,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

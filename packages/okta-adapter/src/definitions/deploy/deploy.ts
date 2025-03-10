@@ -1765,6 +1765,15 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    AdminConsoleSession: {
+      requestsByAction: {
+        customizations: {
+          modify: [
+            { request: { endpoint: { path: '/api/v1/first-party-app-settings/admin-console', method: 'put' } } },
+          ],
+        },
+      },
+    },
   }
 
   return _.merge(standardRequestDefinitions, customDefinitions)

@@ -39,7 +39,6 @@ import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
 import { ValueSettings } from '../client/types'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 const { toArrayAsync } = collections.asynciterable
 
 type PicklistValuesReferenceIndex = Record<string, Record<string, ReferenceExpression>>

@@ -1625,6 +1625,16 @@ const createCustomizations = ({
     },
   },
   // singleton types
+  AdminConsoleSession: {
+    requests: [{ endpoint: { path: '/api/v1/first-party-app-settings/admin-console' } }],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        singleton: true,
+      },
+    },
+  },
   ThreatInsightConfiguration: {
     requests: [{ endpoint: { path: '/api/v1/threats/configuration' } }],
     resource: { directFetch: true },

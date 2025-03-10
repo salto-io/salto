@@ -26,7 +26,10 @@ import { collections } from '@salto-io/lowerdash'
 import { apiName, isMetadataInstanceElement } from './transformer'
 import {
   API_NAME_SEPARATOR,
+  CUSTOM_FIELD,
   DEFAULT_OBJECT_TO_API_MAPPING,
+  ELEMENT_REFERENCE,
+  LEFT_VALUE_REFERENCE,
   SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING,
   TEST_OBJECT_TO_API_MAPPING,
 } from '../constants'
@@ -1677,6 +1680,26 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
     },
     target: {
       type: 'InstalledPackage',
+    },
+  },
+  'FlowElementReferenceOrValue.elementReference:CustomField': {
+    src: {
+      field: ELEMENT_REFERENCE,
+      parentTypes: ['FlowElementReferenceOrValue'],
+    },
+    serializationStrategy: 'recordFieldDollarPrefix',
+    target: {
+      type: CUSTOM_FIELD,
+    },
+  },
+  'FlowCondition.leftValueReference:CustomField': {
+    src: {
+      field: LEFT_VALUE_REFERENCE,
+      parentTypes: ['FlowCondition'],
+    },
+    serializationStrategy: 'recordFieldDollarPrefix',
+    target: {
+      type: CUSTOM_FIELD,
     },
   },
 }

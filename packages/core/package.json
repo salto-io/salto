@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/core",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto core",
   "repository": {
@@ -29,24 +29,24 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.5.1",
-    "@salto-io/adapter-components": "0.5.1",
-    "@salto-io/adapter-utils": "0.5.1",
-    "@salto-io/dag": "0.5.1",
-    "@salto-io/local-workspace": "0.5.1",
-    "@salto-io/logging": "0.5.1",
-    "@salto-io/lowerdash": "0.5.1",
+    "@salto-io/adapter-api": "0.5.2",
+    "@salto-io/adapter-components": "0.5.2",
+    "@salto-io/adapter-utils": "0.5.2",
+    "@salto-io/dag": "0.5.2",
+    "@salto-io/local-workspace": "0.5.2",
+    "@salto-io/logging": "0.5.2",
+    "@salto-io/lowerdash": "0.5.2",
     "@salto-io/node-diff3": "3.1.2-salto.1",
-    "@salto-io/workspace": "0.5.1",
+    "@salto-io/workspace": "0.5.2",
     "istextorbinary": "^6.0.0",
     "lodash": "^4.17.21",
     "pietile-eventemitter": "^1.0.0",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.1",
+    "@salto-io/element-test-utils": "0.5.2",
     "@salto-io/jest-extended": "^4.0.3",
-    "@salto-io/test-utils": "0.5.1",
+    "@salto-io/test-utils": "0.5.2",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "eslint": "^9.16.0",

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/adapter-api",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto Adapter API",
   "repository": {
@@ -29,9 +29,9 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/dag": "0.5.1",
-    "@salto-io/logging": "0.5.1",
-    "@salto-io/lowerdash": "0.5.1",
+    "@salto-io/dag": "0.5.2",
+    "@salto-io/logging": "0.5.2",
+    "@salto-io/lowerdash": "0.5.2",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

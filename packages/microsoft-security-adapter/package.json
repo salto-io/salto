@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/microsoft-security-adapter",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto Microsoft Security adapter",
   "repository": {
@@ -29,19 +29,19 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.5.1",
-    "@salto-io/adapter-components": "0.5.1",
-    "@salto-io/adapter-utils": "0.5.1",
-    "@salto-io/logging": "0.5.1",
-    "@salto-io/lowerdash": "0.5.1",
+    "@salto-io/adapter-api": "0.5.2",
+    "@salto-io/adapter-components": "0.5.2",
+    "@salto-io/adapter-utils": "0.5.2",
+    "@salto-io/logging": "0.5.2",
+    "@salto-io/lowerdash": "0.5.2",
     "axios": "^1.7.2",
     "fast-xml-parser": "^4.4.0",
     "lodash": "^4.17.21",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.1",
-    "@salto-io/test-utils": "0.5.1",
+    "@salto-io/element-test-utils": "0.5.2",
+    "@salto-io/test-utils": "0.5.2",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "axios": "^1.7.2",

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/parser",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto parser",
   "repository": {
@@ -29,17 +29,17 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.5.1",
-    "@salto-io/adapter-utils": "0.5.1",
-    "@salto-io/logging": "0.5.1",
-    "@salto-io/lowerdash": "0.5.1",
+    "@salto-io/adapter-api": "0.5.2",
+    "@salto-io/adapter-utils": "0.5.2",
+    "@salto-io/logging": "0.5.2",
+    "@salto-io/lowerdash": "0.5.2",
     "is-promise": "4.0.0",
     "lodash": "^4.17.21",
     "moo": "^0.5.1",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.1",
+    "@salto-io/element-test-utils": "0.5.2",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "@types/moo": "^0.5.0",

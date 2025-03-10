@@ -45,7 +45,6 @@ describe('referenceMapping tests', () => {
 
   describe('getLookUpNameImpl', () => {
     let flowInstance: InstanceElement
-    let accountInstance: InstanceElement
     let fetchProfile: FetchProfile
     let flowElementReferenceOrValue: ObjectType
     let flow: ObjectType
@@ -78,13 +77,6 @@ describe('referenceMapping tests', () => {
           },
         },
       })
-      accountInstance = createInstanceElement(
-        {
-          fullName: 'TestAccount',
-          Name: 'BestAccount',
-        },
-        mockTypes.Account,
-      )
     })
     describe('when target type does not match referenced type', () => {
       beforeEach(() => {
@@ -94,7 +86,7 @@ describe('referenceMapping tests', () => {
             assignments: [
               {
                 value: {
-                  [ELEMENT_REFERENCE]: new ReferenceExpression(accountInstance.elemID, accountInstance),
+                  [ELEMENT_REFERENCE]: new ReferenceExpression(mockTypes.Account.elemID, mockTypes.Account),
                 },
               },
             ],
@@ -110,7 +102,7 @@ describe('referenceMapping tests', () => {
           path: flowInstance.elemID.createNestedID('assignments', '0', ELEMENT_REFERENCE),
           element: flowInstance,
         })
-        expect(result).toBeUndefined()
+        expect(result).toEqual('Account')
       })
     })
     describe('when target type matches referenced type', () => {

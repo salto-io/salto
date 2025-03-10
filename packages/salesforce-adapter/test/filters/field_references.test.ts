@@ -63,6 +63,7 @@ import {
   UI_FORMULA_RULE_FIELD_NAMES,
   FIELD_INSTANCE_FIELD_NAMES,
   ITEM_INSTANCE_FIELD_NAMES,
+  FLOW_METADATA_TYPE,
 } from '../../src/constants'
 import {
   metadataType,
@@ -684,6 +685,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
     let actionInstances: InstanceElement[]
 
     let instanceFlowRecordLookup: InstanceElement
+    let flowInstance: InstanceElement
 
     beforeAll(async () => {
       const actionTypeObjects = ['WorkflowAlert', 'WorkflowFieldUpdate'].map(
@@ -733,6 +735,63 @@ describe('FieldReferences filter - neighbor context strategy', () => {
         queriedFields: ['name'],
         filters: [{ field: 'name' }, { field: 'unknown' }, { field: 'name' }],
       })
+      const flowElementReferenceOrValue = createMetadataObjectType({
+        annotations: { [METADATA_TYPE]: 'FlowElementReferenceOrValue' },
+        fields: {
+          elementReference: { refType: BuiltinTypes.STRING },
+        },
+      })
+      const flowRecordFilter = createMetadataObjectType({
+        annotations: { [METADATA_TYPE]: 'FlowRecordFilter' },
+        fields: {
+          value: { refType: flowElementReferenceOrValue },
+        },
+      })
+      const flowInputFieldAssignment = createMetadataObjectType({
+        annotations: { [METADATA_TYPE]: 'FlowMetadataValue' },
+        fields: {
+          value: { refType: flowElementReferenceOrValue },
+        },
+      })
+      const flowMetadataValue = createMetadataObjectType({
+        annotations: { [METADATA_TYPE]: 'FlowMetadataValue' },
+        fields: {
+          value: { refType: flowElementReferenceOrValue },
+        },
+      })
+      const flowRecordCreate = createMetadataObjectType({
+        annotations: { [METADATA_TYPE]: 'FlowRecordCreate' },
+        fields: {
+          object: { refType: BuiltinTypes.STRING },
+          inputAssignments: { refType: new ListType(flowInputFieldAssignment) },
+        },
+      })
+      const flow = createMetadataObjectType({
+        annotations: {
+          [METADATA_TYPE]: FLOW_METADATA_TYPE,
+        },
+        fields: {
+          processMetadataValues: { refType: new ListType(flowMetadataValue) },
+          recordCreates: { refType: new ListType(flowRecordCreate) },
+          filters: { refType: new ListType(flowRecordFilter) },
+        },
+      })
+      flowInstance = createInstanceElement(
+        {
+          fullName: 'TestFlow',
+          processMetadataValues: [{ value: '$Record.Name' }],
+          recordCreates: [
+            {
+              object: new ReferenceExpression(mockTypes.User.elemID, mockTypes.User),
+              inputAssignments: [{ value: { elementReference: '$Record.Manager__c' } }],
+            },
+          ],
+          filters: [{ value: { elementReference: '$Record.Name' } }],
+        },
+        flow,
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(mockTypes.Account.elemID, mockTypes.Account) },
+      )
 
       elements = [
         customObjectType,
@@ -750,6 +809,10 @@ describe('FieldReferences filter - neighbor context strategy', () => {
         ...actionInstances,
         instanceFlowRecordLookup,
         await instanceFlowRecordLookup.getType(),
+        flowInstance,
+        flow,
+        mockTypes.Account,
+        mockTypes.User,
       ]
       await filter.onFetch(elements)
     })
@@ -787,6 +850,17 @@ describe('FieldReferences filter - neighbor context strategy', () => {
       expect(instanceMissingActionForType.value.actions.name).toEqual('foo')
       expect(instanceInvalidActionType.value.actions.name).toEqual('foo')
       expect(instanceFlowRecordLookup.value.filters[1].field).toEqual('unknown')
+    })
+    it('should create the right references in flow', async () => {
+      const getFullName = (val: string | ReferenceExpression): string => {
+        expect(val).toBeInstanceOf(ReferenceExpression)
+        return (val as ReferenceExpression).elemID.getFullName()
+      }
+      expect(flowInstance.value.processMetadataValues[0].value).toEqual('$Record.Name')
+      expect(getFullName(flowInstance.value.filters[0].value.elementReference)).toEqual('salesforce.Account.field.Name')
+      expect(getFullName(flowInstance.value.recordCreates[0].inputAssignments[0].value.elementReference)).toEqual(
+        'salesforce.User.field.Manager__c',
+      )
     })
   })
 })

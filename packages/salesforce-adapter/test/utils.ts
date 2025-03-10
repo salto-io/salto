@@ -400,7 +400,11 @@ export const buildFilterContext = ({
   flsProfiles: [constants.ADMIN_PROFILE],
 })
 
-export const defaultFilterContext: FilterContext = buildFilterContext({})
+export const defaultFilterContext: FilterContext = buildFilterContext({
+  optionalFeatures: {
+    elementReference: true,
+  },
+})
 
 export const mockFetchOpts: MockInterface<FetchOptions> = {
   progressReporter: { reportProgress: jest.fn() },

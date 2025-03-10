@@ -72,7 +72,7 @@ describe('partial fetch targets', () => {
     mockAdapter = createMockAdapter('salto')
   })
 
-  describe('partialFetch.getAllTargets', () => {
+  describe('getAccountPartialFetchTargets', () => {
     let result: PartialFetchTargetWithPath[] | undefined
 
     beforeEach(() => {
@@ -174,7 +174,7 @@ describe('partial fetch targets', () => {
     })
   })
 
-  describe('partialFetch.getTargetsForElements', () => {
+  describe('getPartialFetchTargetsForElements', () => {
     let result: Record<string, PartialFetchTarget[] | undefined>
     let accountsElementsSource: Record<string, ReadOnlyElementsSource>
 

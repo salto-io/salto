@@ -39,9 +39,22 @@ import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
 import { ValueSettings } from '../client/types'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 const { toArrayAsync } = collections.asynciterable
 
 type PicklistValuesReferenceIndex = Record<string, Record<string, ReferenceExpression>>
+
+type RecordTypePicklistValuesItem = {
+  picklist: ReferenceExpression<Field>
+  values: {
+    fullName: string
+  }[]
+}
+
+type FieldDependency = {
+  controllingField: string | ReferenceExpression
+  valueSettings: ValueSettings[]
+}
 
 const getValueSetFieldName = (typeName: string): string => {
   switch (typeName) {
@@ -53,21 +66,15 @@ const getValueSetFieldName = (typeName: string): string => {
       return 'valueSet'
   }
 }
-type RecordTypePicklistValuesItem = {
-  picklist: ReferenceExpression<Field>
-  values: {
-    fullName: string
-  }[]
-}
 
 const isValidValueSettings = (vs: Value): vs is ValueSettings =>
   (isReferenceExpression(vs.valueName) || _.isString(vs.valueName)) &&
   Array.isArray(vs.controllingFieldValue) &&
   vs.controllingFieldValue.every((cfv: Value) => _.isString(cfv) || isReferenceExpression(cfv))
 
-const isValidFieldDependency = (fd: Value): boolean =>
-  fd !== undefined &&
-  _.isString(fd.controllingField) &&
+const isValidFieldDependency = (fd: Value): fd is FieldDependency =>
+  _.isPlainObject(fd) &&
+  (_.isString(fd.controllingField) || isReferenceExpression(fd.controllingField)) &&
   Array.isArray(fd.valueSettings) &&
   fd.valueSettings.every(isValidValueSettings)
 
@@ -96,8 +103,10 @@ const addFieldDependencyReferences = (
   }
 
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
-  const controllingFieldName = fieldDependency[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]
-  const controllingField = objectType.fields[controllingFieldName]
+  const controllingFieldNameOrReference = fieldDependency[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]
+  const controllingField = _.isString(controllingFieldNameOrReference)
+    ? objectType.fields[controllingFieldNameOrReference]
+    : controllingFieldNameOrReference.getResolvedValueSync()
   if (!isField(controllingField)) {
     return
   }

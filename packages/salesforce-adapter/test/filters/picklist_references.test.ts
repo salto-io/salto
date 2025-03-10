@@ -483,7 +483,7 @@ describe('picklistReferences filter', () => {
           [API_NAME]: 'Test__c',
         },
       })
-    it('should replace value set, controllingField, valeName and controllingFieldValue with references', async () => {
+    it('should replace value set, valeName and controllingFieldValue with references', async () => {
       const elements = [gvs, svs, createPicklistObjectType(new ElemID(SALESFORCE, 'test'), 'test', gvs, svs)]
       await filter.onFetch(elements)
       const elem = elements[2] as ObjectType

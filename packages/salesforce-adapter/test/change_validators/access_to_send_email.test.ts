@@ -42,7 +42,6 @@ describe('access to send email CV', () => {
     })
     it('should return no errors', async () => {
       const errors = await changeValidator(createEmailElementsChanges(), elementsSource)
-      // console.log(errors)
       expect(errors).toHaveLength(TYPES_EMAILS.length)
     })
   })

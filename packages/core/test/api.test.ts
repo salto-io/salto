@@ -35,7 +35,7 @@ import {
   PrimitiveTypes,
   ReferenceExpression,
   SeverityLevel,
-  TargetedFetchType,
+  PartialFetchTarget,
   toChange,
   TypeReference,
 } from '@salto-io/adapter-api'
@@ -323,7 +323,7 @@ describe('api.ts', () => {
       })
     })
     describe('targeted fetch', () => {
-      const targetedFetchTypesByAccount: Record<string, TargetedFetchType[]> = {
+      const partialFetchTargetsByAccount: Record<string, PartialFetchTarget[]> = {
         [mockService]: [{ group: 'types', name: 'someType' }],
       }
 
@@ -344,12 +344,12 @@ describe('api.ts', () => {
           workspace: mockWorkspace({}),
           accounts: [mockService],
           adapterCreators: mockAdapterCreator,
-          targetedFetchTypesByAccount,
+          partialFetchTargetsByAccount,
         })
       })
 
-      it('should pass targetedFetchTypesByAccount to fetchChanges', () => {
-        expect(mockFetchChanges).toHaveBeenCalledWith(expect.objectContaining({ targetedFetchTypesByAccount }))
+      it('should pass partialFetchTargetsByAccount to fetchChanges', () => {
+        expect(mockFetchChanges).toHaveBeenCalledWith(expect.objectContaining({ partialFetchTargetsByAccount }))
       })
     })
     describe('fetch failed', () => {

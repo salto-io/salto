@@ -138,6 +138,44 @@ const getMergedDefaultAdapterConfig = async (
   return defaultConfig && merger.mergeSingleElement(defaultConfig)
 }
 
+const createElemIDReplacedElementsSource = (
+  elementsSource: ReadOnlyElementsSource,
+  account: string,
+  adapter: string,
+): ReadOnlyElementsSource =>
+  account === adapter
+    ? elementsSource
+    : {
+        getAll: async () =>
+          awu(await elementsSource.getAll()).map(async element => {
+            const ret = element.clone()
+            await updateElementsWithAlternativeAccount([ret], adapter, account, elementsSource)
+            return ret
+          }),
+        get: async id => {
+          const element = (await elementsSource.get(createAdapterReplacedID(id, account)))?.clone()
+          if (element) {
+            await updateElementsWithAlternativeAccount([element], adapter, account, elementsSource)
+          }
+          return element
+        },
+        list: async () => awu(await elementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
+        has: async id => {
+          const transformedId = createAdapterReplacedID(id, account)
+          return elementsSource.has(transformedId)
+        },
+      }
+
+const filterElementsSource = (elementsSource: ReadOnlyElementsSource, adapterName: string): ReadOnlyElementsSource => {
+  const isRelevantID = (elemID: ElemID): boolean => elemID.adapter === adapterName || elemID.adapter === GLOBAL_ADAPTER
+  return {
+    getAll: async () => awu(await elementsSource.getAll()).filter(elem => isRelevantID(elem.elemID)),
+    get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
+    list: async () => awu(await elementsSource.list()).filter(isRelevantID),
+    has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
+  }
+}
+
 export const createAdapterElementsSource = ({
   elementsSource,
   account,
@@ -146,41 +184,8 @@ export const createAdapterElementsSource = ({
   elementsSource: ReadOnlyElementsSource
   account: string
   adapter: string
-}): ReadOnlyElementsSource => {
-  const isRelevantID = (elemID: ElemID): boolean => elemID.adapter === account || elemID.adapter === GLOBAL_ADAPTER
-
-  const filteredElementsSource: ReadOnlyElementsSource = {
-    getAll: async () => awu(await elementsSource.getAll()).filter(elem => isRelevantID(elem.elemID)),
-    get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
-    list: async () => awu(await elementsSource.list()).filter(isRelevantID),
-    has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
-  }
-
-  if (account === adapter) {
-    return filteredElementsSource
-  }
-
-  return {
-    getAll: async () =>
-      awu(await filteredElementsSource.getAll()).map(async element => {
-        const ret = element.clone()
-        await updateElementsWithAlternativeAccount([ret], adapter, account, filteredElementsSource)
-        return ret
-      }),
-    get: async id => {
-      const element = (await filteredElementsSource.get(createAdapterReplacedID(id, account)))?.clone()
-      if (element) {
-        await updateElementsWithAlternativeAccount([element], adapter, account, filteredElementsSource)
-      }
-      return element
-    },
-    list: async () => awu(await filteredElementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
-    has: async id => {
-      const transformedId = createAdapterReplacedID(id, account)
-      return filteredElementsSource.has(transformedId)
-    },
-  }
-}
+}): ReadOnlyElementsSource =>
+  createElemIDReplacedElementsSource(filterElementsSource(elementsSource, account), account, adapter)
 
 export const createResolvedTypesElementsSource = (elementsSource: ReadOnlyElementsSource): ReadOnlyElementsSource => {
   let resolvedTypesPromise: Promise<Map<string, TypeElement>> | undefined

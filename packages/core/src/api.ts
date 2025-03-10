@@ -33,7 +33,7 @@ import {
   Progress,
   ReferenceMapping,
   SaltoError,
-  TargetedFetchType,
+  PartialFetchTarget,
   TopLevelElement,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -272,7 +272,7 @@ export type FetchFuncParams = {
   withChangesDetection?: boolean
   ignoreStateElemIdMappingForSelectors?: ElementSelector[]
   adapterCreators: Record<string, Adapter>
-  targetedFetchTypesByAccount?: Record<string, TargetedFetchType[]>
+  partialFetchTargetsByAccount?: Record<string, PartialFetchTarget[]>
 }
 
 export type FetchFunc = (inputWorkspace: FetchFuncParams) => Promise<FetchResult>
@@ -297,7 +297,7 @@ export async function fetch({
   withChangesDetection,
   ignoreStateElemIdMappingForSelectors,
   adapterCreators,
-  targetedFetchTypesByAccount,
+  partialFetchTargetsByAccount,
 }: FetchFuncParams): Promise<FetchResult> {
   log.debug('fetch starting..')
   const fetchAccounts = accounts ?? workspace.accounts()
@@ -335,7 +335,7 @@ export async function fetch({
     currentConfigs,
     progressEmitter,
     withChangesDetection,
-    targetedFetchTypesByAccount,
+    partialFetchTargetsByAccount,
   })
   log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
   await workspace.state().updateStateFromChanges({

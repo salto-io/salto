@@ -13,6 +13,7 @@ import {
   ElemID,
   InstanceElement,
   ObjectType,
+  PartialFetchOperations,
 } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { elementSource } from '@salto-io/workspace'
@@ -22,7 +23,10 @@ export const createElementSource = (elements: readonly Element[]): elementSource
 
 export const createMockAdapter = (
   adapterName: string,
-): jest.Mocked<Required<Adapter>> & { adapterFormat: jest.Mocked<Required<AdapterFormat>> } => {
+): jest.Mocked<Required<Adapter>> & {
+  adapterFormat: jest.Mocked<Required<AdapterFormat>>
+  partialFetch: jest.Mocked<PartialFetchOperations>
+} => {
   const configType = new ObjectType({ elemID: new ElemID(adapterName) })
   const credentialsType = new ObjectType({ elemID: new ElemID(adapterName) })
   const optionsType = new ObjectType({ elemID: new ElemID(adapterName) })
@@ -63,9 +67,11 @@ export const createMockAdapter = (
     },
     getAdditionalReferences: mockFunction<Required<Adapter>['getAdditionalReferences']>().mockResolvedValue([]),
     getCustomReferences: mockFunction<Required<Adapter>['getCustomReferences']>().mockResolvedValue([]),
-    getTargetedFetchTypes: mockFunction<Required<Adapter>['getTargetedFetchTypes']>().mockResolvedValue([]),
-    getElementsTargetedFetchTypes: mockFunction<Required<Adapter>['getElementsTargetedFetchTypes']>().mockResolvedValue(
-      [],
-    ),
+    partialFetch: {
+      getAllTargets: mockFunction<Required<Adapter>['partialFetch']['getAllTargets']>().mockResolvedValue([]),
+      getTargetsForElements: mockFunction<
+        Required<Adapter>['partialFetch']['getTargetsForElements']
+      >().mockResolvedValue([]),
+    },
   }
 }

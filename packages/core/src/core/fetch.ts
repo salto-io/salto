@@ -53,7 +53,7 @@ import {
   Adapter,
   Change,
   CompareOptions,
-  TargetedFetchType,
+  PartialFetchTarget,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults,
@@ -527,7 +527,7 @@ const runPostFetch = async ({
   partiallyFetchedAccountData,
   accountToServiceNameMap,
   progressReporters,
-  targetedFetchTypesByAccount,
+  partialFetchTargetsByAccount,
 }: {
   adapters: Record<string, AdapterOperationsWithPostFetch>
   accountElements: Element[]
@@ -535,7 +535,7 @@ const runPostFetch = async ({
   partiallyFetchedAccountData: Map<string, PartiallyFetchedAccountData>
   accountToServiceNameMap: Record<string, string>
   progressReporters: Record<string, ProgressReporter>
-  targetedFetchTypesByAccount: Record<string, TargetedFetchType[]>
+  partialFetchTargetsByAccount: Record<string, PartialFetchTarget[]>
 }): Promise<void> => {
   const serviceElementsByAccount = _.groupBy(accountElements, e => e.elemID.adapter)
   const getAdapterElements = (accountName: string): ReadonlyArray<Element> => {
@@ -563,7 +563,7 @@ const runPostFetch = async ({
             elementsByAccount,
             accountToServiceNameMap,
             progressReporter: progressReporters[adapterName],
-            targetedFetchTypes: targetedFetchTypesByAccount[adapterName],
+            partialFetchTargets: partialFetchTargetsByAccount[adapterName],
           }),
     ),
   )
@@ -609,7 +609,7 @@ const fetchAndProcessMergeErrors = async (
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
   withChangesDetection?: boolean,
-  targetedFetchTypesByAccount: Record<string, TargetedFetchType[]> = {},
+  partialFetchTargetsByAccount: Record<string, PartialFetchTarget[]> = {},
 ): Promise<{
   accountElements: Element[]
   errors: SaltoError[]
@@ -667,7 +667,7 @@ const fetchAndProcessMergeErrors = async (
         const fetchResult = await adapter.fetch({
           progressReporter: progressReporters[accountName],
           withChangesDetection,
-          targetedFetchTypes: targetedFetchTypesByAccount[accountName],
+          partialFetchTargets: partialFetchTargetsByAccount[accountName],
         })
         const { updatedConfig, errors, partialFetchData } = fetchResult
         if (updatedConfig !== undefined) {
@@ -728,7 +728,7 @@ const fetchAndProcessMergeErrors = async (
           partiallyFetchedAccountData,
           accountToServiceNameMap,
           progressReporters,
-          targetedFetchTypesByAccount,
+          partialFetchTargetsByAccount,
         })
         log.debug('ran post-fetch in the following adapters: %s', Object.keys(adaptersWithPostFetch))
       } catch (e) {
@@ -1073,7 +1073,7 @@ export const fetchChanges = async ({
   currentConfigs,
   progressEmitter,
   withChangesDetection,
-  targetedFetchTypesByAccount,
+  partialFetchTargetsByAccount,
 }: {
   accountToAdapter: Record<string, AdapterOperations>
   workspaceElements: elementSource.ElementsSource
@@ -1082,7 +1082,7 @@ export const fetchChanges = async ({
   currentConfigs: InstanceElement[]
   progressEmitter?: EventEmitter<FetchProgressEvents>
   withChangesDetection?: boolean
-  targetedFetchTypesByAccount?: Record<string, TargetedFetchType[]>
+  partialFetchTargetsByAccount?: Record<string, PartialFetchTarget[]>
 }): Promise<FetchChangesResult> => {
   const accountNames = _.keys(accountToAdapter)
   const getChangesEmitter = new StepEmitter()
@@ -1097,7 +1097,7 @@ export const fetchChanges = async ({
       getChangesEmitter,
       progressEmitter,
       withChangesDetection,
-      targetedFetchTypesByAccount,
+      partialFetchTargetsByAccount,
     )
 
   const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(

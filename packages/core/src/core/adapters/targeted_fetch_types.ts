@@ -7,19 +7,21 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { promises } from '@salto-io/lowerdash'
 import {
   Adapter,
   ElemID,
   ReadOnlyElementsSource,
-  TargetedFetchType,
-  TargetedFetchTypeWithPath,
+  PartialFetchTarget,
+  PartialFetchTargetWithPath,
 } from '@salto-io/adapter-api'
 import { createAdapterReplacedID, Workspace } from '@salto-io/workspace'
 import { createAdapterElementsSource } from './adapters'
 
 const log = logger(module)
+const { mapValuesAsync } = promises.object
 
-export const getAccountTargetedFetchTypes = async ({
+export const getAccountPartialFetchTargets = async ({
   account,
   workspace,
   adapterCreators,
@@ -27,14 +29,9 @@ export const getAccountTargetedFetchTypes = async ({
   account: string
   workspace: Workspace
   adapterCreators: Record<string, Adapter>
-}): Promise<TargetedFetchTypeWithPath[] | undefined> => {
+}): Promise<PartialFetchTargetWithPath[] | undefined> => {
   const adapter = workspace.getServiceFromAccountName(account)
-  const adapterConfig = await workspace.accountConfig(account)
-
-  if (adapterConfig === undefined) {
-    log.warn('getAccountTargetedFetchTypes: missing adapter config')
-    return undefined
-  }
+  const accountConfig = await workspace.accountConfig(account)
 
   const elementsSource = await workspace.elements()
   const adapterElementsSource = createAdapterElementsSource({
@@ -47,45 +44,49 @@ export const getAccountTargetedFetchTypes = async ({
 
   return log.timeDebug(
     () =>
-      adapterCreators[adapter].getTargetedFetchTypes?.({
+      adapterCreators[adapter]?.partialFetch?.getAllTargets({
         elementsSource: adapterElementsSource,
-        adapterConfig,
-        getAlias: elemId => aliasMap.get(createAdapterReplacedID(elemId, account).getFullName()),
+        config: accountConfig,
+        getAlias: elemId => {
+          const accountElemId = adapter === account ? elemId : createAdapterReplacedID(elemId, account)
+          return aliasMap.get(accountElemId.getFullName())
+        },
       }),
-    'getTargetedFetchTypes for account %s',
+    'partialFetch.getAllTargets for account %s',
     account,
   )
 }
 
-const getAccountElementsTargetedFetchTypes = ({
+const getTargetsForAccountElements = ({
+  adapter,
   account,
   accountElemIds,
-  workspace,
   elementsSource,
   adapterCreators,
 }: {
+  adapter: string
   account: string
   accountElemIds: ElemID[]
-  workspace: Workspace
   elementsSource: ReadOnlyElementsSource
   adapterCreators: Record<string, Adapter>
-}): Promise<TargetedFetchType[]> | undefined =>
-  log.timeDebug(
-    () => {
-      const adapter = workspace.getServiceFromAccountName(account)
-      const adapterElemIds = accountElemIds.map(elemId => createAdapterReplacedID(elemId, adapter))
-      const adapterElementsSource = createAdapterElementsSource({ elementsSource, account, adapter })
-      return adapterCreators[adapter].getElementsTargetedFetchTypes?.({
+}): Promise<PartialFetchTarget[]> | undefined => {
+  const adapterElemIds =
+    adapter === account ? accountElemIds : accountElemIds.map(elemId => createAdapterReplacedID(elemId, adapter))
+  const adapterElementsSource = createAdapterElementsSource({ elementsSource, account, adapter })
+
+  return log.timeDebug(
+    () =>
+      adapterCreators[adapter]?.partialFetch?.getTargetsForElements({
         elemIds: adapterElemIds,
         elementsSource: adapterElementsSource,
-      })
-    },
-    'getElementsTargetedFetchTypes for %d ids of account %s',
-    accountElemIds.length,
+      }),
+    'partialFetch.getTargetsForElements for %d ids of account %s',
+    adapterElemIds.length,
     account,
   )
+}
 
-export const getElementsTargetedFetchTypes = async ({
+export const getPartialFetchTargetsForElements = async ({
   elemIds,
   workspace,
   adapterCreators,
@@ -93,25 +94,17 @@ export const getElementsTargetedFetchTypes = async ({
   elemIds: ElemID[]
   workspace: Workspace
   adapterCreators: Record<string, Adapter>
-}): Promise<Record<string, TargetedFetchType[] | undefined>> => {
+}): Promise<Record<string, PartialFetchTarget[] | undefined>> => {
   const elementsSource = await workspace.elements()
   const elemIdsByAccount = _.groupBy(elemIds, id => id.adapter)
 
-  const targetedFetchTypesByAccount = await Promise.all(
-    Object.entries(elemIdsByAccount).map(
-      async ([account, accountElemIds]) =>
-        [
-          account,
-          await getAccountElementsTargetedFetchTypes({
-            account,
-            accountElemIds,
-            workspace,
-            elementsSource,
-            adapterCreators,
-          }),
-        ] as const,
-    ),
+  return mapValuesAsync(elemIdsByAccount, async (accountElemIds, account) =>
+    getTargetsForAccountElements({
+      adapter: workspace.getServiceFromAccountName(account),
+      account,
+      accountElemIds,
+      elementsSource,
+      adapterCreators,
+    }),
   )
-
-  return Object.fromEntries(targetedFetchTypesByAccount)
 }

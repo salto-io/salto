@@ -36,7 +36,7 @@ import {
   ElemIdGetter,
   ServiceIds,
   isElement,
-  TargetedFetchType,
+  PartialFetchTarget,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -1722,7 +1722,7 @@ describe('fetch', () => {
       },
     }
 
-    const targetedFetchTypesByAccount: Record<string, TargetedFetchType[]> = {
+    const partialFetchTargetsByAccount: Record<string, PartialFetchTarget[]> = {
       [adapter]: [{ group: 'types', name: 'someType' }],
       [adapterWithPostFetch]: [{ group: 'types', name: 'someType' }],
     }
@@ -1734,28 +1734,28 @@ describe('fetch', () => {
         stateElements: createElementSource([]),
         accountToServiceNameMap: {},
         currentConfigs: [],
-        targetedFetchTypesByAccount,
+        partialFetchTargetsByAccount,
       })
     })
 
     it('should call the adapter fetch API with the targeted fetch types of the account', () => {
       expect(mockAdapters[adapter].fetch).toHaveBeenCalledWith(
-        expect.objectContaining({ targetedFetchTypes: targetedFetchTypesByAccount[adapter] }),
+        expect.objectContaining({ partialFetchTargets: partialFetchTargetsByAccount[adapter] }),
       )
       expect(mockAdapters[adapterWithPostFetch].fetch).toHaveBeenCalledWith(
-        expect.objectContaining({ targetedFetchTypes: targetedFetchTypesByAccount[adapterWithPostFetch] }),
+        expect.objectContaining({ partialFetchTargets: partialFetchTargetsByAccount[adapterWithPostFetch] }),
       )
     })
 
     it('should call the adapter postFetch API with the targeted fetch types of the account', () => {
       expect(mockAdapters[adapterWithPostFetch].postFetch).toHaveBeenCalledWith(
-        expect.objectContaining({ targetedFetchTypes: targetedFetchTypesByAccount[adapterWithPostFetch] }),
+        expect.objectContaining({ partialFetchTargets: partialFetchTargetsByAccount[adapterWithPostFetch] }),
       )
     })
 
     it('should call the adapter fetch API without targeted fetch types when there are none for that account', () => {
       expect(mockAdapters[anotherAdapter].fetch).toHaveBeenCalledWith(
-        expect.objectContaining({ targetedFetchTypes: undefined }),
+        expect.objectContaining({ partialFetchTargets: undefined }),
       )
     })
   })

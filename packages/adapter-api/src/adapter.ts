@@ -64,19 +64,19 @@ export type ProgressReporter = {
   reportProgress: (progress: Progress) => void
 }
 
-export type TargetedFetchType = {
+export type PartialFetchTarget = {
   group: string
   name: string
 }
 
-export type TargetedFetchTypeWithPath = TargetedFetchType & {
+export type PartialFetchTargetWithPath = PartialFetchTarget & {
   path: string[]
 }
 
 export type FetchOptions = {
   progressReporter: ProgressReporter
   withChangesDetection?: boolean
-  targetedFetchTypes?: TargetedFetchType[]
+  partialFetchTargets?: PartialFetchTarget[]
 }
 
 export type DeployOptions = {
@@ -97,7 +97,7 @@ export type PostFetchOptions = {
   elementsByAccount: Readonly<Record<string, ReadonlyArray<Readonly<Element>>>>
   accountToServiceNameMap?: Record<string, string>
   progressReporter: ProgressReporter
-  targetedFetchTypes?: TargetedFetchType[]
+  partialFetchTargets?: PartialFetchTarget[]
 }
 
 export type DeployAction = {
@@ -289,16 +289,17 @@ export type AdapterFormat = {
   dumpElementsToFolder?: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>
 }
 
-export type GetTargetedFetchTypesFunc = (params: {
-  elementsSource: ReadOnlyElementsSource
-  adapterConfig: InstanceElement
-  getAlias: (elemId: ElemID) => Promise<string | undefined>
-}) => Promise<TargetedFetchTypeWithPath[]>
-
-export type GetElementsTargetedFetchTypesFunc = (params: {
-  elemIds: ElemID[]
-  elementsSource: ReadOnlyElementsSource
-}) => Promise<TargetedFetchType[]>
+export type PartialFetchOperations = {
+  getAllTargets: (params: {
+    elementsSource: ReadOnlyElementsSource
+    config?: InstanceElement
+    getAlias: (elemId: ElemID) => Promise<string | undefined>
+  }) => Promise<PartialFetchTargetWithPath[]>
+  getTargetsForElements: (params: {
+    elemIds: ElemID[]
+    elementsSource: ReadOnlyElementsSource
+  }) => Promise<PartialFetchTarget[]>
+}
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
@@ -310,8 +311,7 @@ export type Adapter = {
   getAdditionalReferences?: GetAdditionalReferencesFunc
   adapterFormat?: AdapterFormat
   getCustomReferences?: GetCustomReferencesFunc
-  getTargetedFetchTypes?: GetTargetedFetchTypesFunc
-  getElementsTargetedFetchTypes?: GetElementsTargetedFetchTypesFunc
+  partialFetch?: PartialFetchOperations
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

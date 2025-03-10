@@ -21,7 +21,10 @@ export {
   getDefaultAdapterConfig,
   getAdaptersConfigTypes,
 } from './src/core/adapters/adapters'
-export { getAccountTargetedFetchTypes, getElementsTargetedFetchTypes } from './src/core/adapters/targeted_fetch_types'
+export {
+  getAccountPartialFetchTargets,
+  getPartialFetchTargetsForElements,
+} from './src/core/adapters/targeted_fetch_types'
 export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
 export { RenameElementIdError } from './src/core/rename'
 export * from './src/types'

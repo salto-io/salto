@@ -8,20 +8,19 @@
 import _ from 'lodash'
 import { collections, strings } from '@salto-io/lowerdash'
 import {
-  Adapter,
   ElemID,
   InstanceElement,
   ObjectType,
   ReadOnlyElementsSource,
-  TargetedFetchType,
-  TargetedFetchTypeWithPath,
+  PartialFetchTarget,
+  PartialFetchTargetWithPath,
 } from '@salto-io/adapter-api'
 import { remoteMap, Workspace } from '@salto-io/workspace'
 import { createMockAdapter } from '../../common/helpers'
 import { mockWorkspace } from '../../common/workspace'
 import {
-  getAccountTargetedFetchTypes,
-  getElementsTargetedFetchTypes,
+  getAccountPartialFetchTargets,
+  getPartialFetchTargetsForElements,
 } from '../../../src/core/adapters/targeted_fetch_types'
 
 const { awu } = collections.asynciterable
@@ -29,7 +28,7 @@ const { capitalizeFirstLetter } = strings
 
 describe('targeted fetch types', () => {
   let workspace: Workspace
-  let mockAdapter: jest.Mocked<Required<Adapter>>
+  let mockAdapter: ReturnType<typeof createMockAdapter>
   let mockAliasesMap: jest.Mocked<remoteMap.ReadOnlyRemoteMap<string>>
 
   beforeEach(() => {
@@ -73,18 +72,18 @@ describe('targeted fetch types', () => {
     mockAdapter = createMockAdapter('salto')
   })
 
-  describe('getAccountTargetedFetchTypes', () => {
-    let result: TargetedFetchTypeWithPath[] | undefined
+  describe('partialFetch.getAllTargets', () => {
+    let result: PartialFetchTargetWithPath[] | undefined
 
     beforeEach(() => {
-      mockAdapter.getTargetedFetchTypes.mockImplementation(async ({ elementsSource, adapterConfig, getAlias }) =>
+      mockAdapter.partialFetch.getAllTargets.mockImplementation(async ({ elementsSource, config, getAlias }) =>
         awu(await elementsSource.list())
           .map(async elemId => ({
             group: elemId.adapter,
             name: elemId.idType === 'type' ? elemId.name : `${elemId.typeName}.${elemId.name}`,
             path: [(await getAlias(elemId)) ?? ''],
           }))
-          .concat(adapterConfig.value.extra)
+          .concat(config?.value.extra)
           .toArray(),
       )
       mockAliasesMap.get.mockImplementation(async key => capitalizeFirstLetter(ElemID.fromFullName(key).name))
@@ -92,7 +91,7 @@ describe('targeted fetch types', () => {
 
     describe('when called with account name that is the adapter name', () => {
       beforeEach(async () => {
-        result = await getAccountTargetedFetchTypes({
+        result = await getAccountPartialFetchTargets({
           account: 'salto',
           workspace,
           adapterCreators: { salto: mockAdapter },
@@ -128,7 +127,7 @@ describe('targeted fetch types', () => {
 
     describe('when called with account name that is different from the adapter name', () => {
       beforeEach(async () => {
-        result = await getAccountTargetedFetchTypes({
+        result = await getAccountPartialFetchTargets({
           account: 'salto2',
           workspace,
           adapterCreators: { salto: mockAdapter },
@@ -164,37 +163,37 @@ describe('targeted fetch types', () => {
 
     describe('when an account has no config', () => {
       it('should return undefined', async () => {
-        result = await getAccountTargetedFetchTypes({
+        result = await getAccountPartialFetchTargets({
           account: 'salto3',
           workspace,
           adapterCreators: { salto: mockAdapter },
         })
         expect(result).toBeUndefined()
-        expect(mockAdapter.getTargetedFetchTypes).not.toHaveBeenCalled()
+        expect(mockAdapter.partialFetch.getAllTargets).not.toHaveBeenCalled()
       })
     })
 
-    describe('when an adapter has no getTargetedFetchTypes function', () => {
+    describe('when an adapter has no partialFetch.getAllTargets function', () => {
       it('should return undefined', async () => {
-        result = await getAccountTargetedFetchTypes({
+        result = await getAccountPartialFetchTargets({
           account: 'salto',
           workspace,
-          adapterCreators: { salto: _.omit(mockAdapter, 'getTargetedFetchTypes') },
+          adapterCreators: { salto: _.omit(mockAdapter, 'partialFetch') },
         })
         expect(result).toBeUndefined()
-        expect(mockAdapter.getTargetedFetchTypes).not.toHaveBeenCalled()
+        expect(mockAdapter.partialFetch.getAllTargets).not.toHaveBeenCalled()
       })
     })
   })
 
-  describe('getElementsTargetedFetchTypes', () => {
-    let result: Record<string, TargetedFetchType[] | undefined>
+  describe('partialFetch.getTargetsForElements', () => {
+    let result: Record<string, PartialFetchTarget[] | undefined>
     let accountsElementsSource: Record<string, ReadOnlyElementsSource>
 
     beforeEach(() => {
       accountsElementsSource = {}
 
-      mockAdapter.getElementsTargetedFetchTypes.mockImplementation(async ({ elemIds, elementsSource }) => {
+      mockAdapter.partialFetch.getTargetsForElements.mockImplementation(async ({ elemIds, elementsSource }) => {
         const account = elemIds.find(elemId => elemId.name === 'instance1') ? 'salto' : 'salto2'
         accountsElementsSource[account] = elementsSource
 
@@ -207,7 +206,7 @@ describe('targeted fetch types', () => {
 
     describe('when run on several accounts', () => {
       beforeEach(async () => {
-        result = await getElementsTargetedFetchTypes({
+        result = await getPartialFetchTargetsForElements({
           elemIds: [
             new ElemID('salto', 'someType'),
             new ElemID('salto', 'someType', 'instance', 'instance1'),
@@ -247,13 +246,13 @@ describe('targeted fetch types', () => {
       })
 
       it('should run each call with the element ids of the account', () => {
-        expect(mockAdapter.getElementsTargetedFetchTypes).toHaveBeenCalledTimes(2)
-        expect(mockAdapter.getElementsTargetedFetchTypes).toHaveBeenCalledWith(
+        expect(mockAdapter.partialFetch.getTargetsForElements).toHaveBeenCalledTimes(2)
+        expect(mockAdapter.partialFetch.getTargetsForElements).toHaveBeenCalledWith(
           expect.objectContaining({
             elemIds: [new ElemID('salto', 'someType'), new ElemID('salto', 'someType', 'instance', 'instance1')],
           }),
         )
-        expect(mockAdapter.getElementsTargetedFetchTypes).toHaveBeenCalledWith(
+        expect(mockAdapter.partialFetch.getTargetsForElements).toHaveBeenCalledWith(
           expect.objectContaining({
             elemIds: [new ElemID('salto', 'someType2'), new ElemID('salto', 'someType2', 'instance', 'instance2')],
           }),
@@ -272,9 +271,9 @@ describe('targeted fetch types', () => {
       })
     })
 
-    describe('when an adapter has no getElementsTargetedFetchTypes function', () => {
+    describe('when an adapter has no partialFetch.getTargetsForElements function', () => {
       it('should return undefined for each account', async () => {
-        result = await getElementsTargetedFetchTypes({
+        result = await getPartialFetchTargetsForElements({
           elemIds: [
             new ElemID('salto', 'someType'),
             new ElemID('salto', 'someType', 'instance', 'instance1'),
@@ -282,15 +281,13 @@ describe('targeted fetch types', () => {
             new ElemID('salto2', 'someType2', 'instance', 'instance2'),
           ],
           workspace,
-          adapterCreators: {
-            salto: _.omit(mockAdapter, 'getElementsTargetedFetchTypes'),
-          },
+          adapterCreators: { salto: _.omit(mockAdapter, 'partialFetch') },
         })
         expect(result).toEqual({
           salto: undefined,
           salto2: undefined,
         })
-        expect(mockAdapter.getElementsTargetedFetchTypes).not.toHaveBeenCalled()
+        expect(mockAdapter.partialFetch.getTargetsForElements).not.toHaveBeenCalled()
       })
     })
   })

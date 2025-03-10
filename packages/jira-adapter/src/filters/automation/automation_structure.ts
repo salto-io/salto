@@ -277,7 +277,7 @@ const transformIdNumberToString =
   (): TransformFuncSync =>
   ({ value }) => {
     if (_.isPlainObject(value) && value?.type === 'jira.proforma.form.add.action') {
-      const templateFormIdsAsString = String(value.value.templateFormsConfig.templateFormIds)
+      const templateFormIdsAsString = value.value.templateFormsConfig.templateFormIds.map(String)
       value.value.templateFormsConfig.templateFormIds = templateFormIdsAsString
     }
     return value

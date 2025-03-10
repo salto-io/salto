@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/e2e-test-utils",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto e2e utils",
   "repository": {
@@ -29,15 +29,15 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "devDependencies": {
-    "@salto-io/adapter-api": "0.5.1",
-    "@salto-io/adapter-components": "0.5.1",
-    "@salto-io/adapter-utils": "0.5.1",
-    "@salto-io/core": "0.5.1",
-    "@salto-io/e2e-credentials-store": "0.5.1",
-    "@salto-io/file": "0.5.1",
-    "@salto-io/local-workspace": "0.5.1",
-    "@salto-io/lowerdash": "0.5.1",
-    "@salto-io/workspace": "0.5.1",
+    "@salto-io/adapter-api": "0.5.2",
+    "@salto-io/adapter-components": "0.5.2",
+    "@salto-io/adapter-utils": "0.5.2",
+    "@salto-io/core": "0.5.2",
+    "@salto-io/e2e-credentials-store": "0.5.2",
+    "@salto-io/file": "0.5.2",
+    "@salto-io/local-workspace": "0.5.2",
+    "@salto-io/lowerdash": "0.5.2",
+    "@salto-io/workspace": "0.5.2",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "eslint": "^9.16.0",

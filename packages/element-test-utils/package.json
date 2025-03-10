@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/element-test-utils",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Test utilities for jest with Salto Elements",
   "repository": {
@@ -32,7 +32,7 @@
     "./all": "./dist/src/all.js"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.5.1"
+    "@salto-io/adapter-api": "0.5.2"
   },
   "devDependencies": {
     "@jest/expect-utils": "^29.7.0",

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/lang-server",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto lang server",
   "repository": {
@@ -29,18 +29,18 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.5.1",
-    "@salto-io/adapter-utils": "0.5.1",
-    "@salto-io/lowerdash": "0.5.1",
-    "@salto-io/parser": "0.5.1",
-    "@salto-io/workspace": "0.5.1",
+    "@salto-io/adapter-api": "0.5.2",
+    "@salto-io/adapter-utils": "0.5.2",
+    "@salto-io/lowerdash": "0.5.2",
+    "@salto-io/parser": "0.5.2",
+    "@salto-io/workspace": "0.5.2",
     "fuse.js": "^6.4.1",
     "lodash": "^4.17.21",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/element-test-utils": "0.5.1",
-    "@salto-io/test-utils": "0.5.1",
+    "@salto-io/element-test-utils": "0.5.2",
+    "@salto-io/test-utils": "0.5.2",
     "@types/jest": "^29.5.12",
     "@types/node": "^18.9.0",
     "eslint": "^9.16.0",

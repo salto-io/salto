@@ -119,6 +119,7 @@ export enum FLEXI_PAGE_FIELD_NAMES {
 }
 
 // Flow constants
+export const FLOW_ELEMENT_REFERENCE_OR_VALUE = 'FlowElementReferenceOrValue'
 export const START_ELEMENT_REFERENCE = 'startElementReference'
 export const TARGET_REFERENCE = 'targetReference'
 export const ELEMENT_REFERENCE = 'elementReference'
@@ -163,6 +164,17 @@ export const FLOW_FIELD_TYPE_NAMES = {
   FLOW_OUTPUT_FIELD_ASSIGNMENT: 'FlowOutputFieldAssignment',
   FLOW_STAGE_STEP_ENTRY_ACTION_OUTPUT_PARAMETER: 'FlowStageStepEntryActionOutputParameter',
 } as const
+
+export const SUPPORTED_ELEMENT_REFERENCE_PARENT_FIELDS = [
+  'actionCalls',
+  'assignmentItems',
+  'conditions',
+  'subflows',
+  'transformValueActions',
+  'filters',
+  'inputs',
+  'inputAssignments',
+]
 
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown

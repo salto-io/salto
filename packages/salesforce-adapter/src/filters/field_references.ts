@@ -40,6 +40,7 @@ import {
   PROFILE_METADATA_TYPE,
   PERMISSION_SET_METADATA_TYPE,
   MUTING_PERMISSION_SET_METADATA_TYPE,
+  SUPPORTED_ELEMENT_REFERENCE_PARENT_FIELDS,
 } from '../constants'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName, isInstanceOfTypeSync } from './utils'
 import { FetchProfile } from '../types'
@@ -89,6 +90,23 @@ export const createContextStrategyLookups = (
     contextValueMapper?: referenceUtils.ContextValueMapperFunc
   }): referenceUtils.ContextFunc => neighborContextGetter({ ...args, getLookUpName: getLookupNameFunc })
   return {
+    flowElementReferenceField: async ({ instance, field, elemByElemID, fieldPath }) => {
+      const path = fieldPath?.getFullNameParts()
+      if (path === undefined || !path.some(part => SUPPORTED_ELEMENT_REFERENCE_PARENT_FIELDS.includes(part))) {
+        return undefined
+      }
+      const hasInputAssignments = path.includes('inputAssignments')
+      const hasRecordCreatesOrInputAssignments = ['recordCreates', 'recordUpdates'].some(key => path.includes(key))
+      if (hasRecordCreatesOrInputAssignments && hasInputAssignments) {
+        return neighborContextFunc({
+          contextFieldName: 'object',
+          levelsUp: 2,
+        })({ instance, field, elemByElemID, fieldPath })
+      }
+      const parentRef = getParents(instance)[0]
+      const parent = isReferenceExpression(parentRef) ? elemByElemID.get(parentRef.elemID.getFullName()) : undefined
+      return parent !== undefined ? apiName(parent) : undefined
+    },
     instanceParent: async ({ instance, elemByElemID }) => {
       const parentRef = getParents(instance)[0]
       const parent = isReferenceExpression(parentRef) ? elemByElemID.get(parentRef.elemID.getFullName()) : undefined

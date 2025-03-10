@@ -26,7 +26,10 @@ import { collections } from '@salto-io/lowerdash'
 import { apiName, isMetadataInstanceElement } from './transformer'
 import {
   API_NAME_SEPARATOR,
+  CUSTOM_FIELD,
   DEFAULT_OBJECT_TO_API_MAPPING,
+  ELEMENT_REFERENCE,
+  LEFT_VALUE_REFERENCE,
   SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING,
   TEST_OBJECT_TO_API_MAPPING,
 } from '../constants'
@@ -176,6 +179,7 @@ export type ReferenceContextStrategyName =
   | 'neighborAssignedToTypeLookup'
   | 'neighborRelatedEntityTypeLookup'
   | 'parentSObjectTypeLookupTopLevel'
+  | 'flowElementReferenceField'
 
 type SourceDef = {
   field: string | RegExp
@@ -1678,6 +1682,28 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'InstalledPackage',
     },
   },
+  'FlowElementReferenceOrValue.elementReference:CustomField.flowElementReferenceField': {
+    src: {
+      field: ELEMENT_REFERENCE,
+      parentTypes: ['FlowElementReferenceOrValue'],
+    },
+    serializationStrategy: 'recordFieldDollarPrefix',
+    target: {
+      type: CUSTOM_FIELD,
+      parentContext: 'flowElementReferenceField',
+    },
+  },
+  'FlowCondition.leftValueReference:CustomField.instanceParent': {
+    src: {
+      field: LEFT_VALUE_REFERENCE,
+      parentTypes: ['FlowCondition'],
+    },
+    serializationStrategy: 'recordFieldDollarPrefix',
+    target: {
+      type: CUSTOM_FIELD,
+      parentContext: 'instanceParent',
+    },
+  },
 }
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>
@@ -1764,7 +1790,18 @@ const getLookUpNameImpl = ({
       log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined
     }
-    const strategies = (await resolverFinder(args.field, args.element)).map(def => def.serializationStrategy)
+    const definitions = await resolverFinder(args.field, args.element)
+    const filteredDefinitions = definitions.filter(def => {
+      if (def.target === undefined || def.target.type === undefined || !isElement(args.ref.value)) {
+        log.debug('could not filter serialization strategies by target type for field %o', def)
+        return true
+      }
+      if (def.target.type === CUSTOM_FIELD) {
+        return isField(args.ref.value)
+      }
+      return def.target.type === args.ref.elemID.typeName
+    })
+    const strategies = filteredDefinitions.map(def => def.serializationStrategy)
 
     if (strategies.length === 0) {
       log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())

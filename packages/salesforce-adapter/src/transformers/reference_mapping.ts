@@ -1682,7 +1682,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       type: 'InstalledPackage',
     },
   },
-  'FlowElementReferenceOrValue.elementReference:CustomField': {
+  'FlowElementReferenceOrValue.elementReference:CustomField.flowElementReferenceField': {
     src: {
       field: ELEMENT_REFERENCE,
       parentTypes: ['FlowElementReferenceOrValue'],
@@ -1693,7 +1693,7 @@ export const referenceMappingDefs: Record<string, FieldReferenceDefinition> = {
       parentContext: 'flowElementReferenceField',
     },
   },
-  'FlowCondition.leftValueReference:CustomField': {
+  'FlowCondition.leftValueReference:CustomField.instanceParent': {
     src: {
       field: LEFT_VALUE_REFERENCE,
       parentTypes: ['FlowCondition'],

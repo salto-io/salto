@@ -959,6 +959,14 @@ const getRawParent = (element: Element): Value => {
   return parents[0]
 }
 
+export const getParentOrUndefined = (instance: InstanceElement): InstanceElement | undefined => {
+  const parents = getParents(instance)
+  if (parents.length === 0 || !isInstanceElement(parents[0].value)) {
+    return undefined
+  }
+  return parents[0].value
+}
+
 export const getParent = (element: Element): InstanceElement => {
   const parent = getRawParent(element)
   if (!isInstanceElement(parent.value)) {

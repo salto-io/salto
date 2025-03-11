@@ -72,7 +72,7 @@ const isValidValueSettings = (vs: Value): vs is ValueSettings =>
   vs.controllingFieldValue.every((cfv: Value) => _.isString(cfv) || isReferenceExpression(cfv))
 
 const isValidFieldDependency = (fd: Value): fd is FieldDependency =>
-  _.isPlainObject(fd) &&
+  fd !== undefined &&
   (_.isString(fd.controllingField) || isReferenceExpression(fd.controllingField)) &&
   Array.isArray(fd.valueSettings) &&
   fd.valueSettings.every(isValidValueSettings)
@@ -105,7 +105,7 @@ const addFieldDependencyReferences = (
   const controllingFieldNameOrReference = fieldDependency[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]
   const controllingField = _.isString(controllingFieldNameOrReference)
     ? objectType.fields[controllingFieldNameOrReference]
-    : controllingFieldNameOrReference.getResolvedValueSync()
+    : objectType.fields[controllingFieldNameOrReference.elemID.name]
   if (!isField(controllingField)) {
     return
   }

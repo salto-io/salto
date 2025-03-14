@@ -36,6 +36,7 @@ import fieldReferencesFilter from './filters/field_references'
 import jiraProjectIssueTypeFilter from './filters/cross_service/jira/project_issuetypes'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
+import customPathFilter from './filters/custom_paths'
 import commonFilters from './filters/common'
 import { DEPLOY_USING_RLM_GROUP, RECIPE_CODE_TYPE, WORKATO } from './constants'
 import changeValidator from './change_validator'
@@ -60,6 +61,8 @@ const DEFAULT_FILTERS = [
   serviceUrlFilter,
   // referencedIdFieldsFilter and queryFilter should run after element references are resolved
   ...Object.values(commonFilters),
+  // must run after commonFilters and fieldReferencesFilter
+  customPathFilter,
 ]
 
 interface WorkatoAdapterParams {
